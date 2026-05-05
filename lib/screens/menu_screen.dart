@@ -1,5 +1,8 @@
+import 'package:enjoy_lavash_mobile/app/location_controller.dart';
 import 'package:enjoy_lavash_mobile/features/models/menu_product.dart';
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
+import 'package:enjoy_lavash_mobile/screens/address_bottom_sheet.dart';
+import 'package:enjoy_lavash_mobile/screens/branch_bottom_sheet.dart';
 import 'package:enjoy_lavash_mobile/widgets/action_icon_button.dart';
 import 'package:enjoy_lavash_mobile/widgets/delivery_chip.dart';
 import 'package:enjoy_lavash_mobile/widgets/product_list_item.dart';
@@ -7,6 +10,7 @@ import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:provider/provider.dart';
 
 const String _brandMarkAsset =
     'web-design/Mobile app design request/src/imports/image-1.png';
@@ -57,6 +61,8 @@ class _MenuScreenState extends State<MenuScreen> {
   late Map<String, List<MenuProduct>> _groupedProducts = _groupProducts();
 
   bool _isProgrammaticScroll = false;
+  bool _isDelivery = true;
+  Branch? _selectedBranch;
 
   // -------------------------------------------------------------------------
   // Lifecycle
@@ -121,7 +127,8 @@ class _MenuScreenState extends State<MenuScreen> {
       return;
     }
 
-    final viewportCenter = _scrollController.offset +
+    final viewportCenter =
+        _scrollController.offset +
         _stickyCategoryHeaderHeight +
         (position.viewportDimension - _stickyCategoryHeaderHeight) / 2;
 
@@ -136,7 +143,8 @@ class _MenuScreenState extends State<MenuScreen> {
       if (box == null || !box.attached) continue;
 
       final renderBox = box as RenderBox;
-      final sectionTop = _scrollController.offset +
+      final sectionTop =
+          _scrollController.offset +
           renderBox.localToGlobal(Offset.zero).dy -
           _stickyCategoryHeaderHeight;
       final sectionBottom = sectionTop + renderBox.size.height;
@@ -185,7 +193,7 @@ class _MenuScreenState extends State<MenuScreen> {
         _scrollController.hasClients) {
       final targetOffset =
           viewport.getOffsetToReveal(renderObject, 0).offset -
-              _stickyCategoryHeaderHeight;
+          _stickyCategoryHeaderHeight;
       final clampedOffset = targetOffset.clamp(
         0.0,
         _scrollController.position.maxScrollExtent,
@@ -216,9 +224,8 @@ class _MenuScreenState extends State<MenuScreen> {
     if (chipContext == null) return;
 
     final chipBox = chipContext.findRenderObject();
-    final listBox =
-        _categoryScrollController.position.context.storageContext
-            .findRenderObject();
+    final listBox = _categoryScrollController.position.context.storageContext
+        .findRenderObject();
 
     if (chipBox is! RenderBox || listBox is! RenderBox) return;
 
@@ -229,9 +236,9 @@ class _MenuScreenState extends State<MenuScreen> {
 
     final targetOffset =
         (_categoryScrollController.offset + chipCenter - viewportCenter).clamp(
-      0.0,
-      _categoryScrollController.position.maxScrollExtent,
-    );
+          0.0,
+          _categoryScrollController.position.maxScrollExtent,
+        );
 
     if ((targetOffset - _categoryScrollController.offset).abs() < 1) return;
 
@@ -263,7 +270,9 @@ class _MenuScreenState extends State<MenuScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildTopBar(),
-                const SizedBox(height: 20),
+                const SizedBox(height: 14),
+                _buildAddressBar(context),
+                const SizedBox(height: 14),
                 _buildDeliveryToggle(t),
                 const SizedBox(height: 20),
                 _buildPromoBanner(theme, t),
@@ -315,7 +324,11 @@ class _MenuScreenState extends State<MenuScreen> {
   Widget _buildTopBar() {
     return Row(
       children: [
-        ActionIconButton(icon: Icons.menu_rounded, isDark: widget.isDark),
+        ActionIconButton(
+          icon: Icons.menu_rounded,
+          isDark: widget.isDark,
+          onTap: () => Scaffold.of(context).openDrawer(),
+        ),
         const SizedBox(width: 14),
         Expanded(
           child: Container(
@@ -351,6 +364,87 @@ class _MenuScreenState extends State<MenuScreen> {
         const SizedBox(width: 14),
         _buildCartButton(),
       ],
+    );
+  }
+
+  Widget _buildAddressBar(BuildContext context) {
+    final loc = context.watch<LocationController>();
+    final t = L.of(context);
+    final isLoading = loc.status == LocationStatus.loading;
+    final hasAddress = loc.addressName.isNotEmpty;
+
+    return GestureDetector(
+      onTap: () => showAddressBottomSheet(context),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: widget.isDark ? const Color(0xFF1D1A18) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.location_on_rounded,
+              color: BaseColors.primary,
+              size: 22,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TypographyText(
+                    t.deliveryAddress,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: widget.isDark
+                          ? const Color(0xFF9E9790)
+                          : BaseColors.textGray,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  isLoading
+                      ? SizedBox(
+                          height: 14,
+                          width: 14,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: BaseColors.primary,
+                          ),
+                        )
+                      : TypographyText(
+                          hasAddress ? loc.fullAddress : t.tapToSelectAddress,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: hasAddress ? null : BaseColors.primary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 22,
+              color: widget.isDark
+                  ? const Color(0xFF9E9790)
+                  : BaseColors.textGray,
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -400,17 +494,37 @@ class _MenuScreenState extends State<MenuScreen> {
       child: Row(
         children: [
           Expanded(
-            child: DeliveryChip(
-              icon: Icons.delivery_dining_rounded,
-              title: t.delivery,
-              active: true,
+            child: GestureDetector(
+              onTap: () => setState(() {
+                _isDelivery = true;
+                _selectedBranch = null;
+              }),
+              child: DeliveryChip(
+                icon: Icons.delivery_dining_rounded,
+                title: t.delivery,
+                active: _isDelivery,
+              ),
             ),
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: DeliveryChip(
-              icon: Icons.shopping_bag_outlined,
-              title: t.pickup,
+            child: GestureDetector(
+              onTap: () async {
+                final branch = await showBranchBottomSheet(context);
+                if (branch != null) {
+                  setState(() {
+                    _isDelivery = false;
+                    _selectedBranch = branch;
+                  });
+                }
+              },
+              child: DeliveryChip(
+                icon: Icons.shopping_bag_outlined,
+                title: _selectedBranch != null
+                    ? _selectedBranch!.name.split(' — ').last
+                    : t.pickup,
+                active: !_isDelivery,
+              ),
             ),
           ),
         ],
@@ -490,9 +604,7 @@ class _MenuScreenState extends State<MenuScreen> {
         showCheckmark: false,
         side: BorderSide.none,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         backgroundColor: widget.isDark
             ? const Color(0xFF201C19)
             : const Color(0xFFF1EDE7),
@@ -546,10 +658,7 @@ class _MenuScreenState extends State<MenuScreen> {
 // ---------------------------------------------------------------------------
 
 class _CategoryHeaderDelegate extends SliverPersistentHeaderDelegate {
-  const _CategoryHeaderDelegate({
-    required this.height,
-    required this.child,
-  });
+  const _CategoryHeaderDelegate({required this.height, required this.child});
 
   final double height;
   final Widget child;
@@ -561,7 +670,11 @@ class _CategoryHeaderDelegate extends SliverPersistentHeaderDelegate {
   double get maxExtent => height;
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     return child;
   }
 

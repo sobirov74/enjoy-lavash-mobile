@@ -67,5 +67,27 @@
   "tableReceived": "Получ.",
   "tableDifference": "Разн.",
 
-  "status": "Статус:"
+  "status": "Статус:",
+
+  "deliveryAddress": "Адрес доставки",
+  "searchAddress": "Поиск адреса...",
+  "houseNumber": "Номер дома",
+  "houseNumberHint": "напр. 25А",
+  "entranceLabel": "Подъезд",
+  "floorLabel": "Этаж",
+  "apartmentLabel": "Кв.",
+  "commentLabel": "Комментарий",
+  "commentHint": "Инструкции для курьера...",
+  "confirmAddress": "Подтвердить адрес",
+  "tapToSelectAddress": "Нажмите для выбора адреса",
+  "locationPermissionDenied": "Доступ к геолокации запрещён",
+  "enableLocation": "Включить геолокацию",
+  "currentLocation": "Текущее местоположение",
+
+  "selectBranch": "Выберите филиал",
+  "branchWorkingHours": "Время работы",
+  "menu": "Меню",
+  "settings": "Настройки",
+  "aboutUs": "О нас",
+  "contactUs": "Связаться с нами"
 }

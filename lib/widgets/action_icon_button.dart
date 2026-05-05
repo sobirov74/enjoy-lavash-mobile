@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 
 class ActionIconButton extends StatelessWidget {
-  const ActionIconButton({super.key, required this.icon, required this.isDark});
+  const ActionIconButton({super.key, required this.icon, required this.isDark, this.onTap});
 
   final IconData icon;
   final bool isDark;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
       width: 56,
       height: 56,
       decoration: BoxDecoration(
@@ -23,6 +26,7 @@ class ActionIconButton extends StatelessWidget {
         ],
       ),
       child: Icon(icon),
+      ),
     );
   }
 }

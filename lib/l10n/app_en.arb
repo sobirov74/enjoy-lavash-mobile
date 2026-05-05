@@ -67,5 +67,27 @@
   "tableReceived": "Recv.",
   "tableDifference": "Diff.",
 
-  "status": "Status:"
+  "status": "Status:",
+
+  "deliveryAddress": "Delivery Address",
+  "searchAddress": "Search address...",
+  "houseNumber": "House number",
+  "houseNumberHint": "e.g. 25A",
+  "entranceLabel": "Entrance",
+  "floorLabel": "Floor",
+  "apartmentLabel": "Apt.",
+  "commentLabel": "Comment",
+  "commentHint": "Delivery instructions...",
+  "confirmAddress": "Confirm address",
+  "tapToSelectAddress": "Tap to select address",
+  "locationPermissionDenied": "Location permission denied",
+  "enableLocation": "Enable location",
+  "currentLocation": "Current location",
+
+  "selectBranch": "Select Branch",
+  "branchWorkingHours": "Working hours",
+  "menu": "Menu",
+  "settings": "Settings",
+  "aboutUs": "About Us",
+  "contactUs": "Contact Us"
 }

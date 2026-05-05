@@ -179,4 +179,64 @@ class LEn extends L {
 
   @override
   String get status => 'Status:';
+
+  @override
+  String get deliveryAddress => 'Delivery Address';
+
+  @override
+  String get searchAddress => 'Search address...';
+
+  @override
+  String get houseNumber => 'House number';
+
+  @override
+  String get houseNumberHint => 'e.g. 25A';
+
+  @override
+  String get entranceLabel => 'Entrance';
+
+  @override
+  String get floorLabel => 'Floor';
+
+  @override
+  String get apartmentLabel => 'Apt.';
+
+  @override
+  String get commentLabel => 'Comment';
+
+  @override
+  String get commentHint => 'Delivery instructions...';
+
+  @override
+  String get confirmAddress => 'Confirm address';
+
+  @override
+  String get tapToSelectAddress => 'Tap to select address';
+
+  @override
+  String get locationPermissionDenied => 'Location permission denied';
+
+  @override
+  String get enableLocation => 'Enable location';
+
+  @override
+  String get currentLocation => 'Current location';
+
+  @override
+  String get selectBranch => 'Select Branch';
+
+  @override
+  String get branchWorkingHours => 'Working hours';
+
+  @override
+  String get menu => 'Menu';
+
+  @override
+  String get settings => 'Settings';
+
+  @override
+  String get aboutUs => 'About Us';
+
+  @override
+  String get contactUs => 'Contact Us';
 }

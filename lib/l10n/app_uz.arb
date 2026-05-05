@@ -67,5 +67,27 @@
   "tableReceived": "Qab.",
   "tableDifference": "Farq.",
 
-  "status": "Holat:"
+  "status": "Holat:",
+
+  "deliveryAddress": "Yetkazib berish manzili",
+  "searchAddress": "Manzilni qidiring...",
+  "houseNumber": "Uy raqami",
+  "houseNumberHint": "masalan 25A",
+  "entranceLabel": "Kirish",
+  "floorLabel": "Qavat",
+  "apartmentLabel": "Xona",
+  "commentLabel": "Izoh",
+  "commentHint": "Kuryer uchun ko'rsatmalar...",
+  "confirmAddress": "Manzilni tasdiqlash",
+  "tapToSelectAddress": "Manzilni tanlash uchun bosing",
+  "locationPermissionDenied": "Joylashuv ruxsati rad etildi",
+  "enableLocation": "Joylashuvni yoqish",
+  "currentLocation": "Joriy joylashuv",
+
+  "selectBranch": "Filialni tanlang",
+  "branchWorkingHours": "Ish vaqti",
+  "menu": "Menyu",
+  "settings": "Sozlamalar",
+  "aboutUs": "Biz haqimizda",
+  "contactUs": "Bog'lanish"
 }

@@ -180,4 +180,64 @@ class LRu extends L {
 
   @override
   String get status => 'Статус:';
+
+  @override
+  String get deliveryAddress => 'Адрес доставки';
+
+  @override
+  String get searchAddress => 'Поиск адреса...';
+
+  @override
+  String get houseNumber => 'Номер дома';
+
+  @override
+  String get houseNumberHint => 'напр. 25А';
+
+  @override
+  String get entranceLabel => 'Подъезд';
+
+  @override
+  String get floorLabel => 'Этаж';
+
+  @override
+  String get apartmentLabel => 'Кв.';
+
+  @override
+  String get commentLabel => 'Комментарий';
+
+  @override
+  String get commentHint => 'Инструкции для курьера...';
+
+  @override
+  String get confirmAddress => 'Подтвердить адрес';
+
+  @override
+  String get tapToSelectAddress => 'Нажмите для выбора адреса';
+
+  @override
+  String get locationPermissionDenied => 'Доступ к геолокации запрещён';
+
+  @override
+  String get enableLocation => 'Включить геолокацию';
+
+  @override
+  String get currentLocation => 'Текущее местоположение';
+
+  @override
+  String get selectBranch => 'Выберите филиал';
+
+  @override
+  String get branchWorkingHours => 'Время работы';
+
+  @override
+  String get menu => 'Меню';
+
+  @override
+  String get settings => 'Настройки';
+
+  @override
+  String get aboutUs => 'О нас';
+
+  @override
+  String get contactUs => 'Связаться с нами';
 }

@@ -181,4 +181,64 @@ class LUz extends L {
 
   @override
   String get status => 'Holat:';
+
+  @override
+  String get deliveryAddress => 'Yetkazib berish manzili';
+
+  @override
+  String get searchAddress => 'Manzilni qidiring...';
+
+  @override
+  String get houseNumber => 'Uy raqami';
+
+  @override
+  String get houseNumberHint => 'masalan 25A';
+
+  @override
+  String get entranceLabel => 'Kirish';
+
+  @override
+  String get floorLabel => 'Qavat';
+
+  @override
+  String get apartmentLabel => 'Xona';
+
+  @override
+  String get commentLabel => 'Izoh';
+
+  @override
+  String get commentHint => 'Kuryer uchun ko\'rsatmalar...';
+
+  @override
+  String get confirmAddress => 'Manzilni tasdiqlash';
+
+  @override
+  String get tapToSelectAddress => 'Manzilni tanlash uchun bosing';
+
+  @override
+  String get locationPermissionDenied => 'Joylashuv ruxsati rad etildi';
+
+  @override
+  String get enableLocation => 'Joylashuvni yoqish';
+
+  @override
+  String get currentLocation => 'Joriy joylashuv';
+
+  @override
+  String get selectBranch => 'Filialni tanlang';
+
+  @override
+  String get branchWorkingHours => 'Ish vaqti';
+
+  @override
+  String get menu => 'Menyu';
+
+  @override
+  String get settings => 'Sozlamalar';
+
+  @override
+  String get aboutUs => 'Biz haqimizda';
+
+  @override
+  String get contactUs => 'Bog\'lanish';
 }

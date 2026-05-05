@@ -6,7 +6,7 @@ import 'package:enjoy_lavash_mobile/screens/cart_screen.dart';
 import 'package:enjoy_lavash_mobile/screens/menu_screen.dart';
 import 'package:enjoy_lavash_mobile/screens/profile.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
-import 'package:enjoy_lavash_mobile/widgets/theme/theme_extensions.dart';
+import 'package:enjoy_lavash_mobile/theme/theme_extensions.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
 
@@ -68,6 +68,86 @@ class _MainTabsState extends State<MainTabs> {
     setState(() => _selectedCategoryIndex = index);
   }
 
+  Widget _buildDrawer(BuildContext context, bool isDark, L t) {
+    return Drawer(
+      backgroundColor: isDark ? const Color(0xFF1D1A18) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.horizontal(right: Radius.circular(24)),
+      ),
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+              child: Row(
+                children: [
+                  Image.asset(
+                    'web-design/Mobile app design request/src/imports/image-1.png',
+                    height: 36,
+                  ),
+                  const SizedBox(width: 12),
+                  const TypographyText(
+                    'EnjoyLavash',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.9,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Divider(
+              color: isDark ? const Color(0xFF2A2522) : const Color(0xFFE0DBD5),
+              height: 1,
+            ),
+            const SizedBox(height: 8),
+            _DrawerItem(
+              icon: Icons.restaurant_menu_rounded,
+              title: t.tabMenu,
+              isDark: isDark,
+              onTap: () {
+                Navigator.pop(context);
+                setState(() => _currentIndex = 0);
+              },
+            ),
+            _DrawerItem(
+              icon: Icons.shopping_cart_rounded,
+              title: t.tabCart,
+              isDark: isDark,
+              onTap: () {
+                Navigator.pop(context);
+                setState(() => _currentIndex = 1);
+              },
+            ),
+            _DrawerItem(
+              icon: Icons.person_rounded,
+              title: t.tabProfile,
+              isDark: isDark,
+              onTap: () {
+                Navigator.pop(context);
+                setState(() => _currentIndex = 2);
+              },
+            ),
+            const Spacer(),
+            Divider(
+              color: isDark ? const Color(0xFF2A2522) : const Color(0xFFE0DBD5),
+              height: 1,
+            ),
+            _DrawerItem(
+              icon: Icons.share_rounded,
+              title: t.shareApp,
+              isDark: isDark,
+              onTap: () => Navigator.pop(context),
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -76,6 +156,7 @@ class _MainTabsState extends State<MainTabs> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
+      drawer: _buildDrawer(context, isDark, t),
       body: SafeArea(
         child: IndexedStack(
           index: _currentIndex,
@@ -188,6 +269,37 @@ class _MainTabsState extends State<MainTabs> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _DrawerItem extends StatelessWidget {
+  const _DrawerItem({
+    required this.icon,
+    required this.title,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Icon(icon, color: BaseColors.primary),
+      title: TypographyText(
+        title,
+        style: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+      onTap: onTap,
     );
   }
 }

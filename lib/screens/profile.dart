@@ -1,5 +1,5 @@
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
-import 'package:enjoy_lavash_mobile/widgets/theme/theme_extensions.dart';
+import 'package:enjoy_lavash_mobile/theme/theme_extensions.dart';
 import 'package:enjoy_lavash_mobile/widgets/button.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
@@ -548,7 +548,9 @@ class _OrderRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8F4EF),
+        color: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF2A2522)
+            : const Color(0xFFF8F4EF),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(

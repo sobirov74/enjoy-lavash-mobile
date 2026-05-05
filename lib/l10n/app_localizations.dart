@@ -440,6 +440,126 @@ abstract class L {
   /// In uz, this message translates to:
   /// **'Holat:'**
   String get status;
+
+  /// No description provided for @deliveryAddress.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazib berish manzili'**
+  String get deliveryAddress;
+
+  /// No description provided for @searchAddress.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzilni qidiring...'**
+  String get searchAddress;
+
+  /// No description provided for @houseNumber.
+  ///
+  /// In uz, this message translates to:
+  /// **'Uy raqami'**
+  String get houseNumber;
+
+  /// No description provided for @houseNumberHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'masalan 25A'**
+  String get houseNumberHint;
+
+  /// No description provided for @entranceLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kirish'**
+  String get entranceLabel;
+
+  /// No description provided for @floorLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qavat'**
+  String get floorLabel;
+
+  /// No description provided for @apartmentLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xona'**
+  String get apartmentLabel;
+
+  /// No description provided for @commentLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Izoh'**
+  String get commentLabel;
+
+  /// No description provided for @commentHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuryer uchun ko\'rsatmalar...'**
+  String get commentHint;
+
+  /// No description provided for @confirmAddress.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzilni tasdiqlash'**
+  String get confirmAddress;
+
+  /// No description provided for @tapToSelectAddress.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzilni tanlash uchun bosing'**
+  String get tapToSelectAddress;
+
+  /// No description provided for @locationPermissionDenied.
+  ///
+  /// In uz, this message translates to:
+  /// **'Joylashuv ruxsati rad etildi'**
+  String get locationPermissionDenied;
+
+  /// No description provided for @enableLocation.
+  ///
+  /// In uz, this message translates to:
+  /// **'Joylashuvni yoqish'**
+  String get enableLocation;
+
+  /// No description provided for @currentLocation.
+  ///
+  /// In uz, this message translates to:
+  /// **'Joriy joylashuv'**
+  String get currentLocation;
+
+  /// No description provided for @selectBranch.
+  ///
+  /// In uz, this message translates to:
+  /// **'Filialni tanlang'**
+  String get selectBranch;
+
+  /// No description provided for @branchWorkingHours.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ish vaqti'**
+  String get branchWorkingHours;
+
+  /// No description provided for @menu.
+  ///
+  /// In uz, this message translates to:
+  /// **'Menyu'**
+  String get menu;
+
+  /// No description provided for @settings.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sozlamalar'**
+  String get settings;
+
+  /// No description provided for @aboutUs.
+  ///
+  /// In uz, this message translates to:
+  /// **'Biz haqimizda'**
+  String get aboutUs;
+
+  /// No description provided for @contactUs.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bog\'lanish'**
+  String get contactUs;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

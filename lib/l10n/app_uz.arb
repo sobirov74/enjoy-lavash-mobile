@@ -1,0 +1,71 @@
+{
+  "@@locale": "uz",
+
+  "appTitle": "Enjoy Lavash",
+
+  "tabMenu": "Menyu",
+  "tabCart": "Savat",
+  "tabProfile": "Profil",
+
+  "delivery": "Yetkazib berish",
+  "pickup": "Olib ketish",
+
+  "specialOffer": "Maxsus taklif",
+  "specialOfferDesc": "Hafta oxirigacha lavashga 20% chegirma",
+  "specialOfferCta": "🔥 Buyurtma bering",
+
+  "cartEmpty": "Savat bo'sh",
+  "cartEmptyDesc": "Menyudan taom qo'shing va bir necha bosishda buyurtma bering.",
+  "browseMenu": "Menyuga o'tish",
+  "cart": "Savat",
+  "total": "Jami",
+  "checkout": "Buyurtma berish",
+
+  "profile": "Profil",
+  "guest": "Mehmon",
+  "lightTheme": "Yorug'",
+  "darkTheme": "Qorong'i",
+  "loyaltyCard": "Sodiqlik kartasi",
+  "accumulatedPoints": "To'plangan ballar",
+  "showCodeForPoints": "Ball olish uchun to'lovda kodni ko'rsating",
+  "personalInfo": "Shaxsiy ma'lumotlar",
+  "email": "Email",
+  "address": "Manzil",
+  "customerId": "Mijoz ID",
+  "orderHistory": "Buyurtmalar tarixi",
+  "completed": "Bajarildi",
+  "cashbackSystem": "Keshbek tizimi",
+  "perOrder": "Har bir buyurtma uchun",
+  "perOrderValue": "5% ball",
+  "onePointEquals": "1 ball teng",
+  "onePointValue": "1 so'm",
+  "canSpend": "Sarflash mumkin",
+  "canSpendValue": "Buyurtmaning 50% gacha",
+  "shareApp": "Ilovani ulashish",
+  "shareAppText": "EnjoyLavash ilovasini ko'ring: https://enjoylavash.uz",
+
+  "notFoundTitle": "Bu sahifa ishlab chiqilmoqda",
+  "goHome": "Bosh sahifaga",
+  "emptyList": "Ro'yxat bo'sh",
+
+  "confirm": "Tasdiqlash",
+  "yes": "Ha",
+  "no": "Yo'q",
+
+  "statusCompleted": "Yakunlangan",
+  "statusAccepted": "Qabul qilingan",
+  "statusCancelled": "Rad etilgan",
+  "statusFailed": "Bekor qilingan",
+  "statusInProgress": "Jarayonda",
+  "statusNew": "Yangi",
+  "statusArchive": "Arxiv",
+  "statusNeedAccept": "Tovarni qabul qilish vaqti!",
+
+  "tableNumber": "№",
+  "tableName": "Nom.",
+  "tableSent": "Yub.",
+  "tableReceived": "Qab.",
+  "tableDifference": "Farq.",
+
+  "status": "Holat:"
+}

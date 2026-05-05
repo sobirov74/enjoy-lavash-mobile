@@ -1,0 +1,71 @@
+{
+  "@@locale": "ru",
+
+  "appTitle": "Enjoy Lavash",
+
+  "tabMenu": "Меню",
+  "tabCart": "Корзина",
+  "tabProfile": "Профиль",
+
+  "delivery": "Доставка",
+  "pickup": "Самовывоз",
+
+  "specialOffer": "Специальное предложение",
+  "specialOfferDesc": "20% скидка на лаваши до конца недели",
+  "specialOfferCta": "🔥 Успейте заказать",
+
+  "cartEmpty": "Корзина пуста",
+  "cartEmptyDesc": "Добавьте блюда из меню и оформите заказ в пару касаний.",
+  "browseMenu": "Перейти к меню",
+  "cart": "Корзина",
+  "total": "Итого",
+  "checkout": "Оформить заказ",
+
+  "profile": "Профиль",
+  "guest": "Гость",
+  "lightTheme": "Светлая",
+  "darkTheme": "Тёмная",
+  "loyaltyCard": "Карта лояльности",
+  "accumulatedPoints": "Накопленные баллы",
+  "showCodeForPoints": "Покажите код при оплате для начисления баллов",
+  "personalInfo": "Личные данные",
+  "email": "Email",
+  "address": "Адрес",
+  "customerId": "ID клиента",
+  "orderHistory": "История заказов",
+  "completed": "Выполнен",
+  "cashbackSystem": "Система кэшбэка",
+  "perOrder": "За каждый заказ",
+  "perOrderValue": "5% баллами",
+  "onePointEquals": "1 балл равен",
+  "onePointValue": "1 so'm",
+  "canSpend": "Можно потратить",
+  "canSpendValue": "До 50% заказа",
+  "shareApp": "Поделиться приложением",
+  "shareAppText": "Попробуйте EnjoyLavash: https://enjoylavash.uz",
+
+  "notFoundTitle": "Эта страница в стадии разработки",
+  "goHome": "На главную",
+  "emptyList": "Список пуст",
+
+  "confirm": "Подтвердить",
+  "yes": "Да",
+  "no": "Нет",
+
+  "statusCompleted": "Завершенный",
+  "statusAccepted": "Принят",
+  "statusCancelled": "Отклонен",
+  "statusFailed": "Отменен",
+  "statusInProgress": "В процессе",
+  "statusNew": "Новый",
+  "statusArchive": "Архив",
+  "statusNeedAccept": "Пора принять товар!",
+
+  "tableNumber": "№",
+  "tableName": "Наим.",
+  "tableSent": "Отпр.",
+  "tableReceived": "Получ.",
+  "tableDifference": "Разн.",
+
+  "status": "Статус:"
+}

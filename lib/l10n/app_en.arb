@@ -1,0 +1,71 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "Enjoy Lavash",
+
+  "tabMenu": "Menu",
+  "tabCart": "Cart",
+  "tabProfile": "Profile",
+
+  "delivery": "Delivery",
+  "pickup": "Pickup",
+
+  "specialOffer": "Special Offer",
+  "specialOfferDesc": "20% off on lavash until end of week",
+  "specialOfferCta": "🔥 Order now",
+
+  "cartEmpty": "Cart is empty",
+  "cartEmptyDesc": "Add dishes from the menu and place your order in a few taps.",
+  "browseMenu": "Browse menu",
+  "cart": "Cart",
+  "total": "Total",
+  "checkout": "Checkout",
+
+  "profile": "Profile",
+  "guest": "Guest",
+  "lightTheme": "Light",
+  "darkTheme": "Dark",
+  "loyaltyCard": "Loyalty Card",
+  "accumulatedPoints": "Accumulated points",
+  "showCodeForPoints": "Show the code at checkout to earn points",
+  "personalInfo": "Personal Info",
+  "email": "Email",
+  "address": "Address",
+  "customerId": "Customer ID",
+  "orderHistory": "Order History",
+  "completed": "Completed",
+  "cashbackSystem": "Cashback System",
+  "perOrder": "Per order",
+  "perOrderValue": "5% in points",
+  "onePointEquals": "1 point equals",
+  "onePointValue": "1 so'm",
+  "canSpend": "Can spend",
+  "canSpendValue": "Up to 50% of order",
+  "shareApp": "Share App",
+  "shareAppText": "Try EnjoyLavash: https://enjoylavash.uz",
+
+  "notFoundTitle": "This page is under development",
+  "goHome": "Go Home",
+  "emptyList": "List is empty",
+
+  "confirm": "Confirm",
+  "yes": "Yes",
+  "no": "No",
+
+  "statusCompleted": "Completed",
+  "statusAccepted": "Accepted",
+  "statusCancelled": "Cancelled",
+  "statusFailed": "Failed",
+  "statusInProgress": "In Progress",
+  "statusNew": "New",
+  "statusArchive": "Archive",
+  "statusNeedAccept": "Time to accept the goods!",
+
+  "tableNumber": "No.",
+  "tableName": "Name",
+  "tableSent": "Sent",
+  "tableReceived": "Recv.",
+  "tableDifference": "Diff.",
+
+  "status": "Status:"
+}

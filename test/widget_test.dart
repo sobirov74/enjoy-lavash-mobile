@@ -7,15 +7,41 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:enjoy_lavash_mobile/app/app.dart';
+import 'package:enjoy_lavash_mobile/app/locale_controller.dart';
+import 'package:enjoy_lavash_mobile/app/location_controller.dart';
 import 'package:enjoy_lavash_mobile/app/theme_controller.dart';
+import 'package:enjoy_lavash_mobile/core/api/api_client.dart';
+import 'package:enjoy_lavash_mobile/core/services/yandex_geocoder_service.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/repositories/mobile_backend_repository_impl.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/presentation/mobile_backend_controller.dart';
 
 void main() {
   testWidgets('App smoke test', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({'app_locale': 'ru'});
+    final localeController = LocaleController();
+    await localeController.loadLocale();
+
     await tester.pumpWidget(
-      ChangeNotifierProvider<ThemeController>(
-        create: (_) => ThemeController(),
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<ThemeController>(
+            create: (_) => ThemeController(),
+          ),
+          ChangeNotifierProvider<LocaleController>.value(
+            value: localeController,
+          ),
+          ChangeNotifierProvider<LocationController>(
+            create: (_) => LocationController(YandexGeocoderService()),
+          ),
+          ChangeNotifierProvider<MobileBackendController>(
+            create: (_) => MobileBackendController(
+              MobileBackendRepositoryImpl(ApiClient()),
+            ),
+          ),
+        ],
         child: const MyApp(),
       ),
     );

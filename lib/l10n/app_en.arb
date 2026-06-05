@@ -20,6 +20,10 @@
   "cart": "Cart",
   "total": "Total",
   "checkout": "Checkout",
+  "orderCreated": "Order created",
+  "orderCreateFailed": "Could not create order. Try again.",
+  "selectDeliveryAddressFirst": "Select a delivery address first",
+  "selectPickupBranchFirst": "Select a pickup branch first",
 
   "profile": "Profile",
   "guest": "Guest",
@@ -43,6 +47,10 @@
   "canSpendValue": "Up to 50% of order",
   "shareApp": "Share App",
   "shareAppText": "Try EnjoyLavash: https://enjoylavash.uz",
+  "logout": "Log out",
+  "logoutTitle": "Log out?",
+  "logoutMessage": "Your saved token will be removed from this device.",
+  "logoutFailed": "Could not log out. Try again.",
 
   "notFoundTitle": "This page is under development",
   "goHome": "Go Home",
@@ -89,5 +97,37 @@
   "menu": "Menu",
   "settings": "Settings",
   "aboutUs": "About Us",
-  "contactUs": "Contact Us"
+  "contactUs": "Contact Us",
+
+  "authorization": "Authorization",
+  "tapToSignIn": "Tap to sign in and view your profile",
+
+  "enterPhoneNumber": "Enter your phone number",
+  "enterSmsCode": "Enter SMS code",
+  "otpSentMessage": "We sent a confirmation code to your phone number.",
+  "signInToCheckout": "Sign in to continue checkout from your cart.",
+  "phoneNumber": "Phone number",
+  "smsCode": "SMS code",
+  "nameOptional": "Name (optional)",
+  "demoCode": "Demo code: {code}",
+  "@demoCode": {
+    "placeholders": {
+      "code": { "type": "String" }
+    }
+  },
+  "sendCode": "Send code",
+  "continueButton": "Continue",
+
+  "promoCodeCopied": "Promo code copied!",
+  "promotionDetails": "Promotion Details",
+  "promoCode": "Promo code",
+  "discount": "Discount",
+  "validUntil": "Valid until {date}",
+  "@validUntil": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "copyCode": "Copy code",
+  "close": "Close"
 }

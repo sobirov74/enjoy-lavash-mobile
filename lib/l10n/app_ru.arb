@@ -20,6 +20,10 @@
   "cart": "Корзина",
   "total": "Итого",
   "checkout": "Оформить заказ",
+  "orderCreated": "Заказ создан",
+  "orderCreateFailed": "Не удалось создать заказ. Попробуйте еще раз.",
+  "selectDeliveryAddressFirst": "Сначала выберите адрес доставки",
+  "selectPickupBranchFirst": "Сначала выберите филиал для самовывоза",
 
   "profile": "Профиль",
   "guest": "Гость",
@@ -43,6 +47,10 @@
   "canSpendValue": "До 50% заказа",
   "shareApp": "Поделиться приложением",
   "shareAppText": "Попробуйте EnjoyLavash: https://enjoylavash.uz",
+  "logout": "Выйти",
+  "logoutTitle": "Выйти из аккаунта?",
+  "logoutMessage": "Сохраненный токен будет удален с этого устройства.",
+  "logoutFailed": "Не удалось выйти. Попробуйте еще раз.",
 
   "notFoundTitle": "Эта страница в стадии разработки",
   "goHome": "На главную",
@@ -89,5 +97,37 @@
   "menu": "Меню",
   "settings": "Настройки",
   "aboutUs": "О нас",
-  "contactUs": "Связаться с нами"
+  "contactUs": "Связаться с нами",
+
+  "authorization": "Авторизация",
+  "tapToSignIn": "Нажмите, чтобы войти и посмотреть профиль",
+
+  "enterPhoneNumber": "Введите номер телефона",
+  "enterSmsCode": "Введите SMS-код",
+  "otpSentMessage": "Мы отправили код подтверждения на ваш номер.",
+  "signInToCheckout": "Войдите, чтобы оформить заказ из корзины.",
+  "phoneNumber": "Номер телефона",
+  "smsCode": "SMS-код",
+  "nameOptional": "Имя (необязательно)",
+  "demoCode": "Демо-код: {code}",
+  "@demoCode": {
+    "placeholders": {
+      "code": { "type": "String" }
+    }
+  },
+  "sendCode": "Отправить код",
+  "continueButton": "Продолжить",
+
+  "promoCodeCopied": "Промокод скопирован!",
+  "promotionDetails": "Детали акции",
+  "promoCode": "Промокод",
+  "discount": "Скидка",
+  "validUntil": "Действует до {date}",
+  "@validUntil": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "copyCode": "Скопировать код",
+  "close": "Закрыть"
 }

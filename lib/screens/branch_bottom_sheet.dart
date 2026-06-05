@@ -1,55 +1,20 @@
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/branch_model.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/presentation/mobile_backend_controller.dart';
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-class Branch {
-  const Branch({
-    required this.id,
-    required this.name,
-    required this.address,
-    required this.workingHours,
-  });
-
-  final String id;
-  final String name;
-  final String address;
-  final String workingHours;
-}
-
-const List<Branch> mockBranches = [
-  Branch(
-    id: '1',
-    name: 'Enjoy Lavash — Chilanzar',
-    address: 'Bunyodkor ko\'chasi, 42',
-    workingHours: '09:00 – 23:00',
-  ),
-  Branch(
-    id: '2',
-    name: 'Enjoy Lavash — Sergeli',
-    address: 'Sergeli ko\'chasi, 7A',
-    workingHours: '10:00 – 22:00',
-  ),
-  Branch(
-    id: '3',
-    name: 'Enjoy Lavash — Yunusabad',
-    address: 'Amir Temur shoh ko\'chasi, 108',
-    workingHours: '09:00 – 23:00',
-  ),
-  Branch(
-    id: '4',
-    name: 'Enjoy Lavash — Mirzo Ulugbek',
-    address: 'Buyuk Ipak Yuli, 56',
-    workingHours: '10:00 – 22:30',
-  ),
-];
-
-Future<Branch?> showBranchBottomSheet(BuildContext context) {
-  return showModalBottomSheet<Branch>(
+Future<BranchModel?> showBranchBottomSheet(BuildContext context) {
+  return showModalBottomSheet<BranchModel>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (_) => const _BranchSheet(),
+    builder: (_) => ChangeNotifierProvider.value(
+      value: context.read<MobileBackendController>(),
+      child: const _BranchSheet(),
+    ),
   );
 }
 
@@ -61,6 +26,11 @@ class _BranchSheet extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final t = L.of(context);
+    final branches = context
+        .watch<MobileBackendController>()
+        .branches
+        .where((branch) => branch.isActive)
+        .toList(growable: false);
 
     return Container(
       constraints: BoxConstraints(
@@ -78,9 +48,7 @@ class _BranchSheet extends StatelessWidget {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: isDark
-                  ? const Color(0xFF3A3530)
-                  : const Color(0xFFE0DBD5),
+              color: isDark ? const Color(0xFF3A3530) : const Color(0xFFE0DBD5),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -117,20 +85,32 @@ class _BranchSheet extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Flexible(
-            child: ListView.separated(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-              shrinkWrap: true,
-              itemCount: mockBranches.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final branch = mockBranches[index];
-                return _BranchCard(
-                  branch: branch,
-                  isDark: isDark,
-                  onTap: () => Navigator.pop(context, branch),
-                );
-              },
-            ),
+            child: branches.isEmpty
+                ? Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+                    child: TypographyText(
+                      t.emptyList,
+                      style: TextStyle(
+                        color: isDark
+                            ? const Color(0xFF9E9790)
+                            : BaseColors.textGray,
+                      ),
+                    ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                    shrinkWrap: true,
+                    itemCount: branches.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final branch = branches[index];
+                      return _BranchCard(
+                        branch: branch,
+                        isDark: isDark,
+                        onTap: () => Navigator.pop(context, branch),
+                      );
+                    },
+                  ),
           ),
         ],
       ),
@@ -145,12 +125,23 @@ class _BranchCard extends StatelessWidget {
     required this.onTap,
   });
 
-  final Branch branch;
+  final BranchModel branch;
   final bool isDark;
   final VoidCallback onTap;
 
+  String get _workingHours {
+    final openingTime = branch.openingTime;
+    final closingTime = branch.closingTime;
+    if (openingTime?.isNotEmpty == true && closingTime?.isNotEmpty == true) {
+      return '$openingTime - $closingTime';
+    }
+    return '';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final workingHours = _workingHours;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -188,45 +179,47 @@ class _BranchCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
-                  TypographyText(
-                    branch.address,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: isDark
-                          ? const Color(0xFF9E9790)
-                          : BaseColors.textGray,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.access_time_rounded,
-                        size: 14,
-                        color: BaseColors.primary,
+                  if (branch.address?.isNotEmpty == true) ...[
+                    const SizedBox(height: 4),
+                    TypographyText(
+                      branch.address!,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: isDark
+                            ? const Color(0xFF9E9790)
+                            : BaseColors.textGray,
                       ),
-                      const SizedBox(width: 4),
-                      TypographyText(
-                        branch.workingHours,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  if (workingHours.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.access_time_rounded,
+                          size: 14,
                           color: BaseColors.primary,
                         ),
-                      ),
-                    ],
-                  ),
+                        const SizedBox(width: 4),
+                        TypographyText(
+                          workingHours,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: BaseColors.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
             Icon(
               Icons.chevron_right_rounded,
-              color: isDark
-                  ? const Color(0xFF9E9790)
-                  : BaseColors.textGray,
+              color: isDark ? const Color(0xFF9E9790) : BaseColors.textGray,
             ),
           ],
         ),

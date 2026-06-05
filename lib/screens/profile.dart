@@ -1,12 +1,21 @@
+import 'dart:async';
+
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/theme/theme_extensions.dart';
 import 'package:enjoy_lavash_mobile/widgets/button.dart';
+import 'package:enjoy_lavash_mobile/widgets/confirm_dialog.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:enjoy_lavash_mobile/app/locale_controller.dart';
 import 'package:enjoy_lavash_mobile/app/theme_controller.dart';
+import 'package:enjoy_lavash_mobile/core/error/result.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/address_model.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/order_model.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/presentation/mobile_backend_controller.dart';
+import 'package:enjoy_lavash_mobile/screens/authorization_screen.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
 
 class Profile extends StatelessWidget {
@@ -15,9 +24,70 @@ class Profile extends StatelessWidget {
   static const int _loyaltyPoints = 1250;
 
   Future<void> _shareApp(L t) async {
-    await SharePlus.instance.share(
-      ShareParams(text: t.shareAppText),
+    await SharePlus.instance.share(ShareParams(text: t.shareAppText));
+  }
+
+  void _confirmLogout(BuildContext context, L t) {
+    showConfirmDialog(
+      context: context,
+      title: t.logoutTitle,
+      confirmText: t.logout,
+      cancelText: t.no,
+      footerReversed: true,
+      onCancel: () {},
+      onConfirm: () => unawaited(_logout(context, t)),
+      child: TypographyText(
+        t.logoutMessage,
+        style: const TextStyle(color: BaseColors.textGray, fontSize: 14),
+      ),
     );
+  }
+
+  Future<void> _logout(BuildContext context, L t) async {
+    final result = await context.read<MobileBackendController>().logout();
+    if (!context.mounted || result.isSuccess) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: TypographyText(
+          result.failureOrNull?.message ?? t.logoutFailed,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showAuthorizationModal(BuildContext context) {
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return FractionallySizedBox(
+          heightFactor: 0.92,
+          child: ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            child: const AuthorizationScreen(),
+          ),
+        );
+      },
+    );
+  }
+
+  String _formatAddress(ClientAddress address) {
+    final parts = <String>[address.street];
+    if (address.houseNumber?.isNotEmpty == true) parts.add(address.houseNumber!);
+    return parts.join(', ');
+  }
+
+  String _formatPoints(int value) {
+    final text = value.toString();
+    final buffer = StringBuffer();
+    for (var i = 0; i < text.length; i++) {
+      if (i > 0 && (text.length - i) % 3 == 0) buffer.write(' ');
+      buffer.write(text[i]);
+    }
+    return buffer.toString();
   }
 
   @override
@@ -26,7 +96,20 @@ class Profile extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final themeController = context.read<ThemeController>();
     final localeController = context.watch<LocaleController>();
+    final mobileBackend = context.watch<MobileBackendController>();
     final t = L.of(context);
+    final client = mobileBackend.client;
+    final isAuthorized = client != null;
+    final displayName = client?.fullName.isNotEmpty == true
+        ? client!.fullName
+        : (isAuthorized ? t.guest : t.authorization);
+    final phoneNumber = client?.phoneNumber.isNotEmpty == true
+        ? client!.phoneNumber
+        : '';
+    final profileSubtitle = phoneNumber.isNotEmpty
+        ? phoneNumber
+        : t.tapToSignIn;
+    final loyaltyPoints = client?.bonusBalance ?? _loyaltyPoints;
 
     return CustomScrollView(
       slivers: <Widget>[
@@ -44,56 +127,61 @@ class Profile extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 18),
-                _SurfaceCard(
-                  isDark: isDark,
-                  padding: const EdgeInsets.all(20),
-                  child: Row(
-                    children: <Widget>[
-                      Container(
-                        width: 76,
-                        height: 76,
-                        alignment: Alignment.center,
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: <Color>[
-                              Color(0xFFFFC107),
-                              BaseColors.primary,
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
+                GestureDetector(
+                  onTap: isAuthorized
+                      ? null
+                      : () => unawaited(_showAuthorizationModal(context)),
+                  child: _SurfaceCard(
+                    isDark: isDark,
+                    padding: const EdgeInsets.all(20),
+                    child: Row(
+                      children: <Widget>[
+                        Container(
+                          width: 76,
+                          height: 76,
+                          alignment: Alignment.center,
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: <Color>[
+                                Color(0xFFFFC107),
+                                BaseColors.primary,
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.all(Radius.circular(24)),
                           ),
-                          borderRadius: BorderRadius.all(Radius.circular(24)),
+                          child: const TypographyText(
+                            '👤',
+                            style: TextStyle(fontSize: 34),
+                          ),
                         ),
-                        child: const TypographyText(
-                          '👤',
-                          style: TextStyle(fontSize: 34),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            TypographyText(
-                              t.guest,
-                              style: const TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w800,
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              TypographyText(
+                                displayName,
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w800,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 6),
-                            const TypographyText(
-                              '+998 90 123 45 67',
-                              style: TextStyle(
-                                color: BaseColors.textGray,
-                                fontSize: 15,
+                              const SizedBox(height: 6),
+                              TypographyText(
+                                profileSubtitle,
+                                style: const TextStyle(
+                                  color: BaseColors.textGray,
+                                  fontSize: 15,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                      const Icon(Icons.chevron_right_rounded, size: 28),
-                    ],
+                        const Icon(Icons.chevron_right_rounded, size: 28),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -212,16 +300,18 @@ class Profile extends StatelessWidget {
                       TypographyText(
                         t.accumulatedPoints,
                         style: const TextStyle(
-                            color: Colors.white70, fontSize: 15),
+                          color: Colors.white70,
+                          fontSize: 15,
+                        ),
                       ),
                       const SizedBox(height: 18),
-                      const TypographyText(
-                        '1 250',
-                        style: TextStyle(
+                      TypographyText(
+                        _formatPoints(loyaltyPoints),
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 42,
                           fontWeight: FontWeight.w900,
-                          letterSpacing: -1,
+                          letterSpacing: 0,
                         ),
                       ),
                       const SizedBox(height: 18),
@@ -241,7 +331,7 @@ class Profile extends StatelessWidget {
                             ),
                             const SizedBox(height: 8),
                             TypographyText(
-                              'ENJOY-LAVASH-$_loyaltyPoints',
+                              'ENJOY-LAVASH-$loyaltyPoints',
                               style: const TextStyle(
                                 letterSpacing: 2.4,
                                 fontSize: 12,
@@ -255,7 +345,9 @@ class Profile extends StatelessWidget {
                       TypographyText(
                         t.showCodeForPoints,
                         style: const TextStyle(
-                            color: Colors.white70, fontSize: 14),
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
                       ),
                     ],
                   ),
@@ -263,60 +355,49 @@ class Profile extends StatelessWidget {
                 const SizedBox(height: 16),
 
                 // -- Personal info
-                _SectionCard(
-                  isDark: isDark,
-                  title: t.personalInfo,
-                  child: Column(
-                    children: <Widget>[
-                      _InfoRow(
-                        icon: Icons.mail_outline_rounded,
-                        title: t.email,
-                        value: 'guest@enjoylavash.uz',
-                      ),
-                      const SizedBox(height: 14),
-                      _InfoRow(
-                        icon: Icons.location_on_outlined,
-                        title: t.address,
-                        value: 'г. Ташкент, ул. Навои 25',
-                      ),
-                      const SizedBox(height: 14),
-                      _InfoRow(
-                        icon: Icons.badge_outlined,
-                        title: t.customerId,
-                        value: 'EL-12345',
-                      ),
-                    ],
+                if (isAuthorized)
+                  _SectionCard(
+                    isDark: isDark,
+                    title: t.personalInfo,
+                    child: Column(
+                      children: <Widget>[
+                        _InfoRow(
+                          icon: Icons.phone_outlined,
+                          title: t.phoneNumber,
+                          value: client.phoneNumber,
+                        ),
+                        if (mobileBackend.addresses.isNotEmpty) ...[
+                          const SizedBox(height: 14),
+                          _InfoRow(
+                            icon: Icons.location_on_outlined,
+                            title: t.address,
+                            value: _formatAddress(mobileBackend.addresses.first),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
+                if (isAuthorized) const SizedBox(height: 16),
 
                 // -- Order history
-                _SectionCard(
-                  isDark: isDark,
-                  title: t.orderHistory,
-                  child: Column(
-                    children: <Widget>[
-                      _OrderRow(
-                        id: 'ORD-2026-001',
-                        date: '10 апреля 2026',
-                        total: '80 000 so\'m',
-                        status: t.completed,
-                        items:
-                            '🌯 Лаваш куриный с сыром × 2, 🥤 Pepsi × 1',
-                      ),
-                      const SizedBox(height: 12),
-                      _OrderRow(
-                        id: 'ORD-2026-002',
-                        date: '8 апреля 2026',
-                        total: '47 000 so\'m',
-                        status: t.completed,
-                        items:
-                            '🍔 Бургер классик × 1, 🍟 Картошка фри × 1',
-                      ),
-                    ],
+                if (mobileBackend.orders.isNotEmpty) ...[
+                  _SectionCard(
+                    isDark: isDark,
+                    title: t.orderHistory,
+                    child: Column(
+                      children: <Widget>[
+                        for (int i = 0; i < mobileBackend.orders.length; i++) ...[
+                          if (i > 0) const SizedBox(height: 12),
+                          _OrderRow(
+                            order: mobileBackend.orders[i],
+                            locale: localeController.locale.languageCode,
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 16),
+                ],
 
                 // -- Cashback system
                 _SectionCard(
@@ -324,15 +405,14 @@ class Profile extends StatelessWidget {
                   title: t.cashbackSystem,
                   child: Column(
                     children: <Widget>[
-                      _StatLine(
-                          label: t.perOrder, value: t.perOrderValue),
+                      _StatLine(label: t.perOrder, value: t.perOrderValue),
                       const SizedBox(height: 10),
                       _StatLine(
-                          label: t.onePointEquals,
-                          value: t.onePointValue),
+                        label: t.onePointEquals,
+                        value: t.onePointValue,
+                      ),
                       const SizedBox(height: 10),
-                      _StatLine(
-                          label: t.canSpend, value: t.canSpendValue),
+                      _StatLine(label: t.canSpend, value: t.canSpendValue),
                     ],
                   ),
                 ),
@@ -355,6 +435,25 @@ class Profile extends StatelessWidget {
                     label: TypographyText(t.shareApp),
                   ),
                 ),
+                if (client != null) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: BaseColors.danger,
+                        side: const BorderSide(color: BaseColors.danger),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                      onPressed: () => _confirmLogout(context, t),
+                      icon: const Icon(Icons.logout_rounded),
+                      label: TypographyText(t.logout),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 28),
               ],
             ),
@@ -530,21 +629,68 @@ class _InfoRow extends StatelessWidget {
 
 class _OrderRow extends StatelessWidget {
   const _OrderRow({
-    required this.id,
-    required this.date,
-    required this.total,
-    required this.status,
-    required this.items,
+    required this.order,
+    required this.locale,
   });
 
-  final String id;
-  final String date;
-  final String total;
-  final String status;
-  final String items;
+  final CustomerOrderModel order;
+  final String locale;
+
+  String _formatAmount(int amount) {
+    final text = amount.toString();
+    final buffer = StringBuffer();
+    for (var i = 0; i < text.length; i++) {
+      if (i > 0 && (text.length - i) % 3 == 0) buffer.write(' ');
+      buffer.write(text[i]);
+    }
+    buffer.write(" so'm");
+    return buffer.toString();
+  }
+
+  String _formatDate(DateTime? date) {
+    if (date == null) return '';
+    return DateFormat.yMMMMd(locale).format(date);
+  }
+
+  String _formatItems(List<CustomerOrderItemModel> items) {
+    return items
+        .map((item) =>
+            '${item.name ?? item.productId} × ${item.quantity}')
+        .join(', ');
+  }
+
+  String _statusLabel(MobileOrderStatus status, L t) {
+    return switch (status) {
+      MobileOrderStatus.newOrder => t.statusNew,
+      MobileOrderStatus.confirmed => t.statusAccepted,
+      MobileOrderStatus.cooking => t.statusInProgress,
+      MobileOrderStatus.ready => t.statusCompleted,
+      MobileOrderStatus.courierAssigned => t.statusInProgress,
+      MobileOrderStatus.onTheWay => t.statusInProgress,
+      MobileOrderStatus.delivered => t.statusCompleted,
+      MobileOrderStatus.cancelled => t.statusCancelled,
+      MobileOrderStatus.refunded => t.statusFailed,
+      MobileOrderStatus.unknown => t.statusNew,
+    };
+  }
+
+  ({Color bg, Color text}) _statusColors(MobileOrderStatus status) {
+    return switch (status) {
+      MobileOrderStatus.delivered ||
+      MobileOrderStatus.ready =>
+        (bg: const Color(0xFFE7F6EA), text: BaseColors.success),
+      MobileOrderStatus.cancelled ||
+      MobileOrderStatus.refunded =>
+        (bg: const Color(0xFFFDE8E8), text: BaseColors.danger),
+      _ => (bg: const Color(0xFFFFF3E0), text: const Color(0xFFE65100)),
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
+    final t = L.of(context);
+    final colors = _statusColors(order.status);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -560,7 +706,7 @@ class _OrderRow extends StatelessWidget {
             children: <Widget>[
               Expanded(
                 child: TypographyText(
-                  id,
+                  order.id,
                   style: const TextStyle(fontWeight: FontWeight.w800),
                 ),
               ),
@@ -570,13 +716,13 @@ class _OrderRow extends StatelessWidget {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE7F6EA),
+                  color: colors.bg,
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: TypographyText(
-                  status,
-                  style: const TextStyle(
-                    color: BaseColors.success,
+                  _statusLabel(order.status, t),
+                  style: TextStyle(
+                    color: colors.text,
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                   ),
@@ -586,17 +732,19 @@ class _OrderRow extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           TypographyText(
-            date,
+            _formatDate(order.createdAt),
             style: const TextStyle(color: BaseColors.textGray, fontSize: 13),
           ),
-          const SizedBox(height: 8),
-          TypographyText(
-            items,
-            style: const TextStyle(fontSize: 14, height: 1.35),
-          ),
+          if (order.items.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            TypographyText(
+              _formatItems(order.items),
+              style: const TextStyle(fontSize: 14, height: 1.35),
+            ),
+          ],
           const SizedBox(height: 10),
           TypographyText(
-            total,
+            _formatAmount(order.totalAmount),
             style: const TextStyle(
               color: BaseColors.primary,
               fontWeight: FontWeight.w800,

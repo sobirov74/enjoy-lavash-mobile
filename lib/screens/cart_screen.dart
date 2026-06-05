@@ -16,6 +16,8 @@ class CartScreen extends StatelessWidget {
     required this.onDecrease,
     required this.onIncrease,
     required this.onBrowseMenu,
+    required this.onCheckout,
+    this.isCheckingOut = false,
   });
 
   final bool isDark;
@@ -24,6 +26,8 @@ class CartScreen extends StatelessWidget {
   final ValueChanged<MenuProduct> onDecrease;
   final ValueChanged<MenuProduct> onIncrease;
   final VoidCallback onBrowseMenu;
+  final VoidCallback onCheckout;
+  final bool isCheckingOut;
 
   @override
   Widget build(BuildContext context) {
@@ -179,11 +183,20 @@ class CartScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(20),
                           ),
                         ),
-                        onPressed: () {},
-                        child: TypographyText(
-                          t.checkout,
-                          style: const TextStyle(color: BaseColors.white),
-                        ),
+                        onPressed: isCheckingOut ? null : onCheckout,
+                        child: isCheckingOut
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.4,
+                                  color: BaseColors.white,
+                                ),
+                              )
+                            : TypographyText(
+                                t.checkout,
+                                style: const TextStyle(color: BaseColors.white),
+                              ),
                       ),
                     ),
                   ],

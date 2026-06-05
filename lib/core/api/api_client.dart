@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:enjoy_lavash_mobile/core/api/base_url.dart';
 import 'package:enjoy_lavash_mobile/core/storage/token_storage.dart';
+import 'package:flutter/foundation.dart';
 
 const _refreshEndpoint = '/api/v1/auth/refresh';
 const _logoutTriggerCodes = {401, 403};
@@ -29,17 +30,20 @@ class ApiClient {
       ),
     );
 
-    dio.interceptors.addAll([
-      LogInterceptor(
-        request: true,
-        requestHeader: true,
-        requestBody: true,
-        responseBody: true,
-        responseHeader: false,
-        error: true,
-      ),
-      _authInterceptor(),
-    ]);
+    if (kDebugMode) {
+      dio.interceptors.add(
+        LogInterceptor(
+          request: true,
+          requestHeader: true,
+          requestBody: true,
+          responseBody: true,
+          responseHeader: false,
+          error: true,
+        ),
+      );
+    }
+
+    dio.interceptors.add(_authInterceptor());
   }
 
   late final Dio dio;
@@ -117,8 +121,7 @@ class ApiClient {
       if (response.statusCode == 200) {
         final data = response.data;
         final newAccess = data['access_token'] as String?;
-        final newRefresh =
-            (data['refresh_token'] as String?) ?? refreshToken;
+        final newRefresh = (data['refresh_token'] as String?) ?? refreshToken;
 
         if (newAccess != null) {
           await TokenStorage.saveAccessToken(newAccess);

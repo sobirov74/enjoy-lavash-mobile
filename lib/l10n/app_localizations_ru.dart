@@ -55,6 +55,20 @@ class LRu extends L {
   String get checkout => 'Оформить заказ';
 
   @override
+  String get orderCreated => 'Заказ создан';
+
+  @override
+  String get orderCreateFailed =>
+      'Не удалось создать заказ. Попробуйте еще раз.';
+
+  @override
+  String get selectDeliveryAddressFirst => 'Сначала выберите адрес доставки';
+
+  @override
+  String get selectPickupBranchFirst =>
+      'Сначала выберите филиал для самовывоза';
+
+  @override
   String get profile => 'Профиль';
 
   @override
@@ -120,6 +134,19 @@ class LRu extends L {
 
   @override
   String get shareAppText => 'Попробуйте EnjoyLavash: https://enjoylavash.uz';
+
+  @override
+  String get logout => 'Выйти';
+
+  @override
+  String get logoutTitle => 'Выйти из аккаунта?';
+
+  @override
+  String get logoutMessage =>
+      'Сохраненный токен будет удален с этого устройства.';
+
+  @override
+  String get logoutFailed => 'Не удалось выйти. Попробуйте еще раз.';
 
   @override
   String get notFoundTitle => 'Эта страница в стадии разработки';
@@ -240,4 +267,65 @@ class LRu extends L {
 
   @override
   String get contactUs => 'Связаться с нами';
+
+  @override
+  String get authorization => 'Авторизация';
+
+  @override
+  String get tapToSignIn => 'Нажмите, чтобы войти и посмотреть профиль';
+
+  @override
+  String get enterPhoneNumber => 'Введите номер телефона';
+
+  @override
+  String get enterSmsCode => 'Введите SMS-код';
+
+  @override
+  String get otpSentMessage => 'Мы отправили код подтверждения на ваш номер.';
+
+  @override
+  String get signInToCheckout => 'Войдите, чтобы оформить заказ из корзины.';
+
+  @override
+  String get phoneNumber => 'Номер телефона';
+
+  @override
+  String get smsCode => 'SMS-код';
+
+  @override
+  String get nameOptional => 'Имя (необязательно)';
+
+  @override
+  String demoCode(String code) {
+    return 'Демо-код: $code';
+  }
+
+  @override
+  String get sendCode => 'Отправить код';
+
+  @override
+  String get continueButton => 'Продолжить';
+
+  @override
+  String get promoCodeCopied => 'Промокод скопирован!';
+
+  @override
+  String get promotionDetails => 'Детали акции';
+
+  @override
+  String get promoCode => 'Промокод';
+
+  @override
+  String get discount => 'Скидка';
+
+  @override
+  String validUntil(String date) {
+    return 'Действует до $date';
+  }
+
+  @override
+  String get copyCode => 'Скопировать код';
+
+  @override
+  String get close => 'Закрыть';
 }

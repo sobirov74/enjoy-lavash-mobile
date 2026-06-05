@@ -55,6 +55,18 @@ class LEn extends L {
   String get checkout => 'Checkout';
 
   @override
+  String get orderCreated => 'Order created';
+
+  @override
+  String get orderCreateFailed => 'Could not create order. Try again.';
+
+  @override
+  String get selectDeliveryAddressFirst => 'Select a delivery address first';
+
+  @override
+  String get selectPickupBranchFirst => 'Select a pickup branch first';
+
+  @override
   String get profile => 'Profile';
 
   @override
@@ -119,6 +131,19 @@ class LEn extends L {
 
   @override
   String get shareAppText => 'Try EnjoyLavash: https://enjoylavash.uz';
+
+  @override
+  String get logout => 'Log out';
+
+  @override
+  String get logoutTitle => 'Log out?';
+
+  @override
+  String get logoutMessage =>
+      'Your saved token will be removed from this device.';
+
+  @override
+  String get logoutFailed => 'Could not log out. Try again.';
 
   @override
   String get notFoundTitle => 'This page is under development';
@@ -239,4 +264,66 @@ class LEn extends L {
 
   @override
   String get contactUs => 'Contact Us';
+
+  @override
+  String get authorization => 'Authorization';
+
+  @override
+  String get tapToSignIn => 'Tap to sign in and view your profile';
+
+  @override
+  String get enterPhoneNumber => 'Enter your phone number';
+
+  @override
+  String get enterSmsCode => 'Enter SMS code';
+
+  @override
+  String get otpSentMessage =>
+      'We sent a confirmation code to your phone number.';
+
+  @override
+  String get signInToCheckout => 'Sign in to continue checkout from your cart.';
+
+  @override
+  String get phoneNumber => 'Phone number';
+
+  @override
+  String get smsCode => 'SMS code';
+
+  @override
+  String get nameOptional => 'Name (optional)';
+
+  @override
+  String demoCode(String code) {
+    return 'Demo code: $code';
+  }
+
+  @override
+  String get sendCode => 'Send code';
+
+  @override
+  String get continueButton => 'Continue';
+
+  @override
+  String get promoCodeCopied => 'Promo code copied!';
+
+  @override
+  String get promotionDetails => 'Promotion Details';
+
+  @override
+  String get promoCode => 'Promo code';
+
+  @override
+  String get discount => 'Discount';
+
+  @override
+  String validUntil(String date) {
+    return 'Valid until $date';
+  }
+
+  @override
+  String get copyCode => 'Copy code';
+
+  @override
+  String get close => 'Close';
 }

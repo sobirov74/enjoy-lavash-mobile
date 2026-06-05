@@ -189,6 +189,30 @@ abstract class L {
   /// **'Buyurtma berish'**
   String get checkout;
 
+  /// No description provided for @orderCreated.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma yaratildi'**
+  String get orderCreated;
+
+  /// No description provided for @orderCreateFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma yaratib bo\'lmadi. Qayta urinib ko\'ring.'**
+  String get orderCreateFailed;
+
+  /// No description provided for @selectDeliveryAddressFirst.
+  ///
+  /// In uz, this message translates to:
+  /// **'Avval yetkazib berish manzilini tanlang'**
+  String get selectDeliveryAddressFirst;
+
+  /// No description provided for @selectPickupBranchFirst.
+  ///
+  /// In uz, this message translates to:
+  /// **'Avval olib ketish filialini tanlang'**
+  String get selectPickupBranchFirst;
+
   /// No description provided for @profile.
   ///
   /// In uz, this message translates to:
@@ -320,6 +344,30 @@ abstract class L {
   /// In uz, this message translates to:
   /// **'EnjoyLavash ilovasini ko\'ring: https://enjoylavash.uz'**
   String get shareAppText;
+
+  /// No description provided for @logout.
+  ///
+  /// In uz, this message translates to:
+  /// **'Chiqish'**
+  String get logout;
+
+  /// No description provided for @logoutTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Akkauntdan chiqasizmi?'**
+  String get logoutTitle;
+
+  /// No description provided for @logoutMessage.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saqlangan token ushbu qurilmadan o\'chiriladi.'**
+  String get logoutMessage;
+
+  /// No description provided for @logoutFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Chiqib bo\'lmadi. Qayta urinib ko\'ring.'**
+  String get logoutFailed;
 
   /// No description provided for @notFoundTitle.
   ///
@@ -560,6 +608,120 @@ abstract class L {
   /// In uz, this message translates to:
   /// **'Bog\'lanish'**
   String get contactUs;
+
+  /// No description provided for @authorization.
+  ///
+  /// In uz, this message translates to:
+  /// **'Avtorizatsiya'**
+  String get authorization;
+
+  /// No description provided for @tapToSignIn.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kirish va profilingizni ko\'rish uchun bosing'**
+  String get tapToSignIn;
+
+  /// No description provided for @enterPhoneNumber.
+  ///
+  /// In uz, this message translates to:
+  /// **'Telefon raqamingizni kiriting'**
+  String get enterPhoneNumber;
+
+  /// No description provided for @enterSmsCode.
+  ///
+  /// In uz, this message translates to:
+  /// **'SMS kodni kiriting'**
+  String get enterSmsCode;
+
+  /// No description provided for @otpSentMessage.
+  ///
+  /// In uz, this message translates to:
+  /// **'Telefon raqamingizga tasdiqlash kodi yuborildi.'**
+  String get otpSentMessage;
+
+  /// No description provided for @signInToCheckout.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savatdan buyurtma berish uchun tizimga kiring.'**
+  String get signInToCheckout;
+
+  /// No description provided for @phoneNumber.
+  ///
+  /// In uz, this message translates to:
+  /// **'Telefon raqami'**
+  String get phoneNumber;
+
+  /// No description provided for @smsCode.
+  ///
+  /// In uz, this message translates to:
+  /// **'SMS kod'**
+  String get smsCode;
+
+  /// No description provided for @nameOptional.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ism (ixtiyoriy)'**
+  String get nameOptional;
+
+  /// No description provided for @demoCode.
+  ///
+  /// In uz, this message translates to:
+  /// **'Demo kod: {code}'**
+  String demoCode(String code);
+
+  /// No description provided for @sendCode.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kod yuborish'**
+  String get sendCode;
+
+  /// No description provided for @continueButton.
+  ///
+  /// In uz, this message translates to:
+  /// **'Davom etish'**
+  String get continueButton;
+
+  /// No description provided for @promoCodeCopied.
+  ///
+  /// In uz, this message translates to:
+  /// **'Promokod nusxalandi!'**
+  String get promoCodeCopied;
+
+  /// No description provided for @promotionDetails.
+  ///
+  /// In uz, this message translates to:
+  /// **'Aksiya tafsilotlari'**
+  String get promotionDetails;
+
+  /// No description provided for @promoCode.
+  ///
+  /// In uz, this message translates to:
+  /// **'Promokod'**
+  String get promoCode;
+
+  /// No description provided for @discount.
+  ///
+  /// In uz, this message translates to:
+  /// **'Chegirma'**
+  String get discount;
+
+  /// No description provided for @validUntil.
+  ///
+  /// In uz, this message translates to:
+  /// **'{date} gacha amal qiladi'**
+  String validUntil(String date);
+
+  /// No description provided for @copyCode.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kodni nusxalash'**
+  String get copyCode;
+
+  /// No description provided for @close.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yopish'**
+  String get close;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

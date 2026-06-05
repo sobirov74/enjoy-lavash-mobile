@@ -4,6 +4,8 @@ import 'package:enjoy_lavash_mobile/core/data/repositories/auth.dart';
 import 'package:enjoy_lavash_mobile/core/data/repositories/order_repository.dart';
 import 'package:enjoy_lavash_mobile/core/data/repositories/organisation_repository.dart';
 import 'package:enjoy_lavash_mobile/core/data/repositories/product_repository.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/repositories/mobile_backend_repository_impl.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/repositories/mobile_backend_repository.dart';
 import 'package:enjoy_lavash_mobile/navigation/app_navigator.dart';
 import 'package:enjoy_lavash_mobile/core/storage/token_storage.dart';
 
@@ -33,5 +35,8 @@ void setupDi() {
   );
   sl.registerLazySingleton<OrganisationRepository>(
     () => OrganisationRepository(sl<ApiClient>()),
+  );
+  sl.registerLazySingleton<MobileBackendRepository>(
+    () => MobileBackendRepositoryImpl(sl<ApiClient>()),
   );
 }

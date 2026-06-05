@@ -20,6 +20,10 @@
   "cart": "Savat",
   "total": "Jami",
   "checkout": "Buyurtma berish",
+  "orderCreated": "Buyurtma yaratildi",
+  "orderCreateFailed": "Buyurtma yaratib bo'lmadi. Qayta urinib ko'ring.",
+  "selectDeliveryAddressFirst": "Avval yetkazib berish manzilini tanlang",
+  "selectPickupBranchFirst": "Avval olib ketish filialini tanlang",
 
   "profile": "Profil",
   "guest": "Mehmon",
@@ -43,6 +47,10 @@
   "canSpendValue": "Buyurtmaning 50% gacha",
   "shareApp": "Ilovani ulashish",
   "shareAppText": "EnjoyLavash ilovasini ko'ring: https://enjoylavash.uz",
+  "logout": "Chiqish",
+  "logoutTitle": "Akkauntdan chiqasizmi?",
+  "logoutMessage": "Saqlangan token ushbu qurilmadan o'chiriladi.",
+  "logoutFailed": "Chiqib bo'lmadi. Qayta urinib ko'ring.",
 
   "notFoundTitle": "Bu sahifa ishlab chiqilmoqda",
   "goHome": "Bosh sahifaga",
@@ -89,5 +97,37 @@
   "menu": "Menyu",
   "settings": "Sozlamalar",
   "aboutUs": "Biz haqimizda",
-  "contactUs": "Bog'lanish"
+  "contactUs": "Bog'lanish",
+
+  "authorization": "Avtorizatsiya",
+  "tapToSignIn": "Kirish va profilingizni ko'rish uchun bosing",
+
+  "enterPhoneNumber": "Telefon raqamingizni kiriting",
+  "enterSmsCode": "SMS kodni kiriting",
+  "otpSentMessage": "Telefon raqamingizga tasdiqlash kodi yuborildi.",
+  "signInToCheckout": "Savatdan buyurtma berish uchun tizimga kiring.",
+  "phoneNumber": "Telefon raqami",
+  "smsCode": "SMS kod",
+  "nameOptional": "Ism (ixtiyoriy)",
+  "demoCode": "Demo kod: {code}",
+  "@demoCode": {
+    "placeholders": {
+      "code": { "type": "String" }
+    }
+  },
+  "sendCode": "Kod yuborish",
+  "continueButton": "Davom etish",
+
+  "promoCodeCopied": "Promokod nusxalandi!",
+  "promotionDetails": "Aksiya tafsilotlari",
+  "promoCode": "Promokod",
+  "discount": "Chegirma",
+  "validUntil": "{date} gacha amal qiladi",
+  "@validUntil": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "copyCode": "Kodni nusxalash",
+  "close": "Yopish"
 }

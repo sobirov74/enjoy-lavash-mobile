@@ -55,6 +55,20 @@ class LUz extends L {
   String get checkout => 'Buyurtma berish';
 
   @override
+  String get orderCreated => 'Buyurtma yaratildi';
+
+  @override
+  String get orderCreateFailed =>
+      'Buyurtma yaratib bo\'lmadi. Qayta urinib ko\'ring.';
+
+  @override
+  String get selectDeliveryAddressFirst =>
+      'Avval yetkazib berish manzilini tanlang';
+
+  @override
+  String get selectPickupBranchFirst => 'Avval olib ketish filialini tanlang';
+
+  @override
   String get profile => 'Profil';
 
   @override
@@ -121,6 +135,18 @@ class LUz extends L {
   @override
   String get shareAppText =>
       'EnjoyLavash ilovasini ko\'ring: https://enjoylavash.uz';
+
+  @override
+  String get logout => 'Chiqish';
+
+  @override
+  String get logoutTitle => 'Akkauntdan chiqasizmi?';
+
+  @override
+  String get logoutMessage => 'Saqlangan token ushbu qurilmadan o\'chiriladi.';
+
+  @override
+  String get logoutFailed => 'Chiqib bo\'lmadi. Qayta urinib ko\'ring.';
 
   @override
   String get notFoundTitle => 'Bu sahifa ishlab chiqilmoqda';
@@ -241,4 +267,67 @@ class LUz extends L {
 
   @override
   String get contactUs => 'Bog\'lanish';
+
+  @override
+  String get authorization => 'Avtorizatsiya';
+
+  @override
+  String get tapToSignIn => 'Kirish va profilingizni ko\'rish uchun bosing';
+
+  @override
+  String get enterPhoneNumber => 'Telefon raqamingizni kiriting';
+
+  @override
+  String get enterSmsCode => 'SMS kodni kiriting';
+
+  @override
+  String get otpSentMessage =>
+      'Telefon raqamingizga tasdiqlash kodi yuborildi.';
+
+  @override
+  String get signInToCheckout =>
+      'Savatdan buyurtma berish uchun tizimga kiring.';
+
+  @override
+  String get phoneNumber => 'Telefon raqami';
+
+  @override
+  String get smsCode => 'SMS kod';
+
+  @override
+  String get nameOptional => 'Ism (ixtiyoriy)';
+
+  @override
+  String demoCode(String code) {
+    return 'Demo kod: $code';
+  }
+
+  @override
+  String get sendCode => 'Kod yuborish';
+
+  @override
+  String get continueButton => 'Davom etish';
+
+  @override
+  String get promoCodeCopied => 'Promokod nusxalandi!';
+
+  @override
+  String get promotionDetails => 'Aksiya tafsilotlari';
+
+  @override
+  String get promoCode => 'Promokod';
+
+  @override
+  String get discount => 'Chegirma';
+
+  @override
+  String validUntil(String date) {
+    return '$date gacha amal qiladi';
+  }
+
+  @override
+  String get copyCode => 'Kodni nusxalash';
+
+  @override
+  String get close => 'Yopish';
 }

@@ -1,19 +1,23 @@
+import 'package:enjoy_lavash_mobile/app/locale_controller.dart';
 import 'package:enjoy_lavash_mobile/app/location_controller.dart';
 import 'package:enjoy_lavash_mobile/features/models/menu_product.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/branch_model.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/cart_model.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/promotion_model.dart';
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/screens/address_bottom_sheet.dart';
 import 'package:enjoy_lavash_mobile/screens/branch_bottom_sheet.dart';
 import 'package:enjoy_lavash_mobile/widgets/action_icon_button.dart';
 import 'package:enjoy_lavash_mobile/widgets/delivery_chip.dart';
 import 'package:enjoy_lavash_mobile/widgets/product_list_item.dart';
+import 'package:enjoy_lavash_mobile/widgets/promo_slider.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 
-const String _brandMarkAsset =
-    'web-design/Mobile app design request/src/imports/image-1.png';
+const String _brandMarkAsset = 'assets/images/enjoy-logo.png';
 const double _stickyCategoryHeaderHeight = 78;
 
 // ---------------------------------------------------------------------------
@@ -27,8 +31,14 @@ class MenuScreen extends StatefulWidget {
     required this.selectedCategoryIndex,
     required this.categories,
     required this.products,
+    required this.promotions,
+    required this.orderType,
+    required this.selectedBranch,
     required this.onCategorySelected,
     required this.onAddToCart,
+    required this.onCartTap,
+    required this.onOrderTypeChanged,
+    required this.onBranchSelected,
     required this.cartCount,
   });
 
@@ -36,8 +46,14 @@ class MenuScreen extends StatefulWidget {
   final int selectedCategoryIndex;
   final List<String> categories;
   final List<MenuProduct> products;
+  final List<PromotionModel> promotions;
+  final MobileOrderType orderType;
+  final BranchModel? selectedBranch;
   final ValueChanged<int> onCategorySelected;
   final ValueChanged<MenuProduct> onAddToCart;
+  final VoidCallback onCartTap;
+  final ValueChanged<MobileOrderType> onOrderTypeChanged;
+  final ValueChanged<BranchModel?> onBranchSelected;
   final int cartCount;
 
   @override
@@ -61,8 +77,6 @@ class _MenuScreenState extends State<MenuScreen> {
   late Map<String, List<MenuProduct>> _groupedProducts = _groupProducts();
 
   bool _isProgrammaticScroll = false;
-  bool _isDelivery = true;
-  Branch? _selectedBranch;
 
   // -------------------------------------------------------------------------
   // Lifecycle
@@ -274,8 +288,16 @@ class _MenuScreenState extends State<MenuScreen> {
                 _buildAddressBar(context),
                 const SizedBox(height: 14),
                 _buildDeliveryToggle(t),
-                const SizedBox(height: 20),
-                _buildPromoBanner(theme, t),
+                if (widget.promotions.isNotEmpty) ...[
+                  const SizedBox(height: 20),
+                  PromoSlider(
+                    promotions: widget.promotions,
+                    locale: context
+                        .watch<LocaleController>()
+                        .locale
+                        .languageCode,
+                  ),
+                ],
               ],
             ),
           ),
@@ -350,7 +372,7 @@ class _MenuScreenState extends State<MenuScreen> {
                 Image.asset(_brandMarkAsset, height: 28),
                 const SizedBox(width: 12),
                 const TypographyText(
-                  'EnjoyLavash',
+                  'Enjoy Lavash',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -455,6 +477,7 @@ class _MenuScreenState extends State<MenuScreen> {
         ActionIconButton(
           icon: Icons.shopping_bag_outlined,
           isDark: widget.isDark,
+          onTap: widget.onCartTap,
         ),
         if (widget.cartCount > 0)
           Positioned(
@@ -495,14 +518,11 @@ class _MenuScreenState extends State<MenuScreen> {
         children: [
           Expanded(
             child: GestureDetector(
-              onTap: () => setState(() {
-                _isDelivery = true;
-                _selectedBranch = null;
-              }),
+              onTap: () => widget.onOrderTypeChanged(MobileOrderType.delivery),
               child: DeliveryChip(
                 icon: Icons.delivery_dining_rounded,
                 title: t.delivery,
-                active: _isDelivery,
+                active: widget.orderType == MobileOrderType.delivery,
               ),
             ),
           ),
@@ -512,69 +532,15 @@ class _MenuScreenState extends State<MenuScreen> {
               onTap: () async {
                 final branch = await showBranchBottomSheet(context);
                 if (branch != null) {
-                  setState(() {
-                    _isDelivery = false;
-                    _selectedBranch = branch;
-                  });
+                  widget.onBranchSelected(branch);
                 }
               },
               child: DeliveryChip(
                 icon: Icons.shopping_bag_outlined,
-                title: _selectedBranch != null
-                    ? _selectedBranch!.name.split(' — ').last
+                title: widget.selectedBranch != null
+                    ? widget.selectedBranch!.name.split(' — ').last
                     : t.pickup,
-                active: !_isDelivery,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPromoBanner(ThemeData theme, L t) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFFB74D), BaseColors.primary],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(30),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          TypographyText(
-            t.specialOffer,
-            style: theme.textTheme.titleLarge?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 6),
-          TypographyText(
-            t.specialOfferDesc,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 14),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: TypographyText(
-              t.specialOfferCta,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
+                active: widget.orderType == MobileOrderType.pickup,
               ),
             ),
           ),

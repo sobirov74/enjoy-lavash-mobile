@@ -1,5 +1,6 @@
 import 'package:enjoy_lavash_mobile/features/models/cart_line.dart';
 import 'package:enjoy_lavash_mobile/utils/price_formatter.dart';
+import 'package:enjoy_lavash_mobile/widgets/product_image.dart';
 import 'package:enjoy_lavash_mobile/widgets/quantity_button.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
@@ -22,27 +23,21 @@ class CartItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1D1A18) : Colors.white,
-        borderRadius: BorderRadius.circular(26),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         children: <Widget>[
-          Container(
-            width: 88,
-            height: 88,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: item.product.highlight,
-              borderRadius: BorderRadius.circular(22),
-            ),
-            child: TypographyText(
-              item.product.emoji,
-              style: const TextStyle(fontSize: 42),
-            ),
+          ProductImage(
+            product: item.product,
+            width: 76,
+            height: 76,
+            borderRadius: 18,
+            fallbackFontSize: 36,
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -52,12 +47,12 @@ class CartItemCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    fontSize: 17,
+                    fontSize: 16,
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.5,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 TypographyText(
                   formatSum(item.product.price),
                   style: const TextStyle(
@@ -65,7 +60,7 @@ class CartItemCard extends StatelessWidget {
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 Row(
                   children: <Widget>[
                     QuantityButton(
@@ -77,6 +72,7 @@ class CartItemCard extends StatelessWidget {
                       child: TypographyText(
                         '${item.quantity}',
                         textAlign: TextAlign.center,
+                        maxLines: 1,
                         style: const TextStyle(
                           fontWeight: FontWeight.w800,
                           fontSize: 16,

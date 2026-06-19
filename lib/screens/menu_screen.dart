@@ -18,7 +18,7 @@ import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 
 const String _brandMarkAsset = 'assets/images/enjoy-logo.png';
-const double _stickyCategoryHeaderHeight = 78;
+const double _stickyCategoryHeaderHeight = 66;
 
 // ---------------------------------------------------------------------------
 // MenuScreen — main scrollable menu with sticky category tabs
@@ -28,6 +28,7 @@ class MenuScreen extends StatefulWidget {
   const MenuScreen({
     super.key,
     required this.isDark,
+    required this.isMenuLoading,
     required this.selectedCategoryIndex,
     required this.categories,
     required this.products,
@@ -36,13 +37,18 @@ class MenuScreen extends StatefulWidget {
     required this.selectedBranch,
     required this.onCategorySelected,
     required this.onAddToCart,
+    required this.onDecreaseFromCart,
     required this.onCartTap,
     required this.onOrderTypeChanged,
     required this.onBranchSelected,
+    required this.onRetryMenu,
     required this.cartCount,
+    required this.cartQuantities,
+    this.menuErrorText,
   });
 
   final bool isDark;
+  final bool isMenuLoading;
   final int selectedCategoryIndex;
   final List<String> categories;
   final List<MenuProduct> products;
@@ -51,10 +57,14 @@ class MenuScreen extends StatefulWidget {
   final BranchModel? selectedBranch;
   final ValueChanged<int> onCategorySelected;
   final ValueChanged<MenuProduct> onAddToCart;
+  final ValueChanged<MenuProduct> onDecreaseFromCart;
   final VoidCallback onCartTap;
   final ValueChanged<MobileOrderType> onOrderTypeChanged;
   final ValueChanged<BranchModel?> onBranchSelected;
+  final VoidCallback onRetryMenu;
   final int cartCount;
+  final Map<String, int> cartQuantities;
+  final String? menuErrorText;
 
   @override
   State<MenuScreen> createState() => _MenuScreenState();
@@ -64,19 +74,18 @@ class _MenuScreenState extends State<MenuScreen> {
   final ScrollController _scrollController = ScrollController();
   final ScrollController _categoryScrollController = ScrollController();
 
-  late final List<GlobalKey> _sectionKeys = List<GlobalKey>.generate(
+  late final List<GlobalKey> _sectionKeys = _buildKeys(
     widget.categories.length,
-    (_) => GlobalKey(),
   );
-  late final List<GlobalKey> _categoryChipKeys = List<GlobalKey>.generate(
+  late final List<GlobalKey> _categoryChipKeys = _buildKeys(
     widget.categories.length,
-    (_) => GlobalKey(),
   );
 
   /// Cached products grouped by category — rebuilt only when products change.
   late Map<String, List<MenuProduct>> _groupedProducts = _groupProducts();
 
   bool _isProgrammaticScroll = false;
+  bool _scrollSpyScheduled = false;
 
   // -------------------------------------------------------------------------
   // Lifecycle
@@ -95,11 +104,16 @@ class _MenuScreenState extends State<MenuScreen> {
   void didUpdateWidget(covariant MenuScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
 
+    if (oldWidget.categories.length != widget.categories.length) {
+      _syncCategoryKeys();
+    }
+
     if (oldWidget.products != widget.products) {
       _groupedProducts = _groupProducts();
     }
 
-    if (oldWidget.selectedCategoryIndex != widget.selectedCategoryIndex) {
+    if (oldWidget.selectedCategoryIndex != widget.selectedCategoryIndex ||
+        oldWidget.categories.length != widget.categories.length) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _scrollSelectedChipIntoView();
       });
@@ -119,6 +133,26 @@ class _MenuScreenState extends State<MenuScreen> {
   // Helpers
   // -------------------------------------------------------------------------
 
+  List<GlobalKey> _buildKeys(int count) {
+    return List<GlobalKey>.generate(count, (_) => GlobalKey());
+  }
+
+  void _syncCategoryKeys() {
+    _syncKeyList(_sectionKeys, widget.categories.length);
+    _syncKeyList(_categoryChipKeys, widget.categories.length);
+  }
+
+  void _syncKeyList(List<GlobalKey> keys, int count) {
+    if (keys.length == count) return;
+
+    if (keys.length < count) {
+      keys.addAll(_buildKeys(count - keys.length));
+      return;
+    }
+
+    keys.removeRange(count, keys.length);
+  }
+
   Map<String, List<MenuProduct>> _groupProducts() {
     final map = <String, List<MenuProduct>>{};
     for (final product in widget.products) {
@@ -133,7 +167,18 @@ class _MenuScreenState extends State<MenuScreen> {
 
   void _onScrollChanged() {
     if (!_scrollController.hasClients || _isProgrammaticScroll) return;
+    if (_scrollSpyScheduled) return;
 
+    _scrollSpyScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollSpyScheduled = false;
+      if (!mounted || _isProgrammaticScroll) return;
+      _updateSelectedCategoryFromScroll();
+    });
+  }
+
+  void _updateSelectedCategoryFromScroll() {
+    if (!_scrollController.hasClients || widget.categories.isEmpty) return;
     final position = _scrollController.position;
 
     if (position.pixels >= position.maxScrollExtent - 24) {
@@ -188,42 +233,71 @@ class _MenuScreenState extends State<MenuScreen> {
   // -------------------------------------------------------------------------
 
   Future<void> _scrollToCategory(int index) async {
-    final sectionContext = _sectionKeys[index].currentContext;
-    if (sectionContext == null) {
-      widget.onCategorySelected(index);
-      return;
-    }
+    if (index < 0 || index >= _sectionKeys.length) return;
 
     widget.onCategorySelected(index);
     _isProgrammaticScroll = true;
 
+    try {
+      var sectionContext = _sectionKeys[index].currentContext;
+      if (sectionContext == null) {
+        await _scrollNearCategory(index);
+        if (!mounted) return;
+        await WidgetsBinding.instance.endOfFrame;
+        if (!mounted) return;
+        sectionContext = _sectionKeys[index].currentContext;
+      }
+
+      if (sectionContext != null && sectionContext.mounted) {
+        await _scrollToSectionContext(sectionContext);
+      }
+    } finally {
+      if (mounted) {
+        _isProgrammaticScroll = false;
+        _scrollSelectedChipIntoView();
+      }
+    }
+  }
+
+  Future<void> _scrollNearCategory(int index) async {
+    if (!_scrollController.hasClients || widget.categories.length <= 1) return;
+
+    final maxExtent = _scrollController.position.maxScrollExtent;
+    final ratio = index / (widget.categories.length - 1);
+    final targetOffset = (maxExtent * ratio).clamp(0.0, maxExtent);
+
+    await _scrollController.animateTo(
+      targetOffset,
+      duration: const Duration(milliseconds: 160),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  Future<void> _scrollToSectionContext(BuildContext sectionContext) async {
     final renderObject = sectionContext.findRenderObject();
     final viewport = renderObject == null
         ? null
         : RenderAbstractViewport.maybeOf(renderObject);
 
-    if (renderObject != null &&
-        viewport != null &&
-        _scrollController.hasClients) {
-      final targetOffset =
-          viewport.getOffsetToReveal(renderObject, 0).offset -
-          _stickyCategoryHeaderHeight;
-      final clampedOffset = targetOffset.clamp(
-        0.0,
-        _scrollController.position.maxScrollExtent,
-      );
-
-      await _scrollController.animateTo(
-        clampedOffset,
-        duration: const Duration(milliseconds: 360),
-        curve: Curves.easeInOutCubic,
-      );
+    if (renderObject == null ||
+        viewport == null ||
+        !_scrollController.hasClients) {
+      return;
     }
 
-    if (!mounted) return;
+    final targetOffset =
+        viewport.getOffsetToReveal(renderObject, 0).offset -
+        _stickyCategoryHeaderHeight;
+    final clampedOffset = targetOffset.clamp(
+      0.0,
+      _scrollController.position.maxScrollExtent,
+    );
 
-    _isProgrammaticScroll = false;
-    _scrollSelectedChipIntoView();
+    await _scrollController.animateTo(
+      clampedOffset,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   // -------------------------------------------------------------------------
@@ -231,7 +305,9 @@ class _MenuScreenState extends State<MenuScreen> {
   // -------------------------------------------------------------------------
 
   void _scrollSelectedChipIntoView() {
-    if (!_categoryScrollController.hasClients) return;
+    if (!_categoryScrollController.hasClients || widget.categories.isEmpty) {
+      return;
+    }
 
     final chipContext =
         _categoryChipKeys[widget.selectedCategoryIndex].currentContext;
@@ -275,21 +351,24 @@ class _MenuScreenState extends State<MenuScreen> {
     return CustomScrollView(
       controller: _scrollController,
       cacheExtent: 1200,
+      physics: const BouncingScrollPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
+      ),
       slivers: [
         // -- Top bar, delivery toggle, promo banner
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildTopBar(),
-                const SizedBox(height: 14),
+                const SizedBox(height: 10),
                 _buildAddressBar(context),
-                const SizedBox(height: 14),
+                const SizedBox(height: 10),
                 _buildDeliveryToggle(t),
                 if (widget.promotions.isNotEmpty) ...[
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
                   PromoSlider(
                     promotions: widget.promotions,
                     locale: context
@@ -303,38 +382,46 @@ class _MenuScreenState extends State<MenuScreen> {
           ),
         ),
 
-        // -- Sticky category tabs
-        SliverPersistentHeader(
-          pinned: true,
-          delegate: _CategoryHeaderDelegate(
-            height: _stickyCategoryHeaderHeight,
-            child: Container(
-              color: theme.scaffoldBackgroundColor,
-              padding: const EdgeInsets.fromLTRB(20, 10, 20, 18),
-              child: SizedBox(
-                height: 50,
-                child: ListView.separated(
-                  controller: _categoryScrollController,
-                  scrollDirection: Axis.horizontal,
-                  itemCount: widget.categories.length,
-                  separatorBuilder: (_, _) => const SizedBox(width: 10),
-                  itemBuilder: (_, index) => _buildCategoryChip(index),
+        if (widget.products.isEmpty)
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: _buildMenuState(theme, t),
+          )
+        else ...[
+          // -- Sticky category tabs
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _CategoryHeaderDelegate(
+              height: _stickyCategoryHeaderHeight,
+              child: Container(
+                color: theme.scaffoldBackgroundColor,
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                child: SizedBox(
+                  height: 46,
+                  child: ListView.separated(
+                    controller: _categoryScrollController,
+                    physics: const BouncingScrollPhysics(),
+                    scrollDirection: Axis.horizontal,
+                    itemCount: widget.categories.length,
+                    separatorBuilder: (_, _) => const SizedBox(width: 10),
+                    itemBuilder: (_, index) => _buildCategoryChip(index),
+                  ),
                 ),
               ),
             ),
           ),
-        ),
 
-        // -- Product sections per category
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
-          sliver: SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (_, index) => _buildCategorySection(index, theme),
-              childCount: widget.categories.length,
+          // -- Product sections per category
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (_, index) => _buildCategorySection(index, theme),
+                childCount: widget.categories.length,
+              ),
             ),
           ),
-        ),
+        ],
       ],
     );
   }
@@ -354,8 +441,8 @@ class _MenuScreenState extends State<MenuScreen> {
         const SizedBox(width: 14),
         Expanded(
           child: Container(
-            height: 64,
-            padding: const EdgeInsets.symmetric(horizontal: 18),
+            height: 58,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
             decoration: BoxDecoration(
               color: widget.isDark ? const Color(0xFF1D1A18) : Colors.white,
               borderRadius: BorderRadius.circular(24),
@@ -389,6 +476,62 @@ class _MenuScreenState extends State<MenuScreen> {
     );
   }
 
+  Widget _buildMenuState(ThemeData theme, L t) {
+    final errorText = widget.menuErrorText;
+
+    if (widget.isMenuLoading) {
+      return Center(
+        child: CircularProgressIndicator(
+          color: widget.isDark ? Colors.white : BaseColors.primary,
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(32, 48, 32, 96),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            errorText == null
+                ? Icons.restaurant_menu_rounded
+                : Icons.cloud_off_rounded,
+            size: 44,
+            color: widget.isDark
+                ? BaseColors.lightTextGray
+                : BaseColors.textGray,
+          ),
+          const SizedBox(height: 16),
+          TypographyText(
+            errorText ?? t.emptyList,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: widget.isDark
+                  ? BaseColors.lightTextGray
+                  : BaseColors.textGray,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          if (errorText != null) ...[
+            const SizedBox(height: 18),
+            FilledButton.icon(
+              onPressed: widget.onRetryMenu,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const TypographyText('Retry'),
+              style: FilledButton.styleFrom(
+                backgroundColor: BaseColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildAddressBar(BuildContext context) {
     final loc = context.watch<LocationController>();
     final t = L.of(context);
@@ -400,7 +543,7 @@ class _MenuScreenState extends State<MenuScreen> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: widget.isDark ? const Color(0xFF1D1A18) : Colors.white,
           borderRadius: BorderRadius.circular(20),
@@ -507,7 +650,7 @@ class _MenuScreenState extends State<MenuScreen> {
 
   Widget _buildDeliveryToggle(L t) {
     return Container(
-      padding: const EdgeInsets.all(6),
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: widget.isDark
             ? const Color(0xFF201C19)
@@ -526,7 +669,7 @@ class _MenuScreenState extends State<MenuScreen> {
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           Expanded(
             child: GestureDetector(
               onTap: () async {
@@ -569,7 +712,7 @@ class _MenuScreenState extends State<MenuScreen> {
         selected: isActive,
         showCheckmark: false,
         side: BorderSide.none,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         backgroundColor: widget.isDark
             ? const Color(0xFF201C19)
@@ -587,12 +730,12 @@ class _MenuScreenState extends State<MenuScreen> {
     return KeyedSubtree(
       key: _sectionKeys[index],
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 24),
+        padding: const EdgeInsets.only(bottom: 18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.only(bottom: 14),
+              padding: const EdgeInsets.only(bottom: 10),
               child: TypographyText(
                 category,
                 style: theme.textTheme.headlineMedium?.copyWith(
@@ -603,12 +746,15 @@ class _MenuScreenState extends State<MenuScreen> {
             ),
             for (final product in products)
               Padding(
-                padding: const EdgeInsets.only(bottom: 14),
+                padding: const EdgeInsets.only(bottom: 10),
                 child: RepaintBoundary(
                   child: ProductListItem(
                     product: product,
                     isDark: widget.isDark,
+                    quantity: widget.cartQuantities[product.id] ?? 0,
                     onAdd: () => widget.onAddToCart(product),
+                    onDecrease: () => widget.onDecreaseFromCart(product),
+                    onIncrease: () => widget.onAddToCart(product),
                   ),
                 ),
               ),

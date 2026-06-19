@@ -72,11 +72,7 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
       ]);
 
       final authFuture = hasToken
-          ? Future.wait<Object?>([
-              _fetchProfile(),
-              _fetchAddresses(),
-              _fetchOrders(),
-            ]).catchError((Object _) {
+          ? _fetchAuthenticatedData().catchError((Object _) {
               return <Object?>[
                 null,
                 const <ClientAddress>[],
@@ -206,7 +202,10 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
 
   @override
   Future<Result<List<CustomerOrderModel>>> getOrders() {
-    return _guard(_fetchOrders);
+    return _guard(() async {
+      final profile = await _fetchProfile();
+      return _fetchOrders(phoneNumber: profile.phoneNumber);
+    });
   }
 
   @override
@@ -301,8 +300,25 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
     ).map(ClientAddress.fromJson).toList(growable: false);
   }
 
-  Future<List<CustomerOrderModel>> _fetchOrders() async {
-    final response = await _dio.get(ApiEndpoints.clientOrders);
+  Future<List<Object?>> _fetchAuthenticatedData() async {
+    final profile = await _fetchProfile();
+    final authData = await Future.wait<Object?>([
+      _fetchAddresses(),
+      _fetchOrders(phoneNumber: profile.phoneNumber),
+    ]);
+
+    return <Object?>[profile, authData[0], authData[1]];
+  }
+
+  Future<List<CustomerOrderModel>> _fetchOrders({String? phoneNumber}) async {
+    final response = await _dio.get(
+      ApiEndpoints.clientOrders,
+      queryParameters: withoutNulls({
+        'phoneNumber': phoneNumber?.trim().isEmpty == true
+            ? null
+            : phoneNumber?.trim(),
+      }),
+    );
     return asJsonMapList(
       _listPayload(response.data, key: 'orders'),
     ).map(CustomerOrderModel.fromJson).toList(growable: false);

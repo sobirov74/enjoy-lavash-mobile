@@ -9,7 +9,6 @@ import 'package:enjoy_lavash_mobile/core/data/models/base_paginate.dart';
 import 'package:enjoy_lavash_mobile/core/data/models/order_product.dart';
 import 'package:enjoy_lavash_mobile/core/data/models/scan_res.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
-import 'package:enjoy_lavash_mobile/theme/app_theme_colors.dart';
 import 'package:vibration/vibration.dart';
 
 class OrderProductRepository {
@@ -46,7 +45,7 @@ class OrderProductRepository {
       Fluttertoast.showToast(
         msg: "${data.orderProduct.product.name} x${data.expectedQuantity}",
         backgroundColor: BaseColors.success,
-        textColor: BaseColors.black,
+        textColor: BaseColors.white,
       );
 
       // return ScanResponse.fromJson(response.data);
@@ -54,8 +53,8 @@ class OrderProductRepository {
       final error = Extracter.extractErrorMessage(e);
       Fluttertoast.showToast(
         msg: error,
-        backgroundColor: AppThemeColors.dark.danger,
-        textColor: AppThemeColors.light.danger,
+        backgroundColor: BaseColors.danger,
+        textColor: BaseColors.white,
       );
       if (await Vibration.hasVibrator()) {
         Vibration.vibrate(duration: 50, amplitude: 128);
@@ -81,8 +80,8 @@ class OrderProductRepository {
 
       Fluttertoast.showToast(
         msg: 'Успешно изменен',
-        // backgroundColor: AppThemeColors.dark.danger,
-        // textColor: AppThemeColors.light.danger,
+        backgroundColor: BaseColors.success,
+        textColor: BaseColors.white,
       );
 
       // final ScanResponse data = ScanResponse.fromJson(response.data);
@@ -92,8 +91,8 @@ class OrderProductRepository {
       final error = Extracter.extractErrorMessage(e);
       Fluttertoast.showToast(
         msg: error,
-        backgroundColor: AppThemeColors.dark.danger,
-        textColor: AppThemeColors.light.danger,
+        backgroundColor: BaseColors.danger,
+        textColor: BaseColors.white,
       );
     }
   }

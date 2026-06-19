@@ -161,6 +161,7 @@ class CustomerOrderItemModel {
     required this.productId,
     required this.quantity,
     required this.amount,
+    this.productNameSnapshotI18n = const <String, dynamic>{},
     this.name,
     this.comment,
   });
@@ -168,11 +169,31 @@ class CustomerOrderItemModel {
   final String productId;
   final int quantity;
   final int amount;
+  final Map<String, dynamic> productNameSnapshotI18n;
   final String? name;
   final String? comment;
 
+  String? localizedName(String language) {
+    if (productNameSnapshotI18n.isNotEmpty) {
+      final snapshotName = localizedText(productNameSnapshotI18n, language);
+      if (snapshotName.trim().isNotEmpty) return snapshotName.trim();
+    }
+
+    final fallbackName = name?.trim();
+    if (fallbackName?.isNotEmpty == true) return fallbackName;
+    return null;
+  }
+
   factory CustomerOrderItemModel.fromJson(Map<String, dynamic> json) {
     final product = asJsonMap(json['product']);
+    final productNameSnapshotI18n = asJsonMap(
+      json['productNameSnapshotI18n'] ??
+          json['product_name_snapshot_i18n'] ??
+          json['productNameI18n'] ??
+          json['product_name_i18n'] ??
+          product['nameI18n'] ??
+          product['name_i18n'],
+    );
     return CustomerOrderItemModel(
       productId: readString(json, const [
         'productId',
@@ -180,11 +201,19 @@ class CustomerOrderItemModel {
         'id',
       ], fallback: readString(product, const ['id'])),
       quantity: readInt(json, const ['quantity']),
-      amount: readInt(json, const ['amount', 'totalAmount', 'total_amount']),
+      amount: readInt(json, const [
+        'amount',
+        'totalAmount',
+        'total_amount',
+        'totalPrice',
+        'total_price',
+      ]),
+      productNameSnapshotI18n: productNameSnapshotI18n,
       name:
           stringOrNull(json['name']) ??
           stringOrNull(json['productName']) ??
-          stringOrNull(product['name']),
+          stringOrNull(json['product_name']) ??
+          localizedText(product['name'], 'ru'),
       comment: stringOrNull(json['comment']),
     );
   }
@@ -209,6 +238,7 @@ class OrderStatusLogModel {
         'changed_at',
         'createdAt',
         'created_at',
+        'at',
       ]),
       comment: stringOrNull(json['comment']),
     );

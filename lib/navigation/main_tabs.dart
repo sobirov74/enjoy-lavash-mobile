@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:enjoy_lavash_mobile/app/locale_controller.dart';
 import 'package:enjoy_lavash_mobile/app/location_controller.dart';
 import 'package:enjoy_lavash_mobile/core/error/result.dart';
 import 'package:enjoy_lavash_mobile/features/models/cart_line.dart';
@@ -18,6 +19,7 @@ import 'package:enjoy_lavash_mobile/screens/menu_screen.dart';
 import 'package:enjoy_lavash_mobile/screens/profile.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
 import 'package:enjoy_lavash_mobile/theme/theme_extensions.dart';
+import 'package:enjoy_lavash_mobile/widgets/app_snack_bar.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -87,12 +89,19 @@ class _MainTabsState extends State<MainTabs> {
   }
 
   void _setOrderType(MobileOrderType type) {
+    final shouldReloadCatalog =
+        type == MobileOrderType.delivery && _selectedBranch != null;
+
     setState(() {
       _orderType = type;
       if (type == MobileOrderType.delivery) {
         _selectedBranch = null;
       }
     });
+
+    if (shouldReloadCatalog) {
+      _refreshCatalogForBranch(null);
+    }
   }
 
   void _setPickupBranch(BranchModel? branch) {
@@ -102,17 +111,34 @@ class _MainTabsState extends State<MainTabs> {
         _orderType = MobileOrderType.pickup;
       }
     });
+
+    _refreshCatalogForBranch(branch?.id);
+  }
+
+  void _refreshCatalogForBranch(String? branchId) {
+    final language = context.read<LocaleController>().locale.languageCode;
+    unawaited(
+      context.read<MobileBackendController>().refreshCatalog(
+        language: language,
+        branchId: branchId,
+      ),
+    );
   }
 
   List<CartItemInput> _buildOrderItems(List<CartLine> cartLines) {
     return cartLines
         .map(
           (line) => CartItemInput(
-            productId: line.product.id,
+            productId: _orderProductId(line.product),
             quantity: line.quantity,
           ),
         )
         .toList(growable: false);
+  }
+
+  String _orderProductId(MenuProduct product) {
+    final iikoId = product.iikoId?.trim();
+    return iikoId == null || iikoId.isEmpty ? product.id : iikoId;
   }
 
   CreateOrderAddressInput? _inlineAddressFromLocation(
@@ -137,7 +163,7 @@ class _MainTabsState extends State<MainTabs> {
   void _showSnack(String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: TypographyText(message)));
+      ..showSnackBar(appSnackBar(message));
   }
 
   Future<CreateOrderRequest?> _buildCreateOrderRequest(
@@ -347,6 +373,14 @@ class _MainTabsState extends State<MainTabs> {
           children: <Widget>[
             MenuScreen(
               isDark: isDark,
+              isMenuLoading:
+                  backend.status == MobileBackendStatus.loading &&
+                  products.isEmpty,
+              menuErrorText:
+                  backend.status == MobileBackendStatus.error &&
+                      products.isEmpty
+                  ? backend.failure?.message
+                  : null,
               selectedCategoryIndex: selectedCategoryIndex,
               categories: categories,
               products: products,
@@ -355,10 +389,20 @@ class _MainTabsState extends State<MainTabs> {
               selectedBranch: _selectedBranch,
               onCategorySelected: _setSelectedCategory,
               onAddToCart: _addToCart,
+              onDecreaseFromCart: (product) => _updateCart(product, -1),
               onCartTap: () => setState(() => _currentIndex = 1),
               onOrderTypeChanged: _setOrderType,
               onBranchSelected: _setPickupBranch,
+              onRetryMenu: () =>
+                  context.read<MobileBackendController>().bootstrap(
+                    language: context
+                        .read<LocaleController>()
+                        .locale
+                        .languageCode,
+                    branchId: _selectedBranch?.id,
+                  ),
               cartCount: totalItems,
+              cartQuantities: _cart,
             ),
             CartScreen(
               isDark: isDark,
@@ -427,6 +471,7 @@ class _MainTabsState extends State<MainTabs> {
                   ? BaseColors.primary.withValues(alpha: 0.16)
                   : BaseColors.primary.withValues(alpha: 0.12),
               onDestinationSelected: (index) {
+                if (_currentIndex == index) return;
                 setState(() => _currentIndex = index);
               },
               destinations: <NavigationDestination>[

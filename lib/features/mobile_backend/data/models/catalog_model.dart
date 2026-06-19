@@ -30,6 +30,8 @@ class CatalogModel {
         categoryJson,
         language: language,
       );
+      if (!category.isActive) continue;
+
       categories.add(category);
 
       final nestedProducts = asJsonMapList(
@@ -81,6 +83,7 @@ class CatalogCategoryModel {
     this.slug,
     this.description,
     this.sortOrder = 0,
+    this.isActive = true,
   });
 
   final String id;
@@ -88,6 +91,7 @@ class CatalogCategoryModel {
   final String? slug;
   final String? description;
   final int sortOrder;
+  final bool isActive;
 
   factory CatalogCategoryModel.fromJson(
     Map<String, dynamic> json, {
@@ -113,6 +117,11 @@ class CatalogCategoryModel {
         fallback: readString(json, const ['description']),
       ),
       sortOrder: readInt(json, const ['sortOrder', 'sort_order', 'position']),
+      isActive: readBool(json, const [
+        'isActive',
+        'is_active',
+        'active',
+      ], fallback: true),
     );
   }
 }
@@ -123,6 +132,7 @@ class CatalogProductModel {
     required this.name,
     required this.price,
     required List<CatalogModifierGroupModel> modifierGroups,
+    this.iikoId,
     this.slug,
     this.description,
     this.image,
@@ -135,6 +145,7 @@ class CatalogProductModel {
        );
 
   final String id;
+  final String? iikoId;
   final String name;
   final int price;
   final List<CatalogModifierGroupModel> modifierGroups;
@@ -170,6 +181,12 @@ class CatalogProductModel {
 
     return CatalogProductModel(
       id: readString(json, const ['id']),
+      iikoId: stringOrNull(
+        json['iikoId'] ??
+            json['iiko_id'] ??
+            json['iikoProductId'] ??
+            json['iiko_product_id'],
+      ),
       slug: stringOrNull(json['slug']),
       name: localizedText(
         json['name'] ?? json['title'],
@@ -181,19 +198,19 @@ class CatalogProductModel {
         language,
         fallback: readString(json, const ['description']),
       ),
-      price: readInt(json, const [
-        'price',
-        'amount',
-        'basePrice',
-        'base_price',
-      ]),
-      image: stringOrNull(json['image']) ?? stringOrNull(json['imageUrl']),
+      price: _normalizePrice(
+        readInt(json, const ['price', 'amount', 'basePrice', 'base_price']),
+      ),
+      image: _readImageUrl(json),
       categoryId: categoryId,
       categoryName: categoryName.isEmpty ? fallbackCategoryName : categoryName,
       isAvailable: readBool(json, const [
         'isAvailable',
         'is_available',
         'available',
+        'isActive',
+        'is_active',
+        'active',
       ], fallback: true),
       modifierGroups:
           asJsonMapList(
@@ -241,8 +258,16 @@ class CatalogModifierGroupModel {
         language,
         fallback: readString(json, const ['name', 'title']),
       ),
-      minSelected: readInt(json, const ['minSelected', 'min_selected', 'min']),
+      minSelected: readInt(json, const [
+        'minSelect',
+        'min_select',
+        'minSelected',
+        'min_selected',
+        'min',
+      ]),
       maxSelected: readInt(json, const [
+        'maxSelect',
+        'max_select',
         'maxSelected',
         'max_selected',
         'max',
@@ -290,9 +315,9 @@ class CatalogModifierOptionModel {
         language,
         fallback: readString(json, const ['name', 'title']),
       ),
-      price: readInt(json, const ['price', 'amount']),
+      price: _normalizePrice(readInt(json, const ['price', 'amount'])),
       quantity: readInt(json, const ['quantity'], fallback: 1),
-      image: stringOrNull(json['image']) ?? stringOrNull(json['imageUrl']),
+      image: _readImageUrl(json),
       isDefault: readBool(json, const ['isDefault', 'is_default']),
       isAvailable: readBool(json, const [
         'isAvailable',
@@ -399,4 +424,57 @@ Map<String, List<CatalogProductModel>> _groupProductsByCategory(
     (grouped[categoryId] ??= <CatalogProductModel>[]).add(product);
   }
   return grouped;
+}
+
+int _normalizePrice(int value) {
+  if (value >= 100000 && value % 100 == 0) return value ~/ 100;
+  return value;
+}
+
+String? _readImageUrl(JsonMap json) {
+  for (final key in const [
+    'image',
+    'imageUrl',
+    'image_url',
+    'photo',
+    'photoUrl',
+    'photo_url',
+    'thumbnail',
+    'thumbnailUrl',
+    'thumbnail_url',
+  ]) {
+    final candidate = _imageUrlFromValue(json[key]);
+    if (candidate != null) return candidate;
+  }
+
+  for (final image in asObjectList(json['images'])) {
+    final candidate = _imageUrlFromValue(image);
+    if (candidate != null) return candidate;
+  }
+
+  return null;
+}
+
+String? _imageUrlFromValue(Object? value) {
+  if (value is String) {
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+
+  final map = asJsonMap(value);
+  if (map.isEmpty) return null;
+
+  for (final key in const [
+    'url',
+    'src',
+    'path',
+    'image',
+    'imageUrl',
+    'image_url',
+  ]) {
+    final candidate = _imageUrlFromValue(map[key]);
+    if (candidate != null) return candidate;
+  }
+
+  return null;
 }

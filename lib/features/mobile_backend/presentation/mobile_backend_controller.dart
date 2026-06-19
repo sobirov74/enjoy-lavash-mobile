@@ -1,7 +1,6 @@
+import 'package:enjoy_lavash_mobile/core/api/base_url.dart';
 import 'package:enjoy_lavash_mobile/core/error/failures.dart';
 import 'package:enjoy_lavash_mobile/core/error/result.dart';
-import 'package:enjoy_lavash_mobile/features/data/menu_catalog.dart'
-    as static_catalog;
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/address_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/auth_models.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/branch_model.dart';
@@ -23,8 +22,8 @@ class MobileBackendController extends ChangeNotifier {
 
   MobileBackendStatus _status = MobileBackendStatus.initial;
   Failure? _failure;
-  List<String> _menuCategories = static_catalog.menuCategories;
-  List<MenuProduct> _menuProducts = static_catalog.menuProducts;
+  List<String> _menuCategories = const <String>[];
+  List<MenuProduct> _menuProducts = const <MenuProduct>[];
   List<BranchModel> _branches = const <BranchModel>[];
   List<PromotionModel> _promotions = const <PromotionModel>[];
   List<ClientAddress> _addresses = const <ClientAddress>[];
@@ -134,9 +133,30 @@ class MobileBackendController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<Result<CatalogModel>> refreshCatalog({
+    required String language,
+    String? branchId,
+  }) async {
+    final result = await _repository.getCatalog(
+      language: language,
+      branchId: branchId,
+    );
+
+    switch (result) {
+      case Success(:final data):
+        _applyCatalog(data);
+        _failure = null;
+        notifyListeners();
+      case Error(:final failure):
+        _failure = failure;
+        notifyListeners();
+    }
+
+    return result;
+  }
+
   void _applyCatalog(CatalogModel catalog) {
     final adaptedProducts = _adaptProducts(catalog);
-    if (adaptedProducts.isEmpty) return;
 
     final seenCategories = <String>{};
     final adaptedCategories = <String>[];
@@ -145,8 +165,6 @@ class MobileBackendController extends ChangeNotifier {
         adaptedCategories.add(product.category);
       }
     }
-
-    if (adaptedCategories.isEmpty) return;
 
     _menuProducts = adaptedProducts;
     _menuCategories = adaptedCategories;
@@ -162,22 +180,36 @@ class MobileBackendController extends ChangeNotifier {
         .map((product) {
           final category = product.categoryName?.isNotEmpty == true
               ? product.categoryName!
-              : categoryNameById[product.categoryId] ??
-                    static_catalog.menuCategories.first;
+              : categoryNameById[product.categoryId] ?? 'Menu';
           final visual = _visualFor(product.id, product.name, category);
 
           return MenuProduct(
             id: product.id,
+            iikoId: product.iikoId,
             title: product.name,
             price: product.price,
             category: category,
             emoji: visual.emoji,
             tint: visual.tint,
             highlight: visual.highlight,
+            imageUrl: _resolveImageUrl(product.image),
           );
         })
         .toList(growable: false);
   }
+}
+
+String? _resolveImageUrl(String? value) {
+  final imageUrl = value?.trim();
+  if (imageUrl == null || imageUrl.isEmpty) return null;
+
+  final parsedUrl = Uri.tryParse(imageUrl);
+  if (parsedUrl != null && parsedUrl.hasScheme) return imageUrl;
+
+  final baseUrl = Uri.tryParse(BaseUrl.baseUrl);
+  if (baseUrl == null) return imageUrl;
+
+  return baseUrl.resolve(imageUrl).toString();
 }
 
 typedef _ProductVisual = ({String emoji, Color tint, Color highlight});

@@ -33,17 +33,18 @@ class CartScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final t = L.of(context);
+    final totalItems = items.fold<int>(0, (sum, line) => sum + line.quantity);
 
     if (items.isEmpty) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 28),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               Container(
-                width: 120,
-                height: 120,
+                width: 104,
+                height: 104,
                 alignment: Alignment.center,
                 decoration: const BoxDecoration(
                   color: BaseColors.surfaceTint,
@@ -51,17 +52,17 @@ class CartScreen extends StatelessWidget {
                 ),
                 child: const TypographyText(
                   '🛒',
-                  style: TextStyle(fontSize: 52),
+                  style: TextStyle(fontSize: 46),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 18),
               TypographyText(
                 t.cartEmpty,
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               TypographyText(
                 t.cartEmptyDesc,
                 textAlign: TextAlign.center,
@@ -70,16 +71,16 @@ class CartScreen extends StatelessWidget {
                   fontSize: 15,
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 18),
               FilledButton(
                 style: FilledButton.styleFrom(
                   backgroundColor: BaseColors.primary,
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 16,
+                    horizontal: 20,
+                    vertical: 14,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                 ),
                 onPressed: onBrowseMenu,
@@ -98,24 +99,47 @@ class CartScreen extends StatelessWidget {
       slivers: <Widget>[
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 22, 20, 14),
-            child: TypographyText(
-              t.cart,
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontSize: 32,
-                fontWeight: FontWeight.w800,
-              ),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+            child: Row(
+              children: <Widget>[
+                TypographyText(
+                  t.cart,
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: BaseColors.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: TypographyText(
+                    '$totalItems',
+                    style: const TextStyle(
+                      color: BaseColors.primary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
         SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           sliver: SliverList.builder(
             itemCount: items.length,
             itemBuilder: (context, index) {
               final line = items[index];
               return Padding(
-                padding: const EdgeInsets.only(bottom: 14),
+                padding: const EdgeInsets.only(bottom: 10),
                 child: RepaintBoundary(
                   child: CartItemCard(
                     item: line,
@@ -131,14 +155,14 @@ class CartScreen extends StatelessWidget {
         SliverFillRemaining(
           hasScrollBody: false,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
             child: Align(
               alignment: Alignment.bottomCenter,
               child: Container(
-                padding: const EdgeInsets.all(22),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: isDark ? const Color(0xFF1D1A18) : Colors.white,
-                  borderRadius: BorderRadius.circular(28),
+                  borderRadius: BorderRadius.circular(22),
                   boxShadow: <BoxShadow>[
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.06),
@@ -171,16 +195,16 @@ class CartScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 14),
                     SizedBox(
                       width: double.infinity,
                       child: FilledButton(
                         style: FilledButton.styleFrom(
                           backgroundColor: BaseColors.primary,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          padding: const EdgeInsets.symmetric(vertical: 15),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(18),
                           ),
                         ),
                         onPressed: isCheckingOut ? null : onCheckout,

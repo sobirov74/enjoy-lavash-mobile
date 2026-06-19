@@ -26,7 +26,7 @@ class DeliveryChip extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(24),
@@ -35,7 +35,7 @@ class DeliveryChip extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
           Icon(icon, color: active ? BaseColors.primary : null),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           Flexible(
             child: TypographyText(
               title,

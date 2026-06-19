@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 
 const _refreshEndpoint = '/api/v1/auth/refresh';
 const _logoutTriggerCodes = {401, 403};
+const _enableNetworkLogs =
+    kDebugMode || bool.fromEnvironment('ENABLE_NETWORK_LOGS');
 
 /// Callback invoked when the session expires and the user must re-authenticate.
 /// Set from the app layer (e.g. DI setup) to decouple API client from navigation.
@@ -30,7 +32,7 @@ class ApiClient {
       ),
     );
 
-    if (kDebugMode) {
+    if (_enableNetworkLogs) {
       dio.interceptors.add(
         LogInterceptor(
           request: true,
@@ -39,6 +41,7 @@ class ApiClient {
           responseBody: true,
           responseHeader: false,
           error: true,
+          logPrint: _debugLog,
         ),
       );
     }
@@ -143,4 +146,8 @@ class ApiClient {
     await TokenStorage.clear();
     await _onLogout?.call();
   }
+}
+
+void _debugLog(Object object) {
+  debugPrint(object.toString());
 }

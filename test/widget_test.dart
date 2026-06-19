@@ -47,7 +47,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('EnjoyLavash'), findsOneWidget);
+    expect(find.text('Enjoy Lavash'), findsOneWidget);
     expect(find.text('Меню'), findsOneWidget);
+    expect(find.text('Список пуст'), findsOneWidget);
   });
 }

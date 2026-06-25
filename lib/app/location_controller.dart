@@ -90,7 +90,7 @@ class LocationController extends ChangeNotifier {
       _latitude = position.latitude;
       _longitude = position.longitude;
 
-      final result = await _geocoderService.reverseGeocode(
+      final result = await resolveAddressName(
         latitude: position.latitude,
         longitude: position.longitude,
       );
@@ -112,7 +112,7 @@ class LocationController extends ChangeNotifier {
     notifyListeners();
 
     if (suggestion.uri != null) {
-      final result = await _geocoderService.reverseGeocode(
+      final result = await resolveAddressName(
         latitude: 0,
         longitude: 0,
         uri: suggestion.uri,
@@ -133,11 +133,25 @@ class LocationController extends ChangeNotifier {
     required double latitude,
     required double longitude,
     required String address,
+    String district = '',
   }) {
     _latitude = latitude;
     _longitude = longitude;
     _addressName = address;
+    _district = district;
     notifyListeners();
+  }
+
+  Future<GeocoderResult?> resolveAddressName({
+    required double latitude,
+    required double longitude,
+    String? uri,
+  }) {
+    return _geocoderService.reverseGeocode(
+      latitude: latitude,
+      longitude: longitude,
+      uri: uri,
+    );
   }
 
   void setHouseNumber(String value) {

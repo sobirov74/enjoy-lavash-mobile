@@ -41,9 +41,12 @@ class _AddressSheetState extends State<_AddressSheet>
   late final Animation<double> _fadeAnim;
 
   final _geocoderService = YandexGeocoderService();
+  final Map<String, List<SuggestionResult>> _suggestionCache =
+      <String, List<SuggestionResult>>{};
   List<SuggestionResult> _suggestions = [];
   Timer? _debounce;
   bool _showSearch = false;
+  int _searchRequestId = 0;
 
   @override
   void initState() {
@@ -80,14 +83,35 @@ class _AddressSheetState extends State<_AddressSheet>
   }
 
   void _onSearchChanged(String query) {
+    final normalizedQuery = query.trim().replaceAll(RegExp(r'\s+'), ' ');
+    final requestId = ++_searchRequestId;
     _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 350), () async {
-      if (query.trim().isEmpty) {
-        setState(() => _suggestions = []);
+
+    if (normalizedQuery.length < 3) {
+      setState(() => _suggestions = []);
+      return;
+    }
+
+    _debounce = Timer(const Duration(milliseconds: 500), () async {
+      final cacheKey = normalizedQuery.toLowerCase();
+      final cached = _suggestionCache[cacheKey];
+      if (cached != null) {
+        if (mounted && requestId == _searchRequestId) {
+          setState(() => _suggestions = cached);
+        }
         return;
       }
-      final results = await _geocoderService.suggest(query);
-      if (mounted) setState(() => _suggestions = results);
+
+      final results = await _geocoderService.suggest(normalizedQuery);
+      _suggestionCache[cacheKey] = results;
+      if (!mounted ||
+          requestId != _searchRequestId ||
+          _searchController.text.trim().replaceAll(RegExp(r'\s+'), ' ') !=
+              normalizedQuery) {
+        return;
+      }
+
+      setState(() => _suggestions = results);
     });
   }
 

@@ -47,6 +47,9 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
       if (data.accessToken.isNotEmpty) {
         await TokenStorage.clear();
         await TokenStorage.saveAccessToken(data.accessToken);
+        if (data.refreshToken?.isNotEmpty == true) {
+          await TokenStorage.saveRefreshToken(data.refreshToken!);
+        }
       }
       return data;
     });
@@ -202,10 +205,7 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
 
   @override
   Future<Result<List<CustomerOrderModel>>> getOrders() {
-    return _guard(() async {
-      final profile = await _fetchProfile();
-      return _fetchOrders(phoneNumber: profile.phoneNumber);
-    });
+    return _guard(_fetchOrders);
   }
 
   @override

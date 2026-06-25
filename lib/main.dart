@@ -7,6 +7,7 @@ import 'package:enjoy_lavash_mobile/app/di.dart';
 import 'package:enjoy_lavash_mobile/app/locale_controller.dart';
 import 'package:enjoy_lavash_mobile/app/location_controller.dart';
 import 'package:enjoy_lavash_mobile/app/theme_controller.dart';
+import 'package:enjoy_lavash_mobile/core/api/api_client.dart';
 import 'package:enjoy_lavash_mobile/core/services/yandex_geocoder_service.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/repositories/mobile_backend_repository.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/presentation/mobile_backend_controller.dart';
@@ -22,6 +23,7 @@ Future<void> main() async {
   final mobileBackendController = MobileBackendController(
     sl<MobileBackendRepository>(),
   );
+  sl<ApiClient>().setOnLogout(mobileBackendController.handleSessionExpired);
 
   await Future.wait([
     themeController.loadTheme(),

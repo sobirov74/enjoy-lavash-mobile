@@ -22,9 +22,11 @@ import 'package:enjoy_lavash_mobile/screens/authorization_screen.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
 
 class Profile extends StatelessWidget {
-  const Profile({super.key});
+  const Profile({super.key, this.onRefresh});
 
   static const int _loyaltyPoints = 1250;
+
+  final Future<void> Function()? onRefresh;
 
   Future<void> _shareApp(L t) async {
     await SharePlus.instance.share(ShareParams(text: t.shareAppText));
@@ -73,6 +75,12 @@ class Profile extends StatelessWidget {
     );
   }
 
+  void _openAllOrders(BuildContext context) {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const _AllOrdersScreen()));
+  }
+
   String _formatAddress(ClientAddress address) {
     final parts = <String>[address.street];
     if (address.houseNumber?.isNotEmpty == true) {
@@ -111,366 +119,792 @@ class Profile extends StatelessWidget {
         ? phoneNumber
         : t.tapToSignIn;
     final loyaltyPoints = client?.bonusBalance ?? _loyaltyPoints;
+    final recentOrders = mobileBackend.orders.take(5).toList(growable: false);
+    final hasMoreOrders = mobileBackend.orders.length > recentOrders.length;
 
-    return CustomScrollView(
-      slivers: <Widget>[
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(10, 12, 10, 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                TypographyText(
-                  t.profile,
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontSize: 32,
-                    fontWeight: FontWeight.w800,
+    return RefreshIndicator(
+      color: BaseColors.primary,
+      onRefresh: onRefresh ?? () async {},
+      child: CustomScrollView(
+        physics: const BouncingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
+        ),
+        slivers: <Widget>[
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(10, 12, 10, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  TypographyText(
+                    t.profile,
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 18),
-                GestureDetector(
-                  onTap: isAuthorized
-                      ? null
-                      : () => unawaited(_showAuthorizationModal(context)),
-                  child: _SurfaceCard(
+                  const SizedBox(height: 18),
+                  GestureDetector(
+                    onTap: isAuthorized
+                        ? null
+                        : () => unawaited(_showAuthorizationModal(context)),
+                    child: _SurfaceCard(
+                      isDark: isDark,
+                      padding: const EdgeInsets.all(20),
+                      child: Row(
+                        children: <Widget>[
+                          Container(
+                            width: 76,
+                            height: 76,
+                            alignment: Alignment.center,
+                            decoration: const BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: <Color>[
+                                  Color(0xFFFFC107),
+                                  BaseColors.primary,
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.all(
+                                Radius.circular(24),
+                              ),
+                            ),
+                            child: const TypographyText(
+                              '👤',
+                              style: TextStyle(fontSize: 34),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                TypographyText(
+                                  displayName,
+                                  style: const TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                TypographyText(
+                                  profileSubtitle,
+                                  style: const TextStyle(
+                                    color: BaseColors.textGray,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right_rounded, size: 28),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // -- Theme toggle
+                  _SurfaceCard(
                     isDark: isDark,
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(8),
                     child: Row(
                       children: <Widget>[
-                        Container(
-                          width: 76,
-                          height: 76,
-                          alignment: Alignment.center,
-                          decoration: const BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: <Color>[
-                                Color(0xFFFFC107),
-                                BaseColors.primary,
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.all(Radius.circular(24)),
-                          ),
-                          child: const TypographyText(
-                            '👤',
-                            style: TextStyle(fontSize: 34),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: <Widget>[
-                              TypographyText(
-                                displayName,
-                                style: const TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              TypographyText(
-                                profileSubtitle,
-                                style: const TextStyle(
-                                  color: BaseColors.textGray,
-                                  fontSize: 15,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Icon(Icons.chevron_right_rounded, size: 28),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // -- Theme toggle
-                _SurfaceCard(
-                  isDark: isDark,
-                  padding: const EdgeInsets.all(8),
-                  child: Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: MainButton(
-                          title: TypographyText(
-                            t.lightTheme,
-                            style: TextStyle(color: context.colors.text),
-                          ),
-                          icon: Icon(
-                            Icons.light_mode_rounded,
-                            color: context.colors.text,
-                          ),
-                          onPressed: () =>
-                              themeController.setTheme(ThemeMode.light),
-                          elevation: 0,
-                          backgroundColor: !isDark
-                              ? BaseColors.primary
-                              : BaseColors.black600,
-                          foregroundColor: !isDark
-                              ? Colors.white
-                              : const Color(0xFF14110F),
-                          borderRadius: BorderRadius.circular(20),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: MainButton(
-                          title: TypographyText(
-                            t.darkTheme,
-                            style: TextStyle(color: context.colors.text),
-                          ),
-                          icon: Icon(
-                            Icons.dark_mode_rounded,
-                            color: isDark
+                          child: MainButton(
+                            title: TypographyText(
+                              t.lightTheme,
+                              style: TextStyle(color: context.colors.text),
+                            ),
+                            icon: Icon(
+                              Icons.light_mode_rounded,
+                              color: context.colors.text,
+                            ),
+                            onPressed: () =>
+                                themeController.setTheme(ThemeMode.light),
+                            elevation: 0,
+                            backgroundColor: !isDark
+                                ? BaseColors.primary
+                                : BaseColors.black600,
+                            foregroundColor: !isDark
                                 ? Colors.white
                                 : const Color(0xFF14110F),
+                            borderRadius: BorderRadius.circular(20),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
-                          onPressed: () =>
-                              themeController.setTheme(ThemeMode.dark),
-                          elevation: 0,
-                          backgroundColor: isDark
-                              ? BaseColors.primary
-                              : const Color(0xFFF3F0EB),
-                          foregroundColor: isDark
-                              ? Colors.white
-                              : const Color(0xFF14110F),
-                          borderRadius: BorderRadius.circular(20),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // -- Language selector
-                _SurfaceCard(
-                  isDark: isDark,
-                  padding: const EdgeInsets.all(8),
-                  child: Row(
-                    children: <Widget>[
-                      for (final entry in [
-                        (locale: const Locale('uz'), label: "O'zbekcha"),
-                        (locale: const Locale('ru'), label: 'Русский'),
-                        (locale: const Locale('en'), label: 'English'),
-                      ]) ...[
-                        if (entry.locale != const Locale('uz'))
-                          const SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Expanded(
-                          child: _LangChip(
-                            label: entry.label,
-                            isActive: localeController.locale == entry.locale,
-                            isDark: isDark,
-                            onTap: () =>
-                                localeController.setLocale(entry.locale),
+                          child: MainButton(
+                            title: TypographyText(
+                              t.darkTheme,
+                              style: TextStyle(color: context.colors.text),
+                            ),
+                            icon: Icon(
+                              Icons.dark_mode_rounded,
+                              color: isDark
+                                  ? Colors.white
+                                  : const Color(0xFF14110F),
+                            ),
+                            onPressed: () =>
+                                themeController.setTheme(ThemeMode.dark),
+                            elevation: 0,
+                            backgroundColor: isDark
+                                ? BaseColors.primary
+                                : const Color(0xFFF3F0EB),
+                            foregroundColor: isDark
+                                ? Colors.white
+                                : const Color(0xFF14110F),
+                            borderRadius: BorderRadius.circular(20),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
                         ),
                       ],
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // -- Loyalty card
-                Container(
-                  padding: const EdgeInsets.all(22),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: <Color>[BaseColors.primary, Color(0xFFFF7043)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      TypographyText(
-                        t.loyaltyCard,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      TypographyText(
-                        t.accumulatedPoints,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 15,
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      TypographyText(
-                        _formatPoints(loyaltyPoints),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 42,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0,
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(26),
-                        ),
-                        child: Column(
-                          children: <Widget>[
-                            Icon(
-                              Icons.qr_code_2_rounded,
-                              size: 180,
-                              color: Colors.grey.shade900,
-                            ),
-                            const SizedBox(height: 8),
-                            TypographyText(
-                              'ENJOY-LAVASH-$loyaltyPoints',
-                              style: const TextStyle(
-                                letterSpacing: 2.4,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      TypographyText(
-                        t.showCodeForPoints,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // -- Personal info
-                if (isAuthorized)
-                  _SectionCard(
-                    isDark: isDark,
-                    title: t.personalInfo,
-                    child: Column(
-                      children: <Widget>[
-                        _InfoRow(
-                          icon: Icons.phone_outlined,
-                          title: t.phoneNumber,
-                          value: client.phoneNumber,
-                        ),
-                        if (mobileBackend.addresses.isNotEmpty) ...[
-                          const SizedBox(height: 14),
-                          _InfoRow(
-                            icon: Icons.location_on_outlined,
-                            title: t.address,
-                            value: _formatAddress(
-                              mobileBackend.addresses.first,
-                            ),
-                          ),
-                        ],
-                      ],
                     ),
                   ),
-                if (isAuthorized) const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-                // -- Order history
-                if (mobileBackend.orders.isNotEmpty) ...[
-                  _SectionCard(
+                  // -- Language selector
+                  _SurfaceCard(
                     isDark: isDark,
-                    title: t.orderHistory,
-                    padding: const EdgeInsets.all(14),
-                    titleBottomSpacing: 12,
-                    child: Column(
+                    padding: const EdgeInsets.all(8),
+                    child: Row(
                       children: <Widget>[
-                        for (
-                          int i = 0;
-                          i < mobileBackend.orders.length;
-                          i++
-                        ) ...[
-                          if (i > 0) const SizedBox(height: 8),
-                          _OrderRow(
-                            order: mobileBackend.orders[i],
-                            locale: localeController.locale.languageCode,
-                            branches: mobileBackend.branches,
-                            addresses: mobileBackend.addresses,
+                        for (final entry in [
+                          (locale: const Locale('uz'), label: "O'zbekcha"),
+                          (locale: const Locale('ru'), label: 'Русский'),
+                          (locale: const Locale('en'), label: 'English'),
+                        ]) ...[
+                          if (entry.locale != const Locale('uz'))
+                            const SizedBox(width: 8),
+                          Expanded(
+                            child: _LangChip(
+                              label: entry.label,
+                              isActive: localeController.locale == entry.locale,
+                              isDark: isDark,
+                              onTap: () =>
+                                  localeController.setLocale(entry.locale),
+                            ),
                           ),
                         ],
                       ],
                     ),
                   ),
                   const SizedBox(height: 16),
-                ],
 
-                // -- Cashback system
-                _SectionCard(
-                  isDark: isDark,
-                  title: t.cashbackSystem,
-                  child: Column(
-                    children: <Widget>[
-                      _StatLine(label: t.perOrder, value: t.perOrderValue),
-                      const SizedBox(height: 10),
-                      _StatLine(
-                        label: t.onePointEquals,
-                        value: t.onePointValue,
+                  // -- Loyalty card
+                  Container(
+                    padding: const EdgeInsets.all(22),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: <Color>[BaseColors.primary, Color(0xFFFF7043)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                      const SizedBox(height: 10),
-                      _StatLine(label: t.canSpend, value: t.canSpendValue),
-                    ],
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        TypographyText(
+                          t.loyaltyCard,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        TypographyText(
+                          t.accumulatedPoints,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 15,
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        TypographyText(
+                          _formatPoints(loyaltyPoints),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 42,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0,
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(18),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(26),
+                          ),
+                          child: Column(
+                            children: <Widget>[
+                              Icon(
+                                Icons.qr_code_2_rounded,
+                                size: 180,
+                                color: Colors.grey.shade900,
+                              ),
+                              const SizedBox(height: 8),
+                              TypographyText(
+                                'ENJOY-LAVASH-$loyaltyPoints',
+                                style: const TextStyle(
+                                  letterSpacing: 2.4,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        TypographyText(
+                          t.showCodeForPoints,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-                // -- Share button
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: BaseColors.primary,
-                      side: const BorderSide(color: BaseColors.primary),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
+                  // -- Personal info
+                  if (isAuthorized)
+                    _SectionCard(
+                      isDark: isDark,
+                      title: t.personalInfo,
+                      child: Column(
+                        children: <Widget>[
+                          _InfoRow(
+                            icon: Icons.phone_outlined,
+                            title: t.phoneNumber,
+                            value: client.phoneNumber,
+                          ),
+                          if (mobileBackend.addresses.isNotEmpty) ...[
+                            const SizedBox(height: 14),
+                            _InfoRow(
+                              icon: Icons.location_on_outlined,
+                              title: t.address,
+                              value: _formatAddress(
+                                mobileBackend.addresses.first,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
-                    onPressed: () => _shareApp(t),
-                    icon: const Icon(Icons.share_outlined),
-                    label: TypographyText(t.shareApp),
+                  if (isAuthorized) const SizedBox(height: 16),
+
+                  // -- Order history
+                  if (mobileBackend.orders.isNotEmpty) ...[
+                    _SectionCard(
+                      isDark: isDark,
+                      title: t.orderHistory,
+                      padding: const EdgeInsets.all(14),
+                      titleBottomSpacing: 12,
+                      child: Column(
+                        children: <Widget>[
+                          for (int i = 0; i < recentOrders.length; i++) ...[
+                            if (i > 0) const SizedBox(height: 8),
+                            _OrderRow(
+                              order: recentOrders[i],
+                              locale: localeController.locale.languageCode,
+                              branches: mobileBackend.branches,
+                              addresses: mobileBackend.addresses,
+                            ),
+                          ],
+                          if (hasMoreOrders) ...[
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: BaseColors.primary,
+                                  side: const BorderSide(
+                                    color: BaseColors.primary,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 13,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                ),
+                                onPressed: () => _openAllOrders(context),
+                                icon: const Icon(Icons.receipt_long_rounded),
+                                label: TypographyText(
+                                  _orderText(
+                                    t,
+                                    en: 'See all orders',
+                                    ru: 'Все заказы',
+                                    uz: "Barcha buyurtmalar",
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // -- Cashback system
+                  _SectionCard(
+                    isDark: isDark,
+                    title: t.cashbackSystem,
+                    child: Column(
+                      children: <Widget>[
+                        _StatLine(label: t.perOrder, value: t.perOrderValue),
+                        const SizedBox(height: 10),
+                        _StatLine(
+                          label: t.onePointEquals,
+                          value: t.onePointValue,
+                        ),
+                        const SizedBox(height: 10),
+                        _StatLine(label: t.canSpend, value: t.canSpendValue),
+                      ],
+                    ),
                   ),
-                ),
-                if (client != null) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
+
+                  // -- Share button
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: BaseColors.danger,
-                        side: const BorderSide(color: BaseColors.danger),
+                        foregroundColor: BaseColors.primary,
+                        side: const BorderSide(color: BaseColors.primary),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
                         ),
                       ),
-                      onPressed: () => _confirmLogout(context, t),
-                      icon: const Icon(Icons.logout_rounded),
-                      label: TypographyText(t.logout),
+                      onPressed: () => _shareApp(t),
+                      icon: const Icon(Icons.share_outlined),
+                      label: TypographyText(t.shareApp),
+                    ),
+                  ),
+                  if (client != null) ...[
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: BaseColors.danger,
+                          side: const BorderSide(color: BaseColors.danger),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                        onPressed: () => _confirmLogout(context, t),
+                        icon: const Icon(Icons.logout_rounded),
+                        label: TypographyText(t.logout),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 28),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AllOrdersScreen extends StatefulWidget {
+  const _AllOrdersScreen();
+
+  @override
+  State<_AllOrdersScreen> createState() => _AllOrdersScreenState();
+}
+
+class _AllOrdersScreenState extends State<_AllOrdersScreen> {
+  final TextEditingController _searchController = TextEditingController();
+
+  String _query = '';
+  MobileOrderType? _typeFilter;
+  MobileOrderStatus? _statusFilter;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<CustomerOrderModel> _filteredOrders({
+    required List<CustomerOrderModel> orders,
+    required List<BranchModel> branches,
+    required List<ClientAddress> addresses,
+    required L t,
+  }) {
+    final query = _query.trim().toLowerCase();
+
+    return orders
+        .where((order) {
+          if (_typeFilter != null && order.type != _typeFilter) return false;
+          if (_statusFilter != null && order.status != _statusFilter) {
+            return false;
+          }
+          if (query.isEmpty) return true;
+
+          final destination =
+              _orderDestination(order, branches, addresses, t) ?? '';
+          final products = order.items
+              .map((item) => _orderProductTitle(item, t))
+              .join(' ');
+          final haystack = <String>[
+            order.id,
+            _shortOrderId(order.id),
+            _statusLabel(order.status, t),
+            _orderTypeLabel(order.type, t),
+            _formatOrderAmount(order.totalAmount),
+            destination,
+            products,
+          ].join(' ').toLowerCase();
+
+          return haystack.contains(query);
+        })
+        .toList(growable: false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final t = L.of(context);
+    final locale = context.watch<LocaleController>().locale.languageCode;
+    final backend = context.watch<MobileBackendController>();
+    final orders = backend.orders;
+    final statuses = ({for (final order in orders) order.status}.toList()
+      ..sort((a, b) => a.index.compareTo(b.index)));
+    final filteredOrders = _filteredOrders(
+      orders: orders,
+      branches: backend.branches,
+      addresses: backend.addresses,
+      t: t,
+    );
+
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: SafeArea(
+        child: Column(
+          children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 10, 16, 8),
+              child: Row(
+                children: <Widget>[
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.arrow_back_rounded),
+                  ),
+                  Expanded(
+                    child: TypographyText(
+                      _orderText(
+                        t,
+                        en: 'All orders',
+                        ru: 'Все заказы',
+                        uz: 'Barcha buyurtmalar',
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: BaseColors.primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: TypographyText(
+                      '${filteredOrders.length}/${orders.length}',
+                      style: const TextStyle(
+                        color: BaseColors.primary,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
                 ],
-                const SizedBox(height: 28),
-              ],
+              ),
             ),
-          ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+              child: _OrdersSearchField(
+                controller: _searchController,
+                isDark: isDark,
+                hintText: _orderText(
+                  t,
+                  en: 'Search by product, status, or order ID',
+                  ru: 'Поиск по товару, статусу или номеру',
+                  uz: 'Mahsulot, holat yoki buyurtma raqami',
+                ),
+                onChanged: (value) => setState(() => _query = value),
+                onClear: () {
+                  _searchController.clear();
+                  setState(() => _query = '');
+                },
+              ),
+            ),
+            SizedBox(
+              height: 44,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                physics: const BouncingScrollPhysics(),
+                children: <Widget>[
+                  _OrderFilterChip(
+                    label: _orderText(t, en: 'All', ru: 'Все', uz: 'Barchasi'),
+                    selected: _typeFilter == null,
+                    onTap: () => setState(() => _typeFilter = null),
+                  ),
+                  const SizedBox(width: 8),
+                  _OrderFilterChip(
+                    label: t.delivery,
+                    selected: _typeFilter == MobileOrderType.delivery,
+                    onTap: () =>
+                        setState(() => _typeFilter = MobileOrderType.delivery),
+                  ),
+                  const SizedBox(width: 8),
+                  _OrderFilterChip(
+                    label: t.pickup,
+                    selected: _typeFilter == MobileOrderType.pickup,
+                    onTap: () =>
+                        setState(() => _typeFilter = MobileOrderType.pickup),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(
+              height: 44,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                physics: const BouncingScrollPhysics(),
+                itemCount: statuses.length + 1,
+                separatorBuilder: (_, _) => const SizedBox(width: 8),
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return _OrderFilterChip(
+                      label: _orderText(
+                        t,
+                        en: 'Any status',
+                        ru: 'Любой статус',
+                        uz: 'Har qanday holat',
+                      ),
+                      selected: _statusFilter == null,
+                      onTap: () => setState(() => _statusFilter = null),
+                    );
+                  }
+
+                  final status = statuses[index - 1];
+                  return _OrderFilterChip(
+                    label: _statusLabel(status, t),
+                    selected: _statusFilter == status,
+                    onTap: () => setState(() => _statusFilter = status),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: filteredOrders.isEmpty
+                  ? _OrdersEmptyState(isDark: isDark)
+                  : ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: filteredOrders.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        return _OrderRow(
+                          order: filteredOrders[index],
+                          locale: locale,
+                          branches: backend.branches,
+                          addresses: backend.addresses,
+                        );
+                      },
+                    ),
+            ),
+          ],
         ),
-      ],
+      ),
+    );
+  }
+}
+
+class _OrdersSearchField extends StatelessWidget {
+  const _OrdersSearchField({
+    required this.controller,
+    required this.isDark,
+    required this.hintText,
+    required this.onChanged,
+    required this.onClear,
+  });
+
+  final TextEditingController controller;
+  final bool isDark;
+  final String hintText;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: controller,
+      builder: (context, value, _) {
+        final hasQuery = value.text.trim().isNotEmpty;
+
+        return Container(
+          height: 56,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1D1A18) : Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.14 : 0.05),
+                blurRadius: 22,
+                offset: const Offset(0, 9),
+              ),
+            ],
+          ),
+          child: Row(
+            children: <Widget>[
+              const Icon(
+                Icons.search_rounded,
+                color: BaseColors.primary,
+                size: 22,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  textInputAction: TextInputAction.search,
+                  cursorColor: BaseColors.primary,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  decoration: InputDecoration(
+                    isDense: true,
+                    border: InputBorder.none,
+                    hintText: hintText,
+                    hintStyle: TextStyle(
+                      color: isDark
+                          ? const Color(0xFF9E9790)
+                          : BaseColors.textGray,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  onChanged: onChanged,
+                ),
+              ),
+              if (hasQuery)
+                IconButton(
+                  onPressed: onClear,
+                  icon: const Icon(Icons.close_rounded),
+                )
+              else
+                const SizedBox(width: 40),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _OrderFilterChip extends StatelessWidget {
+  const _OrderFilterChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return ChoiceChip(
+      selected: selected,
+      showCheckmark: false,
+      onSelected: (_) => onTap(),
+      label: TypographyText(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          color: selected || isDark ? Colors.white : const Color(0xFF14110F),
+          fontWeight: FontWeight.w800,
+          fontSize: 13,
+        ),
+      ),
+      backgroundColor: isDark
+          ? const Color(0xFF201C19)
+          : const Color(0xFFF1EDE7),
+      selectedColor: BaseColors.primary,
+      side: BorderSide.none,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+    );
+  }
+}
+
+class _OrdersEmptyState extends StatelessWidget {
+  const _OrdersEmptyState({required this.isDark});
+
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = L.of(context);
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Icon(
+              Icons.receipt_long_outlined,
+              size: 46,
+              color: isDark ? BaseColors.lightTextGray : BaseColors.textGray,
+            ),
+            const SizedBox(height: 14),
+            TypographyText(
+              _orderText(
+                t,
+                en: 'No orders match your filters',
+                ru: 'Нет заказов по выбранным фильтрам',
+                uz: "Filtrlarga mos buyurtma yo'q",
+              ),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: isDark ? BaseColors.lightTextGray : BaseColors.textGray,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

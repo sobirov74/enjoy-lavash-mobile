@@ -1,5 +1,6 @@
+import 'dart:async';
+
 import 'package:enjoy_lavash_mobile/app/location_controller.dart';
-import 'package:enjoy_lavash_mobile/core/services/yandex_geocoder_service.dart';
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
@@ -17,11 +18,13 @@ class MapPickerScreen extends StatefulWidget {
 
 class _MapPickerScreenState extends State<MapPickerScreen> {
   final _mapController = MapController();
-  final _geocoderService = YandexGeocoderService();
 
   LatLng _selectedPosition = const LatLng(41.2995, 69.2401); // Tashkent default
   String _addressText = '';
+  String _district = '';
   bool _isLoading = false;
+  Timer? _reverseGeocodeDebounce;
+  int _lookupSerial = 0;
 
   @override
   void initState() {
@@ -33,25 +36,46 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
     if (loc.addressName.isNotEmpty) {
       _addressText = loc.addressName;
     }
+    if (loc.district.isNotEmpty) {
+      _district = loc.district;
+    }
   }
 
-  Future<void> _onMapTap(TapPosition tapPosition, LatLng point) async {
+  @override
+  void dispose() {
+    _reverseGeocodeDebounce?.cancel();
+    super.dispose();
+  }
+
+  void _onMapTap(TapPosition tapPosition, LatLng point) {
+    final lookupSerial = ++_lookupSerial;
+    _reverseGeocodeDebounce?.cancel();
+
     setState(() {
       _selectedPosition = point;
+      _addressText = '';
+      _district = '';
       _isLoading = true;
     });
 
-    final result = await _geocoderService.reverseGeocode(
+    _reverseGeocodeDebounce = Timer(const Duration(milliseconds: 550), () {
+      unawaited(_resolveAddress(point, lookupSerial));
+    });
+  }
+
+  Future<void> _resolveAddress(LatLng point, int lookupSerial) async {
+    final result = await context.read<LocationController>().resolveAddressName(
       latitude: point.latitude,
       longitude: point.longitude,
     );
 
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-        _addressText = result?.name ?? '';
-      });
-    }
+    if (!mounted || lookupSerial != _lookupSerial) return;
+
+    setState(() {
+      _isLoading = false;
+      _addressText = result?.name ?? '';
+      _district = result?.district ?? '';
+    });
   }
 
   void _confirmSelection() {
@@ -60,6 +84,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
       latitude: _selectedPosition.latitude,
       longitude: _selectedPosition.longitude,
       address: _addressText,
+      district: _district,
     );
     Navigator.pop(context);
   }
@@ -156,7 +181,9 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                             ? const SizedBox(
                                 height: 20,
                                 width: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : TypographyText(
                                 _addressText.isNotEmpty
@@ -165,7 +192,9 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                                 style: TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
-                                  color: isDark ? Colors.white : const Color(0xFF14110F),
+                                  color: isDark
+                                      ? Colors.white
+                                      : const Color(0xFF14110F),
                                 ),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
@@ -177,7 +206,9 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: _addressText.isNotEmpty ? _confirmSelection : null,
+                      onPressed: _addressText.isNotEmpty
+                          ? _confirmSelection
+                          : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: BaseColors.primary,
                         foregroundColor: Colors.white,

@@ -18,7 +18,10 @@ import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 
 const String _brandMarkAsset = 'assets/images/enjoy-logo.png';
+const double _stickySearchHeaderHeight = 76;
 const double _stickyCategoryHeaderHeight = 66;
+const double _stickyProductsHeaderHeight =
+    _stickySearchHeaderHeight + _stickyCategoryHeaderHeight;
 
 // ---------------------------------------------------------------------------
 // MenuScreen — main scrollable menu with sticky category tabs
@@ -42,6 +45,7 @@ class MenuScreen extends StatefulWidget {
     required this.onOrderTypeChanged,
     required this.onBranchSelected,
     required this.onRetryMenu,
+    required this.onRefresh,
     required this.cartCount,
     required this.cartQuantities,
     this.menuErrorText,
@@ -62,6 +66,7 @@ class MenuScreen extends StatefulWidget {
   final ValueChanged<MobileOrderType> onOrderTypeChanged;
   final ValueChanged<BranchModel?> onBranchSelected;
   final VoidCallback onRetryMenu;
+  final Future<void> Function() onRefresh;
   final int cartCount;
   final Map<String, int> cartQuantities;
   final String? menuErrorText;
@@ -73,6 +78,7 @@ class MenuScreen extends StatefulWidget {
 class _MenuScreenState extends State<MenuScreen> {
   final ScrollController _scrollController = ScrollController();
   final ScrollController _categoryScrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
 
   late final List<GlobalKey> _sectionKeys = _buildKeys(
     widget.categories.length,
@@ -86,6 +92,7 @@ class _MenuScreenState extends State<MenuScreen> {
 
   bool _isProgrammaticScroll = false;
   bool _scrollSpyScheduled = false;
+  String _searchQuery = '';
 
   // -------------------------------------------------------------------------
   // Lifecycle
@@ -122,6 +129,7 @@ class _MenuScreenState extends State<MenuScreen> {
 
   @override
   void dispose() {
+    _searchController.dispose();
     _scrollController
       ..removeListener(_onScrollChanged)
       ..dispose();
@@ -161,6 +169,24 @@ class _MenuScreenState extends State<MenuScreen> {
     return map;
   }
 
+  bool get _hasSearchQuery => _searchQuery.trim().isNotEmpty;
+
+  double get _activeStickyHeaderHeight =>
+      _hasSearchQuery ? _stickySearchHeaderHeight : _stickyProductsHeaderHeight;
+
+  List<MenuProduct> _filteredProducts() {
+    final query = _searchQuery.trim().toLowerCase();
+    if (query.isEmpty) return widget.products;
+
+    return widget.products
+        .where((product) {
+          return product.title.toLowerCase().contains(query) ||
+              product.category.toLowerCase().contains(query) ||
+              product.price.toString().contains(query);
+        })
+        .toList(growable: false);
+  }
+
   // -------------------------------------------------------------------------
   // Scroll-spy: detect which category section is in view
   // -------------------------------------------------------------------------
@@ -178,6 +204,7 @@ class _MenuScreenState extends State<MenuScreen> {
   }
 
   void _updateSelectedCategoryFromScroll() {
+    if (_hasSearchQuery) return;
     if (!_scrollController.hasClients || widget.categories.isEmpty) return;
     final position = _scrollController.position;
 
@@ -188,8 +215,8 @@ class _MenuScreenState extends State<MenuScreen> {
 
     final viewportCenter =
         _scrollController.offset +
-        _stickyCategoryHeaderHeight +
-        (position.viewportDimension - _stickyCategoryHeaderHeight) / 2;
+        _activeStickyHeaderHeight +
+        (position.viewportDimension - _activeStickyHeaderHeight) / 2;
 
     var bestIndex = widget.selectedCategoryIndex;
     var bestDistance = double.infinity;
@@ -205,7 +232,7 @@ class _MenuScreenState extends State<MenuScreen> {
       final sectionTop =
           _scrollController.offset +
           renderBox.localToGlobal(Offset.zero).dy -
-          _stickyCategoryHeaderHeight;
+          _activeStickyHeaderHeight;
       final sectionBottom = sectionTop + renderBox.size.height;
 
       if (viewportCenter >= sectionTop && viewportCenter < sectionBottom) {
@@ -287,7 +314,7 @@ class _MenuScreenState extends State<MenuScreen> {
 
     final targetOffset =
         viewport.getOffsetToReveal(renderObject, 0).offset -
-        _stickyCategoryHeaderHeight;
+        _activeStickyHeaderHeight;
     final clampedOffset = targetOffset.clamp(
       0.0,
       _scrollController.position.maxScrollExtent,
@@ -305,7 +332,9 @@ class _MenuScreenState extends State<MenuScreen> {
   // -------------------------------------------------------------------------
 
   void _scrollSelectedChipIntoView() {
-    if (!_categoryScrollController.hasClients || widget.categories.isEmpty) {
+    if (_hasSearchQuery ||
+        !_categoryScrollController.hasClients ||
+        widget.categories.isEmpty) {
       return;
     }
 
@@ -347,82 +376,84 @@ class _MenuScreenState extends State<MenuScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final t = L.of(context);
+    final searchResults = _hasSearchQuery
+        ? _filteredProducts()
+        : const <MenuProduct>[];
 
-    return CustomScrollView(
-      controller: _scrollController,
-      cacheExtent: 1200,
-      physics: const BouncingScrollPhysics(
-        parent: AlwaysScrollableScrollPhysics(),
-      ),
-      slivers: [
-        // -- Top bar, delivery toggle, promo banner
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildTopBar(),
-                const SizedBox(height: 10),
-                _buildAddressBar(context),
-                const SizedBox(height: 10),
-                _buildDeliveryToggle(t),
-                if (widget.promotions.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  PromoSlider(
-                    promotions: widget.promotions,
-                    locale: context
-                        .watch<LocaleController>()
-                        .locale
-                        .languageCode,
-                  ),
+    return RefreshIndicator(
+      color: BaseColors.primary,
+      onRefresh: widget.onRefresh,
+      child: CustomScrollView(
+        controller: _scrollController,
+        cacheExtent: 1200,
+        physics: const BouncingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
+        ),
+        slivers: [
+          // -- Top bar, delivery toggle, promo banner
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildTopBar(),
+                  const SizedBox(height: 10),
+                  _buildAddressBar(context),
+                  const SizedBox(height: 10),
+                  _buildDeliveryToggle(t),
+                  if (widget.promotions.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    PromoSlider(
+                      promotions: widget.promotions,
+                      locale: context
+                          .watch<LocaleController>()
+                          .locale
+                          .languageCode,
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
-        ),
 
-        if (widget.products.isEmpty)
-          SliverFillRemaining(
-            hasScrollBody: false,
-            child: _buildMenuState(theme, t),
-          )
-        else ...[
-          // -- Sticky category tabs
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _CategoryHeaderDelegate(
-              height: _stickyCategoryHeaderHeight,
-              child: Container(
-                color: theme.scaffoldBackgroundColor,
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                child: SizedBox(
-                  height: 46,
-                  child: ListView.separated(
-                    controller: _categoryScrollController,
-                    physics: const BouncingScrollPhysics(),
-                    scrollDirection: Axis.horizontal,
-                    itemCount: widget.categories.length,
-                    separatorBuilder: (_, _) => const SizedBox(width: 10),
-                    itemBuilder: (_, index) => _buildCategoryChip(index),
+          if (widget.products.isEmpty)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: _buildMenuState(theme, t),
+            )
+          else ...[
+            // -- Sticky product search and category tabs
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _CategoryHeaderDelegate(
+                height: _activeStickyHeaderHeight,
+                child: _buildProductsHeader(theme, t),
+              ),
+            ),
+
+            if (_hasSearchQuery)
+              if (searchResults.isEmpty)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: _buildSearchEmptyState(theme, t),
+                )
+              else
+                _buildSearchResultsSliver(searchResults, theme, t)
+            else
+              // -- Product sections per category
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (_, index) => _buildCategorySection(index, theme),
+                    childCount: widget.categories.length,
                   ),
                 ),
               ),
-            ),
-          ),
-
-          // -- Product sections per category
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (_, index) => _buildCategorySection(index, theme),
-                childCount: widget.categories.length,
-              ),
-            ),
-          ),
+          ],
         ],
-      ],
+      ),
     );
   }
 
@@ -692,6 +723,213 @@ class _MenuScreenState extends State<MenuScreen> {
     );
   }
 
+  Widget _buildProductsHeader(ThemeData theme, L t) {
+    return Container(
+      color: theme.scaffoldBackgroundColor,
+      child: Column(
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: _buildSearchField(t),
+          ),
+          if (!_hasSearchQuery)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: SizedBox(
+                height: 46,
+                child: ListView.separated(
+                  controller: _categoryScrollController,
+                  physics: const BouncingScrollPhysics(),
+                  scrollDirection: Axis.horizontal,
+                  itemCount: widget.categories.length,
+                  separatorBuilder: (_, _) => const SizedBox(width: 10),
+                  itemBuilder: (_, index) => _buildCategoryChip(index),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchField(L t) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      height: 60,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: widget.isDark ? const Color(0xFF1D1A18) : Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: _hasSearchQuery
+              ? BaseColors.primary.withValues(alpha: 0.55)
+              : Colors.transparent,
+        ),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: Colors.black.withValues(alpha: widget.isDark ? 0.14 : 0.05),
+            blurRadius: 22,
+            offset: const Offset(0, 9),
+          ),
+        ],
+      ),
+      child: Row(
+        children: <Widget>[
+          const Icon(Icons.search_rounded, color: BaseColors.primary, size: 23),
+          const SizedBox(width: 10),
+          Expanded(
+            child: TextField(
+              controller: _searchController,
+              textInputAction: TextInputAction.search,
+              cursorColor: BaseColors.primary,
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+              decoration: InputDecoration(
+                isDense: true,
+                border: InputBorder.none,
+                hintText: _menuText(
+                  t,
+                  en: 'Search products',
+                  ru: 'Поиск товаров',
+                  uz: 'Mahsulot qidirish',
+                ),
+                hintStyle: TextStyle(
+                  color: widget.isDark
+                      ? const Color(0xFF9E9790)
+                      : BaseColors.textGray,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              onChanged: (value) {
+                setState(() => _searchQuery = value);
+                if (value.trim().isNotEmpty && _scrollController.hasClients) {
+                  _scrollController.animateTo(
+                    _scrollController.offset.clamp(
+                      0.0,
+                      _scrollController.position.maxScrollExtent,
+                    ),
+                    duration: const Duration(milliseconds: 120),
+                    curve: Curves.easeOutCubic,
+                  );
+                }
+              },
+            ),
+          ),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 160),
+            child: _hasSearchQuery
+                ? IconButton(
+                    key: const ValueKey<String>('clear-search'),
+                    tooltip: _menuText(
+                      t,
+                      en: 'Clear search',
+                      ru: 'Очистить поиск',
+                      uz: 'Qidiruvni tozalash',
+                    ),
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() => _searchQuery = '');
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        _scrollSelectedChipIntoView();
+                      });
+                    },
+                    icon: const Icon(Icons.close_rounded),
+                  )
+                : const SizedBox(
+                    key: ValueKey<String>('empty-search-action'),
+                    width: 40,
+                    height: 40,
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchResultsSliver(
+    List<MenuProduct> products,
+    ThemeData theme,
+    L t,
+  ) {
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+      sliver: SliverList.builder(
+        itemCount: products.length + 1,
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: TypographyText(
+                _menuText(
+                  t,
+                  en: '${products.length} result${products.length == 1 ? '' : 's'}',
+                  ru: 'Найдено: ${products.length}',
+                  uz: '${products.length} ta natija',
+                ),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: widget.isDark
+                      ? BaseColors.lightTextGray
+                      : BaseColors.textGray,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            );
+          }
+
+          final product = products[index - 1];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: RepaintBoundary(
+              child: ProductListItem(
+                key: ValueKey<String>('search-${product.id}'),
+                product: product,
+                isDark: widget.isDark,
+                quantity: widget.cartQuantities[product.id] ?? 0,
+                onAdd: () => widget.onAddToCart(product),
+                onDecrease: () => widget.onDecreaseFromCart(product),
+                onIncrease: () => widget.onAddToCart(product),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSearchEmptyState(ThemeData theme, L t) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(32, 48, 32, 96),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Icon(
+            Icons.search_off_rounded,
+            size: 44,
+            color: widget.isDark
+                ? BaseColors.lightTextGray
+                : BaseColors.textGray,
+          ),
+          const SizedBox(height: 16),
+          TypographyText(
+            _menuText(
+              t,
+              en: 'No products found',
+              ru: 'Товары не найдены',
+              uz: 'Mahsulot topilmadi',
+            ),
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: widget.isDark
+                  ? BaseColors.lightTextGray
+                  : BaseColors.textGray,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCategoryChip(int index) {
     final isActive = index == widget.selectedCategoryIndex;
     final labelColor = isActive || widget.isDark
@@ -763,6 +1001,19 @@ class _MenuScreenState extends State<MenuScreen> {
       ),
     );
   }
+}
+
+String _menuText(
+  L t, {
+  required String en,
+  required String ru,
+  required String uz,
+}) {
+  return switch (t.localeName.split('_').first) {
+    'ru' => ru,
+    'uz' => uz,
+    _ => en,
+  };
 }
 
 // ---------------------------------------------------------------------------

@@ -6,22 +6,12 @@ import 'package:enjoy_lavash_mobile/core/data/repositories/organisation_reposito
 import 'package:enjoy_lavash_mobile/core/data/repositories/product_repository.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/repositories/mobile_backend_repository_impl.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/repositories/mobile_backend_repository.dart';
-import 'package:enjoy_lavash_mobile/navigation/app_navigator.dart';
-import 'package:enjoy_lavash_mobile/core/storage/token_storage.dart';
 
 final sl = GetIt.instance;
 
 void setupDi() {
   // -- Core
-  sl.registerLazySingleton<ApiClient>(
-    () => ApiClient(
-      onLogout: () async {
-        await TokenStorage.clear();
-        final navigator = AppNavigator.navigatorKey.currentState;
-        navigator?.pushNamedAndRemoveUntil('/login', (route) => false);
-      },
-    ),
-  );
+  sl.registerLazySingleton<ApiClient>(ApiClient.new);
 
   // -- Repositories
   sl.registerLazySingleton<AuthRepository>(

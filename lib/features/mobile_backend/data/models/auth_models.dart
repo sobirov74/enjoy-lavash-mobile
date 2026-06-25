@@ -53,15 +53,20 @@ class VerifyOtpResponse {
     required this.accessToken,
     required this.tokenType,
     required this.client,
+    this.refreshToken,
   });
 
   final String accessToken;
+  final String? refreshToken;
   final String tokenType;
   final ClientProfile client;
 
   factory VerifyOtpResponse.fromJson(Map<String, dynamic> json) {
     return VerifyOtpResponse(
       accessToken: readString(json, const ['access_token', 'accessToken']),
+      refreshToken:
+          stringOrNull(json['refresh_token']) ??
+          stringOrNull(json['refreshToken']),
       tokenType: readString(json, const ['token_type', 'tokenType']),
       client: ClientProfile.fromJson(asJsonMap(json['client'])),
     );

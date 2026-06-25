@@ -3,7 +3,7 @@ import 'package:enjoy_lavash_mobile/core/api/base_url.dart';
 import 'package:enjoy_lavash_mobile/core/storage/token_storage.dart';
 import 'package:flutter/foundation.dart';
 
-const _refreshEndpoint = '/api/v1/auth/refresh';
+const _refreshEndpoint = '/auth/refresh';
 const _logoutTriggerCodes = {401, 403};
 const _enableNetworkLogs =
     kDebugMode || bool.fromEnvironment('ENABLE_NETWORK_LOGS');
@@ -52,10 +52,15 @@ class ApiClient {
   late final Dio dio;
   late final Dio _refreshDio;
 
-  final LogoutCallback? _onLogout;
+  LogoutCallback? _onLogout;
 
   // Single-flight: only one refresh at a time.
   Future<String?>? _refreshPromise;
+  Future<void>? _logoutPromise;
+
+  void setOnLogout(LogoutCallback? callback) {
+    _onLogout = callback;
+  }
 
   InterceptorsWrapper _authInterceptor() {
     return InterceptorsWrapper(
@@ -123,8 +128,14 @@ class ApiClient {
 
       if (response.statusCode == 200) {
         final data = response.data;
-        final newAccess = data['access_token'] as String?;
-        final newRefresh = (data['refresh_token'] as String?) ?? refreshToken;
+        final newAccess = _stringValue(data, const [
+          'access_token',
+          'accessToken',
+          'token',
+        ]);
+        final newRefresh =
+            _stringValue(data, const ['refresh_token', 'refreshToken']) ??
+            refreshToken;
 
         if (newAccess != null) {
           await TokenStorage.saveAccessToken(newAccess);
@@ -143,6 +154,13 @@ class ApiClient {
   }
 
   Future<void> _logout() async {
+    _logoutPromise ??= _performLogout().whenComplete(() {
+      _logoutPromise = null;
+    });
+    await _logoutPromise;
+  }
+
+  Future<void> _performLogout() async {
     await TokenStorage.clear();
     await _onLogout?.call();
   }
@@ -150,4 +168,15 @@ class ApiClient {
 
 void _debugLog(Object object) {
   debugPrint(object.toString());
+}
+
+String? _stringValue(Object? data, List<String> keys) {
+  if (data is! Map) return null;
+  for (final key in keys) {
+    final value = data[key];
+    if (value is String && value.trim().isNotEmpty) {
+      return value.trim();
+    }
+  }
+  return null;
 }

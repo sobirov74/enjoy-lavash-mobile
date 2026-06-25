@@ -64,16 +64,57 @@ class MobileBackendController extends ChangeNotifier {
   Future<Result<void>> logout() async {
     final result = await _repository.logout();
     if (result.isSuccess) {
-      _client = null;
-      _addresses = const <ClientAddress>[];
-      _orders = const <CustomerOrderModel>[];
-      _failure = null;
-      if (_status == MobileBackendStatus.initial) {
-        _status = MobileBackendStatus.loaded;
-      }
-      notifyListeners();
+      handleSessionExpired();
     }
     return result;
+  }
+
+  Future<void> handleSessionExpired() async {
+    _client = null;
+    _addresses = const <ClientAddress>[];
+    _orders = const <CustomerOrderModel>[];
+    _failure = null;
+    if (_status == MobileBackendStatus.initial) {
+      _status = MobileBackendStatus.loaded;
+    }
+    notifyListeners();
+  }
+
+  Future<void> refreshCustomerData() async {
+    if (_client == null) return;
+
+    final profileResult = await _repository.getProfile();
+    switch (profileResult) {
+      case Success(:final data):
+        _client = data;
+        _failure = null;
+      case Error(:final failure):
+        _failure = failure;
+        notifyListeners();
+        return;
+    }
+
+    final addressesResult = await _repository.getAddresses();
+    switch (addressesResult) {
+      case Success(:final data):
+        _addresses = data;
+      case Error(:final failure):
+        _failure = failure;
+        if (_client == null) {
+          notifyListeners();
+          return;
+        }
+    }
+
+    final ordersResult = await _repository.getOrders();
+    switch (ordersResult) {
+      case Success(:final data):
+        _orders = data;
+      case Error(:final failure):
+        _failure = failure;
+    }
+
+    notifyListeners();
   }
 
   Future<Result<CartPreviewModel>> previewCart(

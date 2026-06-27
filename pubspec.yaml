@@ -58,6 +58,7 @@ dependencies:
   flutter_map: ^8.3.0
   latlong2: ^0.9.1
   sms_autofill: ^2.4.1
+  pinput: ^6.0.2
 
 dev_dependencies:
   flutter_test:

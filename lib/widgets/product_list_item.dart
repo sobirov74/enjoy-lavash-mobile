@@ -14,6 +14,7 @@ class ProductListItem extends StatelessWidget {
     required this.onAdd,
     required this.onDecrease,
     required this.onIncrease,
+    this.onImageTap,
   });
 
   final MenuProduct product;
@@ -22,6 +23,7 @@ class ProductListItem extends StatelessWidget {
   final VoidCallback onAdd;
   final VoidCallback onDecrease;
   final VoidCallback onIncrease;
+  final VoidCallback? onImageTap;
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +43,10 @@ class ProductListItem extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          ProductImage(product: product),
+          GestureDetector(
+            onTap: onImageTap,
+            child: ProductImage(product: product),
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -70,14 +75,17 @@ class ProductListItem extends StatelessWidget {
                 Row(
                   children: <Widget>[
                     Expanded(
-                      child: TypographyText(
-                        formatSum(product.price),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.4,
+                      child: FittedBox(
+                        alignment: Alignment.centerLeft,
+                        fit: BoxFit.scaleDown,
+                        child: TypographyText(
+                          formatSum(product.price),
+                          maxLines: 1,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0,
+                          ),
                         ),
                       ),
                     ),

@@ -1,5 +1,6 @@
 import 'package:enjoy_lavash_mobile/app/locale_controller.dart';
 import 'package:enjoy_lavash_mobile/app/location_controller.dart';
+import 'package:enjoy_lavash_mobile/core/error/failures.dart';
 import 'package:enjoy_lavash_mobile/features/models/menu_product.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/branch_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/cart_model.dart';
@@ -7,8 +8,11 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/promotio
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/screens/address_bottom_sheet.dart';
 import 'package:enjoy_lavash_mobile/screens/branch_bottom_sheet.dart';
+import 'package:enjoy_lavash_mobile/utils/price_formatter.dart';
 import 'package:enjoy_lavash_mobile/widgets/action_icon_button.dart';
+import 'package:enjoy_lavash_mobile/widgets/animated_error_message.dart';
 import 'package:enjoy_lavash_mobile/widgets/delivery_chip.dart';
+import 'package:enjoy_lavash_mobile/widgets/product_image.dart';
 import 'package:enjoy_lavash_mobile/widgets/product_list_item.dart';
 import 'package:enjoy_lavash_mobile/widgets/promo_slider.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
@@ -48,6 +52,7 @@ class MenuScreen extends StatefulWidget {
     required this.onRefresh,
     required this.cartCount,
     required this.cartQuantities,
+    this.menuFailure,
     this.menuErrorText,
   });
 
@@ -69,6 +74,7 @@ class MenuScreen extends StatefulWidget {
   final Future<void> Function() onRefresh;
   final int cartCount;
   final Map<String, int> cartQuantities;
+  final Failure? menuFailure;
   final String? menuErrorText;
 
   @override
@@ -185,6 +191,114 @@ class _MenuScreenState extends State<MenuScreen> {
               product.price.toString().contains(query);
         })
         .toList(growable: false);
+  }
+
+  void _showProductImagePreview(MenuProduct product) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        final dialogTheme = Theme.of(dialogContext);
+        final isDark = dialogTheme.brightness == Brightness.dark;
+
+        return Dialog(
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 24,
+          ),
+          backgroundColor: Colors.transparent,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final availableWidth = constraints.maxWidth.isFinite
+                    ? constraints.maxWidth - 32
+                    : 360.0;
+                final previewSize = availableWidth
+                    .clamp(120.0, 360.0)
+                    .toDouble();
+
+                return SingleChildScrollView(
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF1D1A18) : Colors.white,
+                      borderRadius: BorderRadius.circular(28),
+                      boxShadow: <BoxShadow>[
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 30,
+                          offset: const Offset(0, 18),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Stack(
+                          children: <Widget>[
+                            Center(
+                              child: ProductImage(
+                                product: product,
+                                width: previewSize,
+                                height: previewSize,
+                                borderRadius: 24,
+                                fallbackFontSize: 96,
+                              ),
+                            ),
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: Material(
+                                color: isDark
+                                    ? const Color(0xFF2B2622)
+                                    : Colors.white,
+                                shape: const CircleBorder(),
+                                child: IconButton(
+                                  tooltip: MaterialLocalizations.of(
+                                    dialogContext,
+                                  ).closeButtonTooltip,
+                                  onPressed: () =>
+                                      Navigator.of(dialogContext).pop(),
+                                  icon: const Icon(Icons.close_rounded),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        TypographyText(
+                          product.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        TypographyText(
+                          formatSum(product.price),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: BaseColors.primary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
   }
 
   // -------------------------------------------------------------------------
@@ -520,45 +634,36 @@ class _MenuScreenState extends State<MenuScreen> {
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(32, 48, 32, 96),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            errorText == null
-                ? Icons.restaurant_menu_rounded
-                : Icons.cloud_off_rounded,
-            size: 44,
-            color: widget.isDark
-                ? BaseColors.lightTextGray
-                : BaseColors.textGray,
-          ),
-          const SizedBox(height: 16),
-          TypographyText(
-            errorText ?? t.emptyList,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: widget.isDark
-                  ? BaseColors.lightTextGray
-                  : BaseColors.textGray,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          if (errorText != null) ...[
-            const SizedBox(height: 18),
-            FilledButton.icon(
-              onPressed: widget.onRetryMenu,
-              icon: const Icon(Icons.refresh_rounded),
-              label: const TypographyText('Retry'),
-              style: FilledButton.styleFrom(
-                backgroundColor: BaseColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
+      child: Center(
+        child: errorText != null
+            ? AnimatedErrorMessage(
+                failure: widget.menuFailure,
+                message: errorText,
+                onRetry: widget.onRetryMenu,
+              )
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.restaurant_menu_rounded,
+                    size: 44,
+                    color: widget.isDark
+                        ? BaseColors.lightTextGray
+                        : BaseColors.textGray,
+                  ),
+                  const SizedBox(height: 16),
+                  TypographyText(
+                    t.emptyList,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: widget.isDark
+                          ? BaseColors.lightTextGray
+                          : BaseColors.textGray,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
-        ],
       ),
     );
   }
@@ -885,6 +990,7 @@ class _MenuScreenState extends State<MenuScreen> {
                 product: product,
                 isDark: widget.isDark,
                 quantity: widget.cartQuantities[product.id] ?? 0,
+                onImageTap: () => _showProductImagePreview(product),
                 onAdd: () => widget.onAddToCart(product),
                 onDecrease: () => widget.onDecreaseFromCart(product),
                 onIncrease: () => widget.onAddToCart(product),
@@ -990,6 +1096,7 @@ class _MenuScreenState extends State<MenuScreen> {
                     product: product,
                     isDark: widget.isDark,
                     quantity: widget.cartQuantities[product.id] ?? 0,
+                    onImageTap: () => _showProductImagePreview(product),
                     onAdd: () => widget.onAddToCart(product),
                     onDecrease: () => widget.onDecreaseFromCart(product),
                     onIncrease: () => widget.onAddToCart(product),

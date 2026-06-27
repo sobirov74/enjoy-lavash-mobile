@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/theme/theme_extensions.dart';
+import 'package:enjoy_lavash_mobile/widgets/animated_error_message.dart';
 import 'package:enjoy_lavash_mobile/widgets/app_snack_bar.dart';
 import 'package:enjoy_lavash_mobile/widgets/button.dart';
 import 'package:enjoy_lavash_mobile/widgets/confirm_dialog.dart';
@@ -121,6 +122,7 @@ class Profile extends StatelessWidget {
     final loyaltyPoints = client?.bonusBalance ?? _loyaltyPoints;
     final recentOrders = mobileBackend.orders.take(5).toList(growable: false);
     final hasMoreOrders = mobileBackend.orders.length > recentOrders.length;
+    final backendFailure = mobileBackend.failure;
 
     return RefreshIndicator(
       color: BaseColors.primary,
@@ -204,6 +206,16 @@ class Profile extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
+                  if (backendFailure != null) ...[
+                    AnimatedErrorMessage(
+                      failure: backendFailure,
+                      compact: true,
+                      onRetry: onRefresh == null
+                          ? null
+                          : () => unawaited(onRefresh!()),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
 
                   // -- Theme toggle
                   _SurfaceCard(
@@ -722,7 +734,21 @@ class _AllOrdersScreenState extends State<_AllOrdersScreen> {
             ),
             const SizedBox(height: 8),
             Expanded(
-              child: filteredOrders.isEmpty
+              child: backend.failure != null && orders.isEmpty
+                  ? Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
+                      child: Center(
+                        child: AnimatedErrorMessage(
+                          failure: backend.failure,
+                          onRetry: () => unawaited(
+                            context
+                                .read<MobileBackendController>()
+                                .refreshCustomerData(),
+                          ),
+                        ),
+                      ),
+                    )
+                  : filteredOrders.isEmpty
                   ? _OrdersEmptyState(isDark: isDark)
                   : ListView.separated(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
@@ -1175,6 +1201,31 @@ String _statusLabel(MobileOrderStatus status, L t) {
   };
 }
 
+({Color bg, Color border, Color accent}) _statusSurfaceColors(
+  MobileOrderStatus status,
+  bool isDark,
+) {
+  final accent = switch (status) {
+    MobileOrderStatus.newOrder => const Color(0xFF3B82F6),
+    MobileOrderStatus.confirmed => const Color(0xFF22C55E),
+    MobileOrderStatus.cooking => const Color(0xFFF59E0B),
+    MobileOrderStatus.ready => const Color(0xFF10B981),
+    MobileOrderStatus.courierAssigned => const Color(0xFF38BDF8),
+    MobileOrderStatus.onTheWay => const Color(0xFF6366F1),
+    MobileOrderStatus.delivered => const Color(0xFF16A34A),
+    MobileOrderStatus.cancelled => BaseColors.danger,
+    MobileOrderStatus.refunded => const Color(0xFFEC4899),
+    MobileOrderStatus.unknown => BaseColors.textGray,
+  };
+  final base = isDark ? const Color(0xFF2A2522) : Colors.white;
+
+  return (
+    bg: Color.alphaBlend(accent.withValues(alpha: isDark ? 0.18 : 0.09), base),
+    border: accent.withValues(alpha: isDark ? 0.36 : 0.22),
+    accent: accent,
+  );
+}
+
 String _orderTypeLabel(MobileOrderType type, L t) {
   return switch (type) {
     MobileOrderType.delivery => t.delivery,
@@ -1349,138 +1400,153 @@ class _OrderRow extends StatelessWidget {
     final t = L.of(context);
     final colors = _statusColors(order.status);
     final date = _formatOrderDate(order.createdAt, locale);
-    final rowColor = Theme.of(context).brightness == Brightness.dark
-        ? const Color(0xFF2A2522)
-        : const Color(0xFFF8F4EF);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = _statusSurfaceColors(order.status, isDark);
 
-    return Material(
-      color: rowColor,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: () => _showDetails(context),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      decoration: BoxDecoration(
+        color: surface.bg,
         borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Container(
-                    width: 36,
-                    height: 36,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: BaseColors.primary.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.receipt_long_rounded,
-                      color: BaseColors.primary,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        TypographyText(
-                          '#${_shortOrderId(order.id)}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        if (date.isNotEmpty) ...[
-                          const SizedBox(height: 3),
-                          Row(
-                            children: <Widget>[
-                              const Icon(
-                                Icons.calendar_today_rounded,
-                                size: 13,
-                                color: BaseColors.textGray,
-                              ),
-                              const SizedBox(width: 5),
-                              Expanded(
-                                child: TypographyText(
-                                  date,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: BaseColors.textGray,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  _OrderStatusChip(
-                    label: _statusLabel(order.status, t),
-                    colors: colors,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  const Icon(
-                    Icons.fastfood_outlined,
-                    size: 17,
-                    color: BaseColors.textGray,
-                  ),
-                  const SizedBox(width: 7),
-                  Expanded(
-                    child: TypographyText(
-                      _orderProductSummary(order, t),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        height: 1.25,
+        border: Border.all(color: surface.border),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: surface.accent.withValues(alpha: isDark ? 0.12 : 0.08),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: () => _showDetails(context),
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Container(
+                      width: 36,
+                      height: 36,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: surface.accent.withValues(alpha: 0.16),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.receipt_long_rounded,
+                        color: surface.accent,
+                        size: 20,
                       ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              const Divider(height: 1, color: Color(0x1A8C8278)),
-              const SizedBox(height: 9),
-              Row(
-                children: <Widget>[
-                  Flexible(
-                    child: _OrderMiniBadge(
-                      icon: _orderTypeIcon(order.type),
-                      label: _orderTypeLabel(order.type, t),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          TypographyText(
+                            '#${_shortOrderId(order.id)}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          if (date.isNotEmpty) ...[
+                            const SizedBox(height: 3),
+                            Row(
+                              children: <Widget>[
+                                const Icon(
+                                  Icons.calendar_today_rounded,
+                                  size: 13,
+                                  color: BaseColors.textGray,
+                                ),
+                                const SizedBox(width: 5),
+                                Expanded(
+                                  child: TypographyText(
+                                    date,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: BaseColors.textGray,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  TypographyText(
-                    _formatOrderAmount(order.totalAmount),
-                    style: const TextStyle(
-                      color: BaseColors.primary,
-                      fontWeight: FontWeight.w800,
+                    const SizedBox(width: 8),
+                    _OrderStatusChip(
+                      label: _statusLabel(order.status, t),
+                      colors: colors,
                     ),
-                  ),
-                  const SizedBox(width: 2),
-                  const Icon(
-                    Icons.chevron_right_rounded,
-                    color: BaseColors.textGray,
-                    size: 22,
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    const Icon(
+                      Icons.fastfood_outlined,
+                      size: 17,
+                      color: BaseColors.textGray,
+                    ),
+                    const SizedBox(width: 7),
+                    Expanded(
+                      child: TypographyText(
+                        _orderProductSummary(order, t),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          height: 1.25,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                const Divider(height: 1, color: Color(0x1A8C8278)),
+                const SizedBox(height: 9),
+                Row(
+                  children: <Widget>[
+                    Flexible(
+                      child: _OrderMiniBadge(
+                        icon: _orderTypeIcon(order.type),
+                        label: _orderTypeLabel(order.type, t),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    TypographyText(
+                      _formatOrderAmount(order.totalAmount),
+                      style: const TextStyle(
+                        color: BaseColors.primary,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(width: 2),
+                    const Icon(
+                      Icons.chevron_right_rounded,
+                      color: BaseColors.textGray,
+                      size: 22,
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -21,6 +21,7 @@ import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
 import 'package:enjoy_lavash_mobile/theme/theme_extensions.dart';
 import 'package:enjoy_lavash_mobile/utils/price_formatter.dart';
 import 'package:enjoy_lavash_mobile/widgets/app_snack_bar.dart';
+import 'package:enjoy_lavash_mobile/widgets/delivery_chip.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -38,6 +39,7 @@ class _MainTabsState extends State<MainTabs> {
   final Map<String, int> _cart = <String, int>{};
   MobileOrderType _orderType = MobileOrderType.delivery;
   BranchModel? _selectedBranch;
+  String _promoCode = '';
   bool _isCheckingOut = false;
 
   List<CartLine> _buildCartLines(List<MenuProduct> products) {
@@ -172,19 +174,129 @@ class _MainTabsState extends State<MainTabs> {
     return addresses.first;
   }
 
+  String? _normalizePromoCode(String? promoCode) {
+    final trimmedPromoCode = promoCode?.trim();
+    if (trimmedPromoCode == null || trimmedPromoCode.isEmpty) return null;
+    return trimmedPromoCode;
+  }
+
+  CartPreviewAddressInput? _previewAddressFromLocation(
+    LocationController location,
+  ) {
+    final latitude = location.latitude;
+    final longitude = location.longitude;
+    if (latitude == null || longitude == null) return null;
+
+    return CartPreviewAddressInput(latitude: latitude, longitude: longitude);
+  }
+
+  CartPreviewAddressInput _previewAddressFromClientAddress(
+    ClientAddress address,
+  ) {
+    return CartPreviewAddressInput(
+      latitude: address.latitude,
+      longitude: address.longitude,
+    );
+  }
+
   void _showSnack(String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(appSnackBar(message));
   }
 
-  Future<CreateOrderRequest?> _buildCreateOrderRequest(
-    List<CartLine> cartLines,
-  ) async {
+  Future<CartPreviewRequest?> _buildCartPreviewRequest(
+    List<CartLine> cartLines, {
+    required MobileOrderType orderType,
+    String? promoCode,
+  }) async {
     final t = L.of(context);
     final items = _buildOrderItems(cartLines);
+    final normalizedPromoCode = _normalizePromoCode(promoCode);
 
-    if (_orderType == MobileOrderType.pickup) {
+    if (orderType == MobileOrderType.pickup) {
+      var branch = _selectedBranch;
+      if (branch == null) {
+        branch = await showBranchBottomSheet(context);
+        if (!mounted) return null;
+        if (branch != null) {
+          _setPickupBranch(branch);
+        }
+      }
+
+      if (branch == null) {
+        _showSnack(t.selectPickupBranchFirst);
+        return null;
+      }
+
+      return CartPreviewRequest(
+        type: MobileOrderType.pickup,
+        branchId: branch.id,
+        items: items,
+        paymentMethod: MobilePaymentMethod.cash,
+        promoCode: normalizedPromoCode,
+      );
+    }
+
+    final backend = context.read<MobileBackendController>();
+    final location = context.read<LocationController>();
+    var address = _previewAddressFromLocation(location);
+    final savedAddress = _defaultAddress(backend.addresses);
+    if (address == null && savedAddress != null) {
+      address = _previewAddressFromClientAddress(savedAddress);
+    }
+
+    if (address == null) {
+      await showAddressBottomSheet(context);
+      if (!mounted) return null;
+      address = _previewAddressFromLocation(location);
+      final fallbackSavedAddress = _defaultAddress(
+        context.read<MobileBackendController>().addresses,
+      );
+      if (address == null && fallbackSavedAddress != null) {
+        address = _previewAddressFromClientAddress(fallbackSavedAddress);
+      }
+    }
+
+    if (address == null) {
+      _showSnack(t.selectDeliveryAddressFirst);
+      return null;
+    }
+
+    return CartPreviewRequest(
+      type: MobileOrderType.delivery,
+      address: address,
+      items: items,
+      paymentMethod: MobilePaymentMethod.cash,
+      promoCode: normalizedPromoCode,
+    );
+  }
+
+  Future<Result<CartPreviewModel>?> _previewCartForCheckout(
+    List<CartLine> cartLines, {
+    required MobileOrderType orderType,
+    String? promoCode,
+  }) async {
+    final request = await _buildCartPreviewRequest(
+      cartLines,
+      orderType: orderType,
+      promoCode: promoCode,
+    );
+    if (!mounted || request == null) return null;
+
+    return context.read<MobileBackendController>().previewCart(request);
+  }
+
+  Future<CreateOrderRequest?> _buildCreateOrderRequest(
+    List<CartLine> cartLines, {
+    required MobileOrderType orderType,
+    String? promoCode,
+  }) async {
+    final t = L.of(context);
+    final items = _buildOrderItems(cartLines);
+    final normalizedPromoCode = _normalizePromoCode(promoCode);
+
+    if (orderType == MobileOrderType.pickup) {
       var branch = _selectedBranch;
       if (branch == null) {
         branch = await showBranchBottomSheet(context);
@@ -204,6 +316,7 @@ class _MainTabsState extends State<MainTabs> {
         branchId: branch.id,
         items: items,
         paymentMethod: MobilePaymentMethod.cash,
+        promoCode: normalizedPromoCode,
       );
     }
 
@@ -232,70 +345,16 @@ class _MainTabsState extends State<MainTabs> {
       addressId: address == null ? savedAddressId : null,
       items: items,
       paymentMethod: MobilePaymentMethod.cash,
+      promoCode: normalizedPromoCode,
       comment: comment.isEmpty ? null : comment,
     );
   }
 
-  BranchModel? _branchById(List<BranchModel> branches, String? id) {
-    final branchId = id?.trim();
-    if (branchId == null || branchId.isEmpty) return null;
-    for (final branch in branches) {
-      if (branch.id == branchId) return branch;
-    }
-    return null;
-  }
-
-  ClientAddress? _addressById(List<ClientAddress> addresses, String? id) {
-    final addressId = id?.trim();
-    if (addressId == null || addressId.isEmpty) return null;
-    for (final address in addresses) {
-      if (address.id == addressId) return address;
-    }
-    return null;
-  }
-
-  String _formatClientAddress(ClientAddress address) {
-    final parts = <String>[
-      if (address.street.trim().isNotEmpty) address.street.trim(),
-      if (address.houseNumber?.trim().isNotEmpty == true)
-        address.houseNumber!.trim(),
-    ];
-    if (parts.isEmpty) return address.label.trim();
-    return parts.join(', ');
-  }
-
-  String? _orderConfirmationDestination(CreateOrderRequest request) {
-    final backend = context.read<MobileBackendController>();
-
-    if (request.type == MobileOrderType.pickup) {
-      final branch = _branchById(backend.branches, request.branchId);
-      if (branch == null) return request.branchId;
-
-      final address = branch.address?.trim();
-      if (address == null || address.isEmpty) return branch.name;
-      return '${branch.name}\n$address';
-    }
-
-    final address = _addressById(backend.addresses, request.addressId);
-    if (address != null) return _formatClientAddress(address);
-
-    final location = context.read<LocationController>();
-    if (location.fullAddress.trim().isNotEmpty) {
-      return location.fullAddress.trim();
-    }
-    if (location.addressName.trim().isNotEmpty) {
-      return location.addressName.trim();
-    }
-    return null;
-  }
-
-  Future<bool> _showOrderConfirmation(
+  Future<_OrderCreationResult?> _showOrderConfirmation(
     List<CartLine> cartLines,
-    CreateOrderRequest request,
   ) async {
-    final destination = _orderConfirmationDestination(request);
     final totalAmount = _calculateTotalAmount(cartLines);
-    final result = await showModalBottomSheet<bool>(
+    return showModalBottomSheet<_OrderCreationResult>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
@@ -304,13 +363,19 @@ class _MainTabsState extends State<MainTabs> {
         return _OrderConfirmationSheet(
           cartLines: cartLines,
           totalAmount: totalAmount,
-          request: request,
-          destination: destination,
+          initialOrderType: _orderType,
+          initialPromoCode: _promoCode,
+          onPreviewRequested:
+              ({required MobileOrderType orderType, String? promoCode}) {
+                return _previewCartForCheckout(
+                  cartLines,
+                  orderType: orderType,
+                  promoCode: promoCode,
+                );
+              },
         );
       },
     );
-
-    return result ?? false;
   }
 
   Future<void> _handleCheckout(List<CartLine> cartLines) async {
@@ -329,11 +394,20 @@ class _MainTabsState extends State<MainTabs> {
       }
     }
 
-    final request = await _buildCreateOrderRequest(cartLines);
-    if (!mounted || request == null) return;
+    final orderDetails = await _showOrderConfirmation(cartLines);
+    if (!mounted || orderDetails == null) return;
 
-    final confirmed = await _showOrderConfirmation(cartLines, request);
-    if (!mounted || !confirmed) return;
+    if (_orderType != orderDetails.orderType) {
+      _setOrderType(orderDetails.orderType);
+    }
+    setState(() => _promoCode = orderDetails.promoCode ?? '');
+
+    final request = await _buildCreateOrderRequest(
+      cartLines,
+      orderType: orderDetails.orderType,
+      promoCode: orderDetails.promoCode,
+    );
+    if (!mounted || request == null) return;
 
     setState(() => _isCheckingOut = true);
     final result = await context.read<MobileBackendController>().createOrder(
@@ -346,6 +420,7 @@ class _MainTabsState extends State<MainTabs> {
       case Success():
         setState(() {
           _cart.clear();
+          _promoCode = '';
           _currentIndex = 2;
         });
         _showSnack(L.of(context).orderCreated);
@@ -472,6 +547,11 @@ class _MainTabsState extends State<MainTabs> {
                   backend.status == MobileBackendStatus.error &&
                       products.isEmpty
                   ? backend.failure?.message
+                  : null,
+              menuFailure:
+                  backend.status == MobileBackendStatus.error &&
+                      products.isEmpty
+                  ? backend.failure
                   : null,
               selectedCategoryIndex: selectedCategoryIndex,
               categories: categories,
@@ -607,23 +687,318 @@ class _MainTabsState extends State<MainTabs> {
   }
 }
 
-class _OrderConfirmationSheet extends StatelessWidget {
+class _OrderCreationResult {
+  const _OrderCreationResult({required this.orderType, this.promoCode});
+
+  final MobileOrderType orderType;
+  final String? promoCode;
+}
+
+typedef _CartPreviewRequester =
+    Future<Result<CartPreviewModel>?> Function({
+      required MobileOrderType orderType,
+      String? promoCode,
+    });
+
+class _OrderConfirmationSheet extends StatefulWidget {
   const _OrderConfirmationSheet({
     required this.cartLines,
     required this.totalAmount,
-    required this.request,
-    required this.destination,
+    required this.initialOrderType,
+    required this.initialPromoCode,
+    required this.onPreviewRequested,
   });
 
   final List<CartLine> cartLines;
   final int totalAmount;
-  final CreateOrderRequest request;
-  final String? destination;
+  final MobileOrderType initialOrderType;
+  final String initialPromoCode;
+  final _CartPreviewRequester onPreviewRequested;
+
+  @override
+  State<_OrderConfirmationSheet> createState() =>
+      _OrderConfirmationSheetState();
+}
+
+class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
+  late MobileOrderType _orderType;
+  late final TextEditingController _promoCodeController;
+  CartPreviewModel? _preview;
+  MobileOrderType? _lastPreviewOrderType;
+  String? _lastPreviewPromoCode;
+  String? _previewErrorText;
+  bool _isPreviewLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _orderType = widget.initialOrderType;
+    _promoCodeController = TextEditingController(text: widget.initialPromoCode);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(_loadPreview());
+    });
+  }
+
+  @override
+  void dispose() {
+    _promoCodeController.dispose();
+    super.dispose();
+  }
+
+  String? get _normalizedPromoCode {
+    final promoCode = _promoCodeController.text.trim();
+    return promoCode.isEmpty ? null : promoCode;
+  }
+
+  bool get _previewMatchesCurrentInput {
+    return _preview != null &&
+        _lastPreviewOrderType == _orderType &&
+        _lastPreviewPromoCode == _normalizedPromoCode;
+  }
+
+  Future<bool> _loadPreview() async {
+    if (_isPreviewLoading) return false;
+
+    final orderType = _orderType;
+    final promoCode = _normalizedPromoCode;
+    setState(() {
+      _isPreviewLoading = true;
+      _previewErrorText = null;
+      _preview = null;
+    });
+
+    final result = await widget.onPreviewRequested(
+      orderType: orderType,
+      promoCode: promoCode,
+    );
+    if (!mounted) return false;
+
+    if (orderType != _orderType || promoCode != _normalizedPromoCode) {
+      setState(() => _isPreviewLoading = false);
+      unawaited(_loadPreview());
+      return false;
+    }
+
+    if (result == null) {
+      setState(() => _isPreviewLoading = false);
+      return false;
+    }
+
+    return switch (result) {
+      Success(:final data) => _applyPreview(data, orderType, promoCode),
+      Error(:final failure) => _showPreviewError(failure.message),
+    };
+  }
+
+  bool _applyPreview(
+    CartPreviewModel preview,
+    MobileOrderType orderType,
+    String? promoCode,
+  ) {
+    setState(() {
+      _preview = preview;
+      _lastPreviewOrderType = orderType;
+      _lastPreviewPromoCode = promoCode;
+      _previewErrorText = null;
+      _isPreviewLoading = false;
+    });
+    return true;
+  }
+
+  bool _showPreviewError(String message) {
+    setState(() {
+      _preview = null;
+      _previewErrorText = message;
+      _isPreviewLoading = false;
+    });
+    return false;
+  }
+
+  Future<void> _confirmOrder() async {
+    if (!_previewMatchesCurrentInput) {
+      final didPreview = await _loadPreview();
+      if (!didPreview || !mounted) return;
+    }
+
+    Navigator.of(context).pop(
+      _OrderCreationResult(
+        orderType: _orderType,
+        promoCode: _normalizedPromoCode,
+      ),
+    );
+  }
+
+  void _selectOrderType(MobileOrderType type) {
+    if (_orderType == type) return;
+    setState(() => _orderType = type);
+    unawaited(_loadPreview());
+  }
+
+  Widget _buildOrderTypeToggle(L t) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF201C19) : const Color(0xFFF0ECE6),
+        borderRadius: BorderRadius.circular(28),
+      ),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: GestureDetector(
+              onTap: () => _selectOrderType(MobileOrderType.delivery),
+              child: DeliveryChip(
+                icon: Icons.delivery_dining_rounded,
+                title: t.delivery,
+                active: _orderType == MobileOrderType.delivery,
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: GestureDetector(
+              onTap: () => _selectOrderType(MobileOrderType.pickup),
+              child: DeliveryChip(
+                icon: Icons.shopping_bag_outlined,
+                title: t.pickup,
+                active: _orderType == MobileOrderType.pickup,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPromoCodeField(L t) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      height: 58,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF2A2522) : const Color(0xFFF8F4EF),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isDark ? const Color(0xFF3A332D) : const Color(0xFFEDE2D7),
+        ),
+      ),
+      child: Row(
+        children: <Widget>[
+          const Icon(Icons.local_offer_outlined, color: BaseColors.primary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: TextField(
+              controller: _promoCodeController,
+              textCapitalization: TextCapitalization.characters,
+              textInputAction: TextInputAction.done,
+              cursorColor: BaseColors.primary,
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                hintText: _mainTabsText(
+                  t,
+                  en: 'Enter promo code',
+                  ru: 'Введите промокод',
+                  uz: 'Promokodni kiriting',
+                ),
+                hintStyle: TextStyle(
+                  color: isDark ? const Color(0xFF9E9790) : BaseColors.textGray,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              onSubmitted: (_) => unawaited(_loadPreview()),
+            ),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            height: 38,
+            child: FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: BaseColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              onPressed: _isPreviewLoading
+                  ? null
+                  : () => unawaited(_loadPreview()),
+              child: _isPreviewLoading
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: BaseColors.white,
+                      ),
+                    )
+                  : TypographyText(
+                      _mainTabsText(
+                        t,
+                        en: 'Apply',
+                        ru: 'Применить',
+                        uz: "Qo'llash",
+                      ),
+                      style: const TextStyle(
+                        color: BaseColors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPreviewSummary(L t) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final preview = _preview;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF2A2522) : const Color(0xFFF8F4EF),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 180),
+        child: _isPreviewLoading && preview == null
+            ? const _PreviewLoadingState(key: ValueKey<String>('loading'))
+            : preview == null
+            ? _PreviewErrorState(
+                key: const ValueKey<String>('error'),
+                message:
+                    _previewErrorText ??
+                    _mainTabsText(
+                      t,
+                      en: 'Could not calculate total',
+                      ru: 'Не удалось рассчитать итог',
+                      uz: "Jami summani hisoblab bo'lmadi",
+                    ),
+                onRetry: () => unawaited(_loadPreview()),
+              )
+            : _PreviewTotals(
+                key: const ValueKey<String>('totals'),
+                preview: preview,
+                orderType: _orderType,
+                isRefreshing: _isPreviewLoading,
+              ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final t = L.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
 
     return Container(
       constraints: BoxConstraints(
@@ -638,7 +1013,7 @@ class _OrderConfirmationSheet extends StatelessWidget {
           18,
           10,
           18,
-          20 + MediaQuery.paddingOf(context).bottom,
+          20 + MediaQuery.paddingOf(context).bottom + bottomInset,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -663,9 +1038,9 @@ class _OrderConfirmationSheet extends StatelessWidget {
                   child: TypographyText(
                     _mainTabsText(
                       t,
-                      en: 'Confirm order',
-                      ru: 'Подтвердите заказ',
-                      uz: 'Buyurtmani tasdiqlang',
+                      en: 'Create order',
+                      ru: 'Оформить заказ',
+                      uz: 'Buyurtma berish',
                     ),
                     style: const TextStyle(
                       fontSize: 24,
@@ -674,37 +1049,39 @@ class _OrderConfirmationSheet extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  onPressed: () => Navigator.of(context).pop(false),
+                  onPressed: () => Navigator.of(context).pop(),
                   icon: const Icon(Icons.close_rounded),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            _ConfirmationInfoRow(
-              icon: request.type == MobileOrderType.delivery
-                  ? Icons.delivery_dining_rounded
-                  : Icons.storefront_rounded,
-              label: _mainTabsText(
+            TypographyText(
+              _mainTabsText(
                 t,
                 en: 'Order type',
                 ru: 'Тип заказа',
                 uz: 'Buyurtma turi',
               ),
-              value: _confirmationOrderTypeLabel(request.type, t),
-            ),
-            if (destination?.trim().isNotEmpty == true) ...[
-              const SizedBox(height: 8),
-              _ConfirmationInfoRow(
-                icon: request.type == MobileOrderType.delivery
-                    ? Icons.location_on_outlined
-                    : Icons.storefront_rounded,
-                label: request.type == MobileOrderType.delivery
-                    ? t.deliveryAddress
-                    : t.selectBranch,
-                value: destination!.trim(),
+              style: const TextStyle(
+                color: BaseColors.textGray,
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
               ),
-            ],
+            ),
             const SizedBox(height: 8),
+            _buildOrderTypeToggle(t),
+            const SizedBox(height: 14),
+            TypographyText(
+              t.promoCode,
+              style: const TextStyle(
+                color: BaseColors.textGray,
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 8),
+            _buildPromoCodeField(t),
+            const SizedBox(height: 14),
             _ConfirmationInfoRow(
               icon: Icons.payments_outlined,
               label: _mainTabsText(
@@ -713,7 +1090,7 @@ class _OrderConfirmationSheet extends StatelessWidget {
                 ru: 'Оплата',
                 uz: "To'lov",
               ),
-              value: _confirmationPaymentLabel(request.paymentMethod, t),
+              value: _confirmationPaymentLabel(MobilePaymentMethod.cash, t),
             ),
             const SizedBox(height: 14),
             Container(
@@ -741,9 +1118,9 @@ class _OrderConfirmationSheet extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  for (int i = 0; i < cartLines.length; i++) ...[
-                    _ConfirmationItemRow(line: cartLines[i]),
-                    if (i < cartLines.length - 1)
+                  for (int i = 0; i < widget.cartLines.length; i++) ...[
+                    _ConfirmationItemRow(line: widget.cartLines[i]),
+                    if (i < widget.cartLines.length - 1)
                       const Padding(
                         padding: EdgeInsets.symmetric(vertical: 10),
                         child: Divider(height: 1, color: Color(0x1A8C8278)),
@@ -753,27 +1130,7 @@ class _OrderConfirmationSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 14),
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: TypographyText(
-                    t.total,
-                    style: const TextStyle(
-                      color: BaseColors.textGray,
-                      fontSize: 15,
-                    ),
-                  ),
-                ),
-                TypographyText(
-                  formatSum(totalAmount),
-                  style: const TextStyle(
-                    color: BaseColors.primary,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
-            ),
+            _buildPreviewSummary(t),
             const SizedBox(height: 16),
             Row(
               children: <Widget>[
@@ -786,7 +1143,7 @@ class _OrderConfirmationSheet extends StatelessWidget {
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    onPressed: () => Navigator.of(context).pop(false),
+                    onPressed: () => Navigator.of(context).pop(),
                     child: TypographyText(
                       _mainTabsText(
                         t,
@@ -808,7 +1165,9 @@ class _OrderConfirmationSheet extends StatelessWidget {
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    onPressed: () => Navigator.of(context).pop(true),
+                    onPressed: _isPreviewLoading
+                        ? null
+                        : () => unawaited(_confirmOrder()),
                     child: TypographyText(
                       _mainTabsText(
                         t,
@@ -940,6 +1299,288 @@ class _ConfirmationItemRow extends StatelessWidget {
   }
 }
 
+class _PreviewLoadingState extends StatelessWidget {
+  const _PreviewLoadingState({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = L.of(context);
+
+    return Row(
+      children: <Widget>[
+        const SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(
+            strokeWidth: 2.4,
+            color: BaseColors.primary,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: TypographyText(
+            _mainTabsText(
+              t,
+              en: 'Calculating total',
+              ru: 'Считаем итог',
+              uz: 'Jami hisoblanmoqda',
+            ),
+            style: const TextStyle(
+              color: BaseColors.textGray,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PreviewErrorState extends StatelessWidget {
+  const _PreviewErrorState({
+    super.key,
+    required this.message,
+    required this.onRetry,
+  });
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = L.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            const Icon(
+              Icons.info_outline_rounded,
+              color: BaseColors.danger,
+              size: 20,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: TypographyText(
+                message,
+                style: const TextStyle(
+                  color: BaseColors.danger,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  height: 1.25,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: BaseColors.primary,
+            side: const BorderSide(color: BaseColors.primary),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+          ),
+          onPressed: onRetry,
+          icon: const Icon(Icons.refresh_rounded, size: 18),
+          label: TypographyText(
+            _mainTabsText(
+              t,
+              en: 'Recalculate',
+              ru: 'Пересчитать',
+              uz: 'Qayta hisoblash',
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PreviewTotals extends StatelessWidget {
+  const _PreviewTotals({
+    super.key,
+    required this.preview,
+    required this.orderType,
+    required this.isRefreshing,
+  });
+
+  final CartPreviewModel preview;
+  final MobileOrderType orderType;
+  final bool isRefreshing;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = L.of(context);
+    final appliedPromotion = preview.appliedPromotion;
+    final promoCode = appliedPromotion?.code?.trim();
+    final promoTitle = appliedPromotion?.title?.trim();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: TypographyText(
+                _mainTabsText(
+                  t,
+                  en: 'Order preview',
+                  ru: 'Расчет заказа',
+                  uz: 'Buyurtma hisobi',
+                ),
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+            if (isRefreshing)
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: BaseColors.primary,
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _PreviewAmountRow(
+          label: _mainTabsText(t, en: 'Items', ru: 'Товары', uz: 'Mahsulotlar'),
+          value: formatSum(preview.itemsAmount),
+        ),
+        if (preview.modifiersAmount > 0)
+          _PreviewAmountRow(
+            label: _mainTabsText(
+              t,
+              en: 'Modifiers',
+              ru: 'Добавки',
+              uz: "Qo'shimchalar",
+            ),
+            value: formatSum(preview.modifiersAmount),
+          ),
+        if (preview.discountAmount > 0)
+          _PreviewAmountRow(
+            label: t.discount,
+            value: '-${formatSum(preview.discountAmount)}',
+            valueColor: BaseColors.primary,
+          ),
+        if (orderType == MobileOrderType.delivery || preview.deliveryAmount > 0)
+          _PreviewAmountRow(
+            label: t.delivery,
+            value: formatSum(preview.deliveryAmount),
+          ),
+        if (preview.serviceFeeAmount > 0)
+          _PreviewAmountRow(
+            label: _mainTabsText(
+              t,
+              en: 'Service fee',
+              ru: 'Сервисный сбор',
+              uz: 'Xizmat haqi',
+            ),
+            value: formatSum(preview.serviceFeeAmount),
+          ),
+        if (appliedPromotion != null) ...[
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: BaseColors.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              children: <Widget>[
+                const Icon(
+                  Icons.local_offer_outlined,
+                  color: BaseColors.primary,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TypographyText(
+                    [
+                      if (promoCode?.isNotEmpty == true) promoCode!,
+                      if (promoTitle?.isNotEmpty == true) promoTitle!,
+                    ].join(' - '),
+                    style: const TextStyle(
+                      color: BaseColors.primary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 10),
+          child: Divider(height: 1, color: Color(0x1A8C8278)),
+        ),
+        _PreviewAmountRow(
+          label: t.total,
+          value: formatSum(preview.totalAmount),
+          isTotal: true,
+          valueColor: BaseColors.primary,
+        ),
+      ],
+    );
+  }
+}
+
+class _PreviewAmountRow extends StatelessWidget {
+  const _PreviewAmountRow({
+    required this.label,
+    required this.value,
+    this.valueColor,
+    this.isTotal = false,
+  });
+
+  final String label;
+  final String value;
+  final Color? valueColor;
+  final bool isTotal;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: isTotal ? 0 : 8),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: TypographyText(
+              label,
+              style: TextStyle(
+                color: BaseColors.textGray,
+                fontSize: isTotal ? 15 : 13,
+                fontWeight: isTotal ? FontWeight.w800 : FontWeight.w700,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          TypographyText(
+            value,
+            style: TextStyle(
+              color: valueColor,
+              fontSize: isTotal ? 22 : 14,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 String _mainTabsText(
   L t, {
   required String en,
@@ -950,13 +1591,6 @@ String _mainTabsText(
     'ru' => ru,
     'uz' => uz,
     _ => en,
-  };
-}
-
-String _confirmationOrderTypeLabel(MobileOrderType type, L t) {
-  return switch (type) {
-    MobileOrderType.delivery => t.delivery,
-    MobileOrderType.pickup => t.pickup,
   };
 }
 

@@ -133,7 +133,8 @@ class LRu extends L {
   String get shareApp => 'Поделиться приложением';
 
   @override
-  String get shareAppText => 'Попробуйте EnjoyLavash: https://enjoylavash.uz';
+  String get shareAppText =>
+      'Попробуйте EnjoyLavash: https://play.google.com/store/apps/details?id=com.aurumdev.enjoy_lavash_mobile';
 
   @override
   String get logout => 'Выйти';
@@ -165,6 +166,12 @@ class LRu extends L {
 
   @override
   String get no => 'Нет';
+
+  @override
+  String get save => 'Сохранить';
+
+  @override
+  String get skip => 'Пропустить';
 
   @override
   String get statusCompleted => 'Завершенный';

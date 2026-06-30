@@ -134,7 +134,7 @@ class LUz extends L {
 
   @override
   String get shareAppText =>
-      'EnjoyLavash ilovasini ko\'ring: https://enjoylavash.uz';
+      'EnjoyLavash ilovasini ko\'ring: https://play.google.com/store/apps/details?id=com.aurumdev.enjoy_lavash_mobile';
 
   @override
   String get logout => 'Chiqish';
@@ -165,6 +165,12 @@ class LUz extends L {
 
   @override
   String get no => 'Yo\'q';
+
+  @override
+  String get save => 'Saqlash';
+
+  @override
+  String get skip => 'O\'tkazib yuborish';
 
   @override
   String get statusCompleted => 'Yakunlangan';

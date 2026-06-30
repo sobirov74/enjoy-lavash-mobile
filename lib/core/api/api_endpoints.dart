@@ -16,6 +16,7 @@ class ApiEndpoints {
   static const clientMe = "/clients/me";
   static const clientAddresses = "/clients/me/addresses";
   static const clientOrders = "/clients/me/orders";
+  static const clientPushTokens = "/clients/me/push-tokens";
   static const filesUpload = "/files/upload";
   static const filesDelete = "/files/delete";
 
@@ -27,4 +28,7 @@ class ApiEndpoints {
 
   static String clientOrderCancel(String id) =>
       "$clientOrders/${Uri.encodeComponent(id)}/cancel";
+
+  static String clientPushToken(String token) =>
+      "$clientPushTokens/${Uri.encodeComponent(token)}";
 }

@@ -54,6 +54,17 @@ POST /auth/request-otp
 
 > `demoCode` is returned only in dev mode. In production, SMS will be sent.
 
+**Production SMS template for Android autofill:**
+
+```text
+<#> Enjoy Lavash code: {otp}
+qiIEUoeTbhg
+```
+
+Use `{otp}` as the 4-digit verification code. The second line is the Android
+SMS Retriever app hash for the release signing key. For local debug builds, use
+`xfkBoaU6Z4+` instead.
+
 ### 2. Verify OTP
 
 ```

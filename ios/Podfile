@@ -51,5 +51,17 @@ post_install do |installer|
         config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] = definitions
       end
     end
+
+    if target.name == 'permission_handler_apple'
+      target.build_configurations.each do |config|
+        definitions = config.build_settings['GCC_PREPROCESSOR_DEFINITIONS']
+        definitions = ['$(inherited)'] if definitions.nil?
+        definitions = [definitions] if definitions.is_a?(String)
+        unless definitions.include?('PERMISSION_NOTIFICATIONS=1')
+          definitions << 'PERMISSION_NOTIFICATIONS=1'
+        end
+        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] = definitions
+      end
+    end
   end
 end

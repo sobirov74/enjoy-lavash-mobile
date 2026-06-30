@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:enjoy_lavash_mobile/core/api/base_url.dart';
 import 'package:enjoy_lavash_mobile/core/error/failures.dart';
 import 'package:enjoy_lavash_mobile/core/error/result.dart';
+import 'package:enjoy_lavash_mobile/core/services/mobile_push_notification_service.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/address_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/auth_models.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/branch_model.dart';
@@ -16,9 +19,10 @@ import 'package:flutter/material.dart';
 enum MobileBackendStatus { initial, loading, loaded, error }
 
 class MobileBackendController extends ChangeNotifier {
-  MobileBackendController(this._repository);
+  MobileBackendController(this._repository, this._pushNotifications);
 
   final MobileBackendRepository _repository;
+  final MobilePushNotificationService _pushNotifications;
 
   MobileBackendStatus _status = MobileBackendStatus.initial;
   Failure? _failure;
@@ -29,6 +33,8 @@ class MobileBackendController extends ChangeNotifier {
   List<ClientAddress> _addresses = const <ClientAddress>[];
   List<CustomerOrderModel> _orders = const <CustomerOrderModel>[];
   ClientProfile? _client;
+  PushNotificationSettings? _pushNotificationSettings;
+  bool _pushNotificationsUpdating = false;
 
   MobileBackendStatus get status => _status;
   Failure? get failure => _failure;
@@ -39,6 +45,9 @@ class MobileBackendController extends ChangeNotifier {
   List<ClientAddress> get addresses => _addresses;
   List<CustomerOrderModel> get orders => _orders;
   ClientProfile? get client => _client;
+  PushNotificationSettings? get pushNotificationSettings =>
+      _pushNotificationSettings;
+  bool get pushNotificationsUpdating => _pushNotificationsUpdating;
   bool get isAuthenticated => _client != null;
   bool get isLoading => _status == MobileBackendStatus.loading;
 
@@ -52,6 +61,7 @@ class MobileBackendController extends ChangeNotifier {
       case Success(:final data):
         _client = data.client;
         _failure = null;
+        _startPushNotificationSync(locale: data.client.language);
         if (_status == MobileBackendStatus.initial) {
           _status = MobileBackendStatus.loaded;
         }
@@ -61,7 +71,57 @@ class MobileBackendController extends ChangeNotifier {
     return result;
   }
 
+  Future<Result<ClientProfile>> updateProfile(
+    ClientProfileUpdate request,
+  ) async {
+    final result = await _repository.updateProfile(request);
+    switch (result) {
+      case Success(:final data):
+        _client = data;
+        _failure = null;
+        notifyListeners();
+      case Error(:final failure):
+        _failure = failure;
+        notifyListeners();
+    }
+    return result;
+  }
+
+  Future<void> refreshPushNotificationSettings() async {
+    _pushNotificationSettings = await _pushNotifications.getSettings();
+    notifyListeners();
+  }
+
+  Future<Result<PushNotificationSettings>> setPushNotificationsEnabled(
+    bool enabled,
+  ) async {
+    _pushNotificationsUpdating = true;
+    notifyListeners();
+
+    try {
+      final settings = await _pushNotifications.setNotificationsEnabled(
+        enabled,
+        locale: _client?.language,
+      );
+      _pushNotificationSettings = settings;
+      _failure = null;
+      return Success(settings);
+    } catch (error) {
+      final failure = UnknownFailure(error.toString());
+      _failure = failure;
+      return Error(failure);
+    } finally {
+      _pushNotificationsUpdating = false;
+      notifyListeners();
+    }
+  }
+
   Future<Result<void>> logout() async {
+    try {
+      await _pushNotifications.deleteRegisteredToken();
+    } catch (error) {
+      debugPrint('Push token cleanup failed during logout: $error');
+    }
     final result = await _repository.logout();
     if (result.isSuccess) {
       handleSessionExpired();
@@ -165,6 +225,10 @@ class MobileBackendController extends ChangeNotifier {
         _addresses = data.addresses;
         _orders = data.orders;
         _applyCatalog(data.catalog);
+        final client = data.client;
+        if (client != null) {
+          _startPushNotificationSync(locale: client.language);
+        }
         _status = MobileBackendStatus.loaded;
       case Error(:final failure):
         _failure = failure;
@@ -194,6 +258,20 @@ class MobileBackendController extends ChangeNotifier {
     }
 
     return result;
+  }
+
+  void _startPushNotificationSync({String? locale}) {
+    unawaited(_syncPushNotificationToken(locale: locale));
+  }
+
+  Future<void> _syncPushNotificationToken({String? locale}) async {
+    try {
+      await _pushNotifications.syncToken(locale: locale);
+      _pushNotificationSettings = await _pushNotifications.getSettings();
+      notifyListeners();
+    } catch (error) {
+      debugPrint('Push notification sync failed: $error');
+    }
   }
 
   void _applyCatalog(CatalogModel catalog) {

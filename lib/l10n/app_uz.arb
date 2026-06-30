@@ -46,7 +46,7 @@
   "canSpend": "Sarflash mumkin",
   "canSpendValue": "Buyurtmaning 50% gacha",
   "shareApp": "Ilovani ulashish",
-  "shareAppText": "EnjoyLavash ilovasini ko'ring: https://enjoylavash.uz",
+  "shareAppText": "EnjoyLavash ilovasini ko'ring: https://play.google.com/store/apps/details?id=com.aurumdev.enjoy_lavash_mobile",
   "logout": "Chiqish",
   "logoutTitle": "Akkauntdan chiqasizmi?",
   "logoutMessage": "Saqlangan token ushbu qurilmadan o'chiriladi.",
@@ -59,6 +59,8 @@
   "confirm": "Tasdiqlash",
   "yes": "Ha",
   "no": "Yo'q",
+  "save": "Saqlash",
+  "skip": "O'tkazib yuborish",
 
   "statusCompleted": "Yakunlangan",
   "statusAccepted": "Qabul qilingan",

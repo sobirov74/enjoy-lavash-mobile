@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:enjoy_lavash_mobile/app/locale_controller.dart';
 import 'package:enjoy_lavash_mobile/core/error/result.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/auth_models.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/client_profile_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/presentation/mobile_backend_controller.dart';
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
@@ -28,7 +29,6 @@ class _AuthorizationScreenState extends State<AuthorizationScreen>
     text: '+998',
   );
   final TextEditingController _codeController = TextEditingController();
-  final TextEditingController _nameController = TextEditingController();
   final FocusNode _codeFocusNode = FocusNode();
 
   bool _otpRequested = false;
@@ -43,7 +43,6 @@ class _AuthorizationScreenState extends State<AuthorizationScreen>
     unawaited(unregisterListener());
     _phoneController.dispose();
     _codeController.dispose();
-    _nameController.dispose();
     _codeFocusNode.dispose();
     super.dispose();
   }
@@ -99,9 +98,11 @@ class _AuthorizationScreenState extends State<AuthorizationScreen>
       _errorText = null;
     });
 
-    final result = await context.read<MobileBackendController>().requestOtp(
-      phoneNumber: phoneNumber,
-    );
+    final controller = context.read<MobileBackendController>();
+    await _startSmsCodeListener();
+    if (!mounted) return;
+
+    final result = await controller.requestOtp(phoneNumber: phoneNumber);
     if (!mounted) return;
 
     switch (result) {
@@ -115,8 +116,9 @@ class _AuthorizationScreenState extends State<AuthorizationScreen>
         });
         _codeController.clear();
         _focusCodeField();
-        unawaited(_startSmsCodeListener());
       case Error(:final failure):
+        unawaited(cancel());
+        unawaited(unregisterListener());
         setState(() {
           _errorText = failure.message;
           _isSubmitting = false;
@@ -144,12 +146,10 @@ class _AuthorizationScreenState extends State<AuthorizationScreen>
     });
 
     final language = context.read<LocaleController>().locale.languageCode;
-    final fullName = _nameController.text.trim();
     final result = await context.read<MobileBackendController>().verifyOtp(
       VerifyOtpRequest(
         phoneNumber: phoneNumber,
         code: code,
-        fullName: fullName.isEmpty ? null : fullName,
         language: language,
       ),
     );
@@ -158,6 +158,9 @@ class _AuthorizationScreenState extends State<AuthorizationScreen>
     switch (result) {
       case Success():
         TextInput.finishAutofillContext();
+        FocusScope.of(context).unfocus();
+        await _showNamePromptIfNeeded();
+        if (!mounted) return;
         Navigator.of(context).pop(true);
       case Error(:final failure):
         setState(() {
@@ -174,6 +177,19 @@ class _AuthorizationScreenState extends State<AuthorizationScreen>
       _codeHasError = false;
       _errorText = null;
     });
+  }
+
+  Future<void> _showNamePromptIfNeeded() async {
+    final client = context.read<MobileBackendController>().client;
+    if (client == null || client.fullName.trim().isNotEmpty) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const _NamePromptSheet(),
+    );
   }
 
   @override
@@ -222,17 +238,6 @@ class _AuthorizationScreenState extends State<AuthorizationScreen>
               if (_otpRequested) ...[
                 const SizedBox(height: 14),
                 _buildOtpInput(isDark),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: _nameController,
-                  textCapitalization: TextCapitalization.words,
-                  enabled: !_isSubmitting,
-                  decoration: _inputDecoration(
-                    label: t.nameOptional,
-                    icon: Icons.person_outline_rounded,
-                    isDark: isDark,
-                  ),
-                ),
                 if (_demoCode?.isNotEmpty == true) ...[
                   const SizedBox(height: 12),
                   TypographyText(
@@ -400,6 +405,187 @@ class _AuthorizationScreenState extends State<AuthorizationScreen>
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(20),
         borderSide: const BorderSide(color: BaseColors.primary),
+      ),
+    );
+  }
+}
+
+class _NamePromptSheet extends StatefulWidget {
+  const _NamePromptSheet();
+
+  @override
+  State<_NamePromptSheet> createState() => _NamePromptSheetState();
+}
+
+class _NamePromptSheetState extends State<_NamePromptSheet> {
+  final TextEditingController _nameController = TextEditingController();
+  bool _isSaving = false;
+  String? _errorText;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _saveName() async {
+    if (_isSaving) return;
+
+    final fullName = _nameController.text.trim();
+    if (fullName.isEmpty) {
+      Navigator.of(context).pop();
+      return;
+    }
+
+    setState(() {
+      _isSaving = true;
+      _errorText = null;
+    });
+
+    final result = await context.read<MobileBackendController>().updateProfile(
+      ClientProfileUpdate(fullName: fullName),
+    );
+    if (!mounted) return;
+
+    switch (result) {
+      case Success():
+        Navigator.of(context).pop();
+      case Error(:final failure):
+        setState(() {
+          _isSaving = false;
+          _errorText = failure.message;
+        });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final t = L.of(context);
+
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+        decoration: BoxDecoration(
+          color: theme.scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Center(
+                child: Container(
+                  width: 46,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF3A332D)
+                        : const Color(0xFFE8DED4),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              TypographyText(
+                t.nameOptional,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 18),
+              TextField(
+                controller: _nameController,
+                autofocus: true,
+                textCapitalization: TextCapitalization.words,
+                textInputAction: TextInputAction.done,
+                enabled: !_isSaving,
+                onSubmitted: (_) => _saveName(),
+                decoration: InputDecoration(
+                  labelText: t.nameOptional,
+                  prefixIcon: const Icon(Icons.person_outline_rounded),
+                  filled: true,
+                  fillColor: isDark ? const Color(0xFF1D1A18) : Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    borderSide: const BorderSide(color: BaseColors.primary),
+                  ),
+                ),
+              ),
+              if (_errorText != null) ...[
+                const SizedBox(height: 12),
+                TypographyText(
+                  _errorText!,
+                  style: const TextStyle(
+                    color: BaseColors.danger,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 18),
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: TextButton(
+                      style: TextButton.styleFrom(
+                        foregroundColor: BaseColors.textGray,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      onPressed: _isSaving
+                          ? null
+                          : () => Navigator.of(context).pop(),
+                      child: TypographyText(t.skip),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: BaseColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      onPressed: _isSaving ? null : _saveName,
+                      child: _isSaving
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : TypographyText(
+                              t.save,
+                              style: const TextStyle(color: BaseColors.white),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

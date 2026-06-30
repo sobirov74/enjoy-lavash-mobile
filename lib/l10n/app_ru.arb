@@ -46,7 +46,7 @@
   "canSpend": "Можно потратить",
   "canSpendValue": "До 50% заказа",
   "shareApp": "Поделиться приложением",
-  "shareAppText": "Попробуйте EnjoyLavash: https://enjoylavash.uz",
+  "shareAppText": "Попробуйте EnjoyLavash: https://play.google.com/store/apps/details?id=com.aurumdev.enjoy_lavash_mobile",
   "logout": "Выйти",
   "logoutTitle": "Выйти из аккаунта?",
   "logoutMessage": "Сохраненный токен будет удален с этого устройства.",
@@ -59,6 +59,8 @@
   "confirm": "Подтвердить",
   "yes": "Да",
   "no": "Нет",
+  "save": "Сохранить",
+  "skip": "Пропустить",
 
   "statusCompleted": "Завершенный",
   "statusAccepted": "Принят",

@@ -1,14 +1,13 @@
 import 'dart:async';
 
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
-import 'package:enjoy_lavash_mobile/theme/theme_extensions.dart';
 import 'package:enjoy_lavash_mobile/widgets/animated_error_message.dart';
 import 'package:enjoy_lavash_mobile/widgets/app_snack_bar.dart';
-import 'package:enjoy_lavash_mobile/widgets/button.dart';
 import 'package:enjoy_lavash_mobile/widgets/confirm_dialog.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:enjoy_lavash_mobile/app/locale_controller.dart';
@@ -22,15 +21,50 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/presentation/mobile_
 import 'package:enjoy_lavash_mobile/screens/authorization_screen.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
 
-class Profile extends StatelessWidget {
+class Profile extends StatefulWidget {
   const Profile({super.key, this.onRefresh});
 
   static const int _loyaltyPoints = 1250;
 
   final Future<void> Function()? onRefresh;
 
+  @override
+  State<Profile> createState() => _ProfileState();
+}
+
+class _ProfileState extends State<Profile> {
+  late final Future<String?> _appVersionFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _appVersionFuture = _loadAppVersion();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(
+        context
+            .read<MobileBackendController>()
+            .refreshPushNotificationSettings(),
+      );
+    });
+  }
+
   Future<void> _shareApp(L t) async {
     await SharePlus.instance.share(ShareParams(text: t.shareAppText));
+  }
+
+  Future<String?> _loadAppVersion() async {
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      final version = packageInfo.version.trim();
+      final buildNumber = packageInfo.buildNumber.trim();
+      if (version.isEmpty) return null;
+      if (buildNumber.isEmpty) return version;
+      return version;
+    } catch (error) {
+      debugPrint('App version lookup failed: $error');
+      return null;
+    }
   }
 
   void _confirmLogout(BuildContext context, L t) {
@@ -82,6 +116,48 @@ class Profile extends StatelessWidget {
     ).push(MaterialPageRoute<void>(builder: (_) => const _AllOrdersScreen()));
   }
 
+  Future<void> _setPushNotifications(BuildContext context, bool enabled) async {
+    final t = L.of(context);
+    final result = await context
+        .read<MobileBackendController>()
+        .setPushNotificationsEnabled(enabled);
+
+    if (!context.mounted) return;
+
+    switch (result) {
+      case Success(:final data):
+        if (enabled && !data.enabled) {
+          final message = data.permissionPermanentlyDenied
+              ? _orderText(
+                  t,
+                  en: 'Allow notifications in phone settings',
+                  ru: 'Разрешите уведомления в настройках телефона',
+                  uz: 'Telefon sozlamalarida bildirishnomalarga ruxsat bering',
+                )
+              : _orderText(
+                  t,
+                  en: 'Notification permission was not allowed',
+                  ru: 'Разрешение на уведомления не выдано',
+                  uz: 'Bildirishnomalarga ruxsat berilmadi',
+                );
+          ScaffoldMessenger.of(context).showSnackBar(appSnackBar(message));
+        }
+      case Error(:final failure):
+        ScaffoldMessenger.of(context).showSnackBar(
+          appSnackBar(
+            failure.message.isNotEmpty
+                ? failure.message
+                : _orderText(
+                    t,
+                    en: 'Could not update notification settings',
+                    ru: 'Не удалось обновить настройки уведомлений',
+                    uz: "Bildirishnoma sozlamalarini yangilab bo'lmadi",
+                  ),
+          ),
+        );
+    }
+  }
+
   String _formatAddress(ClientAddress address) {
     final parts = <String>[address.street];
     if (address.houseNumber?.isNotEmpty == true) {
@@ -119,14 +195,18 @@ class Profile extends StatelessWidget {
     final profileSubtitle = phoneNumber.isNotEmpty
         ? phoneNumber
         : t.tapToSignIn;
-    final loyaltyPoints = client?.bonusBalance ?? _loyaltyPoints;
-    final recentOrders = mobileBackend.orders.take(5).toList(growable: false);
+    final loyaltyPoints = client?.bonusBalance ?? Profile._loyaltyPoints;
+    final recentOrders = mobileBackend.orders.take(2).toList(growable: false);
     final hasMoreOrders = mobileBackend.orders.length > recentOrders.length;
     final backendFailure = mobileBackend.failure;
+    final pushSettings = mobileBackend.pushNotificationSettings;
+    final notificationsLoading = mobileBackend.pushNotificationsUpdating;
+    final notificationsSupported = pushSettings?.supported ?? true;
+    final notificationsEnabled = pushSettings?.enabled ?? false;
 
     return RefreshIndicator(
       color: BaseColors.primary,
-      onRefresh: onRefresh ?? () async {},
+      onRefresh: widget.onRefresh ?? () async {},
       child: CustomScrollView(
         physics: const BouncingScrollPhysics(
           parent: AlwaysScrollableScrollPhysics(),
@@ -172,9 +252,12 @@ class Profile extends StatelessWidget {
                                 Radius.circular(24),
                               ),
                             ),
-                            child: const TypographyText(
-                              '👤',
-                              style: TextStyle(fontSize: 34),
+                            child: Icon(
+                              isAuthorized
+                                  ? Icons.person_rounded
+                                  : Icons.login_rounded,
+                              color: Colors.white,
+                              size: 36,
                             ),
                           ),
                           const SizedBox(width: 16),
@@ -200,7 +283,8 @@ class Profile extends StatelessWidget {
                               ],
                             ),
                           ),
-                          const Icon(Icons.chevron_right_rounded, size: 28),
+                          if (!isAuthorized)
+                            const Icon(Icons.chevron_right_rounded, size: 28),
                         ],
                       ),
                     ),
@@ -210,180 +294,211 @@ class Profile extends StatelessWidget {
                     AnimatedErrorMessage(
                       failure: backendFailure,
                       compact: true,
-                      onRetry: onRefresh == null
+                      onRetry: widget.onRefresh == null
                           ? null
-                          : () => unawaited(onRefresh!()),
+                          : () => unawaited(widget.onRefresh!()),
                     ),
                     const SizedBox(height: 16),
                   ],
 
-                  // -- Theme toggle
-                  _SurfaceCard(
+                  // -- Settings
+                  _SectionCard(
                     isDark: isDark,
-                    padding: const EdgeInsets.all(8),
-                    child: Row(
+                    title: t.settings,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        Expanded(
-                          child: MainButton(
-                            title: TypographyText(
-                              t.lightTheme,
-                              style: TextStyle(color: context.colors.text),
-                            ),
-                            icon: Icon(
-                              Icons.light_mode_rounded,
-                              color: context.colors.text,
-                            ),
-                            onPressed: () =>
-                                themeController.setTheme(ThemeMode.light),
-                            elevation: 0,
-                            backgroundColor: !isDark
-                                ? BaseColors.primary
-                                : BaseColors.black600,
-                            foregroundColor: !isDark
-                                ? Colors.white
-                                : const Color(0xFF14110F),
-                            borderRadius: BorderRadius.circular(20),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                        _NotificationSwitchTile(
+                          isDark: isDark,
+                          title: _orderText(
+                            t,
+                            en: 'Notifications',
+                            ru: 'Уведомления',
+                            uz: 'Bildirishnomalar',
+                          ),
+                          subtitle: _notificationSubtitle(
+                            t,
+                            isLoading: pushSettings == null,
+                            supported: notificationsSupported,
+                            enabled: notificationsEnabled,
+                            permissionPermanentlyDenied:
+                                pushSettings?.permissionPermanentlyDenied ??
+                                false,
+                          ),
+                          value: notificationsEnabled,
+                          loading: notificationsLoading,
+                          enabled:
+                              pushSettings != null &&
+                              notificationsSupported &&
+                              !mobileBackend.pushNotificationsUpdating,
+                          onChanged: (value) =>
+                              unawaited(_setPushNotifications(context, value)),
+                        ),
+                        const _SettingsDivider(),
+                        _SettingsHeader(
+                          icon: Icons.palette_outlined,
+                          title: _orderText(
+                            t,
+                            en: 'Appearance',
+                            ru: 'Оформление',
+                            uz: "Ko'rinish",
+                          ),
+                          subtitle: _orderText(
+                            t,
+                            en: 'Choose the app color mode',
+                            ru: 'Выберите цветовой режим приложения',
+                            uz: 'Ilova rang rejimini tanlang',
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: MainButton(
-                            title: TypographyText(
-                              t.darkTheme,
-                              style: TextStyle(color: context.colors.text),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: <Widget>[
+                            Expanded(
+                              child: _PreferenceChip(
+                                label: t.lightTheme,
+                                icon: Icons.light_mode_rounded,
+                                isActive: !isDark,
+                                isDark: isDark,
+                                onTap: () =>
+                                    themeController.setTheme(ThemeMode.light),
+                              ),
                             ),
-                            icon: Icon(
-                              Icons.dark_mode_rounded,
-                              color: isDark
-                                  ? Colors.white
-                                  : const Color(0xFF14110F),
-                            ),
-                            onPressed: () =>
-                                themeController.setTheme(ThemeMode.dark),
-                            elevation: 0,
-                            backgroundColor: isDark
-                                ? BaseColors.primary
-                                : const Color(0xFFF3F0EB),
-                            foregroundColor: isDark
-                                ? Colors.white
-                                : const Color(0xFF14110F),
-                            borderRadius: BorderRadius.circular(20),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // -- Language selector
-                  _SurfaceCard(
-                    isDark: isDark,
-                    padding: const EdgeInsets.all(8),
-                    child: Row(
-                      children: <Widget>[
-                        for (final entry in [
-                          (locale: const Locale('uz'), label: "O'zbekcha"),
-                          (locale: const Locale('ru'), label: 'Русский'),
-                          (locale: const Locale('en'), label: 'English'),
-                        ]) ...[
-                          if (entry.locale != const Locale('uz'))
                             const SizedBox(width: 8),
-                          Expanded(
-                            child: _LangChip(
-                              label: entry.label,
-                              isActive: localeController.locale == entry.locale,
-                              isDark: isDark,
-                              onTap: () =>
-                                  localeController.setLocale(entry.locale),
+                            Expanded(
+                              child: _PreferenceChip(
+                                label: t.darkTheme,
+                                icon: Icons.dark_mode_rounded,
+                                isActive: isDark,
+                                isDark: isDark,
+                                onTap: () =>
+                                    themeController.setTheme(ThemeMode.dark),
+                              ),
                             ),
+                          ],
+                        ),
+                        const _SettingsDivider(),
+                        _SettingsHeader(
+                          icon: Icons.translate_rounded,
+                          title: _orderText(
+                            t,
+                            en: 'Language',
+                            ru: 'Язык',
+                            uz: 'Til',
                           ),
-                        ],
+                          subtitle: _orderText(
+                            t,
+                            en: 'Use the app in your preferred language',
+                            ru: 'Используйте приложение на удобном языке',
+                            uz: 'Ilovadan qulay tilda foydalaning',
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: <Widget>[
+                            for (final entry in [
+                              (locale: const Locale('uz'), label: "O'zbekcha"),
+                              (locale: const Locale('ru'), label: 'Русский'),
+                              (locale: const Locale('en'), label: 'English'),
+                            ]) ...[
+                              if (entry.locale != const Locale('uz'))
+                                const SizedBox(width: 8),
+                              Expanded(
+                                child: _LangChip(
+                                  label: entry.label,
+                                  isActive:
+                                      localeController.locale == entry.locale,
+                                  isDark: isDark,
+                                  onTap: () =>
+                                      localeController.setLocale(entry.locale),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 16),
 
                   // -- Loyalty card
-                  Container(
-                    padding: const EdgeInsets.all(22),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: <Color>[BaseColors.primary, Color(0xFFFF7043)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        TypographyText(
-                          t.loyaltyCard,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        TypographyText(
-                          t.accumulatedPoints,
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 15,
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        TypographyText(
-                          _formatPoints(loyaltyPoints),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 42,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0,
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(18),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(26),
-                          ),
-                          child: Column(
-                            children: <Widget>[
-                              Icon(
-                                Icons.qr_code_2_rounded,
-                                size: 180,
-                                color: Colors.grey.shade900,
-                              ),
-                              const SizedBox(height: 8),
-                              TypographyText(
-                                'ENJOY-LAVASH-$loyaltyPoints',
-                                style: const TextStyle(
-                                  letterSpacing: 2.4,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        TypographyText(
-                          t.showCodeForPoints,
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+                  // Container(
+                  //   padding: const EdgeInsets.all(22),
+                  //   decoration: BoxDecoration(
+                  //     gradient: const LinearGradient(
+                  //       colors: <Color>[BaseColors.primary, Color(0xFFFF7043)],
+                  //       begin: Alignment.topLeft,
+                  //       end: Alignment.bottomRight,
+                  //     ),
+                  //     borderRadius: BorderRadius.circular(30),
+                  //   ),
+                  //   child: Column(
+                  //     crossAxisAlignment: CrossAxisAlignment.start,
+                  //     children: <Widget>[
+                  //       TypographyText(
+                  //         t.loyaltyCard,
+                  //         style: const TextStyle(
+                  //           color: Colors.white,
+                  //           fontSize: 22,
+                  //           fontWeight: FontWeight.w800,
+                  //         ),
+                  //       ),
+                  //       const SizedBox(height: 6),
+                  //       TypographyText(
+                  //         t.accumulatedPoints,
+                  //         style: const TextStyle(
+                  //           color: Colors.white70,
+                  //           fontSize: 15,
+                  //         ),
+                  //       ),
+                  //       const SizedBox(height: 18),
+                  //       TypographyText(
+                  //         _formatPoints(loyaltyPoints),
+                  //         style: const TextStyle(
+                  //           color: Colors.white,
+                  //           fontSize: 42,
+                  //           fontWeight: FontWeight.w900,
+                  //           letterSpacing: 0,
+                  //         ),
+                  //       ),
+                  //       const SizedBox(height: 18),
+                  //       Container(
+                  //         width: double.infinity,
+                  //         padding: const EdgeInsets.all(18),
+                  //         decoration: BoxDecoration(
+                  //           color: Colors.white,
+                  //           borderRadius: BorderRadius.circular(26),
+                  //         ),
+                  //         child: Column(
+                  //           children: <Widget>[
+                  //             Icon(
+                  //               Icons.qr_code_2_rounded,
+                  //               size: 180,
+                  //               color: Colors.grey.shade900,
+                  //             ),
+                  //             const SizedBox(height: 8),
+                  //             TypographyText(
+                  //               'ENJOY-LAVASH-$loyaltyPoints',
+                  //               style: const TextStyle(
+                  //                 letterSpacing: 2.4,
+                  //                 fontSize: 12,
+                  //                 fontWeight: FontWeight.w700,
+                  //               ),
+                  //             ),
+                  //           ],
+                  //         ),
+                  //       ),
+                  //       const SizedBox(height: 14),
+                  //       TypographyText(
+                  //         t.showCodeForPoints,
+                  //         style: const TextStyle(
+                  //           color: Colors.white70,
+                  //           fontSize: 14,
+                  //         ),
+                  //       ),
+                  //     ],
+                  //   ),
+                  // ),
+                  // const SizedBox(height: 16),
 
                   // -- Personal info
                   if (isAuthorized)
@@ -485,42 +600,64 @@ class Profile extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
 
-                  // -- Share button
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: BaseColors.primary,
-                        side: const BorderSide(color: BaseColors.primary),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                      ),
-                      onPressed: () => _shareApp(t),
-                      icon: const Icon(Icons.share_outlined),
-                      label: TypographyText(t.shareApp),
+                  // -- Actions
+                  _SectionCard(
+                    isDark: isDark,
+                    title: _orderText(
+                      t,
+                      en: 'Actions',
+                      ru: 'Действия',
+                      uz: 'Amallar',
                     ),
-                  ),
-                  if (client != null) ...[
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: BaseColors.danger,
-                          side: const BorderSide(color: BaseColors.danger),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
+                    child: Column(
+                      children: <Widget>[
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: BaseColors.primary,
+                              side: const BorderSide(color: BaseColors.primary),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                            onPressed: () => _shareApp(t),
+                            icon: const Icon(Icons.share_outlined),
+                            label: TypographyText(t.shareApp),
                           ),
                         ),
-                        onPressed: () => _confirmLogout(context, t),
-                        icon: const Icon(Icons.logout_rounded),
-                        label: TypographyText(t.logout),
-                      ),
+                        if (client != null) ...[
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: BaseColors.danger,
+                                side: const BorderSide(
+                                  color: BaseColors.danger,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                              ),
+                              onPressed: () => _confirmLogout(context, t),
+                              icon: const Icon(Icons.logout_rounded),
+                              label: TypographyText(t.logout),
+                            ),
+                          ),
+                        ],
+                        const _SettingsDivider(),
+                        _AppVersionRow(
+                          future: _appVersionFuture,
+                          isDark: isDark,
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                   const SizedBox(height: 28),
                 ],
               ),
@@ -980,6 +1117,275 @@ class _LangChip extends StatelessWidget {
   }
 }
 
+class _NotificationSwitchTile extends StatelessWidget {
+  const _NotificationSwitchTile({
+    required this.isDark,
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.loading,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final bool isDark;
+  final String title;
+  final String subtitle;
+  final bool value;
+  final bool loading;
+  final bool enabled;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: <Widget>[
+        Container(
+          width: 46,
+          height: 46,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: BaseColors.primary.withValues(alpha: isDark ? 0.22 : 0.12),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: const Icon(
+            Icons.notifications_active_outlined,
+            color: BaseColors.primary,
+          ),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              TypographyText(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 3),
+              TypographyText(
+                subtitle,
+                style: TextStyle(
+                  color: isDark
+                      ? BaseColors.lightTextGray
+                      : BaseColors.textGray,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  height: 1.25,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 10),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 180),
+          child: loading
+              ? const SizedBox(
+                  key: ValueKey<String>('loading'),
+                  width: 28,
+                  height: 28,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.4,
+                    color: BaseColors.primary,
+                  ),
+                )
+              : Switch.adaptive(
+                  key: const ValueKey<String>('switch'),
+                  value: value,
+                  activeThumbColor: BaseColors.primary,
+                  onChanged: enabled ? onChanged : null,
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SettingsHeader extends StatelessWidget {
+  const _SettingsHeader({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Row(
+      children: <Widget>[
+        Icon(icon, color: BaseColors.primary, size: 22),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              TypographyText(
+                title,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 2),
+              TypographyText(
+                subtitle,
+                style: TextStyle(
+                  color: isDark
+                      ? BaseColors.lightTextGray
+                      : BaseColors.textGray,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SettingsDivider extends StatelessWidget {
+  const _SettingsDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Divider(
+        height: 1,
+        color: isDark ? BaseColors.borderDark : BaseColors.borderLight,
+      ),
+    );
+  }
+}
+
+class _PreferenceChip extends StatelessWidget {
+  const _PreferenceChip({
+    required this.label,
+    required this.icon,
+    required this.isActive,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool isActive;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = isActive
+        ? Colors.white
+        : (isDark ? Colors.white : const Color(0xFF14110F));
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 48,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+          color: isActive
+              ? BaseColors.primary
+              : (isDark ? BaseColors.black600 : const Color(0xFFF3F0EB)),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(icon, color: foreground, size: 18),
+            const SizedBox(width: 6),
+            Flexible(
+              child: TypographyText(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: foreground,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AppVersionRow extends StatelessWidget {
+  const _AppVersionRow({required this.future, required this.isDark});
+
+  final Future<String?> future;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = L.of(context);
+
+    return Row(
+      children: <Widget>[
+        Container(
+          width: 46,
+          height: 46,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: BaseColors.primary.withValues(alpha: isDark ? 0.22 : 0.12),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: const Icon(
+            Icons.info_outline_rounded,
+            color: BaseColors.primary,
+          ),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: TypographyText(
+            _orderText(
+              t,
+              en: 'App version',
+              ru: 'Версия приложения',
+              uz: 'Ilova versiyasi',
+            ),
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+          ),
+        ),
+        const SizedBox(width: 10),
+        FutureBuilder<String?>(
+          future: future,
+          builder: (context, snapshot) {
+            final version = snapshot.data;
+            return TypographyText(
+              version?.isNotEmpty == true ? version! : '...',
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                color: isDark ? BaseColors.lightTextGray : BaseColors.textGray,
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Reusable private widgets
 // ---------------------------------------------------------------------------
@@ -1114,6 +1520,53 @@ String _orderText(
     'uz' => uz,
     _ => en,
   };
+}
+
+String _notificationSubtitle(
+  L t, {
+  required bool isLoading,
+  required bool supported,
+  required bool enabled,
+  required bool permissionPermanentlyDenied,
+}) {
+  if (isLoading) {
+    return _orderText(
+      t,
+      en: 'Checking notification permission',
+      ru: 'Проверяем доступ к уведомлениям',
+      uz: 'Bildirishnoma ruxsati tekshirilmoqda',
+    );
+  }
+  if (!supported) {
+    return _orderText(
+      t,
+      en: 'Notifications are not available on this device',
+      ru: 'Уведомления недоступны на этом устройстве',
+      uz: 'Bu qurilmada bildirishnomalar mavjud emas',
+    );
+  }
+  if (enabled) {
+    return _orderText(
+      t,
+      en: 'Order updates and offers are enabled',
+      ru: 'Статусы заказов и акции включены',
+      uz: 'Buyurtma holati va aksiyalar yoqilgan',
+    );
+  }
+  if (permissionPermanentlyDenied) {
+    return _orderText(
+      t,
+      en: 'Allow notifications in phone settings',
+      ru: 'Разрешите уведомления в настройках телефона',
+      uz: 'Telefon sozlamalarida bildirishnomalarga ruxsat bering',
+    );
+  }
+  return _orderText(
+    t,
+    en: 'Receive order updates and special offers',
+    ru: 'Получайте статусы заказов и специальные предложения',
+    uz: 'Buyurtma holati va maxsus takliflarni oling',
+  );
 }
 
 String _formatOrderAmount(int amount) {

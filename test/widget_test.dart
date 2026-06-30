@@ -14,6 +14,7 @@ import 'package:enjoy_lavash_mobile/app/locale_controller.dart';
 import 'package:enjoy_lavash_mobile/app/location_controller.dart';
 import 'package:enjoy_lavash_mobile/app/theme_controller.dart';
 import 'package:enjoy_lavash_mobile/core/api/api_client.dart';
+import 'package:enjoy_lavash_mobile/core/services/mobile_push_notification_service.dart';
 import 'package:enjoy_lavash_mobile/core/services/yandex_geocoder_service.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/repositories/mobile_backend_repository_impl.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/presentation/mobile_backend_controller.dart';
@@ -22,6 +23,7 @@ void main() {
   testWidgets('App smoke test', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({'app_locale': 'ru'});
     final localeController = LocaleController();
+    final apiClient = ApiClient();
     await localeController.loadLocale();
 
     await tester.pumpWidget(
@@ -38,7 +40,8 @@ void main() {
           ),
           ChangeNotifierProvider<MobileBackendController>(
             create: (_) => MobileBackendController(
-              MobileBackendRepositoryImpl(ApiClient()),
+              MobileBackendRepositoryImpl(apiClient),
+              MobilePushNotificationService(apiClient),
             ),
           ),
         ],

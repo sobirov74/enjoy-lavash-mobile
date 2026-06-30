@@ -342,7 +342,7 @@ abstract class L {
   /// No description provided for @shareAppText.
   ///
   /// In uz, this message translates to:
-  /// **'EnjoyLavash ilovasini ko\'ring: https://enjoylavash.uz'**
+  /// **'EnjoyLavash ilovasini ko\'ring: https://play.google.com/store/apps/details?id=com.aurumdev.enjoy_lavash_mobile'**
   String get shareAppText;
 
   /// No description provided for @logout.
@@ -404,6 +404,18 @@ abstract class L {
   /// In uz, this message translates to:
   /// **'Yo\'q'**
   String get no;
+
+  /// No description provided for @save.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saqlash'**
+  String get save;
+
+  /// No description provided for @skip.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'tkazib yuborish'**
+  String get skip;
 
   /// No description provided for @statusCompleted.
   ///

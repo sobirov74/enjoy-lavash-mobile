@@ -130,7 +130,8 @@ class LEn extends L {
   String get shareApp => 'Share App';
 
   @override
-  String get shareAppText => 'Try EnjoyLavash: https://enjoylavash.uz';
+  String get shareAppText =>
+      'Try EnjoyLavash: https://play.google.com/store/apps/details?id=com.aurumdev.enjoy_lavash_mobile';
 
   @override
   String get logout => 'Log out';
@@ -162,6 +163,12 @@ class LEn extends L {
 
   @override
   String get no => 'No';
+
+  @override
+  String get save => 'Save';
+
+  @override
+  String get skip => 'Skip';
 
   @override
   String get statusCompleted => 'Completed';

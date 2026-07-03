@@ -69,15 +69,7 @@ class CartItemCard extends StatelessWidget {
                     ),
                     SizedBox(
                       width: 42,
-                      child: TypographyText(
-                        '${item.quantity}',
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 16,
-                        ),
-                      ),
+                      child: AnimatedQuantityText(quantity: item.quantity),
                     ),
                     QuantityButton(
                       icon: Icons.add_rounded,

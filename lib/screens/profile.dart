@@ -4,6 +4,7 @@ import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/widgets/animated_error_message.dart';
 import 'package:enjoy_lavash_mobile/widgets/app_snack_bar.dart';
 import 'package:enjoy_lavash_mobile/widgets/confirm_dialog.dart';
+import 'package:enjoy_lavash_mobile/widgets/fade_slide_in.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -23,8 +24,6 @@ import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
 
 class Profile extends StatefulWidget {
   const Profile({super.key, this.onRefresh});
-
-  static const int _loyaltyPoints = 1250;
 
   final Future<void> Function()? onRefresh;
 
@@ -89,6 +88,16 @@ class _ProfileState extends State<Profile> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       appSnackBar(result.failureOrNull?.message ?? t.logoutFailed),
+    );
+  }
+
+  Future<void> _showDeleteAccountSheet(BuildContext context) {
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const _DeleteAccountSheet(),
     );
   }
 
@@ -166,16 +175,6 @@ class _ProfileState extends State<Profile> {
     return parts.join(', ');
   }
 
-  String _formatPoints(int value) {
-    final text = value.toString();
-    final buffer = StringBuffer();
-    for (var i = 0; i < text.length; i++) {
-      if (i > 0 && (text.length - i) % 3 == 0) buffer.write(' ');
-      buffer.write(text[i]);
-    }
-    return buffer.toString();
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -195,7 +194,6 @@ class _ProfileState extends State<Profile> {
     final profileSubtitle = phoneNumber.isNotEmpty
         ? phoneNumber
         : t.tapToSignIn;
-    final loyaltyPoints = client?.bonusBalance ?? Profile._loyaltyPoints;
     final recentOrders = mobileBackend.orders.take(2).toList(growable: false);
     final hasMoreOrders = mobileBackend.orders.length > recentOrders.length;
     final backendFailure = mobileBackend.failure;
@@ -226,66 +224,80 @@ class _ProfileState extends State<Profile> {
                     ),
                   ),
                   const SizedBox(height: 18),
-                  GestureDetector(
-                    onTap: isAuthorized
-                        ? null
-                        : () => unawaited(_showAuthorizationModal(context)),
-                    child: _SurfaceCard(
-                      isDark: isDark,
-                      padding: const EdgeInsets.all(20),
-                      child: Row(
-                        children: <Widget>[
-                          Container(
-                            width: 76,
-                            height: 76,
-                            alignment: Alignment.center,
-                            decoration: const BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: <Color>[
-                                  Color(0xFFFFC107),
-                                  BaseColors.primary,
+                  FadeSlideIn(
+                    child: GestureDetector(
+                      onTap: isAuthorized
+                          ? null
+                          : () => unawaited(_showAuthorizationModal(context)),
+                      child: _SurfaceCard(
+                        isDark: isDark,
+                        padding: const EdgeInsets.all(20),
+                        child: Row(
+                          children: <Widget>[
+                            Container(
+                              width: 76,
+                              height: 76,
+                              alignment: Alignment.center,
+                              decoration: const BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: <Color>[
+                                    Color(0xFFFFC107),
+                                    BaseColors.primary,
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.all(
+                                  Radius.circular(24),
+                                ),
+                              ),
+                              child: AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 220),
+                                transitionBuilder: (child, animation) =>
+                                    FadeTransition(
+                                      opacity: animation,
+                                      child: ScaleTransition(
+                                        scale: animation,
+                                        child: child,
+                                      ),
+                                    ),
+                                child: Icon(
+                                  isAuthorized
+                                      ? Icons.person_rounded
+                                      : Icons.login_rounded,
+                                  key: ValueKey<bool>(isAuthorized),
+                                  color: Colors.white,
+                                  size: 36,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  TypographyText(
+                                    displayName,
+                                    style: const TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  TypographyText(
+                                    profileSubtitle,
+                                    style: const TextStyle(
+                                      color: BaseColors.textGray,
+                                      fontSize: 15,
+                                    ),
+                                  ),
                                 ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.all(
-                                Radius.circular(24),
                               ),
                             ),
-                            child: Icon(
-                              isAuthorized
-                                  ? Icons.person_rounded
-                                  : Icons.login_rounded,
-                              color: Colors.white,
-                              size: 36,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: <Widget>[
-                                TypographyText(
-                                  displayName,
-                                  style: const TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                TypographyText(
-                                  profileSubtitle,
-                                  style: const TextStyle(
-                                    color: BaseColors.textGray,
-                                    fontSize: 15,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          if (!isAuthorized)
-                            const Icon(Icons.chevron_right_rounded, size: 28),
-                        ],
+                            if (!isAuthorized)
+                              const Icon(Icons.chevron_right_rounded, size: 28),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -502,80 +514,84 @@ class _ProfileState extends State<Profile> {
 
                   // -- Personal info
                   if (isAuthorized)
-                    _SectionCard(
-                      isDark: isDark,
-                      title: t.personalInfo,
-                      child: Column(
-                        children: <Widget>[
-                          _InfoRow(
-                            icon: Icons.phone_outlined,
-                            title: t.phoneNumber,
-                            value: client.phoneNumber,
-                          ),
-                          if (mobileBackend.addresses.isNotEmpty) ...[
-                            const SizedBox(height: 14),
+                    FadeSlideIn(
+                      child: _SectionCard(
+                        isDark: isDark,
+                        title: t.personalInfo,
+                        child: Column(
+                          children: <Widget>[
                             _InfoRow(
-                              icon: Icons.location_on_outlined,
-                              title: t.address,
-                              value: _formatAddress(
-                                mobileBackend.addresses.first,
-                              ),
+                              icon: Icons.phone_outlined,
+                              title: t.phoneNumber,
+                              value: client.phoneNumber,
                             ),
+                            if (mobileBackend.addresses.isNotEmpty) ...[
+                              const SizedBox(height: 14),
+                              _InfoRow(
+                                icon: Icons.location_on_outlined,
+                                title: t.address,
+                                value: _formatAddress(
+                                  mobileBackend.addresses.first,
+                                ),
+                              ),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
                     ),
                   if (isAuthorized) const SizedBox(height: 16),
 
                   // -- Order history
                   if (mobileBackend.orders.isNotEmpty) ...[
-                    _SectionCard(
-                      isDark: isDark,
-                      title: t.orderHistory,
-                      padding: const EdgeInsets.all(14),
-                      titleBottomSpacing: 12,
-                      child: Column(
-                        children: <Widget>[
-                          for (int i = 0; i < recentOrders.length; i++) ...[
-                            if (i > 0) const SizedBox(height: 8),
-                            _OrderRow(
-                              order: recentOrders[i],
-                              locale: localeController.locale.languageCode,
-                              branches: mobileBackend.branches,
-                              addresses: mobileBackend.addresses,
-                            ),
-                          ],
-                          if (hasMoreOrders) ...[
-                            const SizedBox(height: 12),
-                            SizedBox(
-                              width: double.infinity,
-                              child: OutlinedButton.icon(
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: BaseColors.primary,
-                                  side: const BorderSide(
-                                    color: BaseColors.primary,
+                    FadeSlideIn(
+                      child: _SectionCard(
+                        isDark: isDark,
+                        title: t.orderHistory,
+                        padding: const EdgeInsets.all(14),
+                        titleBottomSpacing: 12,
+                        child: Column(
+                          children: <Widget>[
+                            for (int i = 0; i < recentOrders.length; i++) ...[
+                              if (i > 0) const SizedBox(height: 8),
+                              _OrderRow(
+                                order: recentOrders[i],
+                                locale: localeController.locale.languageCode,
+                                branches: mobileBackend.branches,
+                                addresses: mobileBackend.addresses,
+                              ),
+                            ],
+                            if (hasMoreOrders) ...[
+                              const SizedBox(height: 12),
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton.icon(
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: BaseColors.primary,
+                                    side: const BorderSide(
+                                      color: BaseColors.primary,
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 13,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
                                   ),
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 13,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                ),
-                                onPressed: () => _openAllOrders(context),
-                                icon: const Icon(Icons.receipt_long_rounded),
-                                label: TypographyText(
-                                  _orderText(
-                                    t,
-                                    en: 'See all orders',
-                                    ru: 'Все заказы',
-                                    uz: "Barcha buyurtmalar",
+                                  onPressed: () => _openAllOrders(context),
+                                  icon: const Icon(Icons.receipt_long_rounded),
+                                  label: TypographyText(
+                                    _orderText(
+                                      t,
+                                      en: 'See all orders',
+                                      ru: 'Все заказы',
+                                      uz: "Barcha buyurtmalar",
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -649,6 +665,40 @@ class _ProfileState extends State<Profile> {
                               label: TypographyText(t.logout),
                             ),
                           ),
+                          const SizedBox(height: 4),
+                          SizedBox(
+                            width: double.infinity,
+                            child: TextButton.icon(
+                              style: TextButton.styleFrom(
+                                foregroundColor: isDark
+                                    ? BaseColors.dangerDark
+                                    : BaseColors.danger,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                              ),
+                              onPressed: () =>
+                                  unawaited(_showDeleteAccountSheet(context)),
+                              icon: const Icon(
+                                Icons.delete_forever_outlined,
+                                size: 20,
+                              ),
+                              label: TypographyText(
+                                _orderText(
+                                  t,
+                                  en: 'Delete account',
+                                  ru: 'Удалить аккаунт',
+                                  uz: "Hisobni o'chirish",
+                                ),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
                         ],
                         const _SettingsDivider(),
                         _AppVersionRow(
@@ -665,6 +715,403 @@ class _ProfileState extends State<Profile> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _DeleteAccountSheet extends StatefulWidget {
+  const _DeleteAccountSheet();
+
+  @override
+  State<_DeleteAccountSheet> createState() => _DeleteAccountSheetState();
+}
+
+class _DeleteAccountSheetState extends State<_DeleteAccountSheet> {
+  bool _acknowledged = false;
+
+  Future<void> _deleteAccount(BuildContext context, L t) async {
+    final controller = context.read<MobileBackendController>();
+    if (controller.accountDeleting) return;
+
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final result = await controller.deleteAccount();
+
+    if (!mounted) return;
+
+    switch (result) {
+      case Success():
+        navigator.pop();
+        messenger.showSnackBar(
+          appSnackBar(
+            _orderText(
+              t,
+              en: 'Your account has been deleted',
+              ru: 'Ваш аккаунт удалён',
+              uz: "Hisobingiz o'chirildi",
+            ),
+          ),
+        );
+      case Error(:final failure):
+        messenger.showSnackBar(
+          appSnackBar(
+            failure.message.isNotEmpty
+                ? failure.message
+                : _orderText(
+                    t,
+                    en: 'Could not delete the account. Please try again.',
+                    ru: 'Не удалось удалить аккаунт. Попробуйте ещё раз.',
+                    uz: "Hisobni o'chirib bo'lmadi. Qayta urinib ko'ring.",
+                  ),
+          ),
+        );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final t = L.of(context);
+    final deleting = context.watch<MobileBackendController>().accountDeleting;
+    final danger = isDark ? BaseColors.dangerDark : BaseColors.danger;
+
+    return PopScope(
+      canPop: !deleting,
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.88,
+        ),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1D1A18) : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            18,
+            10,
+            18,
+            22 + MediaQuery.paddingOf(context).bottom,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF4A4038)
+                        : const Color(0xFFE5DAD0),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Container(
+                    width: 52,
+                    height: 52,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: danger.withValues(alpha: isDark ? 0.22 : 0.1),
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: Icon(
+                      Icons.delete_forever_rounded,
+                      color: danger,
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        TypographyText(
+                          _orderText(
+                            t,
+                            en: 'Delete account?',
+                            ru: 'Удалить аккаунт?',
+                            uz: "Hisob o'chirilsinmi?",
+                          ),
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        TypographyText(
+                          _orderText(
+                            t,
+                            en:
+                                'This action is permanent and cannot be '
+                                'undone',
+                            ru:
+                                'Это действие необратимо — восстановить '
+                                'данные не получится',
+                            uz: "Bu amalni ortga qaytarib bo'lmaydi",
+                          ),
+                          style: TextStyle(
+                            color: isDark
+                                ? BaseColors.lightTextGray
+                                : BaseColors.textGray,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            height: 1.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: deleting
+                        ? null
+                        : () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? const Color(0xFF2A2522)
+                      : const Color(0xFFF8F4EF),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    TypographyText(
+                      _orderText(
+                        t,
+                        en: 'The following will be deleted:',
+                        ru: 'Будут удалены:',
+                        uz: "Quyidagilar o'chiriladi:",
+                      ),
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _DeleteImpactRow(
+                      icon: Icons.person_outline_rounded,
+                      isDark: isDark,
+                      text: _orderText(
+                        t,
+                        en: 'Profile and phone number',
+                        ru: 'Профиль и номер телефона',
+                        uz: 'Profil va telefon raqami',
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    _DeleteImpactRow(
+                      icon: Icons.location_on_outlined,
+                      isDark: isDark,
+                      text: _orderText(
+                        t,
+                        en: 'Saved delivery addresses',
+                        ru: 'Сохранённые адреса доставки',
+                        uz: 'Saqlangan yetkazib berish manzillari',
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    _DeleteImpactRow(
+                      icon: Icons.receipt_long_outlined,
+                      isDark: isDark,
+                      text: _orderText(
+                        t,
+                        en: 'Order history',
+                        ru: 'История заказов',
+                        uz: 'Buyurtmalar tarixi',
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    _DeleteImpactRow(
+                      icon: Icons.stars_rounded,
+                      isDark: isDark,
+                      text: _orderText(
+                        t,
+                        en: 'Accumulated bonus points',
+                        ru: 'Накопленные бонусные баллы',
+                        uz: "To'plangan bonus ballari",
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+              GestureDetector(
+                onTap: deleting
+                    ? null
+                    : () => setState(() => _acknowledged = !_acknowledged),
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(6, 4, 14, 4),
+                  decoration: BoxDecoration(
+                    color: danger.withValues(alpha: isDark ? 0.12 : 0.05),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: danger.withValues(
+                        alpha: _acknowledged ? 0.55 : 0.25,
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    children: <Widget>[
+                      Checkbox(
+                        value: _acknowledged,
+                        activeColor: danger,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        onChanged: deleting
+                            ? null
+                            : (value) => setState(
+                                () => _acknowledged = value ?? false,
+                              ),
+                      ),
+                      Expanded(
+                        child: TypographyText(
+                          _orderText(
+                            t,
+                            en:
+                                'I understand that my data will be deleted '
+                                'permanently',
+                            ru:
+                                'Я понимаю, что мои данные будут удалены '
+                                'безвозвратно',
+                            uz:
+                                "Ma'lumotlarim butunlay o'chirilishini "
+                                'tushunaman',
+                          ),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            height: 1.3,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: danger,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: danger.withValues(alpha: 0.35),
+                    disabledForegroundColor: Colors.white70,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  onPressed: _acknowledged && !deleting
+                      ? () => unawaited(_deleteAccount(context, t))
+                      : null,
+                  icon: deleting
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.4,
+                            color: Colors.white70,
+                          ),
+                        )
+                      : const Icon(Icons.delete_forever_rounded, size: 20),
+                  label: TypographyText(
+                    deleting
+                        ? _orderText(
+                            t,
+                            en: 'Deleting…',
+                            ru: 'Удаляем…',
+                            uz: "O'chirilmoqda…",
+                          )
+                        : _orderText(
+                            t,
+                            en: 'Delete my account',
+                            ru: 'Удалить мой аккаунт',
+                            uz: "Hisobimni o'chirish",
+                          ),
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  onPressed: deleting
+                      ? null
+                      : () => Navigator.of(context).pop(),
+                  child: TypographyText(
+                    _orderText(
+                      t,
+                      en: 'Cancel',
+                      ru: 'Отмена',
+                      uz: 'Bekor qilish',
+                    ),
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DeleteImpactRow extends StatelessWidget {
+  const _DeleteImpactRow({
+    required this.icon,
+    required this.text,
+    required this.isDark,
+  });
+
+  final IconData icon;
+  final String text;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: <Widget>[
+        Icon(
+          icon,
+          size: 20,
+          color: isDark ? BaseColors.lightTextGray : BaseColors.textGray,
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: TypographyText(
+            text,
+            style: TextStyle(
+              color: isDark ? BaseColors.lightTextGray : BaseColors.textGray,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              height: 1.25,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -1093,7 +1540,9 @@ class _LangChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
         alignment: Alignment.center,
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
@@ -1293,7 +1742,9 @@ class _PreferenceChip extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
         height: 48,
         alignment: Alignment.center,
         padding: const EdgeInsets.symmetric(horizontal: 10),

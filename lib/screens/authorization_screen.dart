@@ -29,6 +29,7 @@ class _AuthorizationScreenState extends State<AuthorizationScreen>
     text: '+998',
   );
   final TextEditingController _codeController = TextEditingController();
+  final FocusNode _phoneFocusNode = FocusNode();
   final FocusNode _codeFocusNode = FocusNode();
 
   bool _otpRequested = false;
@@ -38,11 +39,24 @@ class _AuthorizationScreenState extends State<AuthorizationScreen>
   String? _demoCode;
 
   @override
+  void initState() {
+    super.initState();
+    _phoneController.selection = TextSelection.collapsed(
+      offset: _phoneController.text.length,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _otpRequested) return;
+      _phoneFocusNode.requestFocus();
+    });
+  }
+
+  @override
   void dispose() {
     unawaited(cancel());
     unawaited(unregisterListener());
     _phoneController.dispose();
     _codeController.dispose();
+    _phoneFocusNode.dispose();
     _codeFocusNode.dispose();
     super.dispose();
   }
@@ -156,10 +170,10 @@ class _AuthorizationScreenState extends State<AuthorizationScreen>
     if (!mounted) return;
 
     switch (result) {
-      case Success():
+      case Success(:final data):
         TextInput.finishAutofillContext();
         FocusScope.of(context).unfocus();
-        await _showNamePromptIfNeeded();
+        await _showNamePromptIfNeeded(data);
         if (!mounted) return;
         Navigator.of(context).pop(true);
       case Error(:final failure):
@@ -179,16 +193,16 @@ class _AuthorizationScreenState extends State<AuthorizationScreen>
     });
   }
 
-  Future<void> _showNamePromptIfNeeded() async {
-    final client = context.read<MobileBackendController>().client;
-    if (client == null || client.fullName.trim().isNotEmpty) return;
+  Future<void> _showNamePromptIfNeeded(VerifyOtpResponse response) async {
+    final hasName = response.client.fullName.trim().isNotEmpty;
+    if (!response.isNewClient && hasName) return;
 
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => const _NamePromptSheet(),
+      builder: (_) => _NamePromptSheet(initialName: response.client.fullName),
     );
   }
 
@@ -227,6 +241,8 @@ class _AuthorizationScreenState extends State<AuthorizationScreen>
               const SizedBox(height: 24),
               TextField(
                 controller: _phoneController,
+                focusNode: _phoneFocusNode,
+                autofocus: true,
                 keyboardType: TextInputType.phone,
                 enabled: !_otpRequested && !_isSubmitting,
                 decoration: _inputDecoration(
@@ -411,7 +427,9 @@ class _AuthorizationScreenState extends State<AuthorizationScreen>
 }
 
 class _NamePromptSheet extends StatefulWidget {
-  const _NamePromptSheet();
+  const _NamePromptSheet({required this.initialName});
+
+  final String initialName;
 
   @override
   State<_NamePromptSheet> createState() => _NamePromptSheetState();
@@ -421,6 +439,12 @@ class _NamePromptSheetState extends State<_NamePromptSheet> {
   final TextEditingController _nameController = TextEditingController();
   bool _isSaving = false;
   String? _errorText;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController.text = widget.initialName.trim();
+  }
 
   @override
   void dispose() {

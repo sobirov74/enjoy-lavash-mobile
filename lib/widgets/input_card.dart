@@ -79,7 +79,7 @@ class _MainInputState extends State<MainInput>
 
         AnimatedBuilder(
           animation: _borderColor,
-          builder: (_, __) {
+          builder: (context, child) {
             return Container(
               padding:
                   widget.padding ?? const EdgeInsets.symmetric(horizontal: 12),

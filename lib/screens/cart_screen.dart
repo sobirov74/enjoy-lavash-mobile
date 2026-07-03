@@ -3,6 +3,7 @@ import 'package:enjoy_lavash_mobile/features/models/menu_product.dart';
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/utils/price_formatter.dart';
 import 'package:enjoy_lavash_mobile/widgets/cart_item_card.dart';
+import 'package:enjoy_lavash_mobile/widgets/fade_slide_in.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
@@ -35,10 +36,27 @@ class CartScreen extends StatelessWidget {
     final t = L.of(context);
     final totalItems = items.fold<int>(0, (sum, line) => sum + line.quantity);
 
-    if (items.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 260),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      child: items.isEmpty
+          ? KeyedSubtree(
+              key: const ValueKey<String>('cart-empty'),
+              child: _buildEmptyState(theme, t),
+            )
+          : KeyedSubtree(
+              key: const ValueKey<String>('cart-content'),
+              child: _buildCartContent(theme, t, totalItems),
+            ),
+    );
+  }
+
+  Widget _buildEmptyState(ThemeData theme, L t) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: FadeSlideIn(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
@@ -92,9 +110,11 @@ class CartScreen extends StatelessWidget {
             ],
           ),
         ),
-      );
-    }
+      ),
+    );
+  }
 
+  Widget _buildCartContent(ThemeData theme, L t, int totalItems) {
     return CustomScrollView(
       slivers: <Widget>[
         SliverToBoxAdapter(
@@ -110,21 +130,29 @@ class CartScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: BaseColors.primary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: TypographyText(
-                    '$totalItems',
-                    style: const TextStyle(
-                      color: BaseColors.primary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 220),
+                  switchInCurve: Curves.easeOutBack,
+                  switchOutCurve: Curves.easeInCubic,
+                  transitionBuilder: (child, animation) =>
+                      ScaleTransition(scale: animation, child: child),
+                  child: Container(
+                    key: ValueKey<int>(totalItems),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: BaseColors.primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: TypographyText(
+                      '$totalItems',
+                      style: const TextStyle(
+                        color: BaseColors.primary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
                 ),
@@ -136,16 +164,28 @@ class CartScreen extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           sliver: SliverList.builder(
             itemCount: items.length,
+            findChildIndexCallback: (key) {
+              final valueKey = key as ValueKey<String>;
+              final index = items.indexWhere(
+                (line) => line.product.id == valueKey.value,
+              );
+              return index == -1 ? null : index;
+            },
             itemBuilder: (context, index) {
               final line = items[index];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: RepaintBoundary(
-                  child: CartItemCard(
-                    item: line,
-                    isDark: isDark,
-                    onDecrease: () => onDecrease(line.product),
-                    onIncrease: () => onIncrease(line.product),
+              return KeyedSubtree(
+                key: ValueKey<String>(line.product.id),
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: FadeSlideIn(
+                    child: RepaintBoundary(
+                      child: CartItemCard(
+                        item: line,
+                        isDark: isDark,
+                        onDecrease: () => onDecrease(line.product),
+                        onIncrease: () => onIncrease(line.product),
+                      ),
+                    ),
                   ),
                 ),
               );
@@ -186,11 +226,28 @@ class CartScreen extends StatelessWidget {
                             fontSize: 16,
                           ),
                         ),
-                        TypographyText(
-                          formatSum(totalAmount),
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            color: BaseColors.primary,
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 220),
+                          switchInCurve: Curves.easeOutCubic,
+                          switchOutCurve: Curves.easeInCubic,
+                          transitionBuilder: (child, animation) =>
+                              FadeTransition(
+                                opacity: animation,
+                                child: SlideTransition(
+                                  position: Tween<Offset>(
+                                    begin: const Offset(0, 0.35),
+                                    end: Offset.zero,
+                                  ).animate(animation),
+                                  child: child,
+                                ),
+                              ),
+                          child: TypographyText(
+                            formatSum(totalAmount),
+                            key: ValueKey<int>(totalAmount),
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: BaseColors.primary,
+                            ),
                           ),
                         ),
                       ],
@@ -208,19 +265,37 @@ class CartScreen extends StatelessWidget {
                           ),
                         ),
                         onPressed: isCheckingOut ? null : onCheckout,
-                        child: isCheckingOut
-                            ? const SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2.4,
-                                  color: BaseColors.white,
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 180),
+                          transitionBuilder: (child, animation) =>
+                              FadeTransition(
+                                opacity: animation,
+                                child: ScaleTransition(
+                                  scale: Tween<double>(
+                                    begin: 0.8,
+                                    end: 1,
+                                  ).animate(animation),
+                                  child: child,
                                 ),
-                              )
-                            : TypographyText(
-                                t.checkout,
-                                style: const TextStyle(color: BaseColors.white),
                               ),
+                          child: isCheckingOut
+                              ? const SizedBox(
+                                  key: ValueKey<String>('checkout-loading'),
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.4,
+                                    color: BaseColors.white,
+                                  ),
+                                )
+                              : TypographyText(
+                                  t.checkout,
+                                  key: const ValueKey<String>('checkout-label'),
+                                  style: const TextStyle(
+                                    color: BaseColors.white,
+                                  ),
+                                ),
+                        ),
                       ),
                     ),
                   ],

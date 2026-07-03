@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:enjoy_lavash_mobile/widgets/utils/error_extracter.dart'
-    as Extracter;
+    as extractor;
 import 'package:flutter/foundation.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:enjoy_lavash_mobile/core/api/api_client.dart';
@@ -50,7 +50,7 @@ class OrderProductRepository {
 
       // return ScanResponse.fromJson(response.data);
     } on DioException catch (e) {
-      final error = Extracter.extractErrorMessage(e);
+      final error = extractor.extractErrorMessage(e);
       Fluttertoast.showToast(
         msg: error,
         backgroundColor: BaseColors.danger,
@@ -88,7 +88,7 @@ class OrderProductRepository {
       // return
       // return ScanResponse.fromJson(response.data);
     } on DioException catch (e) {
-      final error = Extracter.extractErrorMessage(e);
+      final error = extractor.extractErrorMessage(e);
       Fluttertoast.showToast(
         msg: error,
         backgroundColor: BaseColors.danger,

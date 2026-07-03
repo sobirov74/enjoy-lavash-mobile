@@ -1,32 +1,26 @@
 import 'package:dio/dio.dart';
+import 'package:enjoy_lavash_mobile/core/error/mobile_error_messages.dart';
 
 String extractErrorMessage(dynamic data) {
-  if (data is Map) {
-    if (data['error'] != null) return data['error'];
-    if (data['message'] != null) return data['message'];
-    if (data['detail'] != null) return data['detail'];
-  }
-
-  if (data is String) return data;
-
-  return "Something went wrong";
+  return resolveApiErrorMessage(data: data, statusCode: 0, languageCode: null);
 }
 
 class Extracter {
   Extracter._();
 
   static String extractErrorMessage(DioException e) {
-    final data = e.response?.data;
-
-    if (data is Map) {
-      return data['error'] ??
-          data['message'] ??
-          data['detail'] ??
-          "Something went wrong";
-    }
-
-    if (data is String) return data;
-
-    return e.message ?? "Network error";
+    return resolveApiErrorMessage(
+      data: e.response?.data ?? e.message,
+      statusCode: e.response?.statusCode ?? 0,
+      languageCode: _requestLanguage(e),
+    );
   }
+}
+
+String? _requestLanguage(DioException e) {
+  final value = e.requestOptions.headers['Accept-Language'];
+  if (value is String && value.trim().isNotEmpty) {
+    return value.trim();
+  }
+  return null;
 }

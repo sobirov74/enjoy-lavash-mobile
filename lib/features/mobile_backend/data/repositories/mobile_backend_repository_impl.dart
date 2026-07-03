@@ -6,6 +6,7 @@ import 'package:enjoy_lavash_mobile/core/error/failures.dart';
 import 'package:enjoy_lavash_mobile/core/error/result.dart';
 import 'package:enjoy_lavash_mobile/core/storage/token_storage.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/address_model.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/app_version_policy_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/auth_models.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/branch_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/cart_model.dart';
@@ -61,6 +62,14 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
   }
 
   @override
+  Future<Result<void>> deleteAccount() {
+    return _guard(() async {
+      await _dio.delete(ApiEndpoints.clientMe);
+      await TokenStorage.clear();
+    });
+  }
+
+  @override
   Future<Result<MobileBootstrap>> bootstrap({
     required String language,
     String? branchId,
@@ -99,6 +108,27 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
         addresses: authData[1] as List<ClientAddress>,
         orders: authData[2] as List<CustomerOrderModel>,
       );
+    });
+  }
+
+  @override
+  Future<Result<AppVersionPolicyModel>> getAppVersionPolicy({
+    required String platform,
+    String? currentVersion,
+    String? language,
+  }) {
+    return _guard(() async {
+      final response = await _dio.get(
+        ApiEndpoints.appVersion,
+        queryParameters: withoutNulls({
+          'platform': platform,
+          'currentVersion': currentVersion?.trim().isEmpty == true
+              ? null
+              : currentVersion?.trim(),
+          'lang': language?.trim().isEmpty == true ? null : language?.trim(),
+        }),
+      );
+      return AppVersionPolicyModel.fromJson(asJsonMap(response.data));
     });
   }
 

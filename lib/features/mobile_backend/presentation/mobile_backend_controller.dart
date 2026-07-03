@@ -35,6 +35,7 @@ class MobileBackendController extends ChangeNotifier {
   ClientProfile? _client;
   PushNotificationSettings? _pushNotificationSettings;
   bool _pushNotificationsUpdating = false;
+  bool _accountDeleting = false;
 
   MobileBackendStatus get status => _status;
   Failure? get failure => _failure;
@@ -48,6 +49,7 @@ class MobileBackendController extends ChangeNotifier {
   PushNotificationSettings? get pushNotificationSettings =>
       _pushNotificationSettings;
   bool get pushNotificationsUpdating => _pushNotificationsUpdating;
+  bool get accountDeleting => _accountDeleting;
   bool get isAuthenticated => _client != null;
   bool get isLoading => _status == MobileBackendStatus.loading;
 
@@ -127,6 +129,27 @@ class MobileBackendController extends ChangeNotifier {
       handleSessionExpired();
     }
     return result;
+  }
+
+  Future<Result<void>> deleteAccount() async {
+    _accountDeleting = true;
+    notifyListeners();
+
+    try {
+      try {
+        await _pushNotifications.deleteRegisteredToken();
+      } catch (error) {
+        debugPrint('Push token cleanup failed during account deletion: $error');
+      }
+      final result = await _repository.deleteAccount();
+      if (result.isSuccess) {
+        await handleSessionExpired();
+      }
+      return result;
+    } finally {
+      _accountDeleting = false;
+      notifyListeners();
+    }
   }
 
   Future<void> handleSessionExpired() async {

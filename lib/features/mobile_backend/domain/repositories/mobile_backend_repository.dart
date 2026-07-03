@@ -1,5 +1,6 @@
 import 'package:enjoy_lavash_mobile/core/error/result.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/address_model.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/app_version_policy_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/auth_models.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/branch_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/cart_model.dart';
@@ -17,9 +18,17 @@ abstract class MobileBackendRepository {
 
   Future<Result<void>> logout();
 
+  Future<Result<void>> deleteAccount();
+
   Future<Result<MobileBootstrap>> bootstrap({
     required String language,
     String? branchId,
+  });
+
+  Future<Result<AppVersionPolicyModel>> getAppVersionPolicy({
+    required String platform,
+    String? currentVersion,
+    String? language,
   });
 
   Future<Result<List<BranchModel>>> getBranches({String language = 'ru'});

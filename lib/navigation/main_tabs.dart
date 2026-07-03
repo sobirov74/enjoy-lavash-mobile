@@ -22,6 +22,7 @@ import 'package:enjoy_lavash_mobile/theme/theme_extensions.dart';
 import 'package:enjoy_lavash_mobile/utils/price_formatter.dart';
 import 'package:enjoy_lavash_mobile/widgets/app_snack_bar.dart';
 import 'package:enjoy_lavash_mobile/widgets/delivery_chip.dart';
+import 'package:enjoy_lavash_mobile/widgets/fade_slide_in.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -41,6 +42,10 @@ class _MainTabsState extends State<MainTabs> {
   BranchModel? _selectedBranch;
   String _promoCode = '';
   bool _isCheckingOut = false;
+
+  /// Built once so cart/category updates don't rebuild the profile subtree;
+  /// it listens to its providers internally.
+  late final Widget _profileTab = Profile(onRefresh: _refreshProfileData);
 
   List<CartLine> _buildCartLines(List<MenuProduct> products) {
     final productById = <String, MenuProduct>{
@@ -535,7 +540,7 @@ class _MainTabsState extends State<MainTabs> {
       backgroundColor: theme.scaffoldBackgroundColor,
       drawer: _buildDrawer(context, isDark, t),
       body: SafeArea(
-        child: IndexedStack(
+        child: FadeIndexedStack(
           index: _currentIndex,
           children: <Widget>[
             MenuScreen(
@@ -587,7 +592,7 @@ class _MainTabsState extends State<MainTabs> {
               onBrowseMenu: () => setState(() => _currentIndex = 0),
               onCheckout: () => unawaited(_handleCheckout(cartLines)),
             ),
-            Profile(onRefresh: _refreshProfileData),
+            _profileTab,
           ],
         ),
       ),
@@ -734,6 +739,7 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
     super.initState();
     _orderType = widget.initialOrderType;
     _promoCodeController = TextEditingController(text: widget.initialPromoCode);
+    _promoCodeController.addListener(_onPromoCodeChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       unawaited(_loadPreview());
@@ -742,6 +748,7 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
 
   @override
   void dispose() {
+    _promoCodeController.removeListener(_onPromoCodeChanged);
     _promoCodeController.dispose();
     super.dispose();
   }
@@ -751,10 +758,17 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
     return promoCode.isEmpty ? null : promoCode;
   }
 
+  bool get _hasPromoCodeInput => _normalizedPromoCode != null;
+
   bool get _previewMatchesCurrentInput {
     return _preview != null &&
         _lastPreviewOrderType == _orderType &&
         _lastPreviewPromoCode == _normalizedPromoCode;
+  }
+
+  void _onPromoCodeChanged() {
+    if (!mounted) return;
+    setState(() {});
   }
 
   Future<bool> _loadPreview() async {
@@ -912,45 +926,47 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
               onSubmitted: (_) => unawaited(_loadPreview()),
             ),
           ),
-          const SizedBox(width: 8),
-          SizedBox(
-            height: 38,
-            child: FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: BaseColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+          if (_hasPromoCodeInput) ...[
+            const SizedBox(width: 8),
+            SizedBox(
+              height: 38,
+              child: FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: BaseColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
+                onPressed: _isPreviewLoading
+                    ? null
+                    : () => unawaited(_loadPreview()),
+                child: _isPreviewLoading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: BaseColors.white,
+                        ),
+                      )
+                    : TypographyText(
+                        _mainTabsText(
+                          t,
+                          en: 'Apply',
+                          ru: 'Применить',
+                          uz: "Qo'llash",
+                        ),
+                        style: const TextStyle(
+                          color: BaseColors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
               ),
-              onPressed: _isPreviewLoading
-                  ? null
-                  : () => unawaited(_loadPreview()),
-              child: _isPreviewLoading
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: BaseColors.white,
-                      ),
-                    )
-                  : TypographyText(
-                      _mainTabsText(
-                        t,
-                        en: 'Apply',
-                        ru: 'Применить',
-                        uz: "Qo'llash",
-                      ),
-                      style: const TextStyle(
-                        color: BaseColors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
             ),
-          ),
+          ],
         ],
       ),
     );

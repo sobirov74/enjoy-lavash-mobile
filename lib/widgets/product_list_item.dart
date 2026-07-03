@@ -165,15 +165,7 @@ class _ProductQuantityControl extends StatelessWidget {
                   QuantityButton(icon: Icons.remove_rounded, onTap: onDecrease),
                   SizedBox(
                     width: 40,
-                    child: TypographyText(
-                      '$quantity',
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 16,
-                      ),
-                    ),
+                    child: AnimatedQuantityText(quantity: quantity),
                   ),
                   QuantityButton(
                     icon: Icons.add_rounded,

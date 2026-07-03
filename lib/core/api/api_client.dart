@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 
 const _refreshEndpoint = '/auth/refresh';
 const _logoutTriggerCodes = {401, 403};
+const _defaultLanguage = 'uz';
 const _enableNetworkLogs =
     kDebugMode || bool.fromEnvironment('ENABLE_NETWORK_LOGS');
 
@@ -19,7 +20,10 @@ class ApiClient {
         baseUrl: BaseUrl.baseUrl,
         connectTimeout: const Duration(seconds: 15),
         receiveTimeout: const Duration(seconds: 15),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept-Language': _defaultLanguage,
+        },
       ),
     );
 
@@ -28,7 +32,10 @@ class ApiClient {
         baseUrl: BaseUrl.baseUrl,
         connectTimeout: const Duration(seconds: 15),
         receiveTimeout: const Duration(seconds: 15),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept-Language': _defaultLanguage,
+        },
       ),
     );
 
@@ -52,6 +59,7 @@ class ApiClient {
   late final Dio dio;
   late final Dio _refreshDio;
 
+  String _languageCode = _defaultLanguage;
   LogoutCallback? _onLogout;
 
   // Single-flight: only one refresh at a time.
@@ -62,9 +70,16 @@ class ApiClient {
     _onLogout = callback;
   }
 
+  void setLanguage(String languageCode) {
+    _languageCode = _normalizeLanguage(languageCode);
+    dio.options.headers['Accept-Language'] = _languageCode;
+    _refreshDio.options.headers['Accept-Language'] = _languageCode;
+  }
+
   InterceptorsWrapper _authInterceptor() {
     return InterceptorsWrapper(
       onRequest: (options, handler) async {
+        options.headers['Accept-Language'] ??= _languageCode;
         final token = await TokenStorage.getAccessToken();
         if (token != null) {
           options.headers['Authorization'] = 'Bearer $token';
@@ -179,4 +194,12 @@ String? _stringValue(Object? data, List<String> keys) {
     }
   }
   return null;
+}
+
+String _normalizeLanguage(String languageCode) {
+  final normalized = languageCode.toLowerCase().split(RegExp('[-_]')).first;
+  return switch (normalized) {
+    'ru' || 'en' || 'uz' => normalized,
+    _ => _defaultLanguage,
+  };
 }

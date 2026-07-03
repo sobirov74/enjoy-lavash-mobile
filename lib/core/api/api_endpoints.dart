@@ -10,6 +10,7 @@ class ApiEndpoints {
   static const requestOtp = "/auth/request-otp";
   static const verifyOtp = "/auth/verify-otp";
   static const branches = "/branches";
+  static const appVersion = "/app-version";
   static const catalog = "/catalog";
   static const activePromotions = "/promotions/active";
   static const cartPreview = "/cart/preview";

@@ -54,12 +54,14 @@ class VerifyOtpResponse {
     required this.tokenType,
     required this.client,
     this.refreshToken,
+    this.isNewClient = false,
   });
 
   final String accessToken;
   final String? refreshToken;
   final String tokenType;
   final ClientProfile client;
+  final bool isNewClient;
 
   factory VerifyOtpResponse.fromJson(Map<String, dynamic> json) {
     return VerifyOtpResponse(
@@ -69,6 +71,17 @@ class VerifyOtpResponse {
           stringOrNull(json['refreshToken']),
       tokenType: readString(json, const ['token_type', 'tokenType']),
       client: ClientProfile.fromJson(asJsonMap(json['client'])),
+      isNewClient: readBool(json, const [
+        'clientCreated',
+        'client_created',
+        'createdClient',
+        'created_client',
+        'isNewClient',
+        'is_new_client',
+        'isNewUser',
+        'is_new_user',
+        'created',
+      ]),
     );
   }
 }

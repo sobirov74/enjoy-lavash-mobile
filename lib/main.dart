@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -14,30 +15,57 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/repositories/
 import 'package:enjoy_lavash_mobile/features/mobile_backend/presentation/mobile_backend_controller.dart';
 
 Future<void> main() async {
+  await runZonedGuarded<Future<void>>(_startApp, _reportUnhandledError);
+}
+
+Future<void> _startApp() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    _reportUnhandledError(
+      details.exception,
+      details.stack ?? StackTrace.current,
+    );
+  };
+  PlatformDispatcher.instance.onError = (error, stack) {
+    _reportUnhandledError(error, stack);
+    return true;
+  };
 
   setupDi();
 
   final themeController = ThemeController();
   final localeController = LocaleController();
   final locationController = LocationController(YandexGeocoderService());
+  final apiClient = sl<ApiClient>();
   final mobileBackendController = MobileBackendController(
     sl<MobileBackendRepository>(),
     sl<MobilePushNotificationService>(),
   );
-  sl<ApiClient>().setOnLogout(mobileBackendController.handleSessionExpired);
-  unawaited(sl<MobilePushNotificationService>().configureMessageHandlers());
+  apiClient.setOnLogout(mobileBackendController.handleSessionExpired);
+  unawaited(
+    _runStartupTask(
+      'push message handlers',
+      sl<MobilePushNotificationService>().configureMessageHandlers,
+    ),
+  );
 
   await Future.wait([
     themeController.loadTheme(),
     localeController.loadLocale(),
   ]);
+  apiClient.setLanguage(localeController.locale.languageCode);
+  localeController.addListener(() {
+    apiClient.setLanguage(localeController.locale.languageCode);
+  });
 
-  // Request location permission on startup
-  unawaited(locationController.requestPermissionAndLocate());
   unawaited(
-    mobileBackendController.bootstrap(
-      language: localeController.locale.languageCode,
+    _runStartupTask(
+      'mobile backend bootstrap',
+      () => mobileBackendController.bootstrap(
+        language: localeController.locale.languageCode,
+      ),
     ),
   );
 
@@ -56,4 +84,18 @@ Future<void> main() async {
       child: const MyApp(),
     ),
   );
+}
+
+Future<void> _runStartupTask(String name, Future<void> Function() task) async {
+  try {
+    await task();
+  } catch (error, stackTrace) {
+    debugPrint('Startup task failed: $name');
+    _reportUnhandledError(error, stackTrace);
+  }
+}
+
+void _reportUnhandledError(Object error, StackTrace stackTrace) {
+  debugPrint('Unhandled app error: $error');
+  debugPrintStack(stackTrace: stackTrace);
 }

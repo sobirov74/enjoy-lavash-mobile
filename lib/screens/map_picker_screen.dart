@@ -93,6 +93,8 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
   Widget build(BuildContext context) {
     final t = L.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final topPadding = MediaQuery.of(context).padding.top;
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
       body: Stack(
@@ -115,6 +117,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                     point: _selectedPosition,
                     width: 40,
                     height: 40,
+                    rotate: true,
                     child: const Icon(
                       Icons.location_pin,
                       color: Colors.red,
@@ -127,7 +130,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
           ),
           // Back button
           Positioned(
-            top: MediaQuery.of(context).padding.top + 12,
+            top: topPadding + 12,
             left: 16,
             child: GestureDetector(
               onTap: () => Navigator.pop(context),
@@ -148,11 +151,29 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
               ),
             ),
           ),
+          Positioned(
+            top: topPadding + 12,
+            left: 72,
+            right: 16,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              child: _isLoading
+                  ? _MapLookupStatusPill(
+                      key: const ValueKey<String>('lookup-status'),
+                      isDark: isDark,
+                    )
+                  : const SizedBox.shrink(
+                      key: ValueKey<String>('lookup-status-empty'),
+                    ),
+            ),
+          ),
           // Bottom card
           Positioned(
             left: 16,
             right: 16,
-            bottom: MediaQuery.of(context).padding.bottom + 16,
+            bottom: bottomPadding + 16,
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -177,28 +198,33 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: _isLoading
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 220),
+                          switchInCurve: Curves.easeOutCubic,
+                          switchOutCurve: Curves.easeInCubic,
+                          child: _isLoading
+                              ? _AddressLookupLoading(
+                                  key: const ValueKey<String>(
+                                    'address-loading',
+                                  ),
+                                  isDark: isDark,
+                                )
+                              : TypographyText(
+                                  key: const ValueKey<String>('address-text'),
+                                  _addressText.isNotEmpty
+                                      ? _addressText
+                                      : t.tapToSelectAddress,
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark
+                                        ? Colors.white
+                                        : const Color(0xFF14110F),
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              )
-                            : TypographyText(
-                                _addressText.isNotEmpty
-                                    ? _addressText
-                                    : t.tapToSelectAddress,
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                  color: isDark
-                                      ? Colors.white
-                                      : const Color(0xFF14110F),
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                        ),
                       ),
                     ],
                   ),
@@ -238,4 +264,196 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
       ),
     );
   }
+}
+
+class _MapLookupStatusPill extends StatelessWidget {
+  const _MapLookupStatusPill({super.key, required this.isDark});
+
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    final textColor = isDark ? Colors.white : const Color(0xFF241C17);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1D1A18) : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.1),
+            blurRadius: 12,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: BaseColors.primary,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Flexible(
+              child: TypographyText(
+                _mapPickerText(
+                  context,
+                  en: 'Finding address...',
+                  ru: 'Определяем адрес...',
+                  uz: 'Manzil aniqlanmoqda...',
+                ),
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AddressLookupLoading extends StatefulWidget {
+  const _AddressLookupLoading({super.key, required this.isDark});
+
+  final bool isDark;
+
+  @override
+  State<_AddressLookupLoading> createState() => _AddressLookupLoadingState();
+}
+
+class _AddressLookupLoadingState extends State<_AddressLookupLoading>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _pulse;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1100),
+    )..repeat(reverse: true);
+    _pulse = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final textColor = widget.isDark ? Colors.white : const Color(0xFF241C17);
+    final mutedColor = widget.isDark
+        ? const Color(0xFF9E9790)
+        : BaseColors.textGray;
+    final trackColor = widget.isDark
+        ? const Color(0xFF3A332D)
+        : const Color(0xFFEDE2D7);
+
+    return Row(
+      children: [
+        AnimatedBuilder(
+          animation: _pulse,
+          builder: (context, child) {
+            return Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: BaseColors.primary.withValues(
+                  alpha: 0.12 + (_pulse.value * 0.1),
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: Transform.scale(
+                scale: 0.9 + (_pulse.value * 0.08),
+                child: child,
+              ),
+            );
+          },
+          child: const Icon(
+            Icons.travel_explore_rounded,
+            color: BaseColors.primary,
+            size: 22,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TypographyText(
+                _mapPickerText(
+                  context,
+                  en: 'Checking this location',
+                  ru: 'Проверяем эту точку',
+                  uz: 'Bu joy tekshirilmoqda',
+                ),
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 5),
+              TypographyText(
+                _mapPickerText(
+                  context,
+                  en: 'Getting address details',
+                  ru: 'Получаем данные адреса',
+                  uz: "Manzil ma'lumotlari olinmoqda",
+                ),
+                style: TextStyle(
+                  color: mutedColor,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(999),
+                child: LinearProgressIndicator(
+                  minHeight: 4,
+                  color: BaseColors.primary,
+                  backgroundColor: trackColor,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+String _mapPickerText(
+  BuildContext context, {
+  required String en,
+  required String ru,
+  required String uz,
+}) {
+  return switch (Localizations.localeOf(context).languageCode) {
+    'ru' => ru,
+    'uz' => uz,
+    _ => en,
+  };
 }

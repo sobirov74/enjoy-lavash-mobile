@@ -46,36 +46,36 @@ class LocationController extends ChangeNotifier {
   }
 
   Future<void> requestPermissionAndLocate() async {
-    _status = LocationStatus.loading;
-    notifyListeners();
+    _setStatus(LocationStatus.loading);
 
-    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      _status = LocationStatus.error;
-      notifyListeners();
-      return;
-    }
-
-    var permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        _status = LocationStatus.denied;
-        notifyListeners();
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        _setStatus(LocationStatus.error);
         return;
       }
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          _setStatus(LocationStatus.denied);
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        _setStatus(LocationStatus.denied);
+        return;
+      }
+
+      _setStatus(LocationStatus.granted);
+      await _fetchCurrentLocation();
+    } catch (error, stackTrace) {
+      debugPrint('Location permission flow failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      _setStatus(LocationStatus.error);
     }
-
-    if (permission == LocationPermission.deniedForever) {
-      _status = LocationStatus.denied;
-      notifyListeners();
-      return;
-    }
-
-    _status = LocationStatus.granted;
-    notifyListeners();
-
-    await _fetchCurrentLocation();
   }
 
   Future<void> _fetchCurrentLocation() async {
@@ -102,8 +102,7 @@ class LocationController extends ChangeNotifier {
 
       notifyListeners();
     } catch (_) {
-      _status = LocationStatus.error;
-      notifyListeners();
+      _setStatus(LocationStatus.error);
     }
   }
 
@@ -176,6 +175,11 @@ class LocationController extends ChangeNotifier {
 
   void setComment(String value) {
     _comment = value;
+    notifyListeners();
+  }
+
+  void _setStatus(LocationStatus status) {
+    _status = status;
     notifyListeners();
   }
 }

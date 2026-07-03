@@ -12,6 +12,7 @@ import 'package:enjoy_lavash_mobile/utils/price_formatter.dart';
 import 'package:enjoy_lavash_mobile/widgets/action_icon_button.dart';
 import 'package:enjoy_lavash_mobile/widgets/animated_error_message.dart';
 import 'package:enjoy_lavash_mobile/widgets/delivery_chip.dart';
+import 'package:enjoy_lavash_mobile/widgets/fade_slide_in.dart';
 import 'package:enjoy_lavash_mobile/widgets/product_image.dart';
 import 'package:enjoy_lavash_mobile/widgets/product_list_item.dart';
 import 'package:enjoy_lavash_mobile/widgets/promo_slider.dart';
@@ -96,6 +97,11 @@ class _MenuScreenState extends State<MenuScreen> {
   /// Cached products grouped by category — rebuilt only when products change.
   late Map<String, List<MenuProduct>> _groupedProducts = _groupProducts();
 
+  /// Cached lowercase haystacks so search doesn't re-lowercase every product
+  /// on each keystroke.
+  late List<({MenuProduct product, String haystack})> _searchIndex =
+      _buildSearchIndex();
+
   bool _isProgrammaticScroll = false;
   bool _scrollSpyScheduled = false;
   String _searchQuery = '';
@@ -123,6 +129,7 @@ class _MenuScreenState extends State<MenuScreen> {
 
     if (oldWidget.products != widget.products) {
       _groupedProducts = _groupProducts();
+      _searchIndex = _buildSearchIndex();
     }
 
     if (oldWidget.selectedCategoryIndex != widget.selectedCategoryIndex ||
@@ -180,16 +187,25 @@ class _MenuScreenState extends State<MenuScreen> {
   double get _activeStickyHeaderHeight =>
       _hasSearchQuery ? _stickySearchHeaderHeight : _stickyProductsHeaderHeight;
 
+  List<({MenuProduct product, String haystack})> _buildSearchIndex() {
+    return widget.products
+        .map(
+          (product) => (
+            product: product,
+            haystack: '${product.title} ${product.category} ${product.price}'
+                .toLowerCase(),
+          ),
+        )
+        .toList(growable: false);
+  }
+
   List<MenuProduct> _filteredProducts() {
     final query = _searchQuery.trim().toLowerCase();
     if (query.isEmpty) return widget.products;
 
-    return widget.products
-        .where((product) {
-          return product.title.toLowerCase().contains(query) ||
-              product.category.toLowerCase().contains(query) ||
-              product.price.toString().contains(query);
-        })
+    return _searchIndex
+        .where((entry) => entry.haystack.contains(query))
+        .map((entry) => entry.product)
         .toList(growable: false);
   }
 
@@ -511,19 +527,28 @@ class _MenuScreenState extends State<MenuScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildTopBar(),
+                  FadeSlideIn(child: _buildTopBar()),
                   const SizedBox(height: 10),
-                  _buildAddressBar(context),
+                  FadeSlideIn(
+                    delay: const Duration(milliseconds: 50),
+                    child: _buildAddressBar(context),
+                  ),
                   const SizedBox(height: 10),
-                  _buildDeliveryToggle(t),
+                  FadeSlideIn(
+                    delay: const Duration(milliseconds: 100),
+                    child: _buildDeliveryToggle(t),
+                  ),
                   if (widget.promotions.isNotEmpty) ...[
                     const SizedBox(height: 16),
-                    PromoSlider(
-                      promotions: widget.promotions,
-                      locale: context
-                          .watch<LocaleController>()
-                          .locale
-                          .languageCode,
+                    FadeSlideIn(
+                      delay: const Duration(milliseconds: 150),
+                      child: PromoSlider(
+                        promotions: widget.promotions,
+                        locale: context
+                            .watch<LocaleController>()
+                            .locale
+                            .languageCode,
+                      ),
                     ),
                   ],
                 ],
@@ -624,47 +649,57 @@ class _MenuScreenState extends State<MenuScreen> {
   Widget _buildMenuState(ThemeData theme, L t) {
     final errorText = widget.menuErrorText;
 
+    final Widget state;
     if (widget.isMenuLoading) {
-      return Center(
+      state = Center(
+        key: const ValueKey<String>('menu-loading'),
         child: CircularProgressIndicator(
           color: widget.isDark ? Colors.white : BaseColors.primary,
         ),
       );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(32, 48, 32, 96),
-      child: Center(
-        child: errorText != null
-            ? AnimatedErrorMessage(
-                failure: widget.menuFailure,
-                message: errorText,
-                onRetry: widget.onRetryMenu,
-              )
-            : Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.restaurant_menu_rounded,
-                    size: 44,
-                    color: widget.isDark
-                        ? BaseColors.lightTextGray
-                        : BaseColors.textGray,
-                  ),
-                  const SizedBox(height: 16),
-                  TypographyText(
-                    t.emptyList,
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyLarge?.copyWith(
+    } else {
+      state = Padding(
+        key: ValueKey<String>(errorText != null ? 'menu-error' : 'menu-empty'),
+        padding: const EdgeInsets.fromLTRB(32, 48, 32, 96),
+        child: Center(
+          child: errorText != null
+              ? AnimatedErrorMessage(
+                  failure: widget.menuFailure,
+                  message: errorText,
+                  onRetry: widget.onRetryMenu,
+                )
+              : Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.restaurant_menu_rounded,
+                      size: 44,
                       color: widget.isDark
                           ? BaseColors.lightTextGray
                           : BaseColors.textGray,
-                      fontWeight: FontWeight.w700,
                     ),
-                  ),
-                ],
-              ),
-      ),
+                    const SizedBox(height: 16),
+                    TypographyText(
+                      t.emptyList,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: widget.isDark
+                            ? BaseColors.lightTextGray
+                            : BaseColors.textGray,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+      );
+    }
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 260),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      child: state,
     );
   }
 
@@ -758,28 +793,37 @@ class _MenuScreenState extends State<MenuScreen> {
           isDark: widget.isDark,
           onTap: widget.onCartTap,
         ),
-        if (widget.cartCount > 0)
-          Positioned(
-            top: -4,
-            right: -4,
-            child: Container(
-              width: 22,
-              height: 22,
-              alignment: Alignment.center,
-              decoration: const BoxDecoration(
-                color: BaseColors.primary,
-                shape: BoxShape.circle,
-              ),
-              child: TypographyText(
-                '${widget.cartCount}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
+        Positioned(
+          top: -4,
+          right: -4,
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 240),
+            switchInCurve: Curves.easeOutBack,
+            switchOutCurve: Curves.easeInCubic,
+            transitionBuilder: (child, animation) =>
+                ScaleTransition(scale: animation, child: child),
+            child: widget.cartCount > 0
+                ? Container(
+                    key: ValueKey<int>(widget.cartCount),
+                    width: 22,
+                    height: 22,
+                    alignment: Alignment.center,
+                    decoration: const BoxDecoration(
+                      color: BaseColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: TypographyText(
+                      '${widget.cartCount}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  )
+                : const SizedBox.shrink(key: ValueKey<String>('empty-badge')),
           ),
+        ),
       ],
     );
   }
@@ -831,28 +875,30 @@ class _MenuScreenState extends State<MenuScreen> {
   Widget _buildProductsHeader(ThemeData theme, L t) {
     return Container(
       color: theme.scaffoldBackgroundColor,
-      child: Column(
-        children: <Widget>[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: _buildSearchField(t),
-          ),
-          if (!_hasSearchQuery)
+      child: FadeSlideIn(
+        child: Column(
+          children: <Widget>[
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: SizedBox(
-                height: 46,
-                child: ListView.separated(
-                  controller: _categoryScrollController,
-                  physics: const BouncingScrollPhysics(),
-                  scrollDirection: Axis.horizontal,
-                  itemCount: widget.categories.length,
-                  separatorBuilder: (_, _) => const SizedBox(width: 10),
-                  itemBuilder: (_, index) => _buildCategoryChip(index),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              child: _buildSearchField(t),
+            ),
+            if (!_hasSearchQuery)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: SizedBox(
+                  height: 46,
+                  child: ListView.separated(
+                    controller: _categoryScrollController,
+                    physics: const BouncingScrollPhysics(),
+                    scrollDirection: Axis.horizontal,
+                    itemCount: widget.categories.length,
+                    separatorBuilder: (_, _) => const SizedBox(width: 10),
+                    itemBuilder: (_, index) => _buildCategoryChip(index),
+                  ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -905,19 +951,7 @@ class _MenuScreenState extends State<MenuScreen> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              onChanged: (value) {
-                setState(() => _searchQuery = value);
-                if (value.trim().isNotEmpty && _scrollController.hasClients) {
-                  _scrollController.animateTo(
-                    _scrollController.offset.clamp(
-                      0.0,
-                      _scrollController.position.maxScrollExtent,
-                    ),
-                    duration: const Duration(milliseconds: 120),
-                    curve: Curves.easeOutCubic,
-                  );
-                }
-              },
+              onChanged: (value) => setState(() => _searchQuery = value),
             ),
           ),
           AnimatedSwitcher(
@@ -1075,35 +1109,38 @@ class _MenuScreenState extends State<MenuScreen> {
       key: _sectionKeys[index],
       child: Padding(
         padding: const EdgeInsets.only(bottom: 18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: TypographyText(
-                category,
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-            for (final product in products)
+        child: FadeSlideIn(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Padding(
                 padding: const EdgeInsets.only(bottom: 10),
-                child: RepaintBoundary(
-                  child: ProductListItem(
-                    product: product,
-                    isDark: widget.isDark,
-                    quantity: widget.cartQuantities[product.id] ?? 0,
-                    onImageTap: () => _showProductImagePreview(product),
-                    onAdd: () => widget.onAddToCart(product),
-                    onDecrease: () => widget.onDecreaseFromCart(product),
-                    onIncrease: () => widget.onAddToCart(product),
+                child: TypographyText(
+                  category,
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
-          ],
+              for (final product in products)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: RepaintBoundary(
+                    child: ProductListItem(
+                      key: ValueKey<String>('menu-${product.id}'),
+                      product: product,
+                      isDark: widget.isDark,
+                      quantity: widget.cartQuantities[product.id] ?? 0,
+                      onImageTap: () => _showProductImagePreview(product),
+                      onAdd: () => widget.onAddToCart(product),
+                      onDecrease: () => widget.onDecreaseFromCart(product),
+                      onIncrease: () => widget.onAddToCart(product),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );

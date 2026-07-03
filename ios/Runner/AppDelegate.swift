@@ -17,16 +17,37 @@ import UserNotifications
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
-    let channel = FlutterMethodChannel(
+    let apnsChannel = FlutterMethodChannel(
       name: "enjoy_lavash_mobile/apns",
       binaryMessenger: engineBridge.applicationRegistrar.messenger()
     )
-    channel.setMethodCallHandler { [weak self] call, result in
+    apnsChannel.setMethodCallHandler { [weak self] call, result in
       guard call.method == "requestToken" else {
         result(FlutterMethodNotImplemented)
         return
       }
       self?.requestApnsToken(result)
+    }
+
+    let externalUrlChannel = FlutterMethodChannel(
+      name: "enjoy_lavash_mobile/external_url",
+      binaryMessenger: engineBridge.applicationRegistrar.messenger()
+    )
+    externalUrlChannel.setMethodCallHandler { call, result in
+      guard call.method == "open" else {
+        result(FlutterMethodNotImplemented)
+        return
+      }
+      guard
+        let value = call.arguments as? String,
+        let url = URL(string: value)
+      else {
+        result(false)
+        return
+      }
+      UIApplication.shared.open(url, options: [:]) { success in
+        result(success)
+      }
     }
   }
 

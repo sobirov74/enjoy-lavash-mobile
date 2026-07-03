@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'failures.dart';
+import 'mobile_error_messages.dart';
 
 /// Maps a [DioException] to a typed [Failure].
 Failure mapDioError(DioException e) {
@@ -16,11 +17,14 @@ Failure mapDioError(DioException e) {
 
     case DioExceptionType.badResponse:
       final status = e.response?.statusCode ?? 0;
+      final serverMessage = resolveApiErrorMessage(
+        data: e.response?.data,
+        statusCode: status,
+        languageCode: _requestLanguage(e),
+      );
       if (status == 401 || status == 403) {
-        return const AuthFailure();
+        return AuthFailure(serverMessage);
       }
-      final serverMessage = _extractMessage(e.response?.data) ??
-          'Server error ($status)';
       return ServerFailure(status, serverMessage);
 
     case DioExceptionType.cancel:
@@ -37,11 +41,10 @@ Failure mapDioError(DioException e) {
   }
 }
 
-String? _extractMessage(dynamic data) {
-  if (data is Map<String, dynamic>) {
-    return data['message'] as String? ??
-        data['error'] as String? ??
-        data['detail'] as String?;
+String? _requestLanguage(DioException e) {
+  final value = e.requestOptions.headers['Accept-Language'];
+  if (value is String && value.trim().isNotEmpty) {
+    return value.trim();
   }
   return null;
 }

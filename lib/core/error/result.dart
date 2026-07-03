@@ -31,7 +31,7 @@ extension ResultOf on Never {
   static Result<T> error<T>(Failure failure) => Error(failure);
 }
 
-/// Helpers on Result<T>.
+/// Helpers on `Result<T>`.
 extension ResultX<T> on Result<T> {
   /// Get data or null.
   T? get dataOrNull => switch (this) {

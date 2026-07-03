@@ -1,3 +1,5 @@
+// ignore_for_file: constant_identifier_names
+
 import 'package:enjoy_lavash_mobile/core/data/models/organisation.dart';
 import 'package:enjoy_lavash_mobile/core/data/models/simple_entity.dart';
 

@@ -1,3 +1,4 @@
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/cart_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/order_model.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -33,5 +34,29 @@ void main() {
     expect(item.localizedName('uz'), '+18 plus');
     expect(item.amount, 15000);
     expect(order.statusLog.single.changedAt, isNotNull);
+  });
+
+  test('parses online payment fields from created order response', () {
+    final order = CustomerOrderModel.fromJson({
+      'id': 'order-payme',
+      'type': 'DELIVERY',
+      'status': 'NEW',
+      'paymentMethod': 'PAYME',
+      'paymentStatus': 'PENDING',
+      'paymentUrl': 'https://checkout.paycom.uz/token',
+      'paymentExpiresAt': '2026-07-03T12:15:00.000Z',
+      'paymentRetryAvailable': true,
+      'paymentAttemptCount': 1,
+      'totalAmount': 40000,
+      'items': const [],
+      'statusLog': const [],
+    });
+
+    expect(order.paymentMethod, MobilePaymentMethod.payme);
+    expect(order.paymentStatus, MobilePaymentStatus.pending);
+    expect(order.paymentUrl, 'https://checkout.paycom.uz/token');
+    expect(order.paymentExpiresAt, isNotNull);
+    expect(order.paymentRetryAvailable, isTrue);
+    expect(order.paymentAttemptCount, 1);
   });
 }

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:enjoy_lavash_mobile/app/locale_controller.dart';
 import 'package:enjoy_lavash_mobile/app/location_controller.dart';
 import 'package:enjoy_lavash_mobile/core/error/result.dart';
+import 'package:enjoy_lavash_mobile/core/services/external_url_launcher.dart';
 import 'package:enjoy_lavash_mobile/features/models/cart_line.dart';
 import 'package:enjoy_lavash_mobile/features/models/menu_product.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/address_model.dart';
@@ -110,6 +111,9 @@ class _MainTabsState extends State<MainTabs> {
     if (shouldReloadCatalog) {
       _refreshCatalogForBranch(null);
     }
+    if (type == MobileOrderType.delivery) {
+      _refreshPaymentMethodsForBranch(null);
+    }
   }
 
   void _setPickupBranch(BranchModel? branch) {
@@ -121,12 +125,23 @@ class _MainTabsState extends State<MainTabs> {
     });
 
     _refreshCatalogForBranch(branch?.id);
+    _refreshPaymentMethodsForBranch(branch?.id);
   }
 
   void _refreshCatalogForBranch(String? branchId) {
     final language = context.read<LocaleController>().locale.languageCode;
     unawaited(
       context.read<MobileBackendController>().refreshCatalog(
+        language: language,
+        branchId: branchId,
+      ),
+    );
+  }
+
+  void _refreshPaymentMethodsForBranch(String? branchId) {
+    final language = context.read<LocaleController>().locale.languageCode;
+    unawaited(
+      context.read<MobileBackendController>().refreshPaymentMethods(
         language: language,
         branchId: branchId,
       ),
@@ -213,6 +228,7 @@ class _MainTabsState extends State<MainTabs> {
   Future<CartPreviewRequest?> _buildCartPreviewRequest(
     List<CartLine> cartLines, {
     required MobileOrderType orderType,
+    required MobilePaymentMethod paymentMethod,
     String? promoCode,
   }) async {
     final t = L.of(context);
@@ -238,7 +254,7 @@ class _MainTabsState extends State<MainTabs> {
         type: MobileOrderType.pickup,
         branchId: branch.id,
         items: items,
-        paymentMethod: MobilePaymentMethod.cash,
+        paymentMethod: paymentMethod,
         promoCode: normalizedPromoCode,
       );
     }
@@ -272,7 +288,7 @@ class _MainTabsState extends State<MainTabs> {
       type: MobileOrderType.delivery,
       address: address,
       items: items,
-      paymentMethod: MobilePaymentMethod.cash,
+      paymentMethod: paymentMethod,
       promoCode: normalizedPromoCode,
     );
   }
@@ -280,21 +296,33 @@ class _MainTabsState extends State<MainTabs> {
   Future<Result<CartPreviewModel>?> _previewCartForCheckout(
     List<CartLine> cartLines, {
     required MobileOrderType orderType,
+    required MobilePaymentMethod paymentMethod,
     String? promoCode,
   }) async {
     final request = await _buildCartPreviewRequest(
       cartLines,
       orderType: orderType,
+      paymentMethod: paymentMethod,
       promoCode: promoCode,
     );
     if (!mounted || request == null) return null;
 
-    return context.read<MobileBackendController>().previewCart(request);
+    final result = await context.read<MobileBackendController>().previewCart(
+      request,
+    );
+    if (result case Success(:final data)) {
+      final branchId = data.branchId?.trim();
+      if (branchId?.isNotEmpty == true) {
+        _refreshPaymentMethodsForBranch(branchId);
+      }
+    }
+    return result;
   }
 
   Future<CreateOrderRequest?> _buildCreateOrderRequest(
     List<CartLine> cartLines, {
     required MobileOrderType orderType,
+    required MobilePaymentMethod paymentMethod,
     String? promoCode,
   }) async {
     final t = L.of(context);
@@ -320,7 +348,7 @@ class _MainTabsState extends State<MainTabs> {
         type: MobileOrderType.pickup,
         branchId: branch.id,
         items: items,
-        paymentMethod: MobilePaymentMethod.cash,
+        paymentMethod: paymentMethod,
         promoCode: normalizedPromoCode,
       );
     }
@@ -349,7 +377,7 @@ class _MainTabsState extends State<MainTabs> {
       address: address,
       addressId: address == null ? savedAddressId : null,
       items: items,
-      paymentMethod: MobilePaymentMethod.cash,
+      paymentMethod: paymentMethod,
       promoCode: normalizedPromoCode,
       comment: comment.isEmpty ? null : comment,
     );
@@ -371,10 +399,15 @@ class _MainTabsState extends State<MainTabs> {
           initialOrderType: _orderType,
           initialPromoCode: _promoCode,
           onPreviewRequested:
-              ({required MobileOrderType orderType, String? promoCode}) {
+              ({
+                required MobileOrderType orderType,
+                required MobilePaymentMethod paymentMethod,
+                String? promoCode,
+              }) {
                 return _previewCartForCheckout(
                   cartLines,
                   orderType: orderType,
+                  paymentMethod: paymentMethod,
                   promoCode: promoCode,
                 );
               },
@@ -410,6 +443,7 @@ class _MainTabsState extends State<MainTabs> {
     final request = await _buildCreateOrderRequest(
       cartLines,
       orderType: orderDetails.orderType,
+      paymentMethod: orderDetails.paymentMethod,
       promoCode: orderDetails.promoCode,
     );
     if (!mounted || request == null) return;
@@ -422,13 +456,34 @@ class _MainTabsState extends State<MainTabs> {
 
     setState(() => _isCheckingOut = false);
     switch (result) {
-      case Success():
+      case Success(:final data):
         setState(() {
           _cart.clear();
           _promoCode = '';
           _currentIndex = 2;
         });
-        _showSnack(L.of(context).orderCreated);
+        final paymentUrl = data.paymentUrl?.trim();
+        if (paymentUrl?.isNotEmpty == true) {
+          final opened = await ExternalUrlLauncher.open(paymentUrl!);
+          if (!mounted) return;
+          _showSnack(
+            opened
+                ? _mainTabsText(
+                    L.of(context),
+                    en: 'Order created. Complete payment online.',
+                    ru: 'Заказ создан. Завершите онлайн-оплату.',
+                    uz: "Buyurtma yaratildi. Onlayn to'lovni yakunlang.",
+                  )
+                : _mainTabsText(
+                    L.of(context),
+                    en: 'Order created, but payment page could not be opened.',
+                    ru: 'Заказ создан, но страницу оплаты открыть не удалось.',
+                    uz: "Buyurtma yaratildi, ammo to'lov sahifasi ochilmadi.",
+                  ),
+          );
+        } else {
+          _showSnack(L.of(context).orderCreated);
+        }
       case Error(:final failure):
         _showSnack(
           failure.message.isNotEmpty
@@ -693,15 +748,21 @@ class _MainTabsState extends State<MainTabs> {
 }
 
 class _OrderCreationResult {
-  const _OrderCreationResult({required this.orderType, this.promoCode});
+  const _OrderCreationResult({
+    required this.orderType,
+    required this.paymentMethod,
+    this.promoCode,
+  });
 
   final MobileOrderType orderType;
+  final MobilePaymentMethod paymentMethod;
   final String? promoCode;
 }
 
 typedef _CartPreviewRequester =
     Future<Result<CartPreviewModel>?> Function({
       required MobileOrderType orderType,
+      required MobilePaymentMethod paymentMethod,
       String? promoCode,
     });
 
@@ -727,9 +788,11 @@ class _OrderConfirmationSheet extends StatefulWidget {
 
 class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
   late MobileOrderType _orderType;
+  MobilePaymentMethod _paymentMethod = MobilePaymentMethod.cash;
   late final TextEditingController _promoCodeController;
   CartPreviewModel? _preview;
   MobileOrderType? _lastPreviewOrderType;
+  MobilePaymentMethod? _lastPreviewPaymentMethod;
   String? _lastPreviewPromoCode;
   String? _previewErrorText;
   bool _isPreviewLoading = false;
@@ -763,7 +826,20 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
   bool get _previewMatchesCurrentInput {
     return _preview != null &&
         _lastPreviewOrderType == _orderType &&
+        _lastPreviewPaymentMethod == _currentPaymentMethod &&
         _lastPreviewPromoCode == _normalizedPromoCode;
+  }
+
+  List<PaymentMethodModel> get _availablePaymentMethods {
+    return _resolvePaymentMethods(
+      context.read<MobileBackendController>().paymentMethods,
+    );
+  }
+
+  MobilePaymentMethod get _currentPaymentMethod {
+    final methods = _availablePaymentMethods;
+    final hasSelected = methods.any((method) => method.code == _paymentMethod);
+    return hasSelected ? _paymentMethod : methods.first.code;
   }
 
   void _onPromoCodeChanged() {
@@ -775,6 +851,7 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
     if (_isPreviewLoading) return false;
 
     final orderType = _orderType;
+    final paymentMethod = _currentPaymentMethod;
     final promoCode = _normalizedPromoCode;
     setState(() {
       _isPreviewLoading = true;
@@ -784,11 +861,14 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
 
     final result = await widget.onPreviewRequested(
       orderType: orderType,
+      paymentMethod: paymentMethod,
       promoCode: promoCode,
     );
     if (!mounted) return false;
 
-    if (orderType != _orderType || promoCode != _normalizedPromoCode) {
+    if (orderType != _orderType ||
+        paymentMethod != _currentPaymentMethod ||
+        promoCode != _normalizedPromoCode) {
       setState(() => _isPreviewLoading = false);
       unawaited(_loadPreview());
       return false;
@@ -800,7 +880,12 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
     }
 
     return switch (result) {
-      Success(:final data) => _applyPreview(data, orderType, promoCode),
+      Success(:final data) => _applyPreview(
+        data,
+        orderType,
+        paymentMethod,
+        promoCode,
+      ),
       Error(:final failure) => _showPreviewError(failure.message),
     };
   }
@@ -808,11 +893,13 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
   bool _applyPreview(
     CartPreviewModel preview,
     MobileOrderType orderType,
+    MobilePaymentMethod paymentMethod,
     String? promoCode,
   ) {
     setState(() {
       _preview = preview;
       _lastPreviewOrderType = orderType;
+      _lastPreviewPaymentMethod = paymentMethod;
       _lastPreviewPromoCode = promoCode;
       _previewErrorText = null;
       _isPreviewLoading = false;
@@ -838,6 +925,7 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
     Navigator.of(context).pop(
       _OrderCreationResult(
         orderType: _orderType,
+        paymentMethod: _currentPaymentMethod,
         promoCode: _normalizedPromoCode,
       ),
     );
@@ -847,6 +935,29 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
     if (_orderType == type) return;
     setState(() => _orderType = type);
     unawaited(_loadPreview());
+  }
+
+  void _selectPaymentMethod(MobilePaymentMethod method) {
+    if (_paymentMethod == method) return;
+    setState(() => _paymentMethod = method);
+    unawaited(_loadPreview());
+  }
+
+  List<PaymentMethodModel> _resolvePaymentMethods(
+    List<PaymentMethodModel> methods,
+  ) {
+    if (methods.isEmpty) {
+      return const <PaymentMethodModel>[
+        PaymentMethodModel(
+          id: 'cash-fallback',
+          code: MobilePaymentMethod.cash,
+          name: 'Cash',
+          isOnline: false,
+          sortOrder: 0,
+        ),
+      ];
+    }
+    return methods;
   }
 
   Widget _buildOrderTypeToggle(L t) {
@@ -1015,6 +1126,13 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
     final t = L.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final paymentMethods = _resolvePaymentMethods(
+      context.watch<MobileBackendController>().paymentMethods,
+    );
+    final currentPaymentMethod =
+        paymentMethods.any((method) => method.code == _paymentMethod)
+        ? _paymentMethod
+        : paymentMethods.first.code;
 
     return Container(
       constraints: BoxConstraints(
@@ -1098,15 +1216,10 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
             const SizedBox(height: 8),
             _buildPromoCodeField(t),
             const SizedBox(height: 14),
-            _ConfirmationInfoRow(
-              icon: Icons.payments_outlined,
-              label: _mainTabsText(
-                t,
-                en: 'Payment',
-                ru: 'Оплата',
-                uz: "To'lov",
-              ),
-              value: _confirmationPaymentLabel(MobilePaymentMethod.cash, t),
+            _PaymentMethodSelector(
+              methods: paymentMethods,
+              selectedMethod: currentPaymentMethod,
+              onChanged: _selectPaymentMethod,
             ),
             const SizedBox(height: 14),
             Container(
@@ -1204,58 +1317,155 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
   }
 }
 
-class _ConfirmationInfoRow extends StatelessWidget {
-  const _ConfirmationInfoRow({
-    required this.icon,
-    required this.label,
-    required this.value,
+class _PaymentMethodSelector extends StatelessWidget {
+  const _PaymentMethodSelector({
+    required this.methods,
+    required this.selectedMethod,
+    required this.onChanged,
   });
 
-  final IconData icon;
-  final String label;
-  final String value;
+  final List<PaymentMethodModel> methods;
+  final MobilePaymentMethod selectedMethod;
+  final ValueChanged<MobilePaymentMethod> onChanged;
 
   @override
   Widget build(BuildContext context) {
+    final t = L.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF2A2522) : const Color(0xFFF8F4EF),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Icon(icon, color: BaseColors.primary, size: 20),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                TypographyText(
-                  label,
-                  style: const TextStyle(
-                    color: BaseColors.textGray,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
+          Row(
+            children: <Widget>[
+              const Icon(
+                Icons.payments_outlined,
+                color: BaseColors.primary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              TypographyText(
+                _mainTabsText(t, en: 'Payment', ru: 'Оплата', uz: "To'lov"),
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w900,
                 ),
-                const SizedBox(height: 3),
-                TypographyText(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    height: 1.25,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: <Widget>[
+              for (final method in methods)
+                _PaymentMethodChip(
+                  method: method,
+                  selected: method.code == selectedMethod,
+                  onTap: () => onChanged(method.code),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PaymentMethodChip extends StatelessWidget {
+  const _PaymentMethodChip({
+    required this.method,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final PaymentMethodModel method;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = L.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final label = method.name.trim().isEmpty
+        ? _confirmationPaymentLabel(method.code, t)
+        : method.name.trim();
+
+    return Material(
+      color: selected
+          ? BaseColors.primary.withValues(alpha: isDark ? 0.22 : 0.12)
+          : isDark
+          ? const Color(0xFF201C19)
+          : Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: selected ? null : onTap,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 48),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: selected
+                  ? BaseColors.primary
+                  : isDark
+                  ? const Color(0xFF3A332D)
+                  : const Color(0xFFEDE2D7),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(
+                _paymentMethodIcon(method.code),
+                color: selected ? BaseColors.primary : BaseColors.textGray,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              TypographyText(
+                label,
+                style: TextStyle(
+                  color: selected
+                      ? BaseColors.primary
+                      : isDark
+                      ? const Color(0xFFF6EFE7)
+                      : BaseColors.black,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              if (method.isOnline) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: BaseColors.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: TypographyText(
+                    _mainTabsText(t, en: 'Online', ru: 'Онлайн', uz: 'Online'),
+                    style: const TextStyle(
+                      color: BaseColors.primary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
               ],
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -1632,6 +1842,16 @@ String _confirmationPaymentLabel(MobilePaymentMethod method, L t) {
       ru: 'Неизвестно',
       uz: "Noma'lum",
     ),
+  };
+}
+
+IconData _paymentMethodIcon(MobilePaymentMethod method) {
+  return switch (method) {
+    MobilePaymentMethod.cash => Icons.payments_outlined,
+    MobilePaymentMethod.cardTerminal => Icons.credit_card_rounded,
+    MobilePaymentMethod.payme => Icons.account_balance_wallet_outlined,
+    MobilePaymentMethod.click => Icons.touch_app_outlined,
+    MobilePaymentMethod.unknown => Icons.help_outline_rounded,
   };
 }
 

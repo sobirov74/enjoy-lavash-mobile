@@ -81,6 +81,7 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
         _fetchBranches(language: language),
         _fetchCatalog(language: language, branchId: branchId),
         _fetchActivePromotions(language: language),
+        _fetchPaymentMethods(language: language, branchId: branchId),
       ]);
 
       final authFuture = hasToken
@@ -104,6 +105,7 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
         branches: publicData[0] as List<BranchModel>,
         catalog: publicData[1] as CatalogModel,
         promotions: publicData[2] as List<PromotionModel>,
+        paymentMethods: publicData[3] as List<PaymentMethodModel>,
         client: authData[0] as ClientProfile?,
         addresses: authData[1] as List<ClientAddress>,
         orders: authData[2] as List<CustomerOrderModel>,
@@ -167,6 +169,16 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
     String language = 'ru',
   }) {
     return _guard(() => _fetchActivePromotions(language: language));
+  }
+
+  @override
+  Future<Result<List<PaymentMethodModel>>> getPaymentMethods({
+    String language = 'ru',
+    String? branchId,
+  }) {
+    return _guard(
+      () => _fetchPaymentMethods(language: language, branchId: branchId),
+    );
   }
 
   @override
@@ -250,6 +262,16 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
   }
 
   @override
+  Future<Result<CustomerOrderModel>> retryOrderPayment({required String id}) {
+    return _guard(() async {
+      final response = await _dio.post(
+        ApiEndpoints.clientOrderRetryPayment(id),
+      );
+      return CustomerOrderModel.fromJson(asJsonMap(response.data));
+    });
+  }
+
+  @override
   Future<Result<CustomerOrderModel?>> cancelOrder({
     required String id,
     required String reason,
@@ -315,6 +337,23 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
     final response = await _dio.get(ApiEndpoints.activePromotions);
     return asJsonMapList(_listPayload(response.data, key: 'promotions'))
         .map((json) => PromotionModel.fromJson(json, language: language))
+        .toList(growable: false);
+  }
+
+  Future<List<PaymentMethodModel>> _fetchPaymentMethods({
+    required String language,
+    String? branchId,
+  }) async {
+    final response = await _dio.get(
+      ApiEndpoints.paymentMethods,
+      queryParameters: withoutNulls({
+        'lang': language,
+        'branchId': branchId?.trim().isEmpty == true ? null : branchId?.trim(),
+      }),
+    );
+    return asJsonMapList(_listPayload(response.data, key: 'paymentMethods'))
+        .map(PaymentMethodModel.fromJson)
+        .where((method) => method.code != MobilePaymentMethod.unknown)
         .toList(growable: false);
   }
 

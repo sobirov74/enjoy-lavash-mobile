@@ -14,6 +14,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:enjoy_lavash_mobile/app/locale_controller.dart';
 import 'package:enjoy_lavash_mobile/app/theme_controller.dart';
 import 'package:enjoy_lavash_mobile/core/error/result.dart';
+import 'package:enjoy_lavash_mobile/core/services/external_url_launcher.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/address_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/branch_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/cart_model.dart';
@@ -2169,6 +2170,41 @@ String _paymentMethodLabel(MobilePaymentMethod method, L t) {
   };
 }
 
+String _paymentStatusLabel(MobilePaymentStatus status, L t) {
+  return switch (status) {
+    MobilePaymentStatus.pending => _orderText(
+      t,
+      en: 'Pending',
+      ru: 'Ожидает оплаты',
+      uz: 'Kutilmoqda',
+    ),
+    MobilePaymentStatus.paid => _orderText(
+      t,
+      en: 'Paid',
+      ru: 'Оплачено',
+      uz: "To'langan",
+    ),
+    MobilePaymentStatus.failed => _orderText(
+      t,
+      en: 'Failed',
+      ru: 'Не оплачено',
+      uz: "To'lanmadi",
+    ),
+    MobilePaymentStatus.refunded => _orderText(
+      t,
+      en: 'Refunded',
+      ru: 'Возвращено',
+      uz: 'Qaytarilgan',
+    ),
+    MobilePaymentStatus.unknown => _orderText(
+      t,
+      en: 'Unknown',
+      ru: 'Неизвестно',
+      uz: "Noma'lum",
+    ),
+  };
+}
+
 String _orderProductTitle(CustomerOrderItemModel item, L t) {
   final language = t.localeName.split('_').first;
   final name = item.localizedName(language);
@@ -2525,7 +2561,7 @@ class _OrderMiniBadge extends StatelessWidget {
   }
 }
 
-class _OrderDetailsSheet extends StatelessWidget {
+class _OrderDetailsSheet extends StatefulWidget {
   const _OrderDetailsSheet({
     required this.order,
     required this.locale,
@@ -2539,15 +2575,104 @@ class _OrderDetailsSheet extends StatelessWidget {
   final List<ClientAddress> addresses;
 
   @override
+  State<_OrderDetailsSheet> createState() => _OrderDetailsSheetState();
+}
+
+class _OrderDetailsSheetState extends State<_OrderDetailsSheet> {
+  late CustomerOrderModel _order;
+  bool _isRetryingPayment = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _order = widget.order;
+  }
+
+  bool get _canRetryPayment => _order.paymentRetryAvailable;
+
+  Future<void> _retryPayment() async {
+    if (_isRetryingPayment) return;
+    final t = L.of(context);
+
+    setState(() => _isRetryingPayment = true);
+    final result = await context
+        .read<MobileBackendController>()
+        .retryOrderPayment(id: _order.id);
+    if (!mounted) return;
+
+    setState(() => _isRetryingPayment = false);
+    switch (result) {
+      case Success(:final data):
+        setState(() => _order = data);
+        final paymentUrl = data.paymentUrl?.trim();
+        if (paymentUrl?.isNotEmpty != true) {
+          _showOrderSnack(
+            _orderText(
+              t,
+              en: 'Payment link is not available yet.',
+              ru: 'Ссылка на оплату пока недоступна.',
+              uz: "To'lov havolasi hali mavjud emas.",
+            ),
+          );
+          return;
+        }
+
+        final opened = await ExternalUrlLauncher.open(paymentUrl!);
+        if (!mounted) return;
+        _showOrderSnack(
+          opened
+              ? _orderText(
+                  t,
+                  en: 'Complete payment online.',
+                  ru: 'Завершите онлайн-оплату.',
+                  uz: "Onlayn to'lovni yakunlang.",
+                )
+              : _orderText(
+                  t,
+                  en: 'Payment page could not be opened.',
+                  ru: 'Не удалось открыть страницу оплаты.',
+                  uz: "To'lov sahifasini ochib bo'lmadi.",
+                ),
+        );
+      case Error(:final failure):
+        _showOrderSnack(
+          failure.message.isNotEmpty
+              ? failure.message
+              : _orderText(
+                  t,
+                  en: 'Could not retry payment.',
+                  ru: 'Не удалось повторить оплату.',
+                  uz: "To'lovni qayta urinish imkoni bo'lmadi.",
+                ),
+        );
+    }
+  }
+
+  void _showOrderSnack(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(appSnackBar(message));
+  }
+
+  @override
   Widget build(BuildContext context) {
     final t = L.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final order = _order;
     final colors = _statusColors(order.status);
-    final destination = _orderDestination(order, branches, addresses, t);
+    final destination = _orderDestination(
+      order,
+      widget.branches,
+      widget.addresses,
+      t,
+    );
     final statusEntries = _statusEntries(order);
-    final createdAt = _formatOrderDateTime(order.createdAt, locale);
-    final scheduledFor = _formatOrderDateTime(order.scheduledFor, locale);
-    final updatedAt = _formatOrderDateTime(order.updatedAt, locale);
+    final createdAt = _formatOrderDateTime(order.createdAt, widget.locale);
+    final scheduledFor = _formatOrderDateTime(
+      order.scheduledFor,
+      widget.locale,
+    );
+    final updatedAt = _formatOrderDateTime(order.updatedAt, widget.locale);
 
     return Container(
       constraints: BoxConstraints(
@@ -2719,6 +2844,61 @@ class _OrderDetailsSheet extends StatelessWidget {
               label: _orderText(t, en: 'Payment', ru: 'Оплата', uz: "To'lov"),
               value: _paymentMethodLabel(order.paymentMethod, t),
             ),
+            if (order.paymentStatus != null &&
+                order.paymentStatus != MobilePaymentStatus.unknown) ...[
+              const SizedBox(height: 8),
+              _OrderInfoPill(
+                icon: Icons.verified_outlined,
+                label: _orderText(
+                  t,
+                  en: 'Payment status',
+                  ru: 'Статус оплаты',
+                  uz: "To'lov holati",
+                ),
+                value: _paymentStatusLabel(order.paymentStatus!, t),
+              ),
+            ],
+            if (_canRetryPayment) ...[
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: BaseColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  onPressed: _isRetryingPayment
+                      ? null
+                      : () => unawaited(_retryPayment()),
+                  icon: _isRetryingPayment
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: BaseColors.white,
+                          ),
+                        )
+                      : const Icon(Icons.refresh_rounded, size: 19),
+                  label: TypographyText(
+                    _orderText(
+                      t,
+                      en: 'Retry payment',
+                      ru: 'Повторить оплату',
+                      uz: "To'lovni qayta urinish",
+                    ),
+                    style: const TextStyle(
+                      color: BaseColors.white,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
+            ],
             if (destination?.trim().isNotEmpty == true) ...[
               const SizedBox(height: 8),
               _OrderInfoPill(
@@ -2767,7 +2947,10 @@ class _OrderDetailsSheet extends StatelessWidget {
               ),
               children: <Widget>[
                 for (int i = 0; i < statusEntries.length; i++) ...[
-                  _OrderStatusLogLine(entry: statusEntries[i], locale: locale),
+                  _OrderStatusLogLine(
+                    entry: statusEntries[i],
+                    locale: widget.locale,
+                  ),
                   if (i < statusEntries.length - 1) const SizedBox(height: 10),
                 ],
               ],

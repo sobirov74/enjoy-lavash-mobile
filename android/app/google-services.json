@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1012504665962",
+    "project_id": "enjoy-lavash",
+    "storage_bucket": "enjoy-lavash.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1012504665962:android:528f9b9b8e23efee35cf13",
+        "android_client_info": {
+          "package_name": "com.aurumdev.enjoy_lavash_mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA4EzMEj3pVa5QMw23xSKHeVAe8w0nuZdc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

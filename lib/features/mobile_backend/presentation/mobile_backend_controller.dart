@@ -30,6 +30,7 @@ class MobileBackendController extends ChangeNotifier {
   List<MenuProduct> _menuProducts = const <MenuProduct>[];
   List<BranchModel> _branches = const <BranchModel>[];
   List<PromotionModel> _promotions = const <PromotionModel>[];
+  List<PaymentMethodModel> _paymentMethods = const <PaymentMethodModel>[];
   List<ClientAddress> _addresses = const <ClientAddress>[];
   List<CustomerOrderModel> _orders = const <CustomerOrderModel>[];
   ClientProfile? _client;
@@ -43,6 +44,7 @@ class MobileBackendController extends ChangeNotifier {
   List<MenuProduct> get menuProducts => _menuProducts;
   List<BranchModel> get branches => _branches;
   List<PromotionModel> get promotions => _promotions;
+  List<PaymentMethodModel> get paymentMethods => _paymentMethods;
   List<ClientAddress> get addresses => _addresses;
   List<CustomerOrderModel> get orders => _orders;
   ClientProfile? get client => _client;
@@ -206,6 +208,28 @@ class MobileBackendController extends ChangeNotifier {
     return _repository.previewCart(request);
   }
 
+  Future<Result<List<PaymentMethodModel>>> refreshPaymentMethods({
+    required String language,
+    String? branchId,
+  }) async {
+    final result = await _repository.getPaymentMethods(
+      language: language,
+      branchId: branchId,
+    );
+
+    switch (result) {
+      case Success(:final data):
+        _paymentMethods = data;
+        _failure = null;
+        notifyListeners();
+      case Error(:final failure):
+        _failure = failure;
+        notifyListeners();
+    }
+
+    return result;
+  }
+
   Future<Result<CustomerOrderModel>> createOrder(
     CreateOrderRequest request,
   ) async {
@@ -228,6 +252,25 @@ class MobileBackendController extends ChangeNotifier {
     return result;
   }
 
+  Future<Result<CustomerOrderModel>> retryOrderPayment({
+    required String id,
+  }) async {
+    final result = await _repository.retryOrderPayment(id: id);
+    switch (result) {
+      case Success(:final data):
+        _orders = <CustomerOrderModel>[
+          for (final order in _orders)
+            if (order.id == data.id) data else order,
+        ];
+        _failure = null;
+        notifyListeners();
+      case Error(:final failure):
+        _failure = failure;
+        notifyListeners();
+    }
+    return result;
+  }
+
   Future<void> bootstrap({required String language, String? branchId}) async {
     if (_status == MobileBackendStatus.loading) return;
 
@@ -244,6 +287,7 @@ class MobileBackendController extends ChangeNotifier {
       case Success(:final data):
         _branches = data.branches;
         _promotions = data.promotions;
+        _paymentMethods = data.paymentMethods;
         _client = data.client;
         _addresses = data.addresses;
         _orders = data.orders;

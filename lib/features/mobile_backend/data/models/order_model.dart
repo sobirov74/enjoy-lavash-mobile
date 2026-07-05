@@ -32,6 +32,27 @@ enum MobileOrderStatus {
   }
 }
 
+enum MobilePaymentStatus {
+  pending('PENDING'),
+  paid('PAID'),
+  failed('FAILED'),
+  refunded('REFUNDED'),
+  unknown('UNKNOWN');
+
+  const MobilePaymentStatus(this.value);
+  final String value;
+
+  factory MobilePaymentStatus.fromJson(String? value) {
+    return switch (value) {
+      'PENDING' => MobilePaymentStatus.pending,
+      'PAID' => MobilePaymentStatus.paid,
+      'FAILED' => MobilePaymentStatus.failed,
+      'REFUNDED' => MobilePaymentStatus.refunded,
+      _ => MobilePaymentStatus.unknown,
+    };
+  }
+}
+
 class CreateOrderRequest {
   const CreateOrderRequest({
     required this.type,
@@ -99,6 +120,11 @@ class CustomerOrderModel {
     this.comment,
     this.scheduledFor,
     this.iikoOrderId,
+    this.paymentStatus,
+    this.paymentUrl,
+    this.paymentExpiresAt,
+    this.paymentRetryAvailable = false,
+    this.paymentAttemptCount = 0,
     this.createdAt,
     this.updatedAt,
     this.raw = const <String, dynamic>{},
@@ -118,6 +144,11 @@ class CustomerOrderModel {
   final String? comment;
   final DateTime? scheduledFor;
   final String? iikoOrderId;
+  final MobilePaymentStatus? paymentStatus;
+  final String? paymentUrl;
+  final DateTime? paymentExpiresAt;
+  final bool paymentRetryAvailable;
+  final int paymentAttemptCount;
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final Map<String, dynamic> raw;
@@ -149,6 +180,24 @@ class CustomerOrderModel {
       iikoOrderId:
           stringOrNull(json['iikoOrderId']) ??
           stringOrNull(json['iiko_order_id']),
+      paymentStatus: MobilePaymentStatus.fromJson(
+        stringOrNull(json['paymentStatus']) ??
+            stringOrNull(json['payment_status']),
+      ),
+      paymentUrl:
+          stringOrNull(json['paymentUrl']) ?? stringOrNull(json['payment_url']),
+      paymentExpiresAt: readDateTime(json, const [
+        'paymentExpiresAt',
+        'payment_expires_at',
+      ]),
+      paymentRetryAvailable: readBool(json, const [
+        'paymentRetryAvailable',
+        'payment_retry_available',
+      ]),
+      paymentAttemptCount: readInt(json, const [
+        'paymentAttemptCount',
+        'payment_attempt_count',
+      ]),
       createdAt: readDateTime(json, const ['createdAt', 'created_at']),
       updatedAt: readDateTime(json, const ['updatedAt', 'updated_at']),
       raw: Map<String, dynamic>.unmodifiable(json),

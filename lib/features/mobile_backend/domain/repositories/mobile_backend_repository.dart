@@ -47,6 +47,11 @@ abstract class MobileBackendRepository {
     String language = 'ru',
   });
 
+  Future<Result<List<PaymentMethodModel>>> getPaymentMethods({
+    String language = 'ru',
+    String? branchId,
+  });
+
   Future<Result<CartPreviewModel>> previewCart(CartPreviewRequest request);
 
   Future<Result<ClientProfile>> getProfile();
@@ -67,6 +72,8 @@ abstract class MobileBackendRepository {
   Future<Result<List<CustomerOrderModel>>> getOrders();
 
   Future<Result<CustomerOrderModel>> createOrder(CreateOrderRequest request);
+
+  Future<Result<CustomerOrderModel>> retryOrderPayment({required String id});
 
   Future<Result<CustomerOrderModel?>> cancelOrder({
     required String id,

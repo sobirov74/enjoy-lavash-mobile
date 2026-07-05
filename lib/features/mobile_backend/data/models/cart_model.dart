@@ -36,6 +36,35 @@ enum MobilePaymentMethod {
   }
 }
 
+class PaymentMethodModel {
+  const PaymentMethodModel({
+    required this.id,
+    required this.code,
+    required this.name,
+    required this.isOnline,
+    required this.sortOrder,
+    this.icon,
+  });
+
+  final String id;
+  final MobilePaymentMethod code;
+  final String name;
+  final bool isOnline;
+  final int sortOrder;
+  final String? icon;
+
+  factory PaymentMethodModel.fromJson(Map<String, dynamic> json) {
+    return PaymentMethodModel(
+      id: readString(json, const ['id']),
+      code: MobilePaymentMethod.fromJson(stringOrNull(json['code'])),
+      name: readString(json, const ['name']),
+      isOnline: readBool(json, const ['isOnline', 'is_online']),
+      sortOrder: readInt(json, const ['sortOrder', 'sort_order']),
+      icon: stringOrNull(json['icon']),
+    );
+  }
+}
+
 class CartModifierInput {
   const CartModifierInput({required this.modifierId, this.quantity});
 

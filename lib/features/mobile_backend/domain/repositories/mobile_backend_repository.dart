@@ -5,6 +5,7 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/auth_mod
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/branch_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/cart_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/catalog_model.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/client_notification_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/client_profile_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/file_upload_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/order_model.dart';
@@ -79,6 +80,20 @@ abstract class MobileBackendRepository {
     required String id,
     required String reason,
   });
+
+  Future<Result<ClientNotificationInboxModel>> getNotifications({
+    int limit = 50,
+    int offset = 0,
+    bool unreadOnly = false,
+  });
+
+  Future<Result<int>> getUnreadNotificationCount();
+
+  Future<Result<ClientNotificationReadResultModel>> markNotificationRead({
+    required String notificationId,
+  });
+
+  Future<Result<ClientNotificationReadResultModel>> markAllNotificationsRead();
 
   Future<Result<FileUploadResultModel>> uploadFile(FileUploadRequest request);
 

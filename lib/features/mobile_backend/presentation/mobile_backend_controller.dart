@@ -9,6 +9,7 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/auth_mod
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/branch_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/cart_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/catalog_model.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/client_notification_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/client_profile_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/order_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/promotion_model.dart';
@@ -33,7 +34,12 @@ class MobileBackendController extends ChangeNotifier {
   List<PaymentMethodModel> _paymentMethods = const <PaymentMethodModel>[];
   List<ClientAddress> _addresses = const <ClientAddress>[];
   List<CustomerOrderModel> _orders = const <CustomerOrderModel>[];
+  List<ClientNotificationItemModel> _notifications =
+      const <ClientNotificationItemModel>[];
   ClientProfile? _client;
+  int _notificationUnreadCount = 0;
+  int _notificationTotal = 0;
+  bool _notificationsLoading = false;
   PushNotificationSettings? _pushNotificationSettings;
   bool _pushNotificationsUpdating = false;
   bool _accountDeleting = false;
@@ -47,7 +53,11 @@ class MobileBackendController extends ChangeNotifier {
   List<PaymentMethodModel> get paymentMethods => _paymentMethods;
   List<ClientAddress> get addresses => _addresses;
   List<CustomerOrderModel> get orders => _orders;
+  List<ClientNotificationItemModel> get notifications => _notifications;
   ClientProfile? get client => _client;
+  int get notificationUnreadCount => _notificationUnreadCount;
+  int get notificationTotal => _notificationTotal;
+  bool get notificationsLoading => _notificationsLoading;
   PushNotificationSettings? get pushNotificationSettings =>
       _pushNotificationSettings;
   bool get pushNotificationsUpdating => _pushNotificationsUpdating;
@@ -66,6 +76,7 @@ class MobileBackendController extends ChangeNotifier {
         _client = data.client;
         _failure = null;
         _startPushNotificationSync(locale: data.client.language);
+        unawaited(refreshNotifications());
         if (_status == MobileBackendStatus.initial) {
           _status = MobileBackendStatus.loaded;
         }
@@ -158,6 +169,9 @@ class MobileBackendController extends ChangeNotifier {
     _client = null;
     _addresses = const <ClientAddress>[];
     _orders = const <CustomerOrderModel>[];
+    _notifications = const <ClientNotificationItemModel>[];
+    _notificationUnreadCount = 0;
+    _notificationTotal = 0;
     _failure = null;
     if (_status == MobileBackendStatus.initial) {
       _status = MobileBackendStatus.loaded;
@@ -199,7 +213,121 @@ class MobileBackendController extends ChangeNotifier {
         _failure = failure;
     }
 
+    final notificationsResult = await _repository.getNotifications();
+    switch (notificationsResult) {
+      case Success(:final data):
+        _applyNotifications(data);
+      case Error(:final failure):
+        _failure = failure;
+    }
+
     notifyListeners();
+  }
+
+  Future<Result<ClientNotificationInboxModel>> refreshNotifications({
+    int limit = 50,
+    int offset = 0,
+    bool unreadOnly = false,
+  }) async {
+    if (_client == null) {
+      return Success(
+        ClientNotificationInboxModel(
+          items: _notifications,
+          unreadCount: _notificationUnreadCount,
+          total: _notificationTotal,
+          limit: limit,
+          offset: offset,
+        ),
+      );
+    }
+
+    _notificationsLoading = true;
+    notifyListeners();
+
+    final result = await _repository.getNotifications(
+      limit: limit,
+      offset: offset,
+      unreadOnly: unreadOnly,
+    );
+    switch (result) {
+      case Success(:final data):
+        _applyNotifications(data);
+        _failure = null;
+      case Error(:final failure):
+        _failure = failure;
+    }
+
+    _notificationsLoading = false;
+    notifyListeners();
+    return result;
+  }
+
+  Future<Result<int>> refreshNotificationUnreadCount() async {
+    if (_client == null) {
+      _notificationUnreadCount = 0;
+      notifyListeners();
+      return const Success(0);
+    }
+
+    final result = await _repository.getUnreadNotificationCount();
+    switch (result) {
+      case Success(:final data):
+        _notificationUnreadCount = data;
+        _failure = null;
+        notifyListeners();
+      case Error(:final failure):
+        _failure = failure;
+        notifyListeners();
+    }
+    return result;
+  }
+
+  Future<Result<ClientNotificationReadResultModel>> markNotificationRead({
+    required String notificationId,
+  }) async {
+    final result = await _repository.markNotificationRead(
+      notificationId: notificationId,
+    );
+    switch (result) {
+      case Success(:final data):
+        _notificationUnreadCount = data.unreadCount;
+        _notifications = _notifications
+            .map(
+              (notification) => notification.notificationId == notificationId
+                  ? notification.copyWith(readAt: DateTime.now(), isRead: true)
+                  : notification,
+            )
+            .toList(growable: false);
+        _failure = null;
+        notifyListeners();
+      case Error(:final failure):
+        _failure = failure;
+        notifyListeners();
+    }
+    return result;
+  }
+
+  Future<Result<ClientNotificationReadResultModel>>
+  markAllNotificationsRead() async {
+    final result = await _repository.markAllNotificationsRead();
+    switch (result) {
+      case Success(:final data):
+        _notificationUnreadCount = data.unreadCount;
+        final now = DateTime.now();
+        _notifications = _notifications
+            .map(
+              (notification) => notification.isRead
+                  ? notification
+                  : notification.copyWith(readAt: now, isRead: true),
+            )
+            .toList(growable: false);
+        _failure = null;
+        notifyListeners();
+      case Error(:final failure):
+        _failure = failure;
+        notifyListeners();
+    }
+    return result;
   }
 
   Future<Result<CartPreviewModel>> previewCart(
@@ -295,6 +423,11 @@ class MobileBackendController extends ChangeNotifier {
         final client = data.client;
         if (client != null) {
           _startPushNotificationSync(locale: client.language);
+          unawaited(refreshNotifications());
+        } else {
+          _notifications = const <ClientNotificationItemModel>[];
+          _notificationUnreadCount = 0;
+          _notificationTotal = 0;
         }
         _status = MobileBackendStatus.loaded;
       case Error(:final failure):
@@ -354,6 +487,12 @@ class MobileBackendController extends ChangeNotifier {
 
     _menuProducts = adaptedProducts;
     _menuCategories = adaptedCategories;
+  }
+
+  void _applyNotifications(ClientNotificationInboxModel inbox) {
+    _notifications = inbox.items;
+    _notificationUnreadCount = inbox.unreadCount;
+    _notificationTotal = inbox.total;
   }
 
   List<MenuProduct> _adaptProducts(CatalogModel catalog) {

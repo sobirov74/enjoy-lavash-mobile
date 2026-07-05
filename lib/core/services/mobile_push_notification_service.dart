@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:dio/dio.dart';
 import 'package:enjoy_lavash_mobile/core/api/api_client.dart';
@@ -8,6 +9,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -35,6 +37,7 @@ class MobilePushNotificationService {
 
   static const String _notificationsEnabledKey = 'push_notifications_enabled';
   static const String _registeredPushTokenKey = 'registered_push_token';
+  static const String _deviceIdKey = 'push_notification_device_id';
 
   static const MethodChannel _apnsChannel = MethodChannel(
     'enjoy_lavash_mobile/apns',
@@ -136,11 +139,11 @@ class MobilePushNotificationService {
 
     await _dio.post(
       ApiEndpoints.clientPushTokens,
-      data: {
-        'platform': platform,
-        'token': token,
-        if (locale?.trim().isNotEmpty == true) 'locale': locale!.trim(),
-      },
+      data: await _registrationPayload(
+        platform: platform,
+        token: token,
+        locale: locale,
+      ),
     );
     _lastRegisteredToken = token;
     final preferences = await SharedPreferences.getInstance();
@@ -179,11 +182,11 @@ class MobilePushNotificationService {
     try {
       await _dio.post(
         ApiEndpoints.clientPushTokens,
-        data: {
-          'platform': platform,
-          'token': token,
-          if (locale?.trim().isNotEmpty == true) 'locale': locale!.trim(),
-        },
+        data: await _registrationPayload(
+          platform: platform,
+          token: token,
+          locale: locale,
+        ),
       );
       _lastRegisteredToken = token;
       final preferences = await SharedPreferences.getInstance();
@@ -205,6 +208,59 @@ class MobilePushNotificationService {
       case TargetPlatform.macOS:
       case TargetPlatform.windows:
         return null;
+    }
+  }
+
+  Future<Map<String, Object?>> _registrationPayload({
+    required String platform,
+    required String token,
+    String? locale,
+  }) async {
+    final appVersion = await _appVersion();
+    final deviceId = await _deviceId();
+    return {
+      'platform': platform,
+      'token': token,
+      'deviceId': deviceId,
+      'appVersion': appVersion,
+      if (locale?.trim().isNotEmpty == true) 'locale': locale!.trim(),
+    };
+  }
+
+  Future<String> _appVersion() async {
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      final version = packageInfo.version.trim();
+      final buildNumber = packageInfo.buildNumber.trim();
+      if (version.isEmpty) return buildNumber;
+      if (buildNumber.isEmpty) return version;
+      return '$version+$buildNumber';
+    } catch (error) {
+      debugPrint('App version lookup failed for push registration: $error');
+      return '';
+    }
+  }
+
+  Future<String> _deviceId() async {
+    final preferences = await SharedPreferences.getInstance();
+    final existing = preferences.getString(_deviceIdKey);
+    if (existing != null && existing.isNotEmpty) return existing;
+
+    final random = _random();
+    final generated = [
+      DateTime.now().microsecondsSinceEpoch.toRadixString(16),
+      random.nextInt(0x7fffffff).toRadixString(16),
+      random.nextInt(0x7fffffff).toRadixString(16),
+    ].join('-');
+    await preferences.setString(_deviceIdKey, generated);
+    return generated;
+  }
+
+  Random _random() {
+    try {
+      return Random.secure();
+    } catch (_) {
+      return Random();
     }
   }
 

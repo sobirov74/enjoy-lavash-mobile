@@ -46,4 +46,52 @@ void main() {
     expect(policy.forceUpdate, isTrue);
     expect(policy.shouldPrompt, isTrue);
   });
+
+  test('prompts when current version differs from latest version', () {
+    final policy = AppVersionPolicyModel.fromJson({
+      'platform': 'android',
+      'latestVersion': '1.0.7',
+      'minSupportedVersion': '1.0.0',
+      'appUrl': 'https://play.google.com/store/apps/details?id=app',
+      'updateAvailable': false,
+      'forceUpdate': false,
+    }).resolveForCurrentVersion('1.0.6');
+
+    expect(policy.updateAvailable, isTrue);
+    expect(policy.forceUpdate, isFalse);
+    expect(policy.shouldPrompt, isTrue);
+  });
+
+  test(
+    'forces update when current version is below minimum supported version',
+    () {
+      final policy = AppVersionPolicyModel.fromJson({
+        'platform': 'ios',
+        'latestVersion': '1.2.0',
+        'minSupportedVersion': '1.1.0',
+        'appUrl': 'https://apps.apple.com/app/enjoy-lavash',
+        'updateAvailable': false,
+        'forceUpdate': false,
+      }).resolveForCurrentVersion('1.0.9');
+
+      expect(policy.updateAvailable, isTrue);
+      expect(policy.forceUpdate, isTrue);
+      expect(policy.shouldPrompt, isTrue);
+    },
+  );
+
+  test('does not prompt when current version matches latest version', () {
+    final policy = AppVersionPolicyModel.fromJson({
+      'platform': 'android',
+      'latestVersion': '1.0.6',
+      'minSupportedVersion': '1.0.0',
+      'appUrl': 'https://play.google.com/store/apps/details?id=app',
+      'updateAvailable': false,
+      'forceUpdate': false,
+    }).resolveForCurrentVersion('1.0.6');
+
+    expect(policy.updateAvailable, isFalse);
+    expect(policy.forceUpdate, isFalse);
+    expect(policy.shouldPrompt, isFalse);
+  });
 }

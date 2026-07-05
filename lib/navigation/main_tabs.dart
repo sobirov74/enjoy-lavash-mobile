@@ -41,6 +41,7 @@ class _MainTabsState extends State<MainTabs> {
   final Map<String, int> _cart = <String, int>{};
   MobileOrderType _orderType = MobileOrderType.delivery;
   BranchModel? _selectedBranch;
+  String? _deliveryBranchId;
   String _promoCode = '';
   bool _isCheckingOut = false;
 
@@ -105,6 +106,8 @@ class _MainTabsState extends State<MainTabs> {
       _orderType = type;
       if (type == MobileOrderType.delivery) {
         _selectedBranch = null;
+      } else {
+        _deliveryBranchId = null;
       }
     });
 
@@ -312,8 +315,11 @@ class _MainTabsState extends State<MainTabs> {
     );
     if (result case Success(:final data)) {
       final branchId = data.branchId?.trim();
-      if (branchId?.isNotEmpty == true) {
-        _refreshPaymentMethodsForBranch(branchId);
+      if (orderType == MobileOrderType.delivery) {
+        _deliveryBranchId = branchId?.isNotEmpty == true ? branchId : null;
+        if (_deliveryBranchId != null) {
+          _refreshPaymentMethodsForBranch(_deliveryBranchId);
+        }
       }
     }
     return result;
@@ -376,6 +382,7 @@ class _MainTabsState extends State<MainTabs> {
       type: MobileOrderType.delivery,
       address: address,
       addressId: address == null ? savedAddressId : null,
+      branchId: address == null ? null : _deliveryBranchId,
       items: items,
       paymentMethod: paymentMethod,
       promoCode: normalizedPromoCode,

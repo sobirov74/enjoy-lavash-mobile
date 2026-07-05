@@ -19,6 +19,11 @@ class ApiEndpoints {
   static const clientAddresses = "/clients/me/addresses";
   static const clientOrders = "/clients/me/orders";
   static const clientPushTokens = "/clients/me/push-tokens";
+  static const clientNotifications = "/clients/me/notifications";
+  static const clientNotificationsUnreadCount =
+      "/clients/me/notifications/unread-count";
+  static const clientNotificationsReadAll =
+      "/clients/me/notifications/read-all";
   static const filesUpload = "/files/upload";
   static const filesDelete = "/files/delete";
 
@@ -36,4 +41,7 @@ class ApiEndpoints {
 
   static String clientPushToken(String token) =>
       "$clientPushTokens/${Uri.encodeComponent(token)}";
+
+  static String clientNotificationRead(String notificationId) =>
+      "$clientNotifications/${Uri.encodeComponent(notificationId)}/read";
 }

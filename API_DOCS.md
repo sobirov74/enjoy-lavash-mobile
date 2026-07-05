@@ -535,6 +535,8 @@ First address is auto-set as default.
 
 **POST /clients/me/orders Body:**
 
+Delivery using a saved client address:
+
 ```json
 {
   "type": "DELIVERY",
@@ -556,12 +558,61 @@ First address is auto-set as default.
 }
 ```
 
-For `DELIVERY` orders, provide `addressId` (from saved addresses) or `address: { latitude, longitude }`.
-For `PICKUP` orders, provide `branchId`.
+Delivery using only map coordinates:
+
+```json
+{
+  "type": "DELIVERY",
+  "branchId": "branch-chilanzar",
+  "items": [{ "productId": "prod-classic-lavash", "quantity": 1 }],
+  "address": {
+    "latitude": 41.3111,
+    "longitude": 69.2797
+  },
+  "paymentMethod": "CASH"
+}
+```
+
+Pickup:
+
+```json
+{
+  "type": "PICKUP",
+  "branchId": "branch-chilanzar",
+  "items": [{ "productId": "prod-classic-lavash", "quantity": 1 }],
+  "paymentMethod": "CASH"
+}
+```
+
+For `DELIVERY`, prefer `addressId` from `GET /clients/me/addresses`. The
+backend resolves the saved address coordinates before pricing and stores an order
+snapshot of `deliveryAddressLabel`, `deliveryAddressText`, `deliveryLatitude`,
+and `deliveryLongitude`. That saved street/house/apartment data is also sent to
+iiko. If the request sends only `address: { latitude, longitude }`, the backend
+can price and create the delivery, but it can send only coordinates to iiko
+because no street/house fields exist in the request.
+
+For `PICKUP`, send `branchId`. For iiko-backed branches, the app may send
+`iikoOrganizationId` or `iikoOrganisationId` instead; the backend treats that as
+the selected branch id. Do not send `addressId` or `address` for pickup.
+
+Admin/POS order creation uses the same shape at `POST /admin/orders`. If an
+admin creates delivery for a known client, send both `clientId` and `addressId`
+so the backend can validate ownership and send the saved delivery address to
+iiko.
 
 If iiko is enabled, order creation stores the order locally with status `NEW`.
-It is sent to iiko after admin confirmation (`NEW` → `CONFIRMED`). The response
-includes `iikoOrderId` after iiko accepts the order; otherwise it is `null`.
+Offline payment orders are pushed to iiko after local creation. Online payment
+orders are pushed only after the payment webhook marks the order paid. The
+response includes `iikoOrderId` after iiko accepts the order; otherwise it is
+`null`. If iiko returns `errorInfo`, the backend logs the iiko error and keeps
+`iikoOrderId: null`.
+
+For iiko pickup, the backend sends `orderServiceType: DeliveryByClient` unless
+`IIKO_PICKUP_ORDER_TYPE_ID` is configured. If pickup orders are not appearing in
+iiko, check that the iiko organization has a client-pickup delivery order type
+or set `IIKO_PICKUP_ORDER_TYPE_ID` to the exact order type id. Delivery can be
+overridden similarly with `IIKO_DELIVERY_ORDER_TYPE_ID`.
 
 **Online payment (Payme):** when `paymentMethod` is an online method, the
 created-order response includes a `paymentUrl`. Open it (in-app browser /

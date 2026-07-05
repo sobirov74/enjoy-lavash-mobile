@@ -3,6 +3,51 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/order_mo
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('serializes coordinate delivery with branch id', () {
+    final request = CreateOrderRequest(
+      type: MobileOrderType.delivery,
+      branchId: 'branch-chilanzar',
+      address: const CreateOrderAddressInput(
+        latitude: 41.3111,
+        longitude: 69.2797,
+      ),
+      items: const [
+        CartItemInput(productId: 'prod-classic-lavash', quantity: 1),
+      ],
+      paymentMethod: MobilePaymentMethod.cash,
+    );
+
+    expect(request.toJson(), {
+      'type': 'DELIVERY',
+      'address': {'latitude': 41.3111, 'longitude': 69.2797},
+      'branchId': 'branch-chilanzar',
+      'items': [
+        {'productId': 'prod-classic-lavash', 'quantity': 1, 'modifiers': []},
+      ],
+      'paymentMethod': 'CASH',
+    });
+  });
+
+  test('serializes pickup without address fields', () {
+    final request = CreateOrderRequest(
+      type: MobileOrderType.pickup,
+      branchId: 'branch-chilanzar',
+      items: const [
+        CartItemInput(productId: 'prod-classic-lavash', quantity: 1),
+      ],
+      paymentMethod: MobilePaymentMethod.cash,
+    );
+
+    expect(request.toJson(), {
+      'type': 'PICKUP',
+      'branchId': 'branch-chilanzar',
+      'items': [
+        {'productId': 'prod-classic-lavash', 'quantity': 1, 'modifiers': []},
+      ],
+      'paymentMethod': 'CASH',
+    });
+  });
+
   test('parses localized product snapshot and status log time', () {
     final order = CustomerOrderModel.fromJson({
       'id': '8b760167-6042-4695-95e6-545d23c3d668',

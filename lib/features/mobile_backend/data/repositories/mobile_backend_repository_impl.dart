@@ -11,6 +11,7 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/auth_mod
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/branch_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/cart_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/catalog_model.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/client_notification_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/client_profile_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/file_upload_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/json_helpers.dart';
@@ -120,17 +121,21 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
     String? language,
   }) {
     return _guard(() async {
+      final normalizedCurrentVersion = currentVersion?.trim();
+      final queryCurrentVersion = normalizedCurrentVersion?.isEmpty == true
+          ? null
+          : normalizedCurrentVersion;
       final response = await _dio.get(
         ApiEndpoints.appVersion,
         queryParameters: withoutNulls({
           'platform': platform,
-          'currentVersion': currentVersion?.trim().isEmpty == true
-              ? null
-              : currentVersion?.trim(),
+          'currentVersion': queryCurrentVersion,
           'lang': language?.trim().isEmpty == true ? null : language?.trim(),
         }),
       );
-      return AppVersionPolicyModel.fromJson(asJsonMap(response.data));
+      return AppVersionPolicyModel.fromJson(
+        _appVersionPayload(response.data),
+      ).resolveForCurrentVersion(queryCurrentVersion);
     });
   }
 
@@ -288,6 +293,62 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
   }
 
   @override
+  Future<Result<ClientNotificationInboxModel>> getNotifications({
+    int limit = 50,
+    int offset = 0,
+    bool unreadOnly = false,
+  }) {
+    return _guard(() async {
+      final response = await _dio.get(
+        ApiEndpoints.clientNotifications,
+        queryParameters: {
+          'limit': limit,
+          'offset': offset,
+          'unreadOnly': unreadOnly,
+        },
+      );
+      return ClientNotificationInboxModel.fromJson(asJsonMap(response.data));
+    });
+  }
+
+  @override
+  Future<Result<int>> getUnreadNotificationCount() {
+    return _guard(() async {
+      final response = await _dio.get(
+        ApiEndpoints.clientNotificationsUnreadCount,
+      );
+      return readInt(asJsonMap(response.data), const [
+        'unreadCount',
+        'unread_count',
+      ]);
+    });
+  }
+
+  @override
+  Future<Result<ClientNotificationReadResultModel>> markNotificationRead({
+    required String notificationId,
+  }) {
+    return _guard(() async {
+      final response = await _dio.post(
+        ApiEndpoints.clientNotificationRead(notificationId),
+      );
+      return ClientNotificationReadResultModel.fromJson(
+        asJsonMap(response.data),
+      );
+    });
+  }
+
+  @override
+  Future<Result<ClientNotificationReadResultModel>> markAllNotificationsRead() {
+    return _guard(() async {
+      final response = await _dio.post(ApiEndpoints.clientNotificationsReadAll);
+      return ClientNotificationReadResultModel.fromJson(
+        asJsonMap(response.data),
+      );
+    });
+  }
+
+  @override
   Future<Result<FileUploadResultModel>> uploadFile(FileUploadRequest request) {
     return _guard(() async {
       final response = await _dio.post(
@@ -398,6 +459,27 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
     if (map.containsKey(key)) return map[key];
     if (map.containsKey('items')) return map['items'];
     return data;
+  }
+
+  JsonMap _appVersionPayload(Object? data) {
+    final map = asJsonMap(data);
+    if (_looksLikeAppVersionPolicy(map)) return map;
+
+    for (final key in const ['data', 'result', 'appVersion', 'app_version']) {
+      final nested = asJsonMap(map[key]);
+      if (nested.isNotEmpty) return nested;
+    }
+
+    return map;
+  }
+
+  bool _looksLikeAppVersionPolicy(JsonMap map) {
+    return map.containsKey('latestVersion') ||
+        map.containsKey('latest_version') ||
+        map.containsKey('minSupportedVersion') ||
+        map.containsKey('min_supported_version') ||
+        map.containsKey('appUrl') ||
+        map.containsKey('app_url');
   }
 
   Future<Result<T>> _guard<T>(Future<T> Function() request) async {

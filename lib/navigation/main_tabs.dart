@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:enjoy_lavash_mobile/app/locale_controller.dart';
 import 'package:enjoy_lavash_mobile/app/location_controller.dart';
 import 'package:enjoy_lavash_mobile/core/error/result.dart';
+import 'package:enjoy_lavash_mobile/core/services/app_share_service.dart';
 import 'package:enjoy_lavash_mobile/core/services/external_url_launcher.dart';
 import 'package:enjoy_lavash_mobile/features/models/cart_line.dart';
 import 'package:enjoy_lavash_mobile/features/models/menu_product.dart';
@@ -71,6 +72,10 @@ class _MainTabsState extends State<MainTabs> {
 
   int _calculateTotalItems(List<CartLine> cartLines) {
     return cartLines.fold<int>(0, (sum, item) => sum + item.quantity);
+  }
+
+  Future<void> _shareApp(L t) async {
+    await AppShareService.share(t);
   }
 
   void _addToCart(MenuProduct product) {
@@ -571,7 +576,10 @@ class _MainTabsState extends State<MainTabs> {
               icon: Icons.share_rounded,
               title: t.shareApp,
               isDark: isDark,
-              onTap: () => Navigator.pop(context),
+              onTap: () {
+                Navigator.pop(context);
+                unawaited(_shareApp(t));
+              },
             ),
             const SizedBox(height: 12),
           ],

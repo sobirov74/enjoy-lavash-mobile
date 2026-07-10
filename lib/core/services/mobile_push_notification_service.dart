@@ -45,18 +45,17 @@ class MobilePushNotificationService {
 
   final ApiClient _apiClient;
 
-  StreamSubscription<String>? _androidTokenRefreshSubscription;
+  StreamSubscription<String>? _tokenRefreshSubscription;
   StreamSubscription<RemoteMessage>? _foregroundMessageSubscription;
   StreamSubscription<RemoteMessage>? _openedMessageSubscription;
   String? _lastRegisteredToken;
-  bool _androidMessagingReady = false;
-  bool _androidMessagingInitialised = false;
+  bool _messagingReady = false;
+  bool _messagingInitialised = false;
 
   Dio get _dio => _apiClient.dio;
 
   Future<void> configureMessageHandlers() async {
-    if (defaultTargetPlatform != TargetPlatform.android) return;
-    if (!await _ensureAndroidMessagingReady()) return;
+    if (!await _ensureMessagingReady()) return;
 
     _foregroundMessageSubscription ??= FirebaseMessaging.onMessage.listen((
       message,
@@ -149,10 +148,10 @@ class MobilePushNotificationService {
     final preferences = await SharedPreferences.getInstance();
     await preferences.setString(_registeredPushTokenKey, token);
 
-    if (platform == 'android' && _androidTokenRefreshSubscription == null) {
-      _androidTokenRefreshSubscription = FirebaseMessaging
-          .instance
-          .onTokenRefresh
+    if ((platform == 'android' || platform == 'ios') &&
+        _tokenRefreshSubscription == null &&
+        await _ensureMessagingReady()) {
+      _tokenRefreshSubscription = FirebaseMessaging.instance.onTokenRefresh
           .listen((newToken) {
             unawaited(_registerRefreshedToken(newToken, locale: locale));
           });
@@ -171,7 +170,7 @@ class MobilePushNotificationService {
   }
 
   Future<void> dispose() async {
-    await _androidTokenRefreshSubscription?.cancel();
+    await _tokenRefreshSubscription?.cancel();
     await _foregroundMessageSubscription?.cancel();
     await _openedMessageSubscription?.cancel();
   }
@@ -199,9 +198,9 @@ class MobilePushNotificationService {
   Future<String?> _getPlatformToken() async {
     switch (defaultTargetPlatform) {
       case TargetPlatform.iOS:
-        return _requestApnsToken();
+        return _getIosToken();
       case TargetPlatform.android:
-        if (!await _ensureAndroidMessagingReady()) return null;
+        if (!await _ensureMessagingReady()) return null;
         return FirebaseMessaging.instance.getToken();
       case TargetPlatform.fuchsia:
       case TargetPlatform.linux:
@@ -275,6 +274,21 @@ class MobilePushNotificationService {
     }
   }
 
+  Future<String?> _getIosToken() async {
+    final apnsToken = await _requestApnsToken();
+    if (await _ensureMessagingReady()) {
+      try {
+        final token = await FirebaseMessaging.instance.getToken();
+        if (token != null && token.isNotEmpty) return token;
+      } on FirebaseException catch (error) {
+        debugPrint('FCM token request failed on iOS: ${error.message}');
+      } on PlatformException catch (error) {
+        debugPrint('FCM token request failed on iOS: ${error.message}');
+      }
+    }
+    return apnsToken;
+  }
+
   Future<PushNotificationSettings> _ensureNotificationPermission() async {
     if (!_supportsPushNotifications) return getSettings();
 
@@ -324,17 +338,22 @@ class MobilePushNotificationService {
     return status.isGranted || status.isLimited || status.isProvisional;
   }
 
-  Future<bool> _ensureAndroidMessagingReady() async {
-    if (_androidMessagingInitialised) return _androidMessagingReady;
-    _androidMessagingInitialised = true;
+  Future<bool> _ensureMessagingReady() async {
+    if (kIsWeb) return false;
+    if (defaultTargetPlatform != TargetPlatform.android &&
+        defaultTargetPlatform != TargetPlatform.iOS) {
+      return false;
+    }
+    if (_messagingInitialised) return _messagingReady;
+    _messagingInitialised = true;
     try {
       await Firebase.initializeApp();
-      _androidMessagingReady = true;
+      _messagingReady = true;
     } catch (error) {
-      _androidMessagingReady = false;
-      debugPrint('Firebase is not configured for Android push: $error');
+      _messagingReady = false;
+      debugPrint('Firebase is not configured for push: $error');
     }
-    return _androidMessagingReady;
+    return _messagingReady;
   }
 
   bool get _supportsPushNotifications {

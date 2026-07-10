@@ -57,7 +57,14 @@ Future<void> _startApp() async {
   ]);
   apiClient.setLanguage(localeController.locale.languageCode);
   localeController.addListener(() {
-    apiClient.setLanguage(localeController.locale.languageCode);
+    final language = localeController.locale.languageCode;
+    apiClient.setLanguage(language);
+    unawaited(
+      _runStartupTask(
+        'client language sync',
+        () => mobileBackendController.syncClientLanguage(language: language),
+      ),
+    );
   });
 
   unawaited(

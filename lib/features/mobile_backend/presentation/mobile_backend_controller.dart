@@ -75,7 +75,10 @@ class MobileBackendController extends ChangeNotifier {
       case Success(:final data):
         _client = data.client;
         _failure = null;
-        _startPushNotificationSync(locale: data.client.language);
+        final language =
+            _supportedLanguageOrNull(request.language) ?? data.client.language;
+        _startPushNotificationSync(locale: language);
+        unawaited(syncClientLanguage(language: language));
         unawaited(refreshNotifications());
         if (_status == MobileBackendStatus.initial) {
           _status = MobileBackendStatus.loaded;
@@ -100,6 +103,26 @@ class MobileBackendController extends ChangeNotifier {
         notifyListeners();
     }
     return result;
+  }
+
+  Future<void> syncClientLanguage({required String language}) async {
+    final normalizedLanguage = _supportedLanguageOrNull(language);
+    final client = _client;
+    if (normalizedLanguage == null || client == null) return;
+    if (client.language == normalizedLanguage) return;
+
+    final result = await _repository.updateProfile(
+      ClientProfileUpdate(language: normalizedLanguage),
+    );
+    switch (result) {
+      case Success(:final data):
+        _client = data;
+        _failure = null;
+        _startPushNotificationSync(locale: normalizedLanguage);
+        notifyListeners();
+      case Error(:final failure):
+        debugPrint('Client language sync failed: ${failure.message}');
+    }
   }
 
   Future<void> refreshPushNotificationSettings() async {
@@ -422,7 +445,8 @@ class MobileBackendController extends ChangeNotifier {
         _applyCatalog(data.catalog);
         final client = data.client;
         if (client != null) {
-          _startPushNotificationSync(locale: client.language);
+          _startPushNotificationSync(locale: language);
+          unawaited(syncClientLanguage(language: language));
           unawaited(refreshNotifications());
         } else {
           _notifications = const <ClientNotificationItemModel>[];
@@ -538,6 +562,14 @@ String? _resolveImageUrl(String? value) {
 }
 
 typedef _ProductVisual = ({String emoji, Color tint, Color highlight});
+
+String? _supportedLanguageOrNull(String? language) {
+  final normalized = language?.trim().toLowerCase().split(RegExp('[-_]')).first;
+  return switch (normalized) {
+    'uz' || 'ru' || 'en' => normalized,
+    _ => null,
+  };
+}
 
 const List<_ProductVisual> _fallbackVisuals = <_ProductVisual>[
   (emoji: '🌯', tint: Color(0xFFFFE0D6), highlight: Color(0xFFFFF6F0)),

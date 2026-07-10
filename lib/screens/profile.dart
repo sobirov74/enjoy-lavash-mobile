@@ -138,18 +138,8 @@ class _ProfileState extends State<Profile> {
       case Success(:final data):
         if (enabled && !data.enabled) {
           final message = data.permissionPermanentlyDenied
-              ? _orderText(
-                  t,
-                  en: 'Allow notifications in phone settings',
-                  ru: 'Разрешите уведомления в настройках телефона',
-                  uz: 'Telefon sozlamalarida bildirishnomalarga ruxsat bering',
-                )
-              : _orderText(
-                  t,
-                  en: 'Notification permission was not allowed',
-                  ru: 'Разрешение на уведомления не выдано',
-                  uz: 'Bildirishnomalarga ruxsat berilmadi',
-                );
+              ? t.allowNotificationsInSettings
+              : t.notificationPermissionDenied;
           ScaffoldMessenger.of(context).showSnackBar(appSnackBar(message));
         }
       case Error(:final failure):
@@ -157,12 +147,7 @@ class _ProfileState extends State<Profile> {
           appSnackBar(
             failure.message.isNotEmpty
                 ? failure.message
-                : _orderText(
-                    t,
-                    en: 'Could not update notification settings',
-                    ru: 'Не удалось обновить настройки уведомлений',
-                    uz: "Bildirishnoma sozlamalarini yangilab bo'lmadi",
-                  ),
+                : t.notificationUpdateFailed,
           ),
         );
     }
@@ -323,12 +308,7 @@ class _ProfileState extends State<Profile> {
                       children: <Widget>[
                         _NotificationSwitchTile(
                           isDark: isDark,
-                          title: _orderText(
-                            t,
-                            en: 'Notifications',
-                            ru: 'Уведомления',
-                            uz: 'Bildirishnomalar',
-                          ),
+                          title: t.notifications,
                           subtitle: _notificationSubtitle(
                             t,
                             isLoading: pushSettings == null,
@@ -350,18 +330,8 @@ class _ProfileState extends State<Profile> {
                         const _SettingsDivider(),
                         _SettingsHeader(
                           icon: Icons.palette_outlined,
-                          title: _orderText(
-                            t,
-                            en: 'Appearance',
-                            ru: 'Оформление',
-                            uz: "Ko'rinish",
-                          ),
-                          subtitle: _orderText(
-                            t,
-                            en: 'Choose the app color mode',
-                            ru: 'Выберите цветовой режим приложения',
-                            uz: 'Ilova rang rejimini tanlang',
-                          ),
+                          title: t.appearance,
+                          subtitle: t.chooseAppColorMode,
                         ),
                         const SizedBox(height: 12),
                         Row(
@@ -392,18 +362,8 @@ class _ProfileState extends State<Profile> {
                         const _SettingsDivider(),
                         _SettingsHeader(
                           icon: Icons.translate_rounded,
-                          title: _orderText(
-                            t,
-                            en: 'Language',
-                            ru: 'Язык',
-                            uz: 'Til',
-                          ),
-                          subtitle: _orderText(
-                            t,
-                            en: 'Use the app in your preferred language',
-                            ru: 'Используйте приложение на удобном языке',
-                            uz: 'Ilovadan qulay tilda foydalaning',
-                          ),
+                          title: t.language,
+                          subtitle: t.languageSubtitle,
                         ),
                         const SizedBox(height: 12),
                         Row(
@@ -580,14 +540,7 @@ class _ProfileState extends State<Profile> {
                                   ),
                                   onPressed: () => _openAllOrders(context),
                                   icon: const Icon(Icons.receipt_long_rounded),
-                                  label: TypographyText(
-                                    _orderText(
-                                      t,
-                                      en: 'See all orders',
-                                      ru: 'Все заказы',
-                                      uz: "Barcha buyurtmalar",
-                                    ),
-                                  ),
+                                  label: TypographyText(t.seeAllOrders),
                                 ),
                               ),
                             ],
@@ -620,12 +573,7 @@ class _ProfileState extends State<Profile> {
                   // -- Actions
                   _SectionCard(
                     isDark: isDark,
-                    title: _orderText(
-                      t,
-                      en: 'Actions',
-                      ru: 'Действия',
-                      uz: 'Amallar',
-                    ),
+                    title: t.actions,
                     child: Column(
                       children: <Widget>[
                         SizedBox(
@@ -688,12 +636,7 @@ class _ProfileState extends State<Profile> {
                                 size: 20,
                               ),
                               label: TypographyText(
-                                _orderText(
-                                  t,
-                                  en: 'Delete account',
-                                  ru: 'Удалить аккаунт',
-                                  uz: "Hisobni o'chirish",
-                                ),
+                                t.deleteAccount,
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -743,27 +686,13 @@ class _DeleteAccountSheetState extends State<_DeleteAccountSheet> {
     switch (result) {
       case Success():
         navigator.pop();
-        messenger.showSnackBar(
-          appSnackBar(
-            _orderText(
-              t,
-              en: 'Your account has been deleted',
-              ru: 'Ваш аккаунт удалён',
-              uz: "Hisobingiz o'chirildi",
-            ),
-          ),
-        );
+        messenger.showSnackBar(appSnackBar(t.accountDeleted));
       case Error(:final failure):
         messenger.showSnackBar(
           appSnackBar(
             failure.message.isNotEmpty
                 ? failure.message
-                : _orderText(
-                    t,
-                    en: 'Could not delete the account. Please try again.',
-                    ru: 'Не удалось удалить аккаунт. Попробуйте ещё раз.',
-                    uz: "Hisobni o'chirib bo'lmadi. Qayta urinib ko'ring.",
-                  ),
+                : t.deleteAccountFailed,
           ),
         );
     }
@@ -833,12 +762,7 @@ class _DeleteAccountSheetState extends State<_DeleteAccountSheet> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         TypographyText(
-                          _orderText(
-                            t,
-                            en: 'Delete account?',
-                            ru: 'Удалить аккаунт?',
-                            uz: "Hisob o'chirilsinmi?",
-                          ),
+                          t.deleteAccountQuestion,
                           style: const TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w900,
@@ -846,16 +770,7 @@ class _DeleteAccountSheetState extends State<_DeleteAccountSheet> {
                         ),
                         const SizedBox(height: 4),
                         TypographyText(
-                          _orderText(
-                            t,
-                            en:
-                                'This action is permanent and cannot be '
-                                'undone',
-                            ru:
-                                'Это действие необратимо — восстановить '
-                                'данные не получится',
-                            uz: "Bu amalni ortga qaytarib bo'lmaydi",
-                          ),
+                          t.deleteAccountPermanentWarning,
                           style: TextStyle(
                             color: isDark
                                 ? BaseColors.lightTextGray
@@ -890,12 +805,7 @@ class _DeleteAccountSheetState extends State<_DeleteAccountSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     TypographyText(
-                      _orderText(
-                        t,
-                        en: 'The following will be deleted:',
-                        ru: 'Будут удалены:',
-                        uz: "Quyidagilar o'chiriladi:",
-                      ),
+                      t.deleteAccountItemsTitle,
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
@@ -905,45 +815,25 @@ class _DeleteAccountSheetState extends State<_DeleteAccountSheet> {
                     _DeleteImpactRow(
                       icon: Icons.person_outline_rounded,
                       isDark: isDark,
-                      text: _orderText(
-                        t,
-                        en: 'Profile and phone number',
-                        ru: 'Профиль и номер телефона',
-                        uz: 'Profil va telefon raqami',
-                      ),
+                      text: t.deleteAccountProfilePhone,
                     ),
                     const SizedBox(height: 10),
                     _DeleteImpactRow(
                       icon: Icons.location_on_outlined,
                       isDark: isDark,
-                      text: _orderText(
-                        t,
-                        en: 'Saved delivery addresses',
-                        ru: 'Сохранённые адреса доставки',
-                        uz: 'Saqlangan yetkazib berish manzillari',
-                      ),
+                      text: t.deleteAccountSavedAddresses,
                     ),
                     const SizedBox(height: 10),
                     _DeleteImpactRow(
                       icon: Icons.receipt_long_outlined,
                       isDark: isDark,
-                      text: _orderText(
-                        t,
-                        en: 'Order history',
-                        ru: 'История заказов',
-                        uz: 'Buyurtmalar tarixi',
-                      ),
+                      text: t.orderHistory,
                     ),
                     const SizedBox(height: 10),
                     _DeleteImpactRow(
                       icon: Icons.stars_rounded,
                       isDark: isDark,
-                      text: _orderText(
-                        t,
-                        en: 'Accumulated bonus points',
-                        ru: 'Накопленные бонусные баллы',
-                        uz: "To'plangan bonus ballari",
-                      ),
+                      text: t.deleteAccountBonusPoints,
                     ),
                   ],
                 ),
@@ -980,18 +870,7 @@ class _DeleteAccountSheetState extends State<_DeleteAccountSheet> {
                       ),
                       Expanded(
                         child: TypographyText(
-                          _orderText(
-                            t,
-                            en:
-                                'I understand that my data will be deleted '
-                                'permanently',
-                            ru:
-                                'Я понимаю, что мои данные будут удалены '
-                                'безвозвратно',
-                            uz:
-                                "Ma'lumotlarim butunlay o'chirilishini "
-                                'tushunaman',
-                          ),
+                          t.deleteAccountAcknowledgement,
                           style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
@@ -1032,18 +911,8 @@ class _DeleteAccountSheetState extends State<_DeleteAccountSheet> {
                       : const Icon(Icons.delete_forever_rounded, size: 20),
                   label: TypographyText(
                     deleting
-                        ? _orderText(
-                            t,
-                            en: 'Deleting…',
-                            ru: 'Удаляем…',
-                            uz: "O'chirilmoqda…",
-                          )
-                        : _orderText(
-                            t,
-                            en: 'Delete my account',
-                            ru: 'Удалить мой аккаунт',
-                            uz: "Hisobimni o'chirish",
-                          ),
+                        ? t.deleting
+                        : t.deleteMyAccount,
                     style: const TextStyle(fontWeight: FontWeight.w800),
                   ),
                 ),
@@ -1062,12 +931,7 @@ class _DeleteAccountSheetState extends State<_DeleteAccountSheet> {
                       ? null
                       : () => Navigator.of(context).pop(),
                   child: TypographyText(
-                    _orderText(
-                      t,
-                      en: 'Cancel',
-                      ru: 'Отмена',
-                      uz: 'Bekor qilish',
-                    ),
+                    t.cancel,
                     style: const TextStyle(fontWeight: FontWeight.w800),
                   ),
                 ),
@@ -1205,12 +1069,7 @@ class _AllOrdersScreenState extends State<_AllOrdersScreen> {
                   ),
                   Expanded(
                     child: TypographyText(
-                      _orderText(
-                        t,
-                        en: 'All orders',
-                        ru: 'Все заказы',
-                        uz: 'Barcha buyurtmalar',
-                      ),
+                      t.allOrders,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.headlineSmall?.copyWith(
@@ -1244,12 +1103,7 @@ class _AllOrdersScreenState extends State<_AllOrdersScreen> {
               child: _OrdersSearchField(
                 controller: _searchController,
                 isDark: isDark,
-                hintText: _orderText(
-                  t,
-                  en: 'Search by product, status, or order ID',
-                  ru: 'Поиск по товару, статусу или номеру',
-                  uz: 'Mahsulot, holat yoki buyurtma raqami',
-                ),
+                hintText: t.ordersSearchHint,
                 onChanged: (value) => setState(() => _query = value),
                 onClear: () {
                   _searchController.clear();
@@ -1265,7 +1119,7 @@ class _AllOrdersScreenState extends State<_AllOrdersScreen> {
                 physics: const BouncingScrollPhysics(),
                 children: <Widget>[
                   _OrderFilterChip(
-                    label: _orderText(t, en: 'All', ru: 'Все', uz: 'Barchasi'),
+                    label: t.all,
                     selected: _typeFilter == null,
                     onTap: () => setState(() => _typeFilter = null),
                   ),
@@ -1297,12 +1151,7 @@ class _AllOrdersScreenState extends State<_AllOrdersScreen> {
                 itemBuilder: (context, index) {
                   if (index == 0) {
                     return _OrderFilterChip(
-                      label: _orderText(
-                        t,
-                        en: 'Any status',
-                        ru: 'Любой статус',
-                        uz: 'Har qanday holat',
-                      ),
+                      label: t.anyStatus,
                       selected: _statusFilter == null,
                       onTap: () => setState(() => _statusFilter = null),
                     );
@@ -1501,12 +1350,7 @@ class _OrdersEmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             TypographyText(
-              _orderText(
-                t,
-                en: 'No orders match your filters',
-                ru: 'Нет заказов по выбранным фильтрам',
-                uz: "Filtrlarga mos buyurtma yo'q",
-              ),
+              t.noOrdersMatchFilters,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: isDark ? BaseColors.lightTextGray : BaseColors.textGray,
@@ -1808,12 +1652,7 @@ class _AppVersionRow extends StatelessWidget {
         const SizedBox(width: 14),
         Expanded(
           child: TypographyText(
-            _orderText(
-              t,
-              en: 'App version',
-              ru: 'Версия приложения',
-              uz: 'Ilova versiyasi',
-            ),
+            t.appVersion,
             style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
           ),
         ),
@@ -1961,19 +1800,6 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
-String _orderText(
-  L t, {
-  required String en,
-  required String ru,
-  required String uz,
-}) {
-  return switch (t.localeName.split('_').first) {
-    'ru' => ru,
-    'uz' => uz,
-    _ => en,
-  };
-}
-
 String _notificationSubtitle(
   L t, {
   required bool isLoading,
@@ -1982,43 +1808,18 @@ String _notificationSubtitle(
   required bool permissionPermanentlyDenied,
 }) {
   if (isLoading) {
-    return _orderText(
-      t,
-      en: 'Checking notification permission',
-      ru: 'Проверяем доступ к уведомлениям',
-      uz: 'Bildirishnoma ruxsati tekshirilmoqda',
-    );
+    return t.notificationCheckingPermission;
   }
   if (!supported) {
-    return _orderText(
-      t,
-      en: 'Notifications are not available on this device',
-      ru: 'Уведомления недоступны на этом устройстве',
-      uz: 'Bu qurilmada bildirishnomalar mavjud emas',
-    );
+    return t.notificationsUnavailable;
   }
   if (enabled) {
-    return _orderText(
-      t,
-      en: 'Order updates and offers are enabled',
-      ru: 'Статусы заказов и акции включены',
-      uz: 'Buyurtma holati va aksiyalar yoqilgan',
-    );
+    return t.notificationsEnabled;
   }
   if (permissionPermanentlyDenied) {
-    return _orderText(
-      t,
-      en: 'Allow notifications in phone settings',
-      ru: 'Разрешите уведомления в настройках телефона',
-      uz: 'Telefon sozlamalarida bildirishnomalarga ruxsat bering',
-    );
+    return t.allowNotificationsInSettings;
   }
-  return _orderText(
-    t,
-    en: 'Receive order updates and special offers',
-    ru: 'Получайте статусы заказов и специальные предложения',
-    uz: 'Buyurtma holati va maxsus takliflarni oling',
-  );
+  return t.notificationsSubtitleDefault;
 }
 
 String _formatOrderAmount(int amount) {
@@ -2052,39 +1853,14 @@ String _statusLabel(MobileOrderStatus status, L t) {
   return switch (status) {
     MobileOrderStatus.newOrder => t.statusNew,
     MobileOrderStatus.confirmed => t.statusAccepted,
-    MobileOrderStatus.cooking => _orderText(
-      t,
-      en: 'Cooking',
-      ru: 'Готовится',
-      uz: 'Tayyorlanmoqda',
-    ),
-    MobileOrderStatus.ready => _orderText(
-      t,
-      en: 'Ready',
-      ru: 'Готов',
-      uz: 'Tayyor',
-    ),
-    MobileOrderStatus.courierAssigned => _orderText(
-      t,
-      en: 'Courier assigned',
-      ru: 'Курьер назначен',
-      uz: 'Kuryer biriktirildi',
-    ),
-    MobileOrderStatus.onTheWay => _orderText(
-      t,
-      en: 'On the way',
-      ru: 'В пути',
-      uz: "Yo'lda",
-    ),
+    MobileOrderStatus.cooking => t.orderStatusCooking,
+    MobileOrderStatus.ready => t.orderStatusReady,
+    MobileOrderStatus.courierAssigned => t.orderStatusCourierAssigned,
+    MobileOrderStatus.onTheWay => t.orderStatusOnTheWay,
     MobileOrderStatus.delivered => t.statusCompleted,
     MobileOrderStatus.cancelled => t.statusCancelled,
     MobileOrderStatus.refunded => t.statusFailed,
-    MobileOrderStatus.unknown => _orderText(
-      t,
-      en: 'Unknown',
-      ru: 'Неизвестно',
-      uz: "Noma'lum",
-    ),
+    MobileOrderStatus.unknown => t.unknown,
   };
 }
 
@@ -2147,61 +1923,21 @@ IconData _orderTypeIcon(MobileOrderType type) {
 
 String _paymentMethodLabel(MobilePaymentMethod method, L t) {
   return switch (method) {
-    MobilePaymentMethod.cash => _orderText(
-      t,
-      en: 'Cash',
-      ru: 'Наличные',
-      uz: 'Naqd',
-    ),
-    MobilePaymentMethod.cardTerminal => _orderText(
-      t,
-      en: 'Card terminal',
-      ru: 'Терминал',
-      uz: 'Terminal',
-    ),
+    MobilePaymentMethod.cash => t.paymentCash,
+    MobilePaymentMethod.cardTerminal => t.paymentCardTerminal,
     MobilePaymentMethod.payme => 'Payme',
     MobilePaymentMethod.click => 'Click',
-    MobilePaymentMethod.unknown => _orderText(
-      t,
-      en: 'Unknown',
-      ru: 'Неизвестно',
-      uz: "Noma'lum",
-    ),
+    MobilePaymentMethod.unknown => t.unknown,
   };
 }
 
 String _paymentStatusLabel(MobilePaymentStatus status, L t) {
   return switch (status) {
-    MobilePaymentStatus.pending => _orderText(
-      t,
-      en: 'Pending',
-      ru: 'Ожидает оплаты',
-      uz: 'Kutilmoqda',
-    ),
-    MobilePaymentStatus.paid => _orderText(
-      t,
-      en: 'Paid',
-      ru: 'Оплачено',
-      uz: "To'langan",
-    ),
-    MobilePaymentStatus.failed => _orderText(
-      t,
-      en: 'Failed',
-      ru: 'Не оплачено',
-      uz: "To'lanmadi",
-    ),
-    MobilePaymentStatus.refunded => _orderText(
-      t,
-      en: 'Refunded',
-      ru: 'Возвращено',
-      uz: 'Qaytarilgan',
-    ),
-    MobilePaymentStatus.unknown => _orderText(
-      t,
-      en: 'Unknown',
-      ru: 'Неизвестно',
-      uz: "Noma'lum",
-    ),
+    MobilePaymentStatus.pending => t.paymentStatusPending,
+    MobilePaymentStatus.paid => t.paymentStatusPaid,
+    MobilePaymentStatus.failed => t.paymentStatusFailed,
+    MobilePaymentStatus.refunded => t.paymentStatusRefunded,
+    MobilePaymentStatus.unknown => t.unknown,
   };
 }
 
@@ -2211,19 +1947,14 @@ String _orderProductTitle(CustomerOrderItemModel item, L t) {
   if (name != null && name.isNotEmpty) return name;
 
   final productId = item.productId.trim();
-  final fallback = _orderText(t, en: 'Product', ru: 'Товар', uz: 'Mahsulot');
+  final fallback = t.product;
   if (productId.isEmpty) return fallback;
   return '$fallback $productId';
 }
 
 String _orderProductSummary(CustomerOrderModel order, L t) {
   if (order.items.isEmpty) {
-    return _orderText(
-      t,
-      en: 'No products in this order',
-      ru: 'В заказе нет товаров',
-      uz: "Buyurtmada mahsulot yo'q",
-    );
+    return t.noProductsInOrder;
   }
 
   final items = order.items
@@ -2606,44 +2337,20 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet> {
         setState(() => _order = data);
         final paymentUrl = data.paymentUrl?.trim();
         if (paymentUrl?.isNotEmpty != true) {
-          _showOrderSnack(
-            _orderText(
-              t,
-              en: 'Payment link is not available yet.',
-              ru: 'Ссылка на оплату пока недоступна.',
-              uz: "To'lov havolasi hali mavjud emas.",
-            ),
-          );
+          _showOrderSnack(t.paymentLinkUnavailable);
           return;
         }
 
         final opened = await ExternalUrlLauncher.open(paymentUrl!);
         if (!mounted) return;
         _showOrderSnack(
-          opened
-              ? _orderText(
-                  t,
-                  en: 'Complete payment online.',
-                  ru: 'Завершите онлайн-оплату.',
-                  uz: "Onlayn to'lovni yakunlang.",
-                )
-              : _orderText(
-                  t,
-                  en: 'Payment page could not be opened.',
-                  ru: 'Не удалось открыть страницу оплаты.',
-                  uz: "To'lov sahifasini ochib bo'lmadi.",
-                ),
+          opened ? t.completePaymentOnline : t.paymentPageOpenFailed,
         );
       case Error(:final failure):
         _showOrderSnack(
           failure.message.isNotEmpty
               ? failure.message
-              : _orderText(
-                  t,
-                  en: 'Could not retry payment.',
-                  ru: 'Не удалось повторить оплату.',
-                  uz: "To'lovni qayta urinish imkoni bo'lmadi.",
-                ),
+              : t.retryPaymentFailed,
         );
     }
   }
@@ -2713,12 +2420,7 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       TypographyText(
-                        _orderText(
-                          t,
-                          en: 'Order details',
-                          ru: 'Детали заказа',
-                          uz: 'Buyurtma tafsilotlari',
-                        ),
+                        t.orderDetails,
                         style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w900,
@@ -2761,12 +2463,7 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         TypographyText(
-                          _orderText(
-                            t,
-                            en: 'Current status',
-                            ru: 'Текущий статус',
-                            uz: 'Joriy holat',
-                          ),
+                          t.currentStatus,
                           style: TextStyle(
                             color: colors.text.withValues(alpha: 0.78),
                             fontSize: 12,
@@ -2791,24 +2488,14 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet> {
             const SizedBox(height: 12),
             _OrderInfoPill(
               icon: _orderTypeIcon(order.type),
-              label: _orderText(
-                t,
-                en: 'Order type',
-                ru: 'Тип заказа',
-                uz: 'Buyurtma turi',
-              ),
+              label: t.orderType,
               value: _orderTypeLabel(order.type, t),
             ),
             if (createdAt.isNotEmpty) ...[
               const SizedBox(height: 8),
               _OrderInfoPill(
                 icon: Icons.event_available_rounded,
-                label: _orderText(
-                  t,
-                  en: 'Created',
-                  ru: 'Создан',
-                  uz: 'Yaratilgan',
-                ),
+                label: t.created,
                 value: createdAt,
               ),
             ],
@@ -2816,12 +2503,7 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet> {
               const SizedBox(height: 8),
               _OrderInfoPill(
                 icon: Icons.schedule_rounded,
-                label: _orderText(
-                  t,
-                  en: 'Scheduled for',
-                  ru: 'Запланирован',
-                  uz: 'Rejalashtirilgan',
-                ),
+                label: t.scheduledFor,
                 value: scheduledFor,
               ),
             ],
@@ -2829,19 +2511,14 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet> {
               const SizedBox(height: 8),
               _OrderInfoPill(
                 icon: Icons.update_rounded,
-                label: _orderText(
-                  t,
-                  en: 'Last update',
-                  ru: 'Последнее обновление',
-                  uz: 'Oxirgi yangilanish',
-                ),
+                label: t.lastUpdate,
                 value: updatedAt,
               ),
             ],
             const SizedBox(height: 8),
             _OrderInfoPill(
               icon: Icons.payments_outlined,
-              label: _orderText(t, en: 'Payment', ru: 'Оплата', uz: "To'lov"),
+              label: t.payment,
               value: _paymentMethodLabel(order.paymentMethod, t),
             ),
             if (order.paymentStatus != null &&
@@ -2849,12 +2526,7 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet> {
               const SizedBox(height: 8),
               _OrderInfoPill(
                 icon: Icons.verified_outlined,
-                label: _orderText(
-                  t,
-                  en: 'Payment status',
-                  ru: 'Статус оплаты',
-                  uz: "To'lov holati",
-                ),
+                label: t.paymentStatus,
                 value: _paymentStatusLabel(order.paymentStatus!, t),
               ),
             ],
@@ -2885,12 +2557,7 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet> {
                         )
                       : const Icon(Icons.refresh_rounded, size: 19),
                   label: TypographyText(
-                    _orderText(
-                      t,
-                      en: 'Retry payment',
-                      ru: 'Повторить оплату',
-                      uz: "To'lovni qayta urinish",
-                    ),
+                    t.retryPayment,
                     style: const TextStyle(
                       color: BaseColors.white,
                       fontWeight: FontWeight.w800,
@@ -2913,12 +2580,7 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet> {
             ],
             const SizedBox(height: 14),
             _OrderDetailSection(
-              title: _orderText(
-                t,
-                en: 'Products',
-                ru: 'Товары',
-                uz: 'Mahsulotlar',
-              ),
+              title: t.products,
               children: order.items.isEmpty
                   ? <Widget>[
                       TypographyText(
@@ -2939,12 +2601,7 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet> {
             ),
             const SizedBox(height: 12),
             _OrderDetailSection(
-              title: _orderText(
-                t,
-                en: 'Status history',
-                ru: 'История статусов',
-                uz: 'Holatlar tarixi',
-              ),
+              title: t.statusHistory,
               children: <Widget>[
                 for (int i = 0; i < statusEntries.length; i++) ...[
                   _OrderStatusLogLine(
@@ -2960,12 +2617,7 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet> {
                 order.iikoOrderId?.trim().isNotEmpty == true) ...[
               const SizedBox(height: 12),
               _OrderDetailSection(
-                title: _orderText(
-                  t,
-                  en: 'Additional info',
-                  ru: 'Дополнительно',
-                  uz: "Qo'shimcha ma'lumot",
-                ),
+                title: t.additionalInfo,
                 children: <Widget>[
                   if (order.promoCode?.trim().isNotEmpty == true)
                     _OrderTextDetail(
@@ -2985,12 +2637,7 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet> {
                         order.comment?.trim().isNotEmpty == true)
                       const SizedBox(height: 10),
                     _OrderTextDetail(
-                      label: _orderText(
-                        t,
-                        en: 'Kitchen order',
-                        ru: 'Заказ кухни',
-                        uz: 'Oshxona buyurtmasi',
-                      ),
+                      label: t.kitchenOrder,
                       value: order.iikoOrderId!.trim(),
                     ),
                   ],

@@ -190,7 +190,21 @@ class _MainTabsState extends State<MainTabs> {
     final longitude = location.longitude;
     if (latitude == null || longitude == null) return null;
 
-    return CreateOrderAddressInput(latitude: latitude, longitude: longitude);
+    final addressName = _trimmedOrNull(location.addressName);
+    final fullAddress = _trimmedOrNull(location.fullAddress) ?? addressName;
+
+    return CreateOrderAddressInput(
+      latitude: latitude,
+      longitude: longitude,
+      label: addressName,
+      text: fullAddress,
+      street: addressName,
+      houseNumber: _trimmedOrNull(location.houseNumber),
+      apartmentNumber: _trimmedOrNull(location.apartment),
+      entrance: _trimmedOrNull(location.entrance),
+      floor: _trimmedOrNull(location.floor),
+      comment: _trimmedOrNull(location.comment),
+    );
   }
 
   ClientAddress? _defaultAddress(List<ClientAddress> addresses) {
@@ -200,6 +214,140 @@ class _MainTabsState extends State<MainTabs> {
       if (address.isDefault) return address;
     }
     return addresses.first;
+  }
+
+  CreateOrderAddressInput _inlineAddressFromClientAddress(
+    ClientAddress address,
+  ) {
+    return CreateOrderAddressInput(
+      latitude: address.latitude,
+      longitude: address.longitude,
+      label: _trimmedOrNull(address.label),
+      text: _formatClientAddressText(address),
+      street: _trimmedOrNull(address.street),
+      houseNumber: _trimmedOrNull(address.houseNumber),
+      apartmentNumber: _trimmedOrNull(address.apartmentNumber),
+      entrance: _trimmedOrNull(address.entrance),
+      floor: _trimmedOrNull(address.floor),
+      doorCode: _trimmedOrNull(address.doorCode),
+      comment: _trimmedOrNull(address.comment),
+    );
+  }
+
+  String? _formatClientAddressText(ClientAddress address) {
+    final parts = <String>[
+      if (address.street.trim().isNotEmpty) address.street.trim(),
+      if (address.houseNumber?.trim().isNotEmpty == true)
+        address.houseNumber!.trim(),
+      if (address.apartmentNumber?.trim().isNotEmpty == true)
+        address.apartmentNumber!.trim(),
+    ];
+    if (parts.isEmpty) return _trimmedOrNull(address.label);
+    return parts.join(', ');
+  }
+
+  BranchModel? _branchById(String? id) {
+    final branchId = id?.trim();
+    if (branchId == null || branchId.isEmpty) return null;
+
+    final selectedBranch = _selectedBranch;
+    if (selectedBranch != null && selectedBranch.id == branchId) {
+      return selectedBranch;
+    }
+
+    for (final branch in context.read<MobileBackendController>().branches) {
+      if (branch.id == branchId) return branch;
+    }
+    return null;
+  }
+
+  _CheckoutAddressDetails? _checkoutAddressDetails(
+    CartPreviewAddressInput? input,
+  ) {
+    if (input == null) return null;
+
+    final location = context.read<LocationController>();
+    if (_coordinatesMatch(
+      input.latitude,
+      input.longitude,
+      location.latitude,
+      location.longitude,
+    )) {
+      final label = _trimmedOrNull(location.addressName);
+      final text = _trimmedOrNull(location.fullAddress) ?? label;
+      if (label != null || text != null) {
+        return _CheckoutAddressDetails(label: label, text: text);
+      }
+    }
+
+    final addresses = context.read<MobileBackendController>().addresses;
+    for (final address in addresses) {
+      if (_coordinatesMatch(
+        input.latitude,
+        input.longitude,
+        address.latitude,
+        address.longitude,
+      )) {
+        return _CheckoutAddressDetails(
+          id: address.id,
+          label: _trimmedOrNull(address.label),
+          text: _formatClientAddressText(address),
+        );
+      }
+    }
+
+    final fallbackAddress = _defaultAddress(addresses);
+    if (fallbackAddress != null) {
+      return _CheckoutAddressDetails(
+        id: fallbackAddress.id,
+        label: _trimmedOrNull(fallbackAddress.label),
+        text: _formatClientAddressText(fallbackAddress),
+      );
+    }
+
+    return _CheckoutAddressDetails(
+      text:
+          '${input.latitude.toStringAsFixed(5)}, '
+          '${input.longitude.toStringAsFixed(5)}',
+    );
+  }
+
+  bool _coordinatesMatch(
+    double latitude,
+    double longitude,
+    double? otherLatitude,
+    double? otherLongitude,
+  ) {
+    if (otherLatitude == null || otherLongitude == null) return false;
+    return (latitude - otherLatitude).abs() < 0.000001 &&
+        (longitude - otherLongitude).abs() < 0.000001;
+  }
+
+  _CheckoutPreviewDetails _checkoutPreviewDetails({
+    required CartPreviewRequest request,
+    required CartPreviewModel preview,
+  }) {
+    final branchId = request.type == MobileOrderType.pickup
+        ? request.branchId
+        : preview.branchId;
+    final branch = _branchById(branchId);
+
+    return _CheckoutPreviewDetails(
+      preview: preview,
+      orderType: request.type,
+      branchId: _trimmedOrNull(branchId),
+      branchName: _trimmedOrNull(branch?.name),
+      branchAddress: _trimmedOrNull(branch?.address),
+      address: request.type == MobileOrderType.delivery
+          ? _checkoutAddressDetails(request.address)
+          : null,
+    );
+  }
+
+  String? _trimmedOrNull(String? value) {
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) return null;
+    return trimmed;
   }
 
   String? _normalizePromoCode(String? promoCode) {
@@ -301,7 +449,7 @@ class _MainTabsState extends State<MainTabs> {
     );
   }
 
-  Future<Result<CartPreviewModel>?> _previewCartForCheckout(
+  Future<Result<_CheckoutPreviewDetails>?> _previewCartForCheckout(
     List<CartLine> cartLines, {
     required MobileOrderType orderType,
     required MobilePaymentMethod paymentMethod,
@@ -326,8 +474,12 @@ class _MainTabsState extends State<MainTabs> {
           _refreshPaymentMethodsForBranch(_deliveryBranchId);
         }
       }
+      return Success(_checkoutPreviewDetails(request: request, preview: data));
     }
-    return result;
+    if (result case Error(:final failure)) {
+      return Error<_CheckoutPreviewDetails>(failure);
+    }
+    return null;
   }
 
   Future<CreateOrderRequest?> _buildCreateOrderRequest(
@@ -367,17 +519,24 @@ class _MainTabsState extends State<MainTabs> {
     final backend = context.read<MobileBackendController>();
     final location = context.read<LocationController>();
     var address = _inlineAddressFromLocation(location);
-    final savedAddressId = address == null
-        ? _defaultAddress(backend.addresses)?.id
-        : null;
+    final savedAddress = _defaultAddress(backend.addresses);
+    if (address == null && savedAddress != null) {
+      address = _inlineAddressFromClientAddress(savedAddress);
+    }
 
-    if (address == null && savedAddressId == null) {
+    if (address == null) {
       await showAddressBottomSheet(context);
       if (!mounted) return null;
       address = _inlineAddressFromLocation(location);
+      final fallbackSavedAddress = _defaultAddress(
+        context.read<MobileBackendController>().addresses,
+      );
+      if (address == null && fallbackSavedAddress != null) {
+        address = _inlineAddressFromClientAddress(fallbackSavedAddress);
+      }
     }
 
-    if (address == null && savedAddressId == null) {
+    if (address == null) {
       _showSnack(t.selectDeliveryAddressFirst);
       return null;
     }
@@ -386,8 +545,7 @@ class _MainTabsState extends State<MainTabs> {
     return CreateOrderRequest(
       type: MobileOrderType.delivery,
       address: address,
-      addressId: address == null ? savedAddressId : null,
-      branchId: address == null ? null : _deliveryBranchId,
+      branchId: _deliveryBranchId,
       items: items,
       paymentMethod: paymentMethod,
       promoCode: normalizedPromoCode,
@@ -480,18 +638,8 @@ class _MainTabsState extends State<MainTabs> {
           if (!mounted) return;
           _showSnack(
             opened
-                ? _mainTabsText(
-                    L.of(context),
-                    en: 'Order created. Complete payment online.',
-                    ru: 'Заказ создан. Завершите онлайн-оплату.',
-                    uz: "Buyurtma yaratildi. Onlayn to'lovni yakunlang.",
-                  )
-                : _mainTabsText(
-                    L.of(context),
-                    en: 'Order created, but payment page could not be opened.',
-                    ru: 'Заказ создан, но страницу оплаты открыть не удалось.',
-                    uz: "Buyurtma yaratildi, ammo to'lov sahifasi ochilmadi.",
-                  ),
+                ? L.of(context).orderCreatedPaymentOnline
+                : L.of(context).orderCreatedPaymentPageOpenFailed,
           );
         } else {
           _showSnack(L.of(context).orderCreated);
@@ -774,8 +922,34 @@ class _OrderCreationResult {
   final String? promoCode;
 }
 
+class _CheckoutAddressDetails {
+  const _CheckoutAddressDetails({this.id, this.label, this.text});
+
+  final String? id;
+  final String? label;
+  final String? text;
+}
+
+class _CheckoutPreviewDetails {
+  const _CheckoutPreviewDetails({
+    required this.preview,
+    required this.orderType,
+    this.branchId,
+    this.branchName,
+    this.branchAddress,
+    this.address,
+  });
+
+  final CartPreviewModel preview;
+  final MobileOrderType orderType;
+  final String? branchId;
+  final String? branchName;
+  final String? branchAddress;
+  final _CheckoutAddressDetails? address;
+}
+
 typedef _CartPreviewRequester =
-    Future<Result<CartPreviewModel>?> Function({
+    Future<Result<_CheckoutPreviewDetails>?> Function({
       required MobileOrderType orderType,
       required MobilePaymentMethod paymentMethod,
       String? promoCode,
@@ -805,7 +979,7 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
   late MobileOrderType _orderType;
   MobilePaymentMethod _paymentMethod = MobilePaymentMethod.cash;
   late final TextEditingController _promoCodeController;
-  CartPreviewModel? _preview;
+  _CheckoutPreviewDetails? _previewDetails;
   MobileOrderType? _lastPreviewOrderType;
   MobilePaymentMethod? _lastPreviewPaymentMethod;
   String? _lastPreviewPromoCode;
@@ -839,7 +1013,7 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
   bool get _hasPromoCodeInput => _normalizedPromoCode != null;
 
   bool get _previewMatchesCurrentInput {
-    return _preview != null &&
+    return _previewDetails != null &&
         _lastPreviewOrderType == _orderType &&
         _lastPreviewPaymentMethod == _currentPaymentMethod &&
         _lastPreviewPromoCode == _normalizedPromoCode;
@@ -871,7 +1045,7 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
     setState(() {
       _isPreviewLoading = true;
       _previewErrorText = null;
-      _preview = null;
+      _previewDetails = null;
     });
 
     final result = await widget.onPreviewRequested(
@@ -906,13 +1080,13 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
   }
 
   bool _applyPreview(
-    CartPreviewModel preview,
+    _CheckoutPreviewDetails details,
     MobileOrderType orderType,
     MobilePaymentMethod paymentMethod,
     String? promoCode,
   ) {
     setState(() {
-      _preview = preview;
+      _previewDetails = details;
       _lastPreviewOrderType = orderType;
       _lastPreviewPaymentMethod = paymentMethod;
       _lastPreviewPromoCode = promoCode;
@@ -924,7 +1098,7 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
 
   bool _showPreviewError(String message) {
     setState(() {
-      _preview = null;
+      _previewDetails = null;
       _previewErrorText = message;
       _isPreviewLoading = false;
     });
@@ -1038,12 +1212,7 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
               style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
               decoration: InputDecoration(
                 border: InputBorder.none,
-                hintText: _mainTabsText(
-                  t,
-                  en: 'Enter promo code',
-                  ru: 'Введите промокод',
-                  uz: 'Promokodni kiriting',
-                ),
+                hintText: t.enterPromoCode,
                 hintStyle: TextStyle(
                   color: isDark ? const Color(0xFF9E9790) : BaseColors.textGray,
                   fontWeight: FontWeight.w600,
@@ -1078,12 +1247,7 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
                         ),
                       )
                     : TypographyText(
-                        _mainTabsText(
-                          t,
-                          en: 'Apply',
-                          ru: 'Применить',
-                          uz: "Qo'llash",
-                        ),
+                        t.apply,
                         style: const TextStyle(
                           color: BaseColors.white,
                           fontSize: 13,
@@ -1100,7 +1264,7 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
 
   Widget _buildPreviewSummary(L t) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final preview = _preview;
+    final previewDetails = _previewDetails;
 
     return Container(
       width: double.infinity,
@@ -1111,25 +1275,17 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
       ),
       child: AnimatedSwitcher(
         duration: const Duration(milliseconds: 180),
-        child: _isPreviewLoading && preview == null
+        child: _isPreviewLoading && previewDetails == null
             ? const _PreviewLoadingState(key: ValueKey<String>('loading'))
-            : preview == null
+            : previewDetails == null
             ? _PreviewErrorState(
                 key: const ValueKey<String>('error'),
-                message:
-                    _previewErrorText ??
-                    _mainTabsText(
-                      t,
-                      en: 'Could not calculate total',
-                      ru: 'Не удалось рассчитать итог',
-                      uz: "Jami summani hisoblab bo'lmadi",
-                    ),
+                message: _previewErrorText ?? t.couldNotCalculateTotal,
                 onRetry: () => unawaited(_loadPreview()),
               )
             : _PreviewTotals(
                 key: const ValueKey<String>('totals'),
-                preview: preview,
-                orderType: _orderType,
+                details: previewDetails,
                 isRefreshing: _isPreviewLoading,
               ),
       ),
@@ -1185,12 +1341,7 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
               children: <Widget>[
                 Expanded(
                   child: TypographyText(
-                    _mainTabsText(
-                      t,
-                      en: 'Create order',
-                      ru: 'Оформить заказ',
-                      uz: 'Buyurtma berish',
-                    ),
+                    t.createOrderTitle,
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w900,
@@ -1205,12 +1356,7 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
             ),
             const SizedBox(height: 12),
             TypographyText(
-              _mainTabsText(
-                t,
-                en: 'Order type',
-                ru: 'Тип заказа',
-                uz: 'Buyurtma turi',
-              ),
+              t.orderType,
               style: const TextStyle(
                 color: BaseColors.textGray,
                 fontSize: 13,
@@ -1250,12 +1396,7 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   TypographyText(
-                    _mainTabsText(
-                      t,
-                      en: 'Order items',
-                      ru: 'Состав заказа',
-                      uz: 'Buyurtma mahsulotlari',
-                    ),
+                    t.orderItems,
                     style: const TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w900,
@@ -1288,14 +1429,7 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
                       ),
                     ),
                     onPressed: () => Navigator.of(context).pop(),
-                    child: TypographyText(
-                      _mainTabsText(
-                        t,
-                        en: 'Cancel',
-                        ru: 'Отмена',
-                        uz: 'Bekor qilish',
-                      ),
-                    ),
+                    child: TypographyText(t.cancel),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -1313,12 +1447,7 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
                         ? null
                         : () => unawaited(_confirmOrder()),
                     child: TypographyText(
-                      _mainTabsText(
-                        t,
-                        en: 'Create order',
-                        ru: 'Создать заказ',
-                        uz: 'Buyurtma berish',
-                      ),
+                      t.createOrderAction,
                       style: const TextStyle(color: BaseColors.white),
                     ),
                   ),
@@ -1367,7 +1496,7 @@ class _PaymentMethodSelector extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               TypographyText(
-                _mainTabsText(t, en: 'Payment', ru: 'Оплата', uz: "To'lov"),
+                t.payment,
                 style: const TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w900,
@@ -1375,17 +1504,18 @@ class _PaymentMethodSelector extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
+          const SizedBox(height: 10),
+          Column(
             children: <Widget>[
-              for (final method in methods)
+              for (int i = 0; i < methods.length; i++) ...[
                 _PaymentMethodChip(
-                  method: method,
-                  selected: method.code == selectedMethod,
-                  onTap: () => onChanged(method.code),
+                  key: ValueKey<String>(methods[i].id),
+                  method: methods[i],
+                  selected: methods[i].code == selectedMethod,
+                  onTap: () => onChanged(methods[i].code),
                 ),
+                if (i < methods.length - 1) const SizedBox(height: 8),
+              ],
             ],
           ),
         ],
@@ -1396,6 +1526,7 @@ class _PaymentMethodSelector extends StatelessWidget {
 
 class _PaymentMethodChip extends StatelessWidget {
   const _PaymentMethodChip({
+    super.key,
     required this.method,
     required this.selected,
     required this.onTap,
@@ -1412,22 +1543,23 @@ class _PaymentMethodChip extends StatelessWidget {
     final label = method.name.trim().isEmpty
         ? _confirmationPaymentLabel(method.code, t)
         : method.name.trim();
+    final selectedColor = isDark
+        ? BaseColors.primary.withValues(alpha: 0.2)
+        : BaseColors.primary.withValues(alpha: 0.1);
+    final idleColor = isDark ? const Color(0xFF201C19) : Colors.white;
 
     return Material(
-      color: selected
-          ? BaseColors.primary.withValues(alpha: isDark ? 0.22 : 0.12)
-          : isDark
-          ? const Color(0xFF201C19)
-          : Colors.white,
-      borderRadius: BorderRadius.circular(16),
+      color: selected ? selectedColor : idleColor,
+      borderRadius: BorderRadius.circular(18),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         onTap: selected ? null : onTap,
         child: Container(
-          constraints: const BoxConstraints(minHeight: 48),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          width: double.infinity,
+          constraints: const BoxConstraints(minHeight: 62),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: selected
                   ? BaseColors.primary
@@ -1437,50 +1569,108 @@ class _PaymentMethodChip extends StatelessWidget {
             ),
           ),
           child: Row(
-            mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              Icon(
-                _paymentMethodIcon(method.code),
-                color: selected ? BaseColors.primary : BaseColors.textGray,
-                size: 18,
-              ),
-              const SizedBox(width: 8),
-              TypographyText(
-                label,
-                style: TextStyle(
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
                   color: selected
                       ? BaseColors.primary
-                      : isDark
-                      ? const Color(0xFFF6EFE7)
-                      : BaseColors.black,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
+                      : BaseColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  _paymentMethodIcon(method.code),
+                  color: selected ? BaseColors.white : BaseColors.primary,
+                  size: 20,
                 ),
               ),
-              if (method.isOnline) ...[
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 7,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: BaseColors.primary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: TypographyText(
-                    _mainTabsText(t, en: 'Online', ru: 'Онлайн', uz: 'Online'),
-                    style: const TextStyle(
-                      color: BaseColors.primary,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w900,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    TypographyText(
+                      label,
+                      style: TextStyle(
+                        color: selected
+                            ? BaseColors.primary
+                            : isDark
+                            ? const Color(0xFFF6EFE7)
+                            : BaseColors.black,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: <Widget>[
+                        _PaymentMethodBadge(
+                          label: method.isOnline
+                              ? t.onlinePayment
+                              : t.payOnReceipt,
+                          selected: selected,
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
+              ),
+              const SizedBox(width: 10),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 160),
+                child: selected
+                    ? const Icon(
+                        Icons.check_circle_rounded,
+                        key: ValueKey<String>('selected'),
+                        color: BaseColors.primary,
+                        size: 24,
+                      )
+                    : Icon(
+                        Icons.radio_button_unchecked_rounded,
+                        key: const ValueKey<String>('idle'),
+                        color: isDark
+                            ? const Color(0xFF8F867E)
+                            : const Color(0xFFC5B8AC),
+                        size: 22,
+                      ),
+              ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _PaymentMethodBadge extends StatelessWidget {
+  const _PaymentMethodBadge({required this.label, required this.selected});
+
+  final String label;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 180),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: selected
+            ? BaseColors.primary.withValues(alpha: 0.14)
+            : BaseColors.textGray.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: TypographyText(
+        label,
+        style: TextStyle(
+          color: selected ? BaseColors.primary : BaseColors.textGray,
+          fontSize: 11,
+          fontWeight: FontWeight.w900,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }
@@ -1560,12 +1750,7 @@ class _PreviewLoadingState extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: TypographyText(
-            _mainTabsText(
-              t,
-              en: 'Calculating total',
-              ru: 'Считаем итог',
-              uz: 'Jami hisoblanmoqda',
-            ),
+            t.calculatingTotal,
             style: const TextStyle(
               color: BaseColors.textGray,
               fontSize: 14,
@@ -1628,14 +1813,7 @@ class _PreviewErrorState extends StatelessWidget {
           ),
           onPressed: onRetry,
           icon: const Icon(Icons.refresh_rounded, size: 18),
-          label: TypographyText(
-            _mainTabsText(
-              t,
-              en: 'Recalculate',
-              ru: 'Пересчитать',
-              uz: 'Qayta hisoblash',
-            ),
-          ),
+          label: TypographyText(t.recalculate),
         ),
       ],
     );
@@ -1645,18 +1823,17 @@ class _PreviewErrorState extends StatelessWidget {
 class _PreviewTotals extends StatelessWidget {
   const _PreviewTotals({
     super.key,
-    required this.preview,
-    required this.orderType,
+    required this.details,
     required this.isRefreshing,
   });
 
-  final CartPreviewModel preview;
-  final MobileOrderType orderType;
+  final _CheckoutPreviewDetails details;
   final bool isRefreshing;
 
   @override
   Widget build(BuildContext context) {
     final t = L.of(context);
+    final preview = details.preview;
     final appliedPromotion = preview.appliedPromotion;
     final promoCode = appliedPromotion?.code?.trim();
     final promoTitle = appliedPromotion?.title?.trim();
@@ -1668,12 +1845,7 @@ class _PreviewTotals extends StatelessWidget {
           children: <Widget>[
             Expanded(
               child: TypographyText(
-                _mainTabsText(
-                  t,
-                  en: 'Order preview',
-                  ru: 'Расчет заказа',
-                  uz: 'Buyurtma hisobi',
-                ),
+                t.orderPreview,
                 style: const TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w900,
@@ -1692,18 +1864,18 @@ class _PreviewTotals extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
+        _PreviewDestination(details: details),
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 10),
+          child: Divider(height: 1, color: Color(0x1A8C8278)),
+        ),
         _PreviewAmountRow(
-          label: _mainTabsText(t, en: 'Items', ru: 'Товары', uz: 'Mahsulotlar'),
+          label: t.items,
           value: formatSum(preview.itemsAmount),
         ),
         if (preview.modifiersAmount > 0)
           _PreviewAmountRow(
-            label: _mainTabsText(
-              t,
-              en: 'Modifiers',
-              ru: 'Добавки',
-              uz: "Qo'shimchalar",
-            ),
+            label: t.modifiers,
             value: formatSum(preview.modifiersAmount),
           ),
         if (preview.discountAmount > 0)
@@ -1712,19 +1884,15 @@ class _PreviewTotals extends StatelessWidget {
             value: '-${formatSum(preview.discountAmount)}',
             valueColor: BaseColors.primary,
           ),
-        if (orderType == MobileOrderType.delivery || preview.deliveryAmount > 0)
+        if (details.orderType == MobileOrderType.delivery ||
+            preview.deliveryAmount > 0)
           _PreviewAmountRow(
             label: t.delivery,
             value: formatSum(preview.deliveryAmount),
           ),
         if (preview.serviceFeeAmount > 0)
           _PreviewAmountRow(
-            label: _mainTabsText(
-              t,
-              en: 'Service fee',
-              ru: 'Сервисный сбор',
-              uz: 'Xizmat haqi',
-            ),
+            label: t.serviceFee,
             value: formatSum(preview.serviceFeeAmount),
           ),
         if (appliedPromotion != null) ...[
@@ -1778,6 +1946,117 @@ class _PreviewTotals extends StatelessWidget {
   }
 }
 
+class _PreviewDestination extends StatelessWidget {
+  const _PreviewDestination({required this.details});
+
+  final _CheckoutPreviewDetails details;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = L.of(context);
+    final isPickup = details.orderType == MobileOrderType.pickup;
+    final address = details.address;
+    final title = isPickup
+        ? (details.branchName ?? t.pickupBranch)
+        : (address?.label ?? t.clientAddress);
+    final subtitle = isPickup ? details.branchAddress : address?.text;
+    final id = isPickup ? details.branchId : address?.id;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: BaseColors.primary.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Icon(
+            isPickup
+                ? Icons.store_mall_directory_outlined
+                : Icons.location_on_outlined,
+            color: BaseColors.primary,
+            size: 20,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              TypographyText(
+                isPickup ? t.pickupBranch : t.clientAddress,
+                style: const TextStyle(
+                  color: BaseColors.textGray,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 3),
+              TypographyText(
+                title,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                  height: 1.2,
+                ),
+              ),
+              if (subtitle?.isNotEmpty == true) ...[
+                const SizedBox(height: 3),
+                TypographyText(
+                  subtitle!,
+                  style: const TextStyle(
+                    color: BaseColors.textGray,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    height: 1.25,
+                  ),
+                ),
+              ],
+              if (id?.isNotEmpty == true) ...[
+                const SizedBox(height: 6),
+                _PreviewIdBadge(
+                  label: isPickup ? t.branchId : t.addressId,
+                  value: id!,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PreviewIdBadge extends StatelessWidget {
+  const _PreviewIdBadge({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: BaseColors.primary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: TypographyText(
+        '$label: $value',
+        style: const TextStyle(
+          color: BaseColors.primary,
+          fontSize: 11,
+          fontWeight: FontWeight.w900,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+}
+
 class _PreviewAmountRow extends StatelessWidget {
   const _PreviewAmountRow({
     required this.label,
@@ -1822,41 +2101,13 @@ class _PreviewAmountRow extends StatelessWidget {
   }
 }
 
-String _mainTabsText(
-  L t, {
-  required String en,
-  required String ru,
-  required String uz,
-}) {
-  return switch (t.localeName.split('_').first) {
-    'ru' => ru,
-    'uz' => uz,
-    _ => en,
-  };
-}
-
 String _confirmationPaymentLabel(MobilePaymentMethod method, L t) {
   return switch (method) {
-    MobilePaymentMethod.cash => _mainTabsText(
-      t,
-      en: 'Cash',
-      ru: 'Наличные',
-      uz: 'Naqd',
-    ),
-    MobilePaymentMethod.cardTerminal => _mainTabsText(
-      t,
-      en: 'Card terminal',
-      ru: 'Терминал',
-      uz: 'Terminal',
-    ),
+    MobilePaymentMethod.cash => t.paymentCash,
+    MobilePaymentMethod.cardTerminal => t.paymentCardTerminal,
     MobilePaymentMethod.payme => 'Payme',
     MobilePaymentMethod.click => 'Click',
-    MobilePaymentMethod.unknown => _mainTabsText(
-      t,
-      en: 'Unknown',
-      ru: 'Неизвестно',
-      uz: "Noma'lum",
-    ),
+    MobilePaymentMethod.unknown => t.unknown,
   };
 }
 

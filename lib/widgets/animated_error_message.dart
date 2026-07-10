@@ -55,36 +55,11 @@ class _AnimatedErrorMessageState extends State<AnimatedErrorMessage>
 
   String _title(L t) {
     return switch (widget.failure) {
-      TimeoutFailure() => _errorText(
-        t,
-        en: 'Slow network',
-        ru: 'Медленная сеть',
-        uz: 'Internet sekin',
-      ),
-      NetworkFailure() => _errorText(
-        t,
-        en: 'Connection problem',
-        ru: 'Проблема с подключением',
-        uz: 'Ulanishda muammo',
-      ),
-      ServerFailure() => _errorText(
-        t,
-        en: 'Backend error',
-        ru: 'Ошибка сервера',
-        uz: 'Server xatosi',
-      ),
-      AuthFailure() => _errorText(
-        t,
-        en: 'Authorization expired',
-        ru: 'Авторизация истекла',
-        uz: 'Avtorizatsiya muddati tugadi',
-      ),
-      _ => _errorText(
-        t,
-        en: 'Something went wrong',
-        ru: 'Что-то пошло не так',
-        uz: "Nimadir noto'g'ri ketdi",
-      ),
+      TimeoutFailure() => t.errorSlowNetwork,
+      NetworkFailure() => t.errorConnectionProblem,
+      ServerFailure() => t.errorBackend,
+      AuthFailure() => t.errorAuthorizationExpired,
+      _ => t.errorGenericTitle,
     };
   }
 
@@ -95,12 +70,7 @@ class _AnimatedErrorMessageState extends State<AnimatedErrorMessage>
     final failureMessage = widget.failure?.message.trim();
     if (failureMessage?.isNotEmpty == true) return failureMessage!;
 
-    return _errorText(
-      t,
-      en: 'Please try again in a moment.',
-      ru: 'Попробуйте еще раз через несколько секунд.',
-      uz: "Birozdan keyin qayta urinib ko'ring.",
-    );
+    return t.errorGenericBody;
   }
 
   @override
@@ -185,9 +155,7 @@ class _AnimatedErrorMessageState extends State<AnimatedErrorMessage>
           FilledButton.icon(
             onPressed: widget.onRetry,
             icon: const Icon(Icons.refresh_rounded),
-            label: TypographyText(
-              _errorText(t, en: 'Retry', ru: 'Повторить', uz: 'Qayta urinish'),
-            ),
+            label: TypographyText(t.retry),
             style: FilledButton.styleFrom(
               backgroundColor: BaseColors.primary,
               foregroundColor: Colors.white,
@@ -245,14 +213,7 @@ class _AnimatedErrorMessageState extends State<AnimatedErrorMessage>
                 TextButton.icon(
                   onPressed: widget.onRetry,
                   icon: const Icon(Icons.refresh_rounded, size: 18),
-                  label: TypographyText(
-                    _errorText(
-                      t,
-                      en: 'Retry',
-                      ru: 'Повторить',
-                      uz: 'Qayta urinish',
-                    ),
-                  ),
+                  label: TypographyText(t.retry),
                   style: TextButton.styleFrom(
                     foregroundColor: BaseColors.primary,
                     padding: EdgeInsets.zero,
@@ -317,17 +278,4 @@ class _AnimatedErrorIcon extends StatelessWidget {
       ),
     );
   }
-}
-
-String _errorText(
-  L t, {
-  required String en,
-  required String ru,
-  required String uz,
-}) {
-  return switch (t.localeName.split('_').first) {
-    'ru' => ru,
-    'uz' => uz,
-    _ => en,
-  };
 }

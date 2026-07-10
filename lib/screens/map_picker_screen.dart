@@ -303,12 +303,7 @@ class _MapLookupStatusPill extends StatelessWidget {
             const SizedBox(width: 10),
             Flexible(
               child: TypographyText(
-                _mapPickerText(
-                  context,
-                  en: 'Finding address...',
-                  ru: 'Определяем адрес...',
-                  uz: 'Manzil aniqlanmoqda...',
-                ),
+                L.of(context).findingAddress,
                 style: TextStyle(
                   color: textColor,
                   fontSize: 13,
@@ -398,12 +393,7 @@ class _AddressLookupLoadingState extends State<_AddressLookupLoading>
             mainAxisSize: MainAxisSize.min,
             children: [
               TypographyText(
-                _mapPickerText(
-                  context,
-                  en: 'Checking this location',
-                  ru: 'Проверяем эту точку',
-                  uz: 'Bu joy tekshirilmoqda',
-                ),
+                L.of(context).checkingThisLocation,
                 style: TextStyle(
                   color: textColor,
                   fontSize: 15,
@@ -414,12 +404,7 @@ class _AddressLookupLoadingState extends State<_AddressLookupLoading>
               ),
               const SizedBox(height: 5),
               TypographyText(
-                _mapPickerText(
-                  context,
-                  en: 'Getting address details',
-                  ru: 'Получаем данные адреса',
-                  uz: "Manzil ma'lumotlari olinmoqda",
-                ),
+                L.of(context).gettingAddressDetails,
                 style: TextStyle(
                   color: mutedColor,
                   fontSize: 12,
@@ -443,17 +428,4 @@ class _AddressLookupLoadingState extends State<_AddressLookupLoading>
       ],
     );
   }
-}
-
-String _mapPickerText(
-  BuildContext context, {
-  required String en,
-  required String ru,
-  required String uz,
-}) {
-  return switch (Localizations.localeOf(context).languageCode) {
-    'ru' => ru,
-    'uz' => uz,
-    _ => en,
-  };
 }

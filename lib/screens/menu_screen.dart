@@ -938,12 +938,7 @@ class _MenuScreenState extends State<MenuScreen> {
               decoration: InputDecoration(
                 isDense: true,
                 border: InputBorder.none,
-                hintText: _menuText(
-                  t,
-                  en: 'Search products',
-                  ru: 'Поиск товаров',
-                  uz: 'Mahsulot qidirish',
-                ),
+                hintText: t.searchProducts,
                 hintStyle: TextStyle(
                   color: widget.isDark
                       ? const Color(0xFF9E9790)
@@ -959,12 +954,7 @@ class _MenuScreenState extends State<MenuScreen> {
             child: _hasSearchQuery
                 ? IconButton(
                     key: const ValueKey<String>('clear-search'),
-                    tooltip: _menuText(
-                      t,
-                      en: 'Clear search',
-                      ru: 'Очистить поиск',
-                      uz: 'Qidiruvni tozalash',
-                    ),
+                    tooltip: t.clearSearch,
                     onPressed: () {
                       _searchController.clear();
                       setState(() => _searchQuery = '');
@@ -999,12 +989,7 @@ class _MenuScreenState extends State<MenuScreen> {
             return Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: TypographyText(
-                _menuText(
-                  t,
-                  en: '${products.length} result${products.length == 1 ? '' : 's'}',
-                  ru: 'Найдено: ${products.length}',
-                  uz: '${products.length} ta natija',
-                ),
+                t.searchProductsResultCount(products.length),
                 style: theme.textTheme.titleMedium?.copyWith(
                   color: widget.isDark
                       ? BaseColors.lightTextGray
@@ -1051,12 +1036,7 @@ class _MenuScreenState extends State<MenuScreen> {
           ),
           const SizedBox(height: 16),
           TypographyText(
-            _menuText(
-              t,
-              en: 'No products found',
-              ru: 'Товары не найдены',
-              uz: 'Mahsulot topilmadi',
-            ),
+            t.noProductsFound,
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyLarge?.copyWith(
               color: widget.isDark
@@ -1145,19 +1125,6 @@ class _MenuScreenState extends State<MenuScreen> {
       ),
     );
   }
-}
-
-String _menuText(
-  L t, {
-  required String en,
-  required String ru,
-  required String uz,
-}) {
-  return switch (t.localeName.split('_').first) {
-    'ru' => ru,
-    'uz' => uz,
-    _ => en,
-  };
 }
 
 // ---------------------------------------------------------------------------

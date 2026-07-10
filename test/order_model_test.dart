@@ -10,6 +10,15 @@ void main() {
       address: const CreateOrderAddressInput(
         latitude: 41.3111,
         longitude: 69.2797,
+        label: 'Office',
+        text: 'Amir Temur Avenue 15, office 42',
+        street: 'Amir Temur Avenue',
+        houseNumber: '15',
+        apartmentNumber: '42',
+        entrance: '2',
+        floor: '7',
+        doorCode: '1234',
+        comment: 'Call on arrival',
       ),
       items: const [
         CartItemInput(productId: 'prod-classic-lavash', quantity: 1),
@@ -19,7 +28,19 @@ void main() {
 
     expect(request.toJson(), {
       'type': 'DELIVERY',
-      'address': {'latitude': 41.3111, 'longitude': 69.2797},
+      'address': {
+        'latitude': 41.3111,
+        'longitude': 69.2797,
+        'label': 'Office',
+        'text': 'Amir Temur Avenue 15, office 42',
+        'street': 'Amir Temur Avenue',
+        'houseNumber': '15',
+        'apartmentNumber': '42',
+        'entrance': '2',
+        'floor': '7',
+        'doorCode': '1234',
+        'comment': 'Call on arrival',
+      },
       'branchId': 'branch-chilanzar',
       'items': [
         {'productId': 'prod-classic-lavash', 'quantity': 1, 'modifiers': []},

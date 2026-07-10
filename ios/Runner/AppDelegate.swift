@@ -57,12 +57,12 @@ import UserNotifications
   ) {
     let token = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
     apnsToken = token
-    pendingApnsTokenResult?(token)
-    pendingApnsTokenResult = nil
     super.application(
       application,
       didRegisterForRemoteNotificationsWithDeviceToken: deviceToken
     )
+    pendingApnsTokenResult?(token)
+    pendingApnsTokenResult = nil
   }
 
   override func application(

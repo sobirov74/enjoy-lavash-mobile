@@ -734,6 +734,588 @@ abstract class L {
   /// In uz, this message translates to:
   /// **'Yopish'**
   String get close;
+
+  /// No description provided for @orderCreatedPaymentOnline.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma yaratildi. Onlayn to\'lovni yakunlang.'**
+  String get orderCreatedPaymentOnline;
+
+  /// No description provided for @orderCreatedPaymentPageOpenFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma yaratildi, ammo to\'lov sahifasi ochilmadi.'**
+  String get orderCreatedPaymentPageOpenFailed;
+
+  /// No description provided for @enterPromoCode.
+  ///
+  /// In uz, this message translates to:
+  /// **'Promokodni kiriting'**
+  String get enterPromoCode;
+
+  /// No description provided for @apply.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qo\'llash'**
+  String get apply;
+
+  /// No description provided for @couldNotCalculateTotal.
+  ///
+  /// In uz, this message translates to:
+  /// **'Jami summani hisoblab bo\'lmadi'**
+  String get couldNotCalculateTotal;
+
+  /// No description provided for @createOrderTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma berish'**
+  String get createOrderTitle;
+
+  /// No description provided for @orderType.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma turi'**
+  String get orderType;
+
+  /// No description provided for @orderItems.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma mahsulotlari'**
+  String get orderItems;
+
+  /// No description provided for @cancel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bekor qilish'**
+  String get cancel;
+
+  /// No description provided for @createOrderAction.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma berish'**
+  String get createOrderAction;
+
+  /// No description provided for @payment.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'lov'**
+  String get payment;
+
+  /// No description provided for @onlinePayment.
+  ///
+  /// In uz, this message translates to:
+  /// **'Onlayn to\'lov'**
+  String get onlinePayment;
+
+  /// No description provided for @payOnReceipt.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qabul qilganda to\'lash'**
+  String get payOnReceipt;
+
+  /// No description provided for @calculatingTotal.
+  ///
+  /// In uz, this message translates to:
+  /// **'Jami hisoblanmoqda'**
+  String get calculatingTotal;
+
+  /// No description provided for @recalculate.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qayta hisoblash'**
+  String get recalculate;
+
+  /// No description provided for @orderPreview.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma hisobi'**
+  String get orderPreview;
+
+  /// No description provided for @items.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulotlar'**
+  String get items;
+
+  /// No description provided for @modifiers.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qo\'shimchalar'**
+  String get modifiers;
+
+  /// No description provided for @serviceFee.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xizmat haqi'**
+  String get serviceFee;
+
+  /// No description provided for @pickupBranch.
+  ///
+  /// In uz, this message translates to:
+  /// **'Olib ketish filiali'**
+  String get pickupBranch;
+
+  /// No description provided for @clientAddress.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz manzili'**
+  String get clientAddress;
+
+  /// No description provided for @branchId.
+  ///
+  /// In uz, this message translates to:
+  /// **'Filial ID'**
+  String get branchId;
+
+  /// No description provided for @addressId.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzil ID'**
+  String get addressId;
+
+  /// No description provided for @paymentCash.
+  ///
+  /// In uz, this message translates to:
+  /// **'Naqd'**
+  String get paymentCash;
+
+  /// No description provided for @paymentCardTerminal.
+  ///
+  /// In uz, this message translates to:
+  /// **'Terminal'**
+  String get paymentCardTerminal;
+
+  /// No description provided for @unknown.
+  ///
+  /// In uz, this message translates to:
+  /// **'Noma\'lum'**
+  String get unknown;
+
+  /// No description provided for @errorSlowNetwork.
+  ///
+  /// In uz, this message translates to:
+  /// **'Internet sekin'**
+  String get errorSlowNetwork;
+
+  /// No description provided for @errorConnectionProblem.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ulanishda muammo'**
+  String get errorConnectionProblem;
+
+  /// No description provided for @errorBackend.
+  ///
+  /// In uz, this message translates to:
+  /// **'Server xatosi'**
+  String get errorBackend;
+
+  /// No description provided for @errorAuthorizationExpired.
+  ///
+  /// In uz, this message translates to:
+  /// **'Avtorizatsiya muddati tugadi'**
+  String get errorAuthorizationExpired;
+
+  /// No description provided for @errorGenericTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Nimadir noto\'g\'ri ketdi'**
+  String get errorGenericTitle;
+
+  /// No description provided for @errorGenericBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Birozdan keyin qayta urinib ko\'ring.'**
+  String get errorGenericBody;
+
+  /// No description provided for @retry.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qayta urinish'**
+  String get retry;
+
+  /// No description provided for @searchProducts.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulot qidirish'**
+  String get searchProducts;
+
+  /// No description provided for @clearSearch.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qidiruvni tozalash'**
+  String get clearSearch;
+
+  /// No description provided for @searchProductsResultCount.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count} ta natija'**
+  String searchProductsResultCount(int count);
+
+  /// No description provided for @noProductsFound.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulot topilmadi'**
+  String get noProductsFound;
+
+  /// No description provided for @findingAddress.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzil aniqlanmoqda...'**
+  String get findingAddress;
+
+  /// No description provided for @checkingThisLocation.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu joy tekshirilmoqda'**
+  String get checkingThisLocation;
+
+  /// No description provided for @gettingAddressDetails.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzil ma\'lumotlari olinmoqda'**
+  String get gettingAddressDetails;
+
+  /// No description provided for @allowNotificationsInSettings.
+  ///
+  /// In uz, this message translates to:
+  /// **'Telefon sozlamalarida bildirishnomalarga ruxsat bering'**
+  String get allowNotificationsInSettings;
+
+  /// No description provided for @notificationPermissionDenied.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bildirishnomalarga ruxsat berilmadi'**
+  String get notificationPermissionDenied;
+
+  /// No description provided for @notificationUpdateFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bildirishnoma sozlamalarini yangilab bo\'lmadi'**
+  String get notificationUpdateFailed;
+
+  /// No description provided for @notifications.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bildirishnomalar'**
+  String get notifications;
+
+  /// No description provided for @appearance.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ko\'rinish'**
+  String get appearance;
+
+  /// No description provided for @chooseAppColorMode.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ilova rang rejimini tanlang'**
+  String get chooseAppColorMode;
+
+  /// No description provided for @language.
+  ///
+  /// In uz, this message translates to:
+  /// **'Til'**
+  String get language;
+
+  /// No description provided for @languageSubtitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ilovadan qulay tilda foydalaning'**
+  String get languageSubtitle;
+
+  /// No description provided for @seeAllOrders.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barcha buyurtmalar'**
+  String get seeAllOrders;
+
+  /// No description provided for @actions.
+  ///
+  /// In uz, this message translates to:
+  /// **'Amallar'**
+  String get actions;
+
+  /// No description provided for @deleteAccount.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hisobni o\'chirish'**
+  String get deleteAccount;
+
+  /// No description provided for @accountDeleted.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hisobingiz o\'chirildi'**
+  String get accountDeleted;
+
+  /// No description provided for @deleteAccountFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hisobni o\'chirib bo\'lmadi. Qayta urinib ko\'ring.'**
+  String get deleteAccountFailed;
+
+  /// No description provided for @deleteAccountQuestion.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hisob o\'chirilsinmi?'**
+  String get deleteAccountQuestion;
+
+  /// No description provided for @deleteAccountPermanentWarning.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu amalni ortga qaytarib bo\'lmaydi'**
+  String get deleteAccountPermanentWarning;
+
+  /// No description provided for @deleteAccountItemsTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Quyidagilar o\'chiriladi:'**
+  String get deleteAccountItemsTitle;
+
+  /// No description provided for @deleteAccountProfilePhone.
+  ///
+  /// In uz, this message translates to:
+  /// **'Profil va telefon raqami'**
+  String get deleteAccountProfilePhone;
+
+  /// No description provided for @deleteAccountSavedAddresses.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saqlangan yetkazib berish manzillari'**
+  String get deleteAccountSavedAddresses;
+
+  /// No description provided for @deleteAccountBonusPoints.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'plangan bonus ballari'**
+  String get deleteAccountBonusPoints;
+
+  /// No description provided for @deleteAccountAcknowledgement.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ma\'lumotlarim butunlay o\'chirilishini tushunaman'**
+  String get deleteAccountAcknowledgement;
+
+  /// No description provided for @deleting.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'chirilmoqda...'**
+  String get deleting;
+
+  /// No description provided for @deleteMyAccount.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hisobimni o\'chirish'**
+  String get deleteMyAccount;
+
+  /// No description provided for @allOrders.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barcha buyurtmalar'**
+  String get allOrders;
+
+  /// No description provided for @ordersSearchHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulot, holat yoki buyurtma raqami'**
+  String get ordersSearchHint;
+
+  /// No description provided for @all.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barchasi'**
+  String get all;
+
+  /// No description provided for @anyStatus.
+  ///
+  /// In uz, this message translates to:
+  /// **'Har qanday holat'**
+  String get anyStatus;
+
+  /// No description provided for @noOrdersMatchFilters.
+  ///
+  /// In uz, this message translates to:
+  /// **'Filtrlarga mos buyurtma yo\'q'**
+  String get noOrdersMatchFilters;
+
+  /// No description provided for @appVersion.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ilova versiyasi'**
+  String get appVersion;
+
+  /// No description provided for @notificationCheckingPermission.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bildirishnoma ruxsati tekshirilmoqda'**
+  String get notificationCheckingPermission;
+
+  /// No description provided for @notificationsUnavailable.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu qurilmada bildirishnomalar mavjud emas'**
+  String get notificationsUnavailable;
+
+  /// No description provided for @notificationsEnabled.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma holati va aksiyalar yoqilgan'**
+  String get notificationsEnabled;
+
+  /// No description provided for @notificationsSubtitleDefault.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma holati va maxsus takliflarni oling'**
+  String get notificationsSubtitleDefault;
+
+  /// No description provided for @orderStatusCooking.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tayyorlanmoqda'**
+  String get orderStatusCooking;
+
+  /// No description provided for @orderStatusReady.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tayyor'**
+  String get orderStatusReady;
+
+  /// No description provided for @orderStatusCourierAssigned.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuryer biriktirildi'**
+  String get orderStatusCourierAssigned;
+
+  /// No description provided for @orderStatusOnTheWay.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yo\'lda'**
+  String get orderStatusOnTheWay;
+
+  /// No description provided for @paymentStatusPending.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kutilmoqda'**
+  String get paymentStatusPending;
+
+  /// No description provided for @paymentStatusPaid.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'langan'**
+  String get paymentStatusPaid;
+
+  /// No description provided for @paymentStatusFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'lanmadi'**
+  String get paymentStatusFailed;
+
+  /// No description provided for @paymentStatusRefunded.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qaytarilgan'**
+  String get paymentStatusRefunded;
+
+  /// No description provided for @product.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulot'**
+  String get product;
+
+  /// No description provided for @noProductsInOrder.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmada mahsulot yo\'q'**
+  String get noProductsInOrder;
+
+  /// No description provided for @paymentLinkUnavailable.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'lov havolasi hali mavjud emas.'**
+  String get paymentLinkUnavailable;
+
+  /// No description provided for @completePaymentOnline.
+  ///
+  /// In uz, this message translates to:
+  /// **'Onlayn to\'lovni yakunlang.'**
+  String get completePaymentOnline;
+
+  /// No description provided for @paymentPageOpenFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'lov sahifasini ochib bo\'lmadi.'**
+  String get paymentPageOpenFailed;
+
+  /// No description provided for @retryPaymentFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'lovni qayta urinish imkoni bo\'lmadi.'**
+  String get retryPaymentFailed;
+
+  /// No description provided for @orderDetails.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma tafsilotlari'**
+  String get orderDetails;
+
+  /// No description provided for @currentStatus.
+  ///
+  /// In uz, this message translates to:
+  /// **'Joriy holat'**
+  String get currentStatus;
+
+  /// No description provided for @created.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yaratilgan'**
+  String get created;
+
+  /// No description provided for @scheduledFor.
+  ///
+  /// In uz, this message translates to:
+  /// **'Rejalashtirilgan'**
+  String get scheduledFor;
+
+  /// No description provided for @lastUpdate.
+  ///
+  /// In uz, this message translates to:
+  /// **'Oxirgi yangilanish'**
+  String get lastUpdate;
+
+  /// No description provided for @paymentStatus.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'lov holati'**
+  String get paymentStatus;
+
+  /// No description provided for @retryPayment.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'lovni qayta urinish'**
+  String get retryPayment;
+
+  /// No description provided for @products.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulotlar'**
+  String get products;
+
+  /// No description provided for @statusHistory.
+  ///
+  /// In uz, this message translates to:
+  /// **'Holatlar tarixi'**
+  String get statusHistory;
+
+  /// No description provided for @additionalInfo.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qo\'shimcha ma\'lumot'**
+  String get additionalInfo;
+
+  /// No description provided for @kitchenOrder.
+  ///
+  /// In uz, this message translates to:
+  /// **'Oshxona buyurtmasi'**
+  String get kitchenOrder;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

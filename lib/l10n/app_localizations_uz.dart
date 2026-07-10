@@ -336,4 +336,311 @@ class LUz extends L {
 
   @override
   String get close => 'Yopish';
+
+  @override
+  String get orderCreatedPaymentOnline =>
+      'Buyurtma yaratildi. Onlayn to\'lovni yakunlang.';
+
+  @override
+  String get orderCreatedPaymentPageOpenFailed =>
+      'Buyurtma yaratildi, ammo to\'lov sahifasi ochilmadi.';
+
+  @override
+  String get enterPromoCode => 'Promokodni kiriting';
+
+  @override
+  String get apply => 'Qo\'llash';
+
+  @override
+  String get couldNotCalculateTotal => 'Jami summani hisoblab bo\'lmadi';
+
+  @override
+  String get createOrderTitle => 'Buyurtma berish';
+
+  @override
+  String get orderType => 'Buyurtma turi';
+
+  @override
+  String get orderItems => 'Buyurtma mahsulotlari';
+
+  @override
+  String get cancel => 'Bekor qilish';
+
+  @override
+  String get createOrderAction => 'Buyurtma berish';
+
+  @override
+  String get payment => 'To\'lov';
+
+  @override
+  String get onlinePayment => 'Onlayn to\'lov';
+
+  @override
+  String get payOnReceipt => 'Qabul qilganda to\'lash';
+
+  @override
+  String get calculatingTotal => 'Jami hisoblanmoqda';
+
+  @override
+  String get recalculate => 'Qayta hisoblash';
+
+  @override
+  String get orderPreview => 'Buyurtma hisobi';
+
+  @override
+  String get items => 'Mahsulotlar';
+
+  @override
+  String get modifiers => 'Qo\'shimchalar';
+
+  @override
+  String get serviceFee => 'Xizmat haqi';
+
+  @override
+  String get pickupBranch => 'Olib ketish filiali';
+
+  @override
+  String get clientAddress => 'Mijoz manzili';
+
+  @override
+  String get branchId => 'Filial ID';
+
+  @override
+  String get addressId => 'Manzil ID';
+
+  @override
+  String get paymentCash => 'Naqd';
+
+  @override
+  String get paymentCardTerminal => 'Terminal';
+
+  @override
+  String get unknown => 'Noma\'lum';
+
+  @override
+  String get errorSlowNetwork => 'Internet sekin';
+
+  @override
+  String get errorConnectionProblem => 'Ulanishda muammo';
+
+  @override
+  String get errorBackend => 'Server xatosi';
+
+  @override
+  String get errorAuthorizationExpired => 'Avtorizatsiya muddati tugadi';
+
+  @override
+  String get errorGenericTitle => 'Nimadir noto\'g\'ri ketdi';
+
+  @override
+  String get errorGenericBody => 'Birozdan keyin qayta urinib ko\'ring.';
+
+  @override
+  String get retry => 'Qayta urinish';
+
+  @override
+  String get searchProducts => 'Mahsulot qidirish';
+
+  @override
+  String get clearSearch => 'Qidiruvni tozalash';
+
+  @override
+  String searchProductsResultCount(int count) {
+    return '$count ta natija';
+  }
+
+  @override
+  String get noProductsFound => 'Mahsulot topilmadi';
+
+  @override
+  String get findingAddress => 'Manzil aniqlanmoqda...';
+
+  @override
+  String get checkingThisLocation => 'Bu joy tekshirilmoqda';
+
+  @override
+  String get gettingAddressDetails => 'Manzil ma\'lumotlari olinmoqda';
+
+  @override
+  String get allowNotificationsInSettings =>
+      'Telefon sozlamalarida bildirishnomalarga ruxsat bering';
+
+  @override
+  String get notificationPermissionDenied =>
+      'Bildirishnomalarga ruxsat berilmadi';
+
+  @override
+  String get notificationUpdateFailed =>
+      'Bildirishnoma sozlamalarini yangilab bo\'lmadi';
+
+  @override
+  String get notifications => 'Bildirishnomalar';
+
+  @override
+  String get appearance => 'Ko\'rinish';
+
+  @override
+  String get chooseAppColorMode => 'Ilova rang rejimini tanlang';
+
+  @override
+  String get language => 'Til';
+
+  @override
+  String get languageSubtitle => 'Ilovadan qulay tilda foydalaning';
+
+  @override
+  String get seeAllOrders => 'Barcha buyurtmalar';
+
+  @override
+  String get actions => 'Amallar';
+
+  @override
+  String get deleteAccount => 'Hisobni o\'chirish';
+
+  @override
+  String get accountDeleted => 'Hisobingiz o\'chirildi';
+
+  @override
+  String get deleteAccountFailed =>
+      'Hisobni o\'chirib bo\'lmadi. Qayta urinib ko\'ring.';
+
+  @override
+  String get deleteAccountQuestion => 'Hisob o\'chirilsinmi?';
+
+  @override
+  String get deleteAccountPermanentWarning =>
+      'Bu amalni ortga qaytarib bo\'lmaydi';
+
+  @override
+  String get deleteAccountItemsTitle => 'Quyidagilar o\'chiriladi:';
+
+  @override
+  String get deleteAccountProfilePhone => 'Profil va telefon raqami';
+
+  @override
+  String get deleteAccountSavedAddresses =>
+      'Saqlangan yetkazib berish manzillari';
+
+  @override
+  String get deleteAccountBonusPoints => 'To\'plangan bonus ballari';
+
+  @override
+  String get deleteAccountAcknowledgement =>
+      'Ma\'lumotlarim butunlay o\'chirilishini tushunaman';
+
+  @override
+  String get deleting => 'O\'chirilmoqda...';
+
+  @override
+  String get deleteMyAccount => 'Hisobimni o\'chirish';
+
+  @override
+  String get allOrders => 'Barcha buyurtmalar';
+
+  @override
+  String get ordersSearchHint => 'Mahsulot, holat yoki buyurtma raqami';
+
+  @override
+  String get all => 'Barchasi';
+
+  @override
+  String get anyStatus => 'Har qanday holat';
+
+  @override
+  String get noOrdersMatchFilters => 'Filtrlarga mos buyurtma yo\'q';
+
+  @override
+  String get appVersion => 'Ilova versiyasi';
+
+  @override
+  String get notificationCheckingPermission =>
+      'Bildirishnoma ruxsati tekshirilmoqda';
+
+  @override
+  String get notificationsUnavailable =>
+      'Bu qurilmada bildirishnomalar mavjud emas';
+
+  @override
+  String get notificationsEnabled => 'Buyurtma holati va aksiyalar yoqilgan';
+
+  @override
+  String get notificationsSubtitleDefault =>
+      'Buyurtma holati va maxsus takliflarni oling';
+
+  @override
+  String get orderStatusCooking => 'Tayyorlanmoqda';
+
+  @override
+  String get orderStatusReady => 'Tayyor';
+
+  @override
+  String get orderStatusCourierAssigned => 'Kuryer biriktirildi';
+
+  @override
+  String get orderStatusOnTheWay => 'Yo\'lda';
+
+  @override
+  String get paymentStatusPending => 'Kutilmoqda';
+
+  @override
+  String get paymentStatusPaid => 'To\'langan';
+
+  @override
+  String get paymentStatusFailed => 'To\'lanmadi';
+
+  @override
+  String get paymentStatusRefunded => 'Qaytarilgan';
+
+  @override
+  String get product => 'Mahsulot';
+
+  @override
+  String get noProductsInOrder => 'Buyurtmada mahsulot yo\'q';
+
+  @override
+  String get paymentLinkUnavailable =>
+      'To\'lov havolasi hali mavjud emas.';
+
+  @override
+  String get completePaymentOnline => 'Onlayn to\'lovni yakunlang.';
+
+  @override
+  String get paymentPageOpenFailed => 'To\'lov sahifasini ochib bo\'lmadi.';
+
+  @override
+  String get retryPaymentFailed =>
+      'To\'lovni qayta urinish imkoni bo\'lmadi.';
+
+  @override
+  String get orderDetails => 'Buyurtma tafsilotlari';
+
+  @override
+  String get currentStatus => 'Joriy holat';
+
+  @override
+  String get created => 'Yaratilgan';
+
+  @override
+  String get scheduledFor => 'Rejalashtirilgan';
+
+  @override
+  String get lastUpdate => 'Oxirgi yangilanish';
+
+  @override
+  String get paymentStatus => 'To\'lov holati';
+
+  @override
+  String get retryPayment => 'To\'lovni qayta urinish';
+
+  @override
+  String get products => 'Mahsulotlar';
+
+  @override
+  String get statusHistory => 'Holatlar tarixi';
+
+  @override
+  String get additionalInfo => 'Qo\'shimcha ma\'lumot';
+
+  @override
+  String get kitchenOrder => 'Oshxona buyurtmasi';
 }

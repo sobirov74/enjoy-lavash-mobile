@@ -333,4 +333,308 @@ class LEn extends L {
 
   @override
   String get close => 'Close';
+
+  @override
+  String get orderCreatedPaymentOnline =>
+      'Order created. Complete payment online.';
+
+  @override
+  String get orderCreatedPaymentPageOpenFailed =>
+      'Order created, but payment page could not be opened.';
+
+  @override
+  String get enterPromoCode => 'Enter promo code';
+
+  @override
+  String get apply => 'Apply';
+
+  @override
+  String get couldNotCalculateTotal => 'Could not calculate total';
+
+  @override
+  String get createOrderTitle => 'Create order';
+
+  @override
+  String get orderType => 'Order type';
+
+  @override
+  String get orderItems => 'Order items';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get createOrderAction => 'Create order';
+
+  @override
+  String get payment => 'Payment';
+
+  @override
+  String get onlinePayment => 'Online payment';
+
+  @override
+  String get payOnReceipt => 'Pay on receipt';
+
+  @override
+  String get calculatingTotal => 'Calculating total';
+
+  @override
+  String get recalculate => 'Recalculate';
+
+  @override
+  String get orderPreview => 'Order preview';
+
+  @override
+  String get items => 'Items';
+
+  @override
+  String get modifiers => 'Modifiers';
+
+  @override
+  String get serviceFee => 'Service fee';
+
+  @override
+  String get pickupBranch => 'Pickup branch';
+
+  @override
+  String get clientAddress => 'Client address';
+
+  @override
+  String get branchId => 'Branch ID';
+
+  @override
+  String get addressId => 'Address ID';
+
+  @override
+  String get paymentCash => 'Cash';
+
+  @override
+  String get paymentCardTerminal => 'Card terminal';
+
+  @override
+  String get unknown => 'Unknown';
+
+  @override
+  String get errorSlowNetwork => 'Slow network';
+
+  @override
+  String get errorConnectionProblem => 'Connection problem';
+
+  @override
+  String get errorBackend => 'Backend error';
+
+  @override
+  String get errorAuthorizationExpired => 'Authorization expired';
+
+  @override
+  String get errorGenericTitle => 'Something went wrong';
+
+  @override
+  String get errorGenericBody => 'Please try again in a moment.';
+
+  @override
+  String get retry => 'Retry';
+
+  @override
+  String get searchProducts => 'Search products';
+
+  @override
+  String get clearSearch => 'Clear search';
+
+  @override
+  String searchProductsResultCount(int count) {
+    return count == 1 ? '1 result' : '$count results';
+  }
+
+  @override
+  String get noProductsFound => 'No products found';
+
+  @override
+  String get findingAddress => 'Finding address...';
+
+  @override
+  String get checkingThisLocation => 'Checking this location';
+
+  @override
+  String get gettingAddressDetails => 'Getting address details';
+
+  @override
+  String get allowNotificationsInSettings =>
+      'Allow notifications in phone settings';
+
+  @override
+  String get notificationPermissionDenied =>
+      'Notification permission was not allowed';
+
+  @override
+  String get notificationUpdateFailed =>
+      'Could not update notification settings';
+
+  @override
+  String get notifications => 'Notifications';
+
+  @override
+  String get appearance => 'Appearance';
+
+  @override
+  String get chooseAppColorMode => 'Choose the app color mode';
+
+  @override
+  String get language => 'Language';
+
+  @override
+  String get languageSubtitle => 'Use the app in your preferred language';
+
+  @override
+  String get seeAllOrders => 'See all orders';
+
+  @override
+  String get actions => 'Actions';
+
+  @override
+  String get deleteAccount => 'Delete account';
+
+  @override
+  String get accountDeleted => 'Your account has been deleted';
+
+  @override
+  String get deleteAccountFailed =>
+      'Could not delete the account. Please try again.';
+
+  @override
+  String get deleteAccountQuestion => 'Delete account?';
+
+  @override
+  String get deleteAccountPermanentWarning =>
+      'This action is permanent and cannot be undone';
+
+  @override
+  String get deleteAccountItemsTitle => 'The following will be deleted:';
+
+  @override
+  String get deleteAccountProfilePhone => 'Profile and phone number';
+
+  @override
+  String get deleteAccountSavedAddresses => 'Saved delivery addresses';
+
+  @override
+  String get deleteAccountBonusPoints => 'Accumulated bonus points';
+
+  @override
+  String get deleteAccountAcknowledgement =>
+      'I understand that my data will be deleted permanently';
+
+  @override
+  String get deleting => 'Deleting...';
+
+  @override
+  String get deleteMyAccount => 'Delete my account';
+
+  @override
+  String get allOrders => 'All orders';
+
+  @override
+  String get ordersSearchHint => 'Search by product, status, or order ID';
+
+  @override
+  String get all => 'All';
+
+  @override
+  String get anyStatus => 'Any status';
+
+  @override
+  String get noOrdersMatchFilters => 'No orders match your filters';
+
+  @override
+  String get appVersion => 'App version';
+
+  @override
+  String get notificationCheckingPermission =>
+      'Checking notification permission';
+
+  @override
+  String get notificationsUnavailable =>
+      'Notifications are not available on this device';
+
+  @override
+  String get notificationsEnabled => 'Order updates and offers are enabled';
+
+  @override
+  String get notificationsSubtitleDefault =>
+      'Receive order updates and special offers';
+
+  @override
+  String get orderStatusCooking => 'Cooking';
+
+  @override
+  String get orderStatusReady => 'Ready';
+
+  @override
+  String get orderStatusCourierAssigned => 'Courier assigned';
+
+  @override
+  String get orderStatusOnTheWay => 'On the way';
+
+  @override
+  String get paymentStatusPending => 'Pending';
+
+  @override
+  String get paymentStatusPaid => 'Paid';
+
+  @override
+  String get paymentStatusFailed => 'Failed';
+
+  @override
+  String get paymentStatusRefunded => 'Refunded';
+
+  @override
+  String get product => 'Product';
+
+  @override
+  String get noProductsInOrder => 'No products in this order';
+
+  @override
+  String get paymentLinkUnavailable => 'Payment link is not available yet.';
+
+  @override
+  String get completePaymentOnline => 'Complete payment online.';
+
+  @override
+  String get paymentPageOpenFailed => 'Payment page could not be opened.';
+
+  @override
+  String get retryPaymentFailed => 'Could not retry payment.';
+
+  @override
+  String get orderDetails => 'Order details';
+
+  @override
+  String get currentStatus => 'Current status';
+
+  @override
+  String get created => 'Created';
+
+  @override
+  String get scheduledFor => 'Scheduled for';
+
+  @override
+  String get lastUpdate => 'Last update';
+
+  @override
+  String get paymentStatus => 'Payment status';
+
+  @override
+  String get retryPayment => 'Retry payment';
+
+  @override
+  String get products => 'Products';
+
+  @override
+  String get statusHistory => 'Status history';
+
+  @override
+  String get additionalInfo => 'Additional info';
+
+  @override
+  String get kitchenOrder => 'Kitchen order';
 }

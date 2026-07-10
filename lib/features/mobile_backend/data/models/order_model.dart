@@ -95,13 +95,43 @@ class CreateOrderAddressInput {
   const CreateOrderAddressInput({
     required this.latitude,
     required this.longitude,
+    this.label,
+    this.text,
+    this.street,
+    this.houseNumber,
+    this.apartmentNumber,
+    this.entrance,
+    this.floor,
+    this.doorCode,
+    this.comment,
   });
 
   final double latitude;
   final double longitude;
+  final String? label;
+  final String? text;
+  final String? street;
+  final String? houseNumber;
+  final String? apartmentNumber;
+  final String? entrance;
+  final String? floor;
+  final String? doorCode;
+  final String? comment;
 
   Map<String, Object?> toJson() {
-    return {'latitude': latitude, 'longitude': longitude};
+    return withoutNulls({
+      'latitude': latitude,
+      'longitude': longitude,
+      'label': label,
+      'text': text,
+      'street': street,
+      'houseNumber': houseNumber,
+      'apartmentNumber': apartmentNumber,
+      'entrance': entrance,
+      'floor': floor,
+      'doorCode': doorCode,
+      'comment': comment,
+    });
   }
 }
 

@@ -335,4 +335,316 @@ class LRu extends L {
 
   @override
   String get close => 'Закрыть';
+
+  @override
+  String get orderCreatedPaymentOnline =>
+      'Заказ создан. Завершите онлайн-оплату.';
+
+  @override
+  String get orderCreatedPaymentPageOpenFailed =>
+      'Заказ создан, но страницу оплаты открыть не удалось.';
+
+  @override
+  String get enterPromoCode => 'Введите промокод';
+
+  @override
+  String get apply => 'Применить';
+
+  @override
+  String get couldNotCalculateTotal => 'Не удалось рассчитать итог';
+
+  @override
+  String get createOrderTitle => 'Оформить заказ';
+
+  @override
+  String get orderType => 'Тип заказа';
+
+  @override
+  String get orderItems => 'Состав заказа';
+
+  @override
+  String get cancel => 'Отмена';
+
+  @override
+  String get createOrderAction => 'Создать заказ';
+
+  @override
+  String get payment => 'Оплата';
+
+  @override
+  String get onlinePayment => 'Онлайн-оплата';
+
+  @override
+  String get payOnReceipt => 'Оплата при получении';
+
+  @override
+  String get calculatingTotal => 'Считаем итог';
+
+  @override
+  String get recalculate => 'Пересчитать';
+
+  @override
+  String get orderPreview => 'Расчет заказа';
+
+  @override
+  String get items => 'Товары';
+
+  @override
+  String get modifiers => 'Добавки';
+
+  @override
+  String get serviceFee => 'Сервисный сбор';
+
+  @override
+  String get pickupBranch => 'Филиал самовывоза';
+
+  @override
+  String get clientAddress => 'Адрес клиента';
+
+  @override
+  String get branchId => 'ID филиала';
+
+  @override
+  String get addressId => 'ID адреса';
+
+  @override
+  String get paymentCash => 'Наличные';
+
+  @override
+  String get paymentCardTerminal => 'Терминал';
+
+  @override
+  String get unknown => 'Неизвестно';
+
+  @override
+  String get errorSlowNetwork => 'Медленная сеть';
+
+  @override
+  String get errorConnectionProblem => 'Проблема с подключением';
+
+  @override
+  String get errorBackend => 'Ошибка сервера';
+
+  @override
+  String get errorAuthorizationExpired => 'Авторизация истекла';
+
+  @override
+  String get errorGenericTitle => 'Что-то пошло не так';
+
+  @override
+  String get errorGenericBody =>
+      'Попробуйте еще раз через несколько секунд.';
+
+  @override
+  String get retry => 'Повторить';
+
+  @override
+  String get searchProducts => 'Поиск товаров';
+
+  @override
+  String get clearSearch => 'Очистить поиск';
+
+  @override
+  String searchProductsResultCount(int count) {
+    return 'Найдено: $count';
+  }
+
+  @override
+  String get noProductsFound => 'Товары не найдены';
+
+  @override
+  String get findingAddress => 'Определяем адрес...';
+
+  @override
+  String get checkingThisLocation => 'Проверяем эту точку';
+
+  @override
+  String get gettingAddressDetails => 'Получаем данные адреса';
+
+  @override
+  String get allowNotificationsInSettings =>
+      'Разрешите уведомления в настройках телефона';
+
+  @override
+  String get notificationPermissionDenied =>
+      'Разрешение на уведомления не выдано';
+
+  @override
+  String get notificationUpdateFailed =>
+      'Не удалось обновить настройки уведомлений';
+
+  @override
+  String get notifications => 'Уведомления';
+
+  @override
+  String get appearance => 'Оформление';
+
+  @override
+  String get chooseAppColorMode =>
+      'Выберите цветовой режим приложения';
+
+  @override
+  String get language => 'Язык';
+
+  @override
+  String get languageSubtitle =>
+      'Используйте приложение на удобном языке';
+
+  @override
+  String get seeAllOrders => 'Все заказы';
+
+  @override
+  String get actions => 'Действия';
+
+  @override
+  String get deleteAccount => 'Удалить аккаунт';
+
+  @override
+  String get accountDeleted => 'Ваш аккаунт удалён';
+
+  @override
+  String get deleteAccountFailed =>
+      'Не удалось удалить аккаунт. Попробуйте ещё раз.';
+
+  @override
+  String get deleteAccountQuestion => 'Удалить аккаунт?';
+
+  @override
+  String get deleteAccountPermanentWarning =>
+      'Это действие необратимо — восстановить данные не получится';
+
+  @override
+  String get deleteAccountItemsTitle => 'Будут удалены:';
+
+  @override
+  String get deleteAccountProfilePhone => 'Профиль и номер телефона';
+
+  @override
+  String get deleteAccountSavedAddresses =>
+      'Сохранённые адреса доставки';
+
+  @override
+  String get deleteAccountBonusPoints => 'Накопленные бонусные баллы';
+
+  @override
+  String get deleteAccountAcknowledgement =>
+      'Я понимаю, что мои данные будут удалены безвозвратно';
+
+  @override
+  String get deleting => 'Удаляем...';
+
+  @override
+  String get deleteMyAccount => 'Удалить мой аккаунт';
+
+  @override
+  String get allOrders => 'Все заказы';
+
+  @override
+  String get ordersSearchHint => 'Поиск по товару, статусу или номеру';
+
+  @override
+  String get all => 'Все';
+
+  @override
+  String get anyStatus => 'Любой статус';
+
+  @override
+  String get noOrdersMatchFilters =>
+      'Нет заказов по выбранным фильтрам';
+
+  @override
+  String get appVersion => 'Версия приложения';
+
+  @override
+  String get notificationCheckingPermission =>
+      'Проверяем доступ к уведомлениям';
+
+  @override
+  String get notificationsUnavailable =>
+      'Уведомления недоступны на этом устройстве';
+
+  @override
+  String get notificationsEnabled =>
+      'Статусы заказов и акции включены';
+
+  @override
+  String get notificationsSubtitleDefault =>
+      'Получайте статусы заказов и специальные предложения';
+
+  @override
+  String get orderStatusCooking => 'Готовится';
+
+  @override
+  String get orderStatusReady => 'Готов';
+
+  @override
+  String get orderStatusCourierAssigned => 'Курьер назначен';
+
+  @override
+  String get orderStatusOnTheWay => 'В пути';
+
+  @override
+  String get paymentStatusPending => 'Ожидает оплаты';
+
+  @override
+  String get paymentStatusPaid => 'Оплачено';
+
+  @override
+  String get paymentStatusFailed => 'Не оплачено';
+
+  @override
+  String get paymentStatusRefunded => 'Возвращено';
+
+  @override
+  String get product => 'Товар';
+
+  @override
+  String get noProductsInOrder => 'В заказе нет товаров';
+
+  @override
+  String get paymentLinkUnavailable =>
+      'Ссылка на оплату пока недоступна.';
+
+  @override
+  String get completePaymentOnline => 'Завершите онлайн-оплату.';
+
+  @override
+  String get paymentPageOpenFailed =>
+      'Не удалось открыть страницу оплаты.';
+
+  @override
+  String get retryPaymentFailed => 'Не удалось повторить оплату.';
+
+  @override
+  String get orderDetails => 'Детали заказа';
+
+  @override
+  String get currentStatus => 'Текущий статус';
+
+  @override
+  String get created => 'Создан';
+
+  @override
+  String get scheduledFor => 'Запланирован';
+
+  @override
+  String get lastUpdate => 'Последнее обновление';
+
+  @override
+  String get paymentStatus => 'Статус оплаты';
+
+  @override
+  String get retryPayment => 'Повторить оплату';
+
+  @override
+  String get products => 'Товары';
+
+  @override
+  String get statusHistory => 'История статусов';
+
+  @override
+  String get additionalInfo => 'Дополнительно';
+
+  @override
+  String get kitchenOrder => 'Заказ кухни';
 }

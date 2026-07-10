@@ -30,18 +30,19 @@ class _AppVersionGateState extends State<AppVersionGate> {
   late Future<AppVersionPolicyModel?> _policyFuture;
   bool _dismissed = false;
   bool _openingStore = false;
+  bool _hasCompletedPolicyCheck = false;
 
   @override
   void initState() {
     super.initState();
-    _policyFuture = _loadPolicy();
+    _policyFuture = _loadTrackedPolicy();
   }
 
   @override
   void didUpdateWidget(covariant AppVersionGate oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.languageCode != widget.languageCode && !_dismissed) {
-      _policyFuture = _loadPolicy();
+      _policyFuture = _loadTrackedPolicy();
     }
   }
 
@@ -56,6 +57,9 @@ class _AppVersionGateState extends State<AppVersionGate> {
         if (snapshot.connectionState != ConnectionState.done ||
             policy == null) {
           if (snapshot.connectionState == ConnectionState.done) {
+            return widget.child;
+          }
+          if (_hasCompletedPolicyCheck) {
             return widget.child;
           }
           return const _VersionSplash();
@@ -77,6 +81,13 @@ class _AppVersionGateState extends State<AppVersionGate> {
         );
       },
     );
+  }
+
+  Future<AppVersionPolicyModel?> _loadTrackedPolicy() {
+    return _loadPolicy().whenComplete(() {
+      if (!mounted || _hasCompletedPolicyCheck) return;
+      _hasCompletedPolicyCheck = true;
+    });
   }
 
   Future<AppVersionPolicyModel?> _loadPolicy() async {

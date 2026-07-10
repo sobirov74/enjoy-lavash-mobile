@@ -443,7 +443,13 @@ class LEn extends L {
 
   @override
   String searchProductsResultCount(int count) {
-    return count == 1 ? '1 result' : '$count results';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count results',
+      one: '1 result',
+    );
+    return '$_temp0';
   }
 
   @override

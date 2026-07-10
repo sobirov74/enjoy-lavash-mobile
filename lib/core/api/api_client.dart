@@ -1,10 +1,16 @@
 import 'package:dio/dio.dart';
+import 'package:enjoy_lavash_mobile/core/api/api_endpoints.dart';
 import 'package:enjoy_lavash_mobile/core/api/base_url.dart';
 import 'package:enjoy_lavash_mobile/core/storage/token_storage.dart';
 import 'package:flutter/foundation.dart';
 
-const _refreshEndpoint = '/auth/refresh';
-const _logoutTriggerCodes = {401, 403};
+const _refreshEndpoint = ApiEndpoints.clientRefresh;
+const _authFlowEndpoints = <String>{
+  ApiEndpoints.requestOtp,
+  ApiEndpoints.verifyOtp,
+  ApiEndpoints.clientRefresh,
+};
+const _logoutTriggerCodes = {401};
 const _defaultLanguage = 'uz';
 const _enableNetworkLogs =
     kDebugMode || bool.fromEnvironment('ENABLE_NETWORK_LOGS');
@@ -14,10 +20,16 @@ const _enableNetworkLogs =
 typedef LogoutCallback = Future<void> Function();
 
 class ApiClient {
-  ApiClient({LogoutCallback? onLogout}) : _onLogout = onLogout {
+  ApiClient({
+    LogoutCallback? onLogout,
+    String? baseUrl,
+    HttpClientAdapter? httpClientAdapter,
+    HttpClientAdapter? refreshHttpClientAdapter,
+  }) : _onLogout = onLogout {
+    final resolvedBaseUrl = baseUrl ?? BaseUrl.baseUrl;
     dio = Dio(
       BaseOptions(
-        baseUrl: BaseUrl.baseUrl,
+        baseUrl: resolvedBaseUrl,
         connectTimeout: const Duration(seconds: 15),
         receiveTimeout: const Duration(seconds: 15),
         headers: {
@@ -29,7 +41,7 @@ class ApiClient {
 
     _refreshDio = Dio(
       BaseOptions(
-        baseUrl: BaseUrl.baseUrl,
+        baseUrl: resolvedBaseUrl,
         connectTimeout: const Duration(seconds: 15),
         receiveTimeout: const Duration(seconds: 15),
         headers: {
@@ -38,6 +50,14 @@ class ApiClient {
         },
       ),
     );
+
+    if (httpClientAdapter != null) {
+      dio.httpClientAdapter = httpClientAdapter;
+    }
+    final refreshAdapter = refreshHttpClientAdapter ?? httpClientAdapter;
+    if (refreshAdapter != null) {
+      _refreshDio.httpClientAdapter = refreshAdapter;
+    }
 
     if (_enableNetworkLogs) {
       dio.interceptors.add(
@@ -63,7 +83,7 @@ class ApiClient {
   LogoutCallback? _onLogout;
 
   // Single-flight: only one refresh at a time.
-  Future<String?>? _refreshPromise;
+  Future<_RefreshResult>? _refreshPromise;
   Future<void>? _logoutPromise;
 
   void setOnLogout(LogoutCallback? callback) {
@@ -80,9 +100,11 @@ class ApiClient {
     return InterceptorsWrapper(
       onRequest: (options, handler) async {
         options.headers['Accept-Language'] ??= _languageCode;
-        final token = await TokenStorage.getAccessToken();
-        if (token != null) {
-          options.headers['Authorization'] = 'Bearer $token';
+        if (!_isAuthFlowEndpoint(options.path)) {
+          final token = await TokenStorage.getAccessToken();
+          if (token != null) {
+            options.headers['Authorization'] = 'Bearer $token';
+          }
         }
         return handler.next(options);
       },
@@ -90,7 +112,7 @@ class ApiClient {
         final status = error.response?.statusCode ?? 0;
         final requestPath = error.requestOptions.path;
 
-        if (requestPath.contains(_refreshEndpoint)) {
+        if (_isAuthFlowEndpoint(requestPath)) {
           return handler.next(error);
         }
 
@@ -106,7 +128,8 @@ class ApiClient {
             _refreshPromise = null;
           });
 
-          final newAccessToken = await _refreshPromise;
+          final refreshResult = await _refreshPromise;
+          final newAccessToken = refreshResult?.accessToken;
 
           if (newAccessToken != null) {
             error.requestOptions.headers['Authorization'] =
@@ -122,7 +145,9 @@ class ApiClient {
               return handler.next(retryError);
             }
           } else {
-            await _logout();
+            if (refreshResult?.shouldLogout == true) {
+              await _logout();
+            }
           }
         }
 
@@ -131,9 +156,9 @@ class ApiClient {
     );
   }
 
-  Future<String?> _doRefresh() async {
+  Future<_RefreshResult> _doRefresh() async {
     final refreshToken = await TokenStorage.getRefreshToken();
-    if (refreshToken == null) return null;
+    if (refreshToken == null) return const _RefreshResult.sessionExpired();
 
     try {
       final response = await _refreshDio.post(
@@ -151,20 +176,25 @@ class ApiClient {
         final newRefresh =
             _stringValue(data, const ['refresh_token', 'refreshToken']) ??
             refreshToken;
+        final refreshExpiresAt = _dateTimeValue(data, const [
+          'refresh_token_expires_at',
+          'refreshTokenExpiresAt',
+        ]);
 
-        if (newAccess != null) {
+        if (newAccess != null && newRefresh.isNotEmpty) {
           await TokenStorage.saveAccessToken(newAccess);
           await TokenStorage.saveRefreshToken(newRefresh);
-          return newAccess;
+          await TokenStorage.saveRefreshTokenExpiresAt(refreshExpiresAt);
+          return _RefreshResult.success(newAccess);
         }
       }
-      return null;
+      return const _RefreshResult.failed();
     } on DioException catch (e) {
       final status = e.response?.statusCode ?? 0;
       if (_logoutTriggerCodes.contains(status)) {
-        await _logout();
+        return const _RefreshResult.sessionExpired();
       }
-      return null;
+      return const _RefreshResult.failed();
     }
   }
 
@@ -181,6 +211,22 @@ class ApiClient {
   }
 }
 
+class _RefreshResult {
+  const _RefreshResult._({this.accessToken, required this.shouldLogout});
+
+  const _RefreshResult.success(String accessToken)
+    : this._(accessToken: accessToken, shouldLogout: false);
+
+  const _RefreshResult.sessionExpired()
+    : this._(accessToken: null, shouldLogout: true);
+
+  const _RefreshResult.failed()
+    : this._(accessToken: null, shouldLogout: false);
+
+  final String? accessToken;
+  final bool shouldLogout;
+}
+
 void _debugLog(Object object) {
   debugPrint(object.toString());
 }
@@ -194,6 +240,29 @@ String? _stringValue(Object? data, List<String> keys) {
     }
   }
   return null;
+}
+
+DateTime? _dateTimeValue(Object? data, List<String> keys) {
+  final value = _firstValue(data, keys);
+  if (value is DateTime) return value;
+  if (value is String && value.trim().isNotEmpty) {
+    return DateTime.tryParse(value.trim());
+  }
+  return null;
+}
+
+Object? _firstValue(Object? data, List<String> keys) {
+  if (data is! Map) return null;
+  for (final key in keys) {
+    final value = data[key];
+    if (value != null) return value;
+  }
+  return null;
+}
+
+bool _isAuthFlowEndpoint(String path) {
+  final parsedPath = Uri.tryParse(path)?.path ?? path;
+  return _authFlowEndpoints.contains(parsedPath);
 }
 
 String _normalizeLanguage(String languageCode) {

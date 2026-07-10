@@ -432,8 +432,7 @@ class LRu extends L {
   String get errorGenericTitle => 'Что-то пошло не так';
 
   @override
-  String get errorGenericBody =>
-      'Попробуйте еще раз через несколько секунд.';
+  String get errorGenericBody => 'Попробуйте еще раз через несколько секунд.';
 
   @override
   String get retry => 'Повторить';
@@ -480,15 +479,13 @@ class LRu extends L {
   String get appearance => 'Оформление';
 
   @override
-  String get chooseAppColorMode =>
-      'Выберите цветовой режим приложения';
+  String get chooseAppColorMode => 'Выберите цветовой режим приложения';
 
   @override
   String get language => 'Язык';
 
   @override
-  String get languageSubtitle =>
-      'Используйте приложение на удобном языке';
+  String get languageSubtitle => 'Используйте приложение на удобном языке';
 
   @override
   String get seeAllOrders => 'Все заказы';
@@ -520,8 +517,7 @@ class LRu extends L {
   String get deleteAccountProfilePhone => 'Профиль и номер телефона';
 
   @override
-  String get deleteAccountSavedAddresses =>
-      'Сохранённые адреса доставки';
+  String get deleteAccountSavedAddresses => 'Сохранённые адреса доставки';
 
   @override
   String get deleteAccountBonusPoints => 'Накопленные бонусные баллы';
@@ -549,8 +545,7 @@ class LRu extends L {
   String get anyStatus => 'Любой статус';
 
   @override
-  String get noOrdersMatchFilters =>
-      'Нет заказов по выбранным фильтрам';
+  String get noOrdersMatchFilters => 'Нет заказов по выбранным фильтрам';
 
   @override
   String get appVersion => 'Версия приложения';
@@ -564,8 +559,7 @@ class LRu extends L {
       'Уведомления недоступны на этом устройстве';
 
   @override
-  String get notificationsEnabled =>
-      'Статусы заказов и акции включены';
+  String get notificationsEnabled => 'Статусы заказов и акции включены';
 
   @override
   String get notificationsSubtitleDefault =>
@@ -602,15 +596,13 @@ class LRu extends L {
   String get noProductsInOrder => 'В заказе нет товаров';
 
   @override
-  String get paymentLinkUnavailable =>
-      'Ссылка на оплату пока недоступна.';
+  String get paymentLinkUnavailable => 'Ссылка на оплату пока недоступна.';
 
   @override
   String get completePaymentOnline => 'Завершите онлайн-оплату.';
 
   @override
-  String get paymentPageOpenFailed =>
-      'Не удалось открыть страницу оплаты.';
+  String get paymentPageOpenFailed => 'Не удалось открыть страницу оплаты.';
 
   @override
   String get retryPaymentFailed => 'Не удалось повторить оплату.';

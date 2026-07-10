@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:enjoy_lavash_mobile/app/locale_controller.dart';
 import 'package:enjoy_lavash_mobile/app/location_controller.dart';
+import 'package:enjoy_lavash_mobile/core/error/failures.dart';
 import 'package:enjoy_lavash_mobile/core/error/result.dart';
 import 'package:enjoy_lavash_mobile/core/services/app_share_service.dart';
 import 'package:enjoy_lavash_mobile/core/services/external_url_launcher.dart';
@@ -28,6 +29,16 @@ import 'package:enjoy_lavash_mobile/widgets/fade_slide_in.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+part 'main_tabs/checkout_models.dart';
+part 'main_tabs/main_tabs_bottom_navigation.dart';
+part 'main_tabs/main_tabs_drawer.dart';
+part 'main_tabs/order_confirmation_sheet.dart';
+part 'main_tabs/order_type_toggle.dart';
+part 'main_tabs/payment_method_selector.dart';
+part 'main_tabs/promo_code_field.dart';
+part 'main_tabs/order_confirmation_items.dart';
+part 'main_tabs/checkout_preview_summary.dart';
 
 class MainTabs extends StatefulWidget {
   const MainTabs({super.key});
@@ -101,6 +112,11 @@ class _MainTabsState extends State<MainTabs> {
       return;
     }
     setState(() => _selectedCategoryIndex = index);
+  }
+
+  void _selectTab(int index) {
+    if (_currentIndex == index) return;
+    setState(() => _currentIndex = index);
   }
 
   void _setOrderType(MobileOrderType type) {
@@ -246,6 +262,19 @@ class _MainTabsState extends State<MainTabs> {
     return parts.join(', ');
   }
 
+  String? _currentDeliveryAddressText() {
+    final location = context.read<LocationController>();
+    final addressName = _trimmedOrNull(location.addressName);
+    final fullAddress = _trimmedOrNull(location.fullAddress) ?? addressName;
+    if (fullAddress != null) return fullAddress;
+
+    final savedAddress = _defaultAddress(
+      context.read<MobileBackendController>().addresses,
+    );
+    if (savedAddress == null) return null;
+    return _formatClientAddressText(savedAddress);
+  }
+
   BranchModel? _branchById(String? id) {
     final branchId = id?.trim();
     if (branchId == null || branchId.isEmpty) return null;
@@ -289,7 +318,6 @@ class _MainTabsState extends State<MainTabs> {
         address.longitude,
       )) {
         return _CheckoutAddressDetails(
-          id: address.id,
           label: _trimmedOrNull(address.label),
           text: _formatClientAddressText(address),
         );
@@ -299,7 +327,6 @@ class _MainTabsState extends State<MainTabs> {
     final fallbackAddress = _defaultAddress(addresses);
     if (fallbackAddress != null) {
       return _CheckoutAddressDetails(
-        id: fallbackAddress.id,
         label: _trimmedOrNull(fallbackAddress.label),
         text: _formatClientAddressText(fallbackAddress),
       );
@@ -335,7 +362,6 @@ class _MainTabsState extends State<MainTabs> {
     return _CheckoutPreviewDetails(
       preview: preview,
       orderType: request.type,
-      branchId: _trimmedOrNull(branchId),
       branchName: _trimmedOrNull(branch?.name),
       branchAddress: _trimmedOrNull(branch?.address),
       address: request.type == MobileOrderType.delivery
@@ -556,7 +582,6 @@ class _MainTabsState extends State<MainTabs> {
   Future<_OrderCreationResult?> _showOrderConfirmation(
     List<CartLine> cartLines,
   ) async {
-    final totalAmount = _calculateTotalAmount(cartLines);
     return showModalBottomSheet<_OrderCreationResult>(
       context: context,
       isScrollControlled: true,
@@ -565,9 +590,11 @@ class _MainTabsState extends State<MainTabs> {
       builder: (context) {
         return _OrderConfirmationSheet(
           cartLines: cartLines,
-          totalAmount: totalAmount,
           initialOrderType: _orderType,
           initialPromoCode: _promoCode,
+          initialPickupBranchText: _trimmedOrNull(_selectedBranch?.name),
+          initialDeliveryAddressText: _currentDeliveryAddressText(),
+          onBranchSelected: _setPickupBranch,
           onPreviewRequested:
               ({
                 required MobileOrderType orderType,
@@ -645,95 +672,20 @@ class _MainTabsState extends State<MainTabs> {
           _showSnack(L.of(context).orderCreated);
         }
       case Error(:final failure):
+        if (failure is AuthFailure) {
+          await Navigator.of(context).push<bool>(
+            MaterialPageRoute<bool>(
+              builder: (_) => const AuthorizationScreen(),
+            ),
+          );
+          return;
+        }
         _showSnack(
           failure.message.isNotEmpty
               ? failure.message
               : L.of(context).orderCreateFailed,
         );
     }
-  }
-
-  Widget _buildDrawer(BuildContext context, bool isDark, L t) {
-    return Drawer(
-      backgroundColor: isDark ? const Color(0xFF1D1A18) : Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.horizontal(right: Radius.circular(24)),
-      ),
-      child: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
-              child: Row(
-                children: [
-                  Image.asset(
-                    'web-design/Mobile app design request/src/imports/image-1.png',
-                    height: 36,
-                  ),
-                  const SizedBox(width: 12),
-                  const TypographyText(
-                    'EnjoyLavash',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.9,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Divider(
-              color: isDark ? const Color(0xFF2A2522) : const Color(0xFFE0DBD5),
-              height: 1,
-            ),
-            const SizedBox(height: 8),
-            _DrawerItem(
-              icon: Icons.restaurant_menu_rounded,
-              title: t.tabMenu,
-              isDark: isDark,
-              onTap: () {
-                Navigator.pop(context);
-                setState(() => _currentIndex = 0);
-              },
-            ),
-            _DrawerItem(
-              icon: Icons.shopping_cart_rounded,
-              title: t.tabCart,
-              isDark: isDark,
-              onTap: () {
-                Navigator.pop(context);
-                setState(() => _currentIndex = 1);
-              },
-            ),
-            _DrawerItem(
-              icon: Icons.person_rounded,
-              title: t.tabProfile,
-              isDark: isDark,
-              onTap: () {
-                Navigator.pop(context);
-                setState(() => _currentIndex = 2);
-              },
-            ),
-            const Spacer(),
-            Divider(
-              color: isDark ? const Color(0xFF2A2522) : const Color(0xFFE0DBD5),
-              height: 1,
-            ),
-            _DrawerItem(
-              icon: Icons.share_rounded,
-              title: t.shareApp,
-              isDark: isDark,
-              onTap: () {
-                Navigator.pop(context);
-                unawaited(_shareApp(t));
-              },
-            ),
-            const SizedBox(height: 12),
-          ],
-        ),
-      ),
-    );
   }
 
   @override
@@ -756,7 +708,12 @@ class _MainTabsState extends State<MainTabs> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      drawer: _buildDrawer(context, isDark, t),
+      drawer: _MainTabsDrawer(
+        isDark: isDark,
+        t: t,
+        onTabSelected: _selectTab,
+        onShareApp: () => unawaited(_shareApp(t)),
+      ),
       body: SafeArea(
         child: FadeIndexedStack(
           index: _currentIndex,
@@ -785,7 +742,7 @@ class _MainTabsState extends State<MainTabs> {
               onCategorySelected: _setSelectedCategory,
               onAddToCart: _addToCart,
               onDecreaseFromCart: (product) => _updateCart(product, -1),
-              onCartTap: () => setState(() => _currentIndex = 1),
+              onCartTap: () => _selectTab(1),
               onOrderTypeChanged: _setOrderType,
               onBranchSelected: _setPickupBranch,
               onRefresh: _refreshMenuData,
@@ -807,1344 +764,21 @@ class _MainTabsState extends State<MainTabs> {
               isCheckingOut: _isCheckingOut,
               onDecrease: (product) => _updateCart(product, -1),
               onIncrease: (product) => _updateCart(product, 1),
-              onBrowseMenu: () => setState(() => _currentIndex = 0),
+              onBrowseMenu: () => _selectTab(0),
               onCheckout: () => unawaited(_handleCheckout(cartLines)),
             ),
             _profileTab,
           ],
         ),
       ),
-      bottomNavigationBar: DecoratedBox(
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1D1A18) : Colors.white,
-          border: Border(
-            top: BorderSide(
-              color: isDark ? const Color(0xFF2A2521) : BaseColors.borderLight,
-            ),
-          ),
-          boxShadow: <BoxShadow>[
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.16 : 0.06),
-              blurRadius: 24,
-              offset: const Offset(0, -10),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          top: false,
-          child: Theme(
-            data: theme.copyWith(
-              navigationBarTheme: NavigationBarThemeData(
-                labelTextStyle: WidgetStateProperty.resolveWith((states) {
-                  final isSelected = states.contains(WidgetState.selected);
-                  return TextStyle(
-                    fontSize: 12,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    color: isSelected
-                        ? BaseColors.primary
-                        : (isDark
-                              ? const Color(0xFF9E9790)
-                              : BaseColors.textGray),
-                  );
-                }),
-                iconTheme: WidgetStateProperty.resolveWith((states) {
-                  final isSelected = states.contains(WidgetState.selected);
-                  return IconThemeData(
-                    color: isSelected
-                        ? BaseColors.primary
-                        : (isDark
-                              ? const Color(0xFF9E9790)
-                              : BaseColors.textGray),
-                  );
-                }),
-              ),
-            ),
-            child: NavigationBar(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              selectedIndex: _currentIndex,
-              indicatorColor: isDark
-                  ? BaseColors.primary.withValues(alpha: 0.16)
-                  : BaseColors.primary.withValues(alpha: 0.12),
-              onDestinationSelected: (index) {
-                if (_currentIndex == index) return;
-                setState(() => _currentIndex = index);
-              },
-              destinations: <NavigationDestination>[
-                NavigationDestination(
-                  icon: const Icon(Icons.restaurant_menu_outlined),
-                  selectedIcon: const Icon(Icons.restaurant_menu),
-                  label: t.tabMenu,
-                ),
-                NavigationDestination(
-                  icon: Badge(
-                    backgroundColor: context.colors.danger,
-                    isLabelVisible: totalItems > 0,
-                    label: TypographyText(
-                      '$totalItems',
-                      style: TextStyle(color: BaseColors.white, fontSize: 12),
-                    ),
-                    child: const Icon(Icons.shopping_cart_outlined),
-                  ),
-                  selectedIcon: Badge(
-                    isLabelVisible: totalItems > 0,
-                    label: TypographyText(
-                      '$totalItems',
-                      style: TextStyle(fontSize: 12, color: BaseColors.white),
-                    ),
-                    child: const Icon(Icons.shopping_cart),
-                  ),
-                  label: t.tabCart,
-                ),
-                NavigationDestination(
-                  icon: const Icon(Icons.person_outline_rounded),
-                  selectedIcon: const Icon(Icons.person_rounded),
-                  label: t.tabProfile,
-                ),
-              ],
-            ),
-          ),
-        ),
+      bottomNavigationBar: _MainTabsBottomNavigation(
+        theme: theme,
+        isDark: isDark,
+        currentIndex: _currentIndex,
+        totalItems: totalItems,
+        t: t,
+        onDestinationSelected: _selectTab,
       ),
-    );
-  }
-}
-
-class _OrderCreationResult {
-  const _OrderCreationResult({
-    required this.orderType,
-    required this.paymentMethod,
-    this.promoCode,
-  });
-
-  final MobileOrderType orderType;
-  final MobilePaymentMethod paymentMethod;
-  final String? promoCode;
-}
-
-class _CheckoutAddressDetails {
-  const _CheckoutAddressDetails({this.id, this.label, this.text});
-
-  final String? id;
-  final String? label;
-  final String? text;
-}
-
-class _CheckoutPreviewDetails {
-  const _CheckoutPreviewDetails({
-    required this.preview,
-    required this.orderType,
-    this.branchId,
-    this.branchName,
-    this.branchAddress,
-    this.address,
-  });
-
-  final CartPreviewModel preview;
-  final MobileOrderType orderType;
-  final String? branchId;
-  final String? branchName;
-  final String? branchAddress;
-  final _CheckoutAddressDetails? address;
-}
-
-typedef _CartPreviewRequester =
-    Future<Result<_CheckoutPreviewDetails>?> Function({
-      required MobileOrderType orderType,
-      required MobilePaymentMethod paymentMethod,
-      String? promoCode,
-    });
-
-class _OrderConfirmationSheet extends StatefulWidget {
-  const _OrderConfirmationSheet({
-    required this.cartLines,
-    required this.totalAmount,
-    required this.initialOrderType,
-    required this.initialPromoCode,
-    required this.onPreviewRequested,
-  });
-
-  final List<CartLine> cartLines;
-  final int totalAmount;
-  final MobileOrderType initialOrderType;
-  final String initialPromoCode;
-  final _CartPreviewRequester onPreviewRequested;
-
-  @override
-  State<_OrderConfirmationSheet> createState() =>
-      _OrderConfirmationSheetState();
-}
-
-class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
-  late MobileOrderType _orderType;
-  MobilePaymentMethod _paymentMethod = MobilePaymentMethod.cash;
-  late final TextEditingController _promoCodeController;
-  _CheckoutPreviewDetails? _previewDetails;
-  MobileOrderType? _lastPreviewOrderType;
-  MobilePaymentMethod? _lastPreviewPaymentMethod;
-  String? _lastPreviewPromoCode;
-  String? _previewErrorText;
-  bool _isPreviewLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _orderType = widget.initialOrderType;
-    _promoCodeController = TextEditingController(text: widget.initialPromoCode);
-    _promoCodeController.addListener(_onPromoCodeChanged);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      unawaited(_loadPreview());
-    });
-  }
-
-  @override
-  void dispose() {
-    _promoCodeController.removeListener(_onPromoCodeChanged);
-    _promoCodeController.dispose();
-    super.dispose();
-  }
-
-  String? get _normalizedPromoCode {
-    final promoCode = _promoCodeController.text.trim();
-    return promoCode.isEmpty ? null : promoCode;
-  }
-
-  bool get _hasPromoCodeInput => _normalizedPromoCode != null;
-
-  bool get _previewMatchesCurrentInput {
-    return _previewDetails != null &&
-        _lastPreviewOrderType == _orderType &&
-        _lastPreviewPaymentMethod == _currentPaymentMethod &&
-        _lastPreviewPromoCode == _normalizedPromoCode;
-  }
-
-  List<PaymentMethodModel> get _availablePaymentMethods {
-    return _resolvePaymentMethods(
-      context.read<MobileBackendController>().paymentMethods,
-    );
-  }
-
-  MobilePaymentMethod get _currentPaymentMethod {
-    final methods = _availablePaymentMethods;
-    final hasSelected = methods.any((method) => method.code == _paymentMethod);
-    return hasSelected ? _paymentMethod : methods.first.code;
-  }
-
-  void _onPromoCodeChanged() {
-    if (!mounted) return;
-    setState(() {});
-  }
-
-  Future<bool> _loadPreview() async {
-    if (_isPreviewLoading) return false;
-
-    final orderType = _orderType;
-    final paymentMethod = _currentPaymentMethod;
-    final promoCode = _normalizedPromoCode;
-    setState(() {
-      _isPreviewLoading = true;
-      _previewErrorText = null;
-      _previewDetails = null;
-    });
-
-    final result = await widget.onPreviewRequested(
-      orderType: orderType,
-      paymentMethod: paymentMethod,
-      promoCode: promoCode,
-    );
-    if (!mounted) return false;
-
-    if (orderType != _orderType ||
-        paymentMethod != _currentPaymentMethod ||
-        promoCode != _normalizedPromoCode) {
-      setState(() => _isPreviewLoading = false);
-      unawaited(_loadPreview());
-      return false;
-    }
-
-    if (result == null) {
-      setState(() => _isPreviewLoading = false);
-      return false;
-    }
-
-    return switch (result) {
-      Success(:final data) => _applyPreview(
-        data,
-        orderType,
-        paymentMethod,
-        promoCode,
-      ),
-      Error(:final failure) => _showPreviewError(failure.message),
-    };
-  }
-
-  bool _applyPreview(
-    _CheckoutPreviewDetails details,
-    MobileOrderType orderType,
-    MobilePaymentMethod paymentMethod,
-    String? promoCode,
-  ) {
-    setState(() {
-      _previewDetails = details;
-      _lastPreviewOrderType = orderType;
-      _lastPreviewPaymentMethod = paymentMethod;
-      _lastPreviewPromoCode = promoCode;
-      _previewErrorText = null;
-      _isPreviewLoading = false;
-    });
-    return true;
-  }
-
-  bool _showPreviewError(String message) {
-    setState(() {
-      _previewDetails = null;
-      _previewErrorText = message;
-      _isPreviewLoading = false;
-    });
-    return false;
-  }
-
-  Future<void> _confirmOrder() async {
-    if (!_previewMatchesCurrentInput) {
-      final didPreview = await _loadPreview();
-      if (!didPreview || !mounted) return;
-    }
-
-    Navigator.of(context).pop(
-      _OrderCreationResult(
-        orderType: _orderType,
-        paymentMethod: _currentPaymentMethod,
-        promoCode: _normalizedPromoCode,
-      ),
-    );
-  }
-
-  void _selectOrderType(MobileOrderType type) {
-    if (_orderType == type) return;
-    setState(() => _orderType = type);
-    unawaited(_loadPreview());
-  }
-
-  void _selectPaymentMethod(MobilePaymentMethod method) {
-    if (_paymentMethod == method) return;
-    setState(() => _paymentMethod = method);
-    unawaited(_loadPreview());
-  }
-
-  List<PaymentMethodModel> _resolvePaymentMethods(
-    List<PaymentMethodModel> methods,
-  ) {
-    if (methods.isEmpty) {
-      return const <PaymentMethodModel>[
-        PaymentMethodModel(
-          id: 'cash-fallback',
-          code: MobilePaymentMethod.cash,
-          name: 'Cash',
-          isOnline: false,
-          sortOrder: 0,
-        ),
-      ];
-    }
-    return methods;
-  }
-
-  Widget _buildOrderTypeToggle(L t) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF201C19) : const Color(0xFFF0ECE6),
-        borderRadius: BorderRadius.circular(28),
-      ),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: GestureDetector(
-              onTap: () => _selectOrderType(MobileOrderType.delivery),
-              child: DeliveryChip(
-                icon: Icons.delivery_dining_rounded,
-                title: t.delivery,
-                active: _orderType == MobileOrderType.delivery,
-              ),
-            ),
-          ),
-          const SizedBox(width: 6),
-          Expanded(
-            child: GestureDetector(
-              onTap: () => _selectOrderType(MobileOrderType.pickup),
-              child: DeliveryChip(
-                icon: Icons.shopping_bag_outlined,
-                title: t.pickup,
-                active: _orderType == MobileOrderType.pickup,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPromoCodeField(L t) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      height: 58,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF2A2522) : const Color(0xFFF8F4EF),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: isDark ? const Color(0xFF3A332D) : const Color(0xFFEDE2D7),
-        ),
-      ),
-      child: Row(
-        children: <Widget>[
-          const Icon(Icons.local_offer_outlined, color: BaseColors.primary),
-          const SizedBox(width: 10),
-          Expanded(
-            child: TextField(
-              controller: _promoCodeController,
-              textCapitalization: TextCapitalization.characters,
-              textInputAction: TextInputAction.done,
-              cursorColor: BaseColors.primary,
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                hintText: t.enterPromoCode,
-                hintStyle: TextStyle(
-                  color: isDark ? const Color(0xFF9E9790) : BaseColors.textGray,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              onSubmitted: (_) => unawaited(_loadPreview()),
-            ),
-          ),
-          if (_hasPromoCodeInput) ...[
-            const SizedBox(width: 8),
-            SizedBox(
-              height: 38,
-              child: FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: BaseColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                onPressed: _isPreviewLoading
-                    ? null
-                    : () => unawaited(_loadPreview()),
-                child: _isPreviewLoading
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: BaseColors.white,
-                        ),
-                      )
-                    : TypographyText(
-                        t.apply,
-                        style: const TextStyle(
-                          color: BaseColors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPreviewSummary(L t) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final previewDetails = _previewDetails;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF2A2522) : const Color(0xFFF8F4EF),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 180),
-        child: _isPreviewLoading && previewDetails == null
-            ? const _PreviewLoadingState(key: ValueKey<String>('loading'))
-            : previewDetails == null
-            ? _PreviewErrorState(
-                key: const ValueKey<String>('error'),
-                message: _previewErrorText ?? t.couldNotCalculateTotal,
-                onRetry: () => unawaited(_loadPreview()),
-              )
-            : _PreviewTotals(
-                key: const ValueKey<String>('totals'),
-                details: previewDetails,
-                isRefreshing: _isPreviewLoading,
-              ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final t = L.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
-    final paymentMethods = _resolvePaymentMethods(
-      context.watch<MobileBackendController>().paymentMethods,
-    );
-    final currentPaymentMethod =
-        paymentMethods.any((method) => method.code == _paymentMethod)
-        ? _paymentMethod
-        : paymentMethods.first.code;
-
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.sizeOf(context).height * 0.88,
-      ),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1D1A18) : Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(
-          18,
-          10,
-          18,
-          20 + MediaQuery.paddingOf(context).bottom + bottomInset,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Center(
-              child: Container(
-                width: 44,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF4A4038)
-                      : const Color(0xFFE5DAD0),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Expanded(
-                  child: TypographyText(
-                    t.createOrderTitle,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close_rounded),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            TypographyText(
-              t.orderType,
-              style: const TextStyle(
-                color: BaseColors.textGray,
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 8),
-            _buildOrderTypeToggle(t),
-            const SizedBox(height: 14),
-            TypographyText(
-              t.promoCode,
-              style: const TextStyle(
-                color: BaseColors.textGray,
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 8),
-            _buildPromoCodeField(t),
-            const SizedBox(height: 14),
-            _PaymentMethodSelector(
-              methods: paymentMethods,
-              selectedMethod: currentPaymentMethod,
-              onChanged: _selectPaymentMethod,
-            ),
-            const SizedBox(height: 14),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? const Color(0xFF2A2522)
-                    : const Color(0xFFF8F4EF),
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  TypographyText(
-                    t.orderItems,
-                    style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  for (int i = 0; i < widget.cartLines.length; i++) ...[
-                    _ConfirmationItemRow(line: widget.cartLines[i]),
-                    if (i < widget.cartLines.length - 1)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 10),
-                        child: Divider(height: 1, color: Color(0x1A8C8278)),
-                      ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-            _buildPreviewSummary(t),
-            const SizedBox(height: 16),
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: BaseColors.textGray,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: TypographyText(t.cancel),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: BaseColors.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    onPressed: _isPreviewLoading
-                        ? null
-                        : () => unawaited(_confirmOrder()),
-                    child: TypographyText(
-                      t.createOrderAction,
-                      style: const TextStyle(color: BaseColors.white),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PaymentMethodSelector extends StatelessWidget {
-  const _PaymentMethodSelector({
-    required this.methods,
-    required this.selectedMethod,
-    required this.onChanged,
-  });
-
-  final List<PaymentMethodModel> methods;
-  final MobilePaymentMethod selectedMethod;
-  final ValueChanged<MobilePaymentMethod> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = L.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF2A2522) : const Color(0xFFF8F4EF),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              const Icon(
-                Icons.payments_outlined,
-                color: BaseColors.primary,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              TypographyText(
-                t.payment,
-                style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Column(
-            children: <Widget>[
-              for (int i = 0; i < methods.length; i++) ...[
-                _PaymentMethodChip(
-                  key: ValueKey<String>(methods[i].id),
-                  method: methods[i],
-                  selected: methods[i].code == selectedMethod,
-                  onTap: () => onChanged(methods[i].code),
-                ),
-                if (i < methods.length - 1) const SizedBox(height: 8),
-              ],
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PaymentMethodChip extends StatelessWidget {
-  const _PaymentMethodChip({
-    super.key,
-    required this.method,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final PaymentMethodModel method;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = L.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final label = method.name.trim().isEmpty
-        ? _confirmationPaymentLabel(method.code, t)
-        : method.name.trim();
-    final selectedColor = isDark
-        ? BaseColors.primary.withValues(alpha: 0.2)
-        : BaseColors.primary.withValues(alpha: 0.1);
-    final idleColor = isDark ? const Color(0xFF201C19) : Colors.white;
-
-    return Material(
-      color: selected ? selectedColor : idleColor,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: selected ? null : onTap,
-        child: Container(
-          width: double.infinity,
-          constraints: const BoxConstraints(minHeight: 62),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: selected
-                  ? BaseColors.primary
-                  : isDark
-                  ? const Color(0xFF3A332D)
-                  : const Color(0xFFEDE2D7),
-            ),
-          ),
-          child: Row(
-            children: <Widget>[
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: selected
-                      ? BaseColors.primary
-                      : BaseColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(
-                  _paymentMethodIcon(method.code),
-                  color: selected ? BaseColors.white : BaseColors.primary,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    TypographyText(
-                      label,
-                      style: TextStyle(
-                        color: selected
-                            ? BaseColors.primary
-                            : isDark
-                            ? const Color(0xFFF6EFE7)
-                            : BaseColors.black,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w900,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: <Widget>[
-                        _PaymentMethodBadge(
-                          label: method.isOnline
-                              ? t.onlinePayment
-                              : t.payOnReceipt,
-                          selected: selected,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 10),
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 160),
-                child: selected
-                    ? const Icon(
-                        Icons.check_circle_rounded,
-                        key: ValueKey<String>('selected'),
-                        color: BaseColors.primary,
-                        size: 24,
-                      )
-                    : Icon(
-                        Icons.radio_button_unchecked_rounded,
-                        key: const ValueKey<String>('idle'),
-                        color: isDark
-                            ? const Color(0xFF8F867E)
-                            : const Color(0xFFC5B8AC),
-                        size: 22,
-                      ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PaymentMethodBadge extends StatelessWidget {
-  const _PaymentMethodBadge({required this.label, required this.selected});
-
-  final String label;
-  final bool selected;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 180),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: selected
-            ? BaseColors.primary.withValues(alpha: 0.14)
-            : BaseColors.textGray.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: TypographyText(
-        label,
-        style: TextStyle(
-          color: selected ? BaseColors.primary : BaseColors.textGray,
-          fontSize: 11,
-          fontWeight: FontWeight.w900,
-        ),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-    );
-  }
-}
-
-class _ConfirmationItemRow extends StatelessWidget {
-  const _ConfirmationItemRow({required this.line});
-
-  final CartLine line;
-
-  @override
-  Widget build(BuildContext context) {
-    final subtotal = line.product.price * line.quantity;
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Container(
-          constraints: const BoxConstraints(minWidth: 34),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: BaseColors.primary.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: TypographyText(
-            '${line.quantity}x',
-            style: const TextStyle(
-              color: BaseColors.primary,
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: TypographyText(
-            line.product.title,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-              height: 1.25,
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        TypographyText(
-          formatSum(subtotal),
-          style: const TextStyle(
-            color: BaseColors.textGray,
-            fontSize: 13,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _PreviewLoadingState extends StatelessWidget {
-  const _PreviewLoadingState({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final t = L.of(context);
-
-    return Row(
-      children: <Widget>[
-        const SizedBox(
-          width: 20,
-          height: 20,
-          child: CircularProgressIndicator(
-            strokeWidth: 2.4,
-            color: BaseColors.primary,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: TypographyText(
-            t.calculatingTotal,
-            style: const TextStyle(
-              color: BaseColors.textGray,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _PreviewErrorState extends StatelessWidget {
-  const _PreviewErrorState({
-    super.key,
-    required this.message,
-    required this.onRetry,
-  });
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = L.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            const Icon(
-              Icons.info_outline_rounded,
-              color: BaseColors.danger,
-              size: 20,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: TypographyText(
-                message,
-                style: const TextStyle(
-                  color: BaseColors.danger,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  height: 1.25,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        OutlinedButton.icon(
-          style: OutlinedButton.styleFrom(
-            foregroundColor: BaseColors.primary,
-            side: const BorderSide(color: BaseColors.primary),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-            ),
-          ),
-          onPressed: onRetry,
-          icon: const Icon(Icons.refresh_rounded, size: 18),
-          label: TypographyText(t.recalculate),
-        ),
-      ],
-    );
-  }
-}
-
-class _PreviewTotals extends StatelessWidget {
-  const _PreviewTotals({
-    super.key,
-    required this.details,
-    required this.isRefreshing,
-  });
-
-  final _CheckoutPreviewDetails details;
-  final bool isRefreshing;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = L.of(context);
-    final preview = details.preview;
-    final appliedPromotion = preview.appliedPromotion;
-    final promoCode = appliedPromotion?.code?.trim();
-    final promoTitle = appliedPromotion?.title?.trim();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: TypographyText(
-                t.orderPreview,
-                style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-            if (isRefreshing)
-              const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: BaseColors.primary,
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        _PreviewDestination(details: details),
-        const Padding(
-          padding: EdgeInsets.symmetric(vertical: 10),
-          child: Divider(height: 1, color: Color(0x1A8C8278)),
-        ),
-        _PreviewAmountRow(
-          label: t.items,
-          value: formatSum(preview.itemsAmount),
-        ),
-        if (preview.modifiersAmount > 0)
-          _PreviewAmountRow(
-            label: t.modifiers,
-            value: formatSum(preview.modifiersAmount),
-          ),
-        if (preview.discountAmount > 0)
-          _PreviewAmountRow(
-            label: t.discount,
-            value: '-${formatSum(preview.discountAmount)}',
-            valueColor: BaseColors.primary,
-          ),
-        if (details.orderType == MobileOrderType.delivery ||
-            preview.deliveryAmount > 0)
-          _PreviewAmountRow(
-            label: t.delivery,
-            value: formatSum(preview.deliveryAmount),
-          ),
-        if (preview.serviceFeeAmount > 0)
-          _PreviewAmountRow(
-            label: t.serviceFee,
-            value: formatSum(preview.serviceFeeAmount),
-          ),
-        if (appliedPromotion != null) ...[
-          const SizedBox(height: 8),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            decoration: BoxDecoration(
-              color: BaseColors.primary.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Row(
-              children: <Widget>[
-                const Icon(
-                  Icons.local_offer_outlined,
-                  color: BaseColors.primary,
-                  size: 18,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TypographyText(
-                    [
-                      if (promoCode?.isNotEmpty == true) promoCode!,
-                      if (promoTitle?.isNotEmpty == true) promoTitle!,
-                    ].join(' - '),
-                    style: const TextStyle(
-                      color: BaseColors.primary,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-        const Padding(
-          padding: EdgeInsets.symmetric(vertical: 10),
-          child: Divider(height: 1, color: Color(0x1A8C8278)),
-        ),
-        _PreviewAmountRow(
-          label: t.total,
-          value: formatSum(preview.totalAmount),
-          isTotal: true,
-          valueColor: BaseColors.primary,
-        ),
-      ],
-    );
-  }
-}
-
-class _PreviewDestination extends StatelessWidget {
-  const _PreviewDestination({required this.details});
-
-  final _CheckoutPreviewDetails details;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = L.of(context);
-    final isPickup = details.orderType == MobileOrderType.pickup;
-    final address = details.address;
-    final title = isPickup
-        ? (details.branchName ?? t.pickupBranch)
-        : (address?.label ?? t.clientAddress);
-    final subtitle = isPickup ? details.branchAddress : address?.text;
-    final id = isPickup ? details.branchId : address?.id;
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Container(
-          width: 38,
-          height: 38,
-          decoration: BoxDecoration(
-            color: BaseColors.primary.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Icon(
-            isPickup
-                ? Icons.store_mall_directory_outlined
-                : Icons.location_on_outlined,
-            color: BaseColors.primary,
-            size: 20,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              TypographyText(
-                isPickup ? t.pickupBranch : t.clientAddress,
-                style: const TextStyle(
-                  color: BaseColors.textGray,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 3),
-              TypographyText(
-                title,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w900,
-                  height: 1.2,
-                ),
-              ),
-              if (subtitle?.isNotEmpty == true) ...[
-                const SizedBox(height: 3),
-                TypographyText(
-                  subtitle!,
-                  style: const TextStyle(
-                    color: BaseColors.textGray,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    height: 1.25,
-                  ),
-                ),
-              ],
-              if (id?.isNotEmpty == true) ...[
-                const SizedBox(height: 6),
-                _PreviewIdBadge(
-                  label: isPickup ? t.branchId : t.addressId,
-                  value: id!,
-                ),
-              ],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _PreviewIdBadge extends StatelessWidget {
-  const _PreviewIdBadge({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: BaseColors.primary.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: TypographyText(
-        '$label: $value',
-        style: const TextStyle(
-          color: BaseColors.primary,
-          fontSize: 11,
-          fontWeight: FontWeight.w900,
-        ),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-    );
-  }
-}
-
-class _PreviewAmountRow extends StatelessWidget {
-  const _PreviewAmountRow({
-    required this.label,
-    required this.value,
-    this.valueColor,
-    this.isTotal = false,
-  });
-
-  final String label;
-  final String value;
-  final Color? valueColor;
-  final bool isTotal;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: isTotal ? 0 : 8),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: TypographyText(
-              label,
-              style: TextStyle(
-                color: BaseColors.textGray,
-                fontSize: isTotal ? 15 : 13,
-                fontWeight: isTotal ? FontWeight.w800 : FontWeight.w700,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          TypographyText(
-            value,
-            style: TextStyle(
-              color: valueColor,
-              fontSize: isTotal ? 22 : 14,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-String _confirmationPaymentLabel(MobilePaymentMethod method, L t) {
-  return switch (method) {
-    MobilePaymentMethod.cash => t.paymentCash,
-    MobilePaymentMethod.cardTerminal => t.paymentCardTerminal,
-    MobilePaymentMethod.payme => 'Payme',
-    MobilePaymentMethod.click => 'Click',
-    MobilePaymentMethod.unknown => t.unknown,
-  };
-}
-
-IconData _paymentMethodIcon(MobilePaymentMethod method) {
-  return switch (method) {
-    MobilePaymentMethod.cash => Icons.payments_outlined,
-    MobilePaymentMethod.cardTerminal => Icons.credit_card_rounded,
-    MobilePaymentMethod.payme => Icons.account_balance_wallet_outlined,
-    MobilePaymentMethod.click => Icons.touch_app_outlined,
-    MobilePaymentMethod.unknown => Icons.help_outline_rounded,
-  };
-}
-
-class _DrawerItem extends StatelessWidget {
-  const _DrawerItem({
-    required this.icon,
-    required this.title,
-    required this.isDark,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final bool isDark;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(icon, color: BaseColors.primary),
-      title: TypographyText(
-        title,
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-      ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-      onTap: onTap,
     );
   }
 }

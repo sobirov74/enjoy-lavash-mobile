@@ -2,9 +2,11 @@ import 'package:enjoy_lavash_mobile/app/locale_controller.dart';
 import 'package:enjoy_lavash_mobile/app/location_controller.dart';
 import 'package:enjoy_lavash_mobile/core/error/failures.dart';
 import 'package:enjoy_lavash_mobile/features/models/menu_product.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/address_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/branch_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/cart_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/promotion_model.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/presentation/mobile_backend_controller.dart';
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/screens/address_bottom_sheet.dart';
 import 'package:enjoy_lavash_mobile/screens/branch_bottom_sheet.dart';
@@ -183,6 +185,47 @@ class _MenuScreenState extends State<MenuScreen> {
   }
 
   bool get _hasSearchQuery => _searchQuery.trim().isNotEmpty;
+
+  ClientAddress? _defaultAddress(List<ClientAddress> addresses) {
+    if (addresses.isEmpty) return null;
+
+    for (final address in addresses) {
+      if (address.isDefault) return address;
+    }
+    return addresses.first;
+  }
+
+  String? _formatSavedAddress(ClientAddress? address) {
+    if (address == null) return null;
+
+    final parts = <String>[
+      if (address.street.trim().isNotEmpty) address.street.trim(),
+      if (address.houseNumber?.trim().isNotEmpty == true)
+        address.houseNumber!.trim(),
+      if (address.apartmentNumber?.trim().isNotEmpty == true)
+        address.apartmentNumber!.trim(),
+    ];
+    if (parts.isNotEmpty) return parts.join(', ');
+
+    final label = address.label.trim();
+    return label.isEmpty ? null : label;
+  }
+
+  String? _deliveryButtonSubtitle(BuildContext context) {
+    final loc = context.watch<LocationController>();
+    if (loc.addressName.trim().isNotEmpty) {
+      final fullAddress = loc.fullAddress.trim();
+      return fullAddress.isEmpty ? loc.addressName.trim() : fullAddress;
+    }
+
+    final addresses = context.watch<MobileBackendController>().addresses;
+    return _formatSavedAddress(_defaultAddress(addresses));
+  }
+
+  String? _pickupButtonSubtitle() {
+    final branchName = widget.selectedBranch?.name.trim();
+    return branchName == null || branchName.isEmpty ? null : branchName;
+  }
 
   double get _activeStickyHeaderHeight =>
       _hasSearchQuery ? _stickySearchHeaderHeight : _stickyProductsHeaderHeight;
@@ -531,17 +574,12 @@ class _MenuScreenState extends State<MenuScreen> {
                   const SizedBox(height: 10),
                   FadeSlideIn(
                     delay: const Duration(milliseconds: 50),
-                    child: _buildAddressBar(context),
-                  ),
-                  const SizedBox(height: 10),
-                  FadeSlideIn(
-                    delay: const Duration(milliseconds: 100),
                     child: _buildDeliveryToggle(t),
                   ),
                   if (widget.promotions.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     FadeSlideIn(
-                      delay: const Duration(milliseconds: 150),
+                      delay: const Duration(milliseconds: 100),
                       child: PromoSlider(
                         promotions: widget.promotions,
                         locale: context
@@ -703,87 +741,6 @@ class _MenuScreenState extends State<MenuScreen> {
     );
   }
 
-  Widget _buildAddressBar(BuildContext context) {
-    final loc = context.watch<LocationController>();
-    final t = L.of(context);
-    final isLoading = loc.status == LocationStatus.loading;
-    final hasAddress = loc.addressName.isNotEmpty;
-
-    return GestureDetector(
-      onTap: () => showAddressBottomSheet(context),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: widget.isDark ? const Color(0xFF1D1A18) : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.location_on_rounded,
-              color: BaseColors.primary,
-              size: 22,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TypographyText(
-                    t.deliveryAddress,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: widget.isDark
-                          ? const Color(0xFF9E9790)
-                          : BaseColors.textGray,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  isLoading
-                      ? SizedBox(
-                          height: 14,
-                          width: 14,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: BaseColors.primary,
-                          ),
-                        )
-                      : TypographyText(
-                          hasAddress ? loc.fullAddress : t.tapToSelectAddress,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: hasAddress ? null : BaseColors.primary,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.chevron_right_rounded,
-              size: 22,
-              color: widget.isDark
-                  ? const Color(0xFF9E9790)
-                  : BaseColors.textGray,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildCartButton() {
     return Stack(
       clipBehavior: Clip.none,
@@ -829,6 +786,9 @@ class _MenuScreenState extends State<MenuScreen> {
   }
 
   Widget _buildDeliveryToggle(L t) {
+    final deliverySubtitle = _deliveryButtonSubtitle(context);
+    final pickupSubtitle = _pickupButtonSubtitle();
+
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
@@ -841,10 +801,14 @@ class _MenuScreenState extends State<MenuScreen> {
         children: [
           Expanded(
             child: GestureDetector(
-              onTap: () => widget.onOrderTypeChanged(MobileOrderType.delivery),
+              onTap: () {
+                widget.onOrderTypeChanged(MobileOrderType.delivery);
+                showAddressBottomSheet(context);
+              },
               child: DeliveryChip(
-                icon: Icons.delivery_dining_rounded,
-                title: t.delivery,
+                icon: Icons.location_on_rounded,
+                title: t.address,
+                subtitle: deliverySubtitle ?? t.tapToSelectAddress,
                 active: widget.orderType == MobileOrderType.delivery,
               ),
             ),
@@ -860,9 +824,8 @@ class _MenuScreenState extends State<MenuScreen> {
               },
               child: DeliveryChip(
                 icon: Icons.shopping_bag_outlined,
-                title: widget.selectedBranch != null
-                    ? widget.selectedBranch!.name.split(' — ').last
-                    : t.pickup,
+                title: t.pickup,
+                subtitle: pickupSubtitle ?? t.pickupBranch,
                 active: widget.orderType == MobileOrderType.pickup,
               ),
             ),

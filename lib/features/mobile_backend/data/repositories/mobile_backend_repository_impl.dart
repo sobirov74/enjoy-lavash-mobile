@@ -52,6 +52,9 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
         if (data.refreshToken?.isNotEmpty == true) {
           await TokenStorage.saveRefreshToken(data.refreshToken!);
         }
+        await TokenStorage.saveRefreshTokenExpiresAt(
+          data.refreshTokenExpiresAt,
+        );
       }
       return data;
     });
@@ -76,7 +79,9 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
     String? branchId,
   }) {
     return _guard(() async {
-      final hasToken = await TokenStorage.getAccessToken() != null;
+      final accessToken = await TokenStorage.getAccessToken();
+      final refreshToken = await TokenStorage.getRefreshToken();
+      final hasToken = accessToken != null || refreshToken != null;
 
       final publicFuture = Future.wait<Object?>([
         _fetchBranches(language: language),
@@ -412,10 +417,18 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
         'branchId': branchId?.trim().isEmpty == true ? null : branchId?.trim(),
       }),
     );
-    return asJsonMapList(_listPayload(response.data, key: 'paymentMethods'))
+    final methods = asJsonMapList(
+      _listPayload(response.data, key: 'paymentMethods'),
+    )
         .map(PaymentMethodModel.fromJson)
         .where((method) => method.code != MobilePaymentMethod.unknown)
         .toList(growable: false);
+    return methods
+      ..sort((a, b) {
+        final sortComparison = a.sortOrder.compareTo(b.sortOrder);
+        if (sortComparison != 0) return sortComparison;
+        return a.code.index.compareTo(b.code.index);
+      });
   }
 
   Future<ClientProfile> _fetchProfile() async {
@@ -434,21 +447,14 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
     final profile = await _fetchProfile();
     final authData = await Future.wait<Object?>([
       _fetchAddresses(),
-      _fetchOrders(phoneNumber: profile.phoneNumber),
+      _fetchOrders(),
     ]);
 
     return <Object?>[profile, authData[0], authData[1]];
   }
 
-  Future<List<CustomerOrderModel>> _fetchOrders({String? phoneNumber}) async {
-    final response = await _dio.get(
-      ApiEndpoints.clientOrders,
-      queryParameters: withoutNulls({
-        'phoneNumber': phoneNumber?.trim().isEmpty == true
-            ? null
-            : phoneNumber?.trim(),
-      }),
-    );
+  Future<List<CustomerOrderModel>> _fetchOrders() async {
+    final response = await _dio.get(ApiEndpoints.clientOrders);
     return asJsonMapList(
       _listPayload(response.data, key: 'orders'),
     ).map(CustomerOrderModel.fromJson).toList(growable: false);

@@ -598,8 +598,7 @@ class LUz extends L {
   String get noProductsInOrder => 'Buyurtmada mahsulot yo\'q';
 
   @override
-  String get paymentLinkUnavailable =>
-      'To\'lov havolasi hali mavjud emas.';
+  String get paymentLinkUnavailable => 'To\'lov havolasi hali mavjud emas.';
 
   @override
   String get completePaymentOnline => 'Onlayn to\'lovni yakunlang.';
@@ -608,8 +607,7 @@ class LUz extends L {
   String get paymentPageOpenFailed => 'To\'lov sahifasini ochib bo\'lmadi.';
 
   @override
-  String get retryPaymentFailed =>
-      'To\'lovni qayta urinish imkoni bo\'lmadi.';
+  String get retryPaymentFailed => 'To\'lovni qayta urinish imkoni bo\'lmadi.';
 
   @override
   String get orderDetails => 'Buyurtma tafsilotlari';

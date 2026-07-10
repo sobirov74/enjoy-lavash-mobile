@@ -54,11 +54,13 @@ class VerifyOtpResponse {
     required this.tokenType,
     required this.client,
     this.refreshToken,
+    this.refreshTokenExpiresAt,
     this.isNewClient = false,
   });
 
   final String accessToken;
   final String? refreshToken;
+  final DateTime? refreshTokenExpiresAt;
   final String tokenType;
   final ClientProfile client;
   final bool isNewClient;
@@ -69,6 +71,10 @@ class VerifyOtpResponse {
       refreshToken:
           stringOrNull(json['refresh_token']) ??
           stringOrNull(json['refreshToken']),
+      refreshTokenExpiresAt: readDateTime(json, const [
+        'refresh_token_expires_at',
+        'refreshTokenExpiresAt',
+      ]),
       tokenType: readString(json, const ['token_type', 'tokenType']),
       client: ClientProfile.fromJson(asJsonMap(json['client'])),
       isNewClient: readBool(json, const [

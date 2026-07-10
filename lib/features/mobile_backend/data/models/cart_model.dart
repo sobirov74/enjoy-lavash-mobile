@@ -26,7 +26,7 @@ enum MobilePaymentMethod {
   final String value;
 
   factory MobilePaymentMethod.fromJson(String? value) {
-    return switch (value) {
+    return switch (_normalizePaymentMethodCode(value)) {
       'CARD_TERMINAL' => MobilePaymentMethod.cardTerminal,
       'PAYME' => MobilePaymentMethod.payme,
       'CLICK' => MobilePaymentMethod.click,
@@ -34,6 +34,11 @@ enum MobilePaymentMethod {
       _ => MobilePaymentMethod.unknown,
     };
   }
+}
+
+String? _normalizePaymentMethodCode(String? value) {
+  final normalized = value?.trim().toUpperCase().replaceAll('-', '_');
+  return normalized?.isEmpty == true ? null : normalized;
 }
 
 class PaymentMethodModel {

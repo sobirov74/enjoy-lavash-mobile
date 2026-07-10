@@ -22,7 +22,7 @@ Failure mapDioError(DioException e) {
         statusCode: status,
         languageCode: _requestLanguage(e),
       );
-      if (status == 401 || status == 403) {
+      if (status == 401) {
         return AuthFailure(serverMessage);
       }
       return ServerFailure(status, serverMessage);

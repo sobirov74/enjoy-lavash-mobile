@@ -9,6 +9,7 @@ class ApiEndpoints {
   // Customer mobile app endpoints from MOBILE_APP_IMPLEMENTATION.md.
   static const requestOtp = "/auth/request-otp";
   static const verifyOtp = "/auth/verify-otp";
+  static const clientRefresh = "/auth/client/refresh";
   static const branches = "/branches";
   static const appVersion = "/app-version";
   static const catalog = "/catalog";

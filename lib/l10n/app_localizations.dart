@@ -189,11 +189,119 @@ abstract class L {
   /// **'Buyurtma berish'**
   String get checkout;
 
+  /// No description provided for @viewCart.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savatni ochish'**
+  String get viewCart;
+
+  /// No description provided for @cartItemsCount.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count} ta mahsulot'**
+  String cartItemsCount(int count);
+
+  /// No description provided for @itemRemovedFromCart.
+  ///
+  /// In uz, this message translates to:
+  /// **'{product} savatdan olib tashlandi'**
+  String itemRemovedFromCart(String product);
+
+  /// No description provided for @undo.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qaytarish'**
+  String get undo;
+
+  /// No description provided for @increaseQuantity.
+  ///
+  /// In uz, this message translates to:
+  /// **'Miqdorni oshirish'**
+  String get increaseQuantity;
+
+  /// No description provided for @decreaseQuantity.
+  ///
+  /// In uz, this message translates to:
+  /// **'Miqdorni kamaytirish'**
+  String get decreaseQuantity;
+
+  /// No description provided for @menuLoading.
+  ///
+  /// In uz, this message translates to:
+  /// **'Menyu tayyorlanmoqda...'**
+  String get menuLoading;
+
+  /// No description provided for @searchAgain.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qidiruvni tozalash'**
+  String get searchAgain;
+
   /// No description provided for @orderCreated.
   ///
   /// In uz, this message translates to:
   /// **'Buyurtma yaratildi'**
   String get orderCreated;
+
+  /// No description provided for @orderSuccessTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmangiz qabul qilindi!'**
+  String get orderSuccessTitle;
+
+  /// No description provided for @orderSuccessMessage.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma oshxonaga yuborildi. Holatini profilingizda kuzatib boring.'**
+  String get orderSuccessMessage;
+
+  /// No description provided for @orderSuccessNumber.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma #{number}'**
+  String orderSuccessNumber(String number);
+
+  /// No description provided for @trackOrder.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmani kuzatish'**
+  String get trackOrder;
+
+  /// No description provided for @orderSuccessPaymentOpening.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xavfsiz to\'lov sahifasi ochilmoqda…'**
+  String get orderSuccessPaymentOpening;
+
+  /// No description provided for @orderSuccessPaymentOpened.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ochilgan sahifada to\'lovni yakunlang.'**
+  String get orderSuccessPaymentOpened;
+
+  /// No description provided for @orderSuccessPayOnReceipt.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmani olganda to\'lov qilasiz.'**
+  String get orderSuccessPayOnReceipt;
+
+  /// No description provided for @orderSuccessPaymentPaid.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'lov qabul qilindi. Hammasi tayyor.'**
+  String get orderSuccessPaymentPaid;
+
+  /// No description provided for @orderSuccessPaymentFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'lov yakunlanmadi. Keyingi qadamni buyurtma tafsilotlarida ko\'ring.'**
+  String get orderSuccessPaymentFailed;
+
+  /// No description provided for @orderSuccessPaymentRefunded.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ushbu to\'lov qaytarildi.'**
+  String get orderSuccessPaymentRefunded;
 
   /// No description provided for @orderCreateFailed.
   ///
@@ -212,6 +320,12 @@ abstract class L {
   /// In uz, this message translates to:
   /// **'Avval olib ketish filialini tanlang'**
   String get selectPickupBranchFirst;
+
+  /// No description provided for @paymentMethodsUnavailable.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'lov usullari vaqtincha mavjud emas. Qayta urinib ko\'ring.'**
+  String get paymentMethodsUnavailable;
 
   /// No description provided for @profile.
   ///
@@ -675,11 +789,35 @@ abstract class L {
   /// **'Ism (ixtiyoriy)'**
   String get nameOptional;
 
-  /// No description provided for @demoCode.
+  /// No description provided for @otpCodeExpiresIn.
   ///
   /// In uz, this message translates to:
-  /// **'Demo kod: {code}'**
-  String demoCode(String code);
+  /// **'Kod {time} dan keyin tugaydi'**
+  String otpCodeExpiresIn(String time);
+
+  /// No description provided for @otpCodeExpired.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tasdiqlash kodining muddati tugadi.'**
+  String get otpCodeExpired;
+
+  /// No description provided for @resendCode.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kodni qayta yuborish'**
+  String get resendCode;
+
+  /// No description provided for @resendCodeIn.
+  ///
+  /// In uz, this message translates to:
+  /// **'{time} dan keyin qayta yuborish'**
+  String resendCodeIn(String time);
+
+  /// No description provided for @tryAgainIn.
+  ///
+  /// In uz, this message translates to:
+  /// **'{time} dan keyin qayta urining'**
+  String tryAgainIn(String time);
 
   /// No description provided for @sendCode.
   ///

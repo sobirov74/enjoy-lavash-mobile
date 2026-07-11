@@ -7,9 +7,7 @@ extension _MobileBackendAuthController on MobileBackendController {
     return _repository.requestOtp(phoneNumber: phoneNumber);
   }
 
-  Future<Result<VerifyOtpResponse>> _verifyOtp(
-    VerifyOtpRequest request,
-  ) async {
+  Future<Result<VerifyOtpResponse>> _verifyOtp(VerifyOtpRequest request) async {
     final result = await _repository.verifyOtp(request);
     switch (result) {
       case Success(:final data):
@@ -17,13 +15,13 @@ extension _MobileBackendAuthController on MobileBackendController {
         _failure = null;
         final language =
             _supportedLanguageOrNull(request.language) ?? data.client.language;
-        this._startPushNotificationSync(locale: language);
+        _startPushNotificationSync(locale: language);
         unawaited(syncClientLanguage(language: language));
         unawaited(refreshNotifications());
         if (_status == MobileBackendStatus.initial) {
           _status = MobileBackendStatus.loaded;
         }
-        notifyListeners();
+        _notifyListeners();
       case Error():
     }
     return result;
@@ -37,9 +35,9 @@ extension _MobileBackendAuthController on MobileBackendController {
       case Success(:final data):
         _client = data;
         _failure = null;
-        notifyListeners();
+        _notifyListeners();
       case Error(:final failure):
-        this._applyFailure(failure);
+        _applyFailure(failure);
     }
     return result;
   }
@@ -57,10 +55,10 @@ extension _MobileBackendAuthController on MobileBackendController {
       case Success(:final data):
         _client = data;
         _failure = null;
-        this._startPushNotificationSync(locale: normalizedLanguage);
-        notifyListeners();
+        _startPushNotificationSync(locale: normalizedLanguage);
+        _notifyListeners();
       case Error(:final failure):
-        this._applyFailure(failure);
+        _applyFailure(failure);
         debugPrint('Client language sync failed: ${failure.message}');
     }
   }
@@ -70,6 +68,8 @@ extension _MobileBackendAuthController on MobileBackendController {
       await _pushNotifications.deleteRegisteredToken();
     } catch (error) {
       debugPrint('Push token cleanup failed during logout: $error');
+    } finally {
+      await _pushNotifications.clearLocalRegistration();
     }
     final result = await _repository.logout();
     if (result.isSuccess) {
@@ -80,26 +80,22 @@ extension _MobileBackendAuthController on MobileBackendController {
 
   Future<Result<void>> _deleteAccount() async {
     _accountDeleting = true;
-    notifyListeners();
+    _notifyListeners();
 
     try {
-      try {
-        await _pushNotifications.deleteRegisteredToken();
-      } catch (error) {
-        debugPrint('Push token cleanup failed during account deletion: $error');
-      }
       final result = await _repository.deleteAccount();
       if (result.isSuccess) {
+        await _pushNotifications.clearLocalRegistration(resetDeviceId: true);
         await handleSessionExpired();
       }
       return result;
     } finally {
       _accountDeleting = false;
-      notifyListeners();
+      _notifyListeners();
     }
   }
 
   Future<void> _handleSessionExpired() async {
-    this._clearAuthenticatedState();
+    _clearAuthenticatedState();
   }
 }

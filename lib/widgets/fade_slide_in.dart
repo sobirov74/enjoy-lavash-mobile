@@ -1,4 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+
+import '../theme/app_motion.dart';
 
 /// Plays a one-time fade + slide-up entrance when the widget is first built.
 ///
@@ -30,23 +34,48 @@ class _FadeSlideInState extends State<FadeSlideIn>
   );
   late final CurvedAnimation _animation = CurvedAnimation(
     parent: _controller,
-    curve: Curves.easeOutCubic,
+    curve: AppMotion.enter,
   );
+  Timer? _delayTimer;
+  bool _entranceScheduled = false;
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final reduceMotion = AppMotion.reduced(context);
+    _controller.duration = AppMotion.duration(context, widget.duration);
+
+    if (reduceMotion) {
+      _delayTimer?.cancel();
+      _entranceScheduled = true;
+      _controller.value = 1;
+      return;
+    }
+
+    if (_entranceScheduled) return;
+    _entranceScheduled = true;
     if (widget.delay == Duration.zero) {
       _controller.forward();
     } else {
-      Future<void>.delayed(widget.delay, () {
-        if (mounted) _controller.forward();
+      _delayTimer = Timer(widget.delay, () {
+        if (mounted) {
+          _controller.forward();
+        }
       });
     }
   }
 
   @override
+  void didUpdateWidget(covariant FadeSlideIn oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.duration != widget.duration) {
+      _controller.duration = AppMotion.duration(context, widget.duration);
+    }
+  }
+
+  @override
   void dispose() {
+    _delayTimer?.cancel();
     _animation.dispose();
     _controller.dispose();
     super.dispose();
@@ -96,20 +125,40 @@ class _FadeIndexedStackState extends State<FadeIndexedStack>
   );
   late final CurvedAnimation _animation = CurvedAnimation(
     parent: _controller,
-    curve: Curves.easeOutCubic,
+    curve: AppMotion.enter,
   );
+  bool _initialEntranceStarted = false;
 
   @override
-  void initState() {
-    super.initState();
-    _controller.forward();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final reduceMotion = AppMotion.reduced(context);
+    _controller.duration = AppMotion.duration(context, widget.duration);
+
+    if (!_initialEntranceStarted) {
+      _initialEntranceStarted = true;
+      if (reduceMotion) {
+        _controller.value = 1;
+      } else {
+        _controller.forward();
+      }
+    } else if (reduceMotion) {
+      _controller.value = 1;
+    }
   }
 
   @override
   void didUpdateWidget(covariant FadeIndexedStack oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.duration != widget.duration) {
+      _controller.duration = AppMotion.duration(context, widget.duration);
+    }
     if (oldWidget.index != widget.index) {
-      _controller.forward(from: 0);
+      if (AppMotion.reduced(context)) {
+        _controller.value = 1;
+      } else {
+        _controller.forward(from: 0);
+      }
     }
   }
 

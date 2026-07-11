@@ -38,24 +38,9 @@ class TypographyText extends StatelessWidget {
       style: TextStyle(
         fontSize: 16,
         color: baseColor,
-        fontFamily: _fontFamily(weight),
         fontWeight: _fontWeight(weight),
       ).merge(style),
     );
-  }
-
-  String _fontFamily(FontWeightType weight) {
-    switch (weight) {
-      case FontWeightType.thin:
-        return 'Circe-Light';
-      case FontWeightType.medium:
-      case FontWeightType.semibold:
-        return 'Circe-Regular';
-      case FontWeightType.bold:
-        return 'Circe-Bold';
-      case FontWeightType.normal:
-        return 'Circe-Regular';
-    }
   }
 
   FontWeight _fontWeight(FontWeightType weight) {

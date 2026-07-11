@@ -71,7 +71,7 @@ class DeliveryChip extends StatelessWidget {
                       ),
                       const SizedBox(height: 1),
                       TypographyText(
-                        subtitleText!,
+                        subtitleText,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(

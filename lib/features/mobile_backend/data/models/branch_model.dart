@@ -11,7 +11,6 @@ class BranchModel {
     this.phoneNumber,
     this.openingTime,
     this.closingTime,
-    this.raw = const <String, dynamic>{},
   });
 
   final String id;
@@ -23,7 +22,6 @@ class BranchModel {
   final String? phoneNumber;
   final String? openingTime;
   final String? closingTime;
-  final Map<String, dynamic> raw;
 
   factory BranchModel.fromJson(
     Map<String, dynamic> json, {
@@ -53,7 +51,6 @@ class BranchModel {
       closingTime:
           stringOrNull(json['closingTime']) ??
           stringOrNull(json['closing_time']),
-      raw: Map<String, dynamic>.unmodifiable(json),
     );
   }
 }

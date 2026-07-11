@@ -39,6 +39,10 @@ class MobileBackendController extends ChangeNotifier {
   List<BranchModel> _branches = const <BranchModel>[];
   List<PromotionModel> _promotions = const <PromotionModel>[];
   List<PaymentMethodModel> _paymentMethods = const <PaymentMethodModel>[];
+  String? _paymentMethodsBranchId;
+  Failure? _paymentMethodsFailure;
+  bool _paymentMethodsLoading = false;
+  int _paymentMethodsRequestVersion = 0;
   List<ClientAddress> _addresses = const <ClientAddress>[];
   List<CustomerOrderModel> _orders = const <CustomerOrderModel>[];
   List<ClientNotificationItemModel> _notifications =
@@ -58,6 +62,9 @@ class MobileBackendController extends ChangeNotifier {
   List<BranchModel> get branches => _branches;
   List<PromotionModel> get promotions => _promotions;
   List<PaymentMethodModel> get paymentMethods => _paymentMethods;
+  String? get paymentMethodsBranchId => _paymentMethodsBranchId;
+  Failure? get paymentMethodsFailure => _paymentMethodsFailure;
+  bool get paymentMethodsLoading => _paymentMethodsLoading;
   List<ClientAddress> get addresses => _addresses;
   List<CustomerOrderModel> get orders => _orders;
   List<ClientNotificationItemModel> get notifications => _notifications;
@@ -72,48 +79,50 @@ class MobileBackendController extends ChangeNotifier {
   bool get isAuthenticated => _client != null;
   bool get isLoading => _status == MobileBackendStatus.loading;
 
-  Future<Result<OtpRequestResponse>> requestOtp({
-    required String phoneNumber,
-  }) {
-    return this._requestOtp(phoneNumber: phoneNumber);
+  // Controller behavior is split into private extensions. Keeping the
+  // ChangeNotifier call inside the class preserves its protected contract.
+  void _notifyListeners() => notifyListeners();
+
+  Future<Result<OtpRequestResponse>> requestOtp({required String phoneNumber}) {
+    return _requestOtp(phoneNumber: phoneNumber);
   }
 
   Future<Result<VerifyOtpResponse>> verifyOtp(VerifyOtpRequest request) {
-    return this._verifyOtp(request);
+    return _verifyOtp(request);
   }
 
   Future<Result<ClientProfile>> updateProfile(ClientProfileUpdate request) {
-    return this._updateProfile(request);
+    return _updateProfile(request);
   }
 
   Future<void> syncClientLanguage({required String language}) {
-    return this._syncClientLanguage(language: language);
+    return _syncClientLanguage(language: language);
   }
 
   Future<void> refreshPushNotificationSettings() {
-    return this._refreshPushNotificationSettings();
+    return _refreshPushNotificationSettings();
   }
 
   Future<Result<PushNotificationSettings>> setPushNotificationsEnabled(
     bool enabled,
   ) {
-    return this._setPushNotificationsEnabled(enabled);
+    return _setPushNotificationsEnabled(enabled);
   }
 
   Future<Result<void>> logout() {
-    return this._logout();
+    return _logout();
   }
 
   Future<Result<void>> deleteAccount() {
-    return this._deleteAccount();
+    return _deleteAccount();
   }
 
   Future<void> handleSessionExpired() {
-    return this._handleSessionExpired();
+    return _handleSessionExpired();
   }
 
   Future<void> refreshCustomerData() {
-    return this._refreshCustomerData();
+    return _refreshCustomerData();
   }
 
   Future<Result<ClientNotificationInboxModel>> refreshNotifications({
@@ -121,7 +130,7 @@ class MobileBackendController extends ChangeNotifier {
     int offset = 0,
     bool unreadOnly = false,
   }) {
-    return this._refreshNotifications(
+    return _refreshNotifications(
       limit: limit,
       offset: offset,
       unreadOnly: unreadOnly,
@@ -129,46 +138,50 @@ class MobileBackendController extends ChangeNotifier {
   }
 
   Future<Result<int>> refreshNotificationUnreadCount() {
-    return this._refreshNotificationUnreadCount();
+    return _refreshNotificationUnreadCount();
   }
 
   Future<Result<ClientNotificationReadResultModel>> markNotificationRead({
     required String notificationId,
   }) {
-    return this._markNotificationRead(notificationId: notificationId);
+    return _markNotificationRead(notificationId: notificationId);
   }
 
   Future<Result<ClientNotificationReadResultModel>> markAllNotificationsRead() {
-    return this._markAllNotificationsRead();
+    return _markAllNotificationsRead();
   }
 
   Future<Result<CartPreviewModel>> previewCart(CartPreviewRequest request) {
-    return this._previewCart(request);
+    return _previewCart(request);
   }
 
   Future<Result<List<PaymentMethodModel>>> refreshPaymentMethods({
     required String language,
     String? branchId,
   }) {
-    return this._refreshPaymentMethods(language: language, branchId: branchId);
+    return _refreshPaymentMethods(language: language, branchId: branchId);
   }
 
   Future<Result<CustomerOrderModel>> createOrder(CreateOrderRequest request) {
-    return this._createOrder(request);
+    return _createOrder(request);
+  }
+
+  Future<Result<CustomerOrderModel>> refreshOrder({required String id}) {
+    return _refreshOrder(id: id);
   }
 
   Future<Result<CustomerOrderModel>> retryOrderPayment({required String id}) {
-    return this._retryOrderPayment(id: id);
+    return _retryOrderPayment(id: id);
   }
 
   Future<void> bootstrap({required String language, String? branchId}) {
-    return this._bootstrap(language: language, branchId: branchId);
+    return _bootstrap(language: language, branchId: branchId);
   }
 
   Future<Result<CatalogModel>> refreshCatalog({
     required String language,
     String? branchId,
   }) {
-    return this._refreshCatalog(language: language, branchId: branchId);
+    return _refreshCatalog(language: language, branchId: branchId);
   }
 }

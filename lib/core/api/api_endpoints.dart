@@ -15,7 +15,7 @@ class ApiEndpoints {
   static const catalog = "/catalog";
   static const activePromotions = "/promotions/active";
   static const paymentMethods = "/payment-methods";
-  static const cartPreview = "/cart/preview";
+  static const cartPreview = "/clients/me/cart/preview";
   static const clientMe = "/clients/me";
   static const clientAddresses = "/clients/me/addresses";
   static const clientOrders = "/clients/me/orders";
@@ -40,8 +40,12 @@ class ApiEndpoints {
   static String clientOrderRetryPayment(String id) =>
       "$clientOrders/${Uri.encodeComponent(id)}/retry-payment";
 
-  static String clientPushToken(String token) =>
-      "$clientPushTokens/${Uri.encodeComponent(token)}";
+  static String clientOrder(String id) =>
+      "$clientOrders/${Uri.encodeComponent(id)}";
+
+  static String clientPushTokenRegistration(String registrationId) =>
+      "/clients/me/push-token-registrations/"
+      "${Uri.encodeComponent(registrationId)}";
 
   static String clientNotificationRead(String notificationId) =>
       "$clientNotifications/${Uri.encodeComponent(notificationId)}/read";

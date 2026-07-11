@@ -7,6 +7,7 @@ class _OrderConfirmationSheet extends StatefulWidget {
     required this.initialPromoCode,
     required this.onPreviewRequested,
     required this.onBranchSelected,
+    this.initialPickupBranchId,
     this.initialPickupBranchText,
     this.initialDeliveryAddressText,
   });
@@ -15,7 +16,8 @@ class _OrderConfirmationSheet extends StatefulWidget {
   final MobileOrderType initialOrderType;
   final String initialPromoCode;
   final _CartPreviewRequester onPreviewRequested;
-  final ValueChanged<BranchModel?> onBranchSelected;
+  final Future<void> Function(BranchModel?) onBranchSelected;
+  final String? initialPickupBranchId;
   final String? initialPickupBranchText;
   final String? initialDeliveryAddressText;
 
@@ -35,6 +37,7 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
   int? _lastPreviewInputVersion;
   int _previewInputVersion = 0;
   String? _deliveryAddressText;
+  String? _pickupBranchId;
   String? _pickupBranchText;
   String? _previewErrorText;
   bool _isPreviewLoading = false;
@@ -45,6 +48,7 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
     super.initState();
     _orderType = widget.initialOrderType;
     _deliveryAddressText = widget.initialDeliveryAddressText;
+    _pickupBranchId = widget.initialPickupBranchId;
     _pickupBranchText = widget.initialPickupBranchText;
     _promoCodeController = TextEditingController(text: widget.initialPromoCode);
     _promoCodeController.addListener(_onPromoCodeChanged);
@@ -77,13 +81,12 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
   }
 
   List<PaymentMethodModel> get _availablePaymentMethods {
-    return _resolvePaymentMethods(
-      context.read<MobileBackendController>().paymentMethods,
-    );
+    return context.read<MobileBackendController>().paymentMethods;
   }
 
   MobilePaymentMethod get _currentPaymentMethod {
     final methods = _availablePaymentMethods;
+    if (methods.isEmpty) return MobilePaymentMethod.unknown;
     final hasSelected = methods.any((method) => method.code == _paymentMethod);
     return hasSelected ? _paymentMethod : methods.first.code;
   }
@@ -95,6 +98,9 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
 
   Future<bool> _loadPreview() async {
     if (_isPreviewLoading || _isChangingDestination) return false;
+    if (_availablePaymentMethods.isEmpty) {
+      return _showPreviewError(L.of(context).paymentMethodsUnavailable);
+    }
 
     final orderType = _orderType;
     final paymentMethod = _currentPaymentMethod;
@@ -212,15 +218,20 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
     if (_isChangingDestination) return;
 
     _isChangingDestination = true;
-    final branch = await showBranchBottomSheet(context);
+    final branch = await showBranchBottomSheet(
+      context,
+      selectedBranchId: _pickupBranchId,
+    );
     if (!mounted) return;
     _isChangingDestination = false;
     if (branch == null) return;
 
-    widget.onBranchSelected(branch);
+    await widget.onBranchSelected(branch);
+    if (!mounted) return;
     _previewInputVersion++;
     setState(() {
       _orderType = MobileOrderType.pickup;
+      _pickupBranchId = branch.id;
       _pickupBranchText =
           _trimmedOrNull(branch.name) ?? _trimmedOrNull(branch.address);
     });
@@ -233,21 +244,17 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
     unawaited(_loadPreview());
   }
 
-  List<PaymentMethodModel> _resolvePaymentMethods(
-    List<PaymentMethodModel> methods,
-  ) {
-    if (methods.isEmpty) {
-      return const <PaymentMethodModel>[
-        PaymentMethodModel(
-          id: 'cash-fallback',
-          code: MobilePaymentMethod.cash,
-          name: 'Cash',
-          isOnline: false,
-          sortOrder: 0,
-        ),
-      ];
-    }
-    return methods;
+  Future<void> _retryPaymentMethods() async {
+    final backend = context.read<MobileBackendController>();
+    final branchId = _orderType == MobileOrderType.pickup
+        ? _pickupBranchId
+        : backend.paymentMethodsBranchId;
+    await backend.refreshPaymentMethods(
+      language: context.read<LocaleController>().locale.languageCode,
+      branchId: branchId,
+    );
+    if (!mounted || backend.paymentMethods.isEmpty) return;
+    unawaited(_loadPreview());
   }
 
   String? _trimmedOrNull(String? value) {
@@ -326,12 +333,13 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
     final t = L.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
-    final paymentMethods = _resolvePaymentMethods(
-      context.watch<MobileBackendController>().paymentMethods,
-    );
+    final backend = context.watch<MobileBackendController>();
+    final paymentMethods = backend.paymentMethods;
     final currentPaymentMethod =
         paymentMethods.any((method) => method.code == _paymentMethod)
         ? _paymentMethod
+        : paymentMethods.isEmpty
+        ? MobilePaymentMethod.unknown
         : paymentMethods.first.code;
 
     return Container(
@@ -420,6 +428,9 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
             _PaymentMethodSelector(
               methods: paymentMethods,
               selectedMethod: currentPaymentMethod,
+              isLoading: backend.paymentMethodsLoading,
+              errorText: backend.paymentMethodsFailure?.message,
+              onRetry: () => unawaited(_retryPaymentMethods()),
               onChanged: _selectPaymentMethod,
             ),
             const SizedBox(height: 14),
@@ -458,7 +469,10 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    onPressed: _isPreviewLoading
+                    onPressed:
+                        _isPreviewLoading ||
+                            backend.paymentMethodsLoading ||
+                            paymentMethods.isEmpty
                         ? null
                         : () => unawaited(_confirmOrder()),
                     child: TypographyText(

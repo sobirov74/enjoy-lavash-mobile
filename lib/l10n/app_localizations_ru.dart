@@ -55,7 +55,71 @@ class LRu extends L {
   String get checkout => 'Оформить заказ';
 
   @override
+  String get viewCart => 'Открыть корзину';
+
+  @override
+  String cartItemsCount(int count) {
+    return 'Товаров: $count';
+  }
+
+  @override
+  String itemRemovedFromCart(String product) {
+    return '$product удалён из корзины';
+  }
+
+  @override
+  String get undo => 'Вернуть';
+
+  @override
+  String get increaseQuantity => 'Увеличить количество';
+
+  @override
+  String get decreaseQuantity => 'Уменьшить количество';
+
+  @override
+  String get menuLoading => 'Готовим меню...';
+
+  @override
+  String get searchAgain => 'Очистить поиск';
+
+  @override
   String get orderCreated => 'Заказ создан';
+
+  @override
+  String get orderSuccessTitle => 'Заказ принят!';
+
+  @override
+  String get orderSuccessMessage =>
+      'Заказ уже передан на кухню. Следите за его статусом в профиле.';
+
+  @override
+  String orderSuccessNumber(String number) {
+    return 'Заказ №$number';
+  }
+
+  @override
+  String get trackOrder => 'Отслеживать заказ';
+
+  @override
+  String get orderSuccessPaymentOpening =>
+      'Открываем защищённую страницу оплаты…';
+
+  @override
+  String get orderSuccessPaymentOpened =>
+      'Завершите оплату на открытой странице.';
+
+  @override
+  String get orderSuccessPayOnReceipt => 'Оплатите заказ при получении.';
+
+  @override
+  String get orderSuccessPaymentPaid => 'Оплата получена. Всё готово.';
+
+  @override
+  String get orderSuccessPaymentFailed =>
+      'Оплата не завершена. Следующий шаг указан в деталях заказа.';
+
+  @override
+  String get orderSuccessPaymentRefunded => 'Оплата возвращена.';
 
   @override
   String get orderCreateFailed =>
@@ -67,6 +131,10 @@ class LRu extends L {
   @override
   String get selectPickupBranchFirst =>
       'Сначала выберите филиал для самовывоза';
+
+  @override
+  String get paymentMethodsUnavailable =>
+      'Способы оплаты временно недоступны. Попробуйте снова.';
 
   @override
   String get profile => 'Профиль';
@@ -303,8 +371,24 @@ class LRu extends L {
   String get nameOptional => 'Имя (необязательно)';
 
   @override
-  String demoCode(String code) {
-    return 'Демо-код: $code';
+  String otpCodeExpiresIn(String time) {
+    return 'Код действует ещё $time';
+  }
+
+  @override
+  String get otpCodeExpired => 'Срок действия кода истёк.';
+
+  @override
+  String get resendCode => 'Отправить код снова';
+
+  @override
+  String resendCodeIn(String time) {
+    return 'Повторная отправка через $time';
+  }
+
+  @override
+  String tryAgainIn(String time) {
+    return 'Повторите через $time';
   }
 
   @override

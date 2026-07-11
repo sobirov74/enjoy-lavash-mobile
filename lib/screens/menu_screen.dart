@@ -10,6 +10,7 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/presentation/mobile_
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/screens/address_bottom_sheet.dart';
 import 'package:enjoy_lavash_mobile/screens/branch_bottom_sheet.dart';
+import 'package:enjoy_lavash_mobile/theme/app_motion.dart';
 import 'package:enjoy_lavash_mobile/utils/price_formatter.dart';
 import 'package:enjoy_lavash_mobile/widgets/action_icon_button.dart';
 import 'package:enjoy_lavash_mobile/widgets/animated_error_message.dart';
@@ -22,6 +23,7 @@ import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 const String _brandMarkAsset = 'assets/images/enjoy-logo.png';
@@ -54,6 +56,7 @@ class MenuScreen extends StatefulWidget {
     required this.onRetryMenu,
     required this.onRefresh,
     required this.cartCount,
+    required this.cartTotal,
     required this.cartQuantities,
     this.menuFailure,
     this.menuErrorText,
@@ -72,10 +75,11 @@ class MenuScreen extends StatefulWidget {
   final ValueChanged<MenuProduct> onDecreaseFromCart;
   final VoidCallback onCartTap;
   final ValueChanged<MobileOrderType> onOrderTypeChanged;
-  final ValueChanged<BranchModel?> onBranchSelected;
+  final Future<void> Function(BranchModel?) onBranchSelected;
   final VoidCallback onRetryMenu;
   final Future<void> Function() onRefresh;
   final int cartCount;
+  final int cartTotal;
   final Map<String, int> cartQuantities;
   final Failure? menuFailure;
   final String? menuErrorText;
@@ -88,6 +92,12 @@ class _MenuScreenState extends State<MenuScreen> {
   final ScrollController _scrollController = ScrollController();
   final ScrollController _categoryScrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
+  final GlobalKey _categoryPillTrackKey = GlobalKey(
+    debugLabel: 'category-pill-track',
+  );
+  final GlobalKey _cartFlightTargetKey = GlobalKey(
+    debugLabel: 'cart-flight-target',
+  );
 
   late final List<GlobalKey> _sectionKeys = _buildKeys(
     widget.categories.length,
@@ -107,6 +117,11 @@ class _MenuScreenState extends State<MenuScreen> {
   bool _isProgrammaticScroll = false;
   bool _scrollSpyScheduled = false;
   String _searchQuery = '';
+  double? _categoryPillLeft;
+  double? _categoryPillWidth;
+  OverlayEntry? _cartFlightEntry;
+  DateTime? _lastCartFlightAt;
+  int _cartArrivalPulse = 0;
 
   // -------------------------------------------------------------------------
   // Lifecycle
@@ -118,6 +133,15 @@ class _MenuScreenState extends State<MenuScreen> {
     _scrollController.addListener(_onScrollChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollSelectedChipIntoView();
+      _updateCategoryPillGeometry();
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateCategoryPillGeometry();
     });
   }
 
@@ -138,12 +162,15 @@ class _MenuScreenState extends State<MenuScreen> {
         oldWidget.categories.length != widget.categories.length) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _scrollSelectedChipIntoView();
+        _updateCategoryPillGeometry();
       });
     }
   }
 
   @override
   void dispose() {
+    _cartFlightEntry?.remove();
+    _cartFlightEntry = null;
     _searchController.dispose();
     _scrollController
       ..removeListener(_onScrollChanged)
@@ -252,113 +279,135 @@ class _MenuScreenState extends State<MenuScreen> {
         .toList(growable: false);
   }
 
+  void _clearSearch() {
+    _searchController.clear();
+    setState(() => _searchQuery = '');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollSelectedChipIntoView();
+      _updateCategoryPillGeometry();
+    });
+  }
+
+  void _updateCategoryPillGeometry() {
+    if (!mounted || widget.categories.isEmpty || _hasSearchQuery) return;
+
+    final selectedIndex = widget.selectedCategoryIndex.clamp(
+      0,
+      widget.categories.length - 1,
+    );
+    final chipRenderObject = _categoryChipKeys[selectedIndex].currentContext
+        ?.findRenderObject();
+    final trackRenderObject = _categoryPillTrackKey.currentContext
+        ?.findRenderObject();
+    if (chipRenderObject is! RenderBox ||
+        trackRenderObject is! RenderBox ||
+        !chipRenderObject.hasSize ||
+        !trackRenderObject.hasSize) {
+      return;
+    }
+
+    final chipOffset = chipRenderObject.localToGlobal(
+      Offset.zero,
+      ancestor: trackRenderObject,
+    );
+    final nextLeft = chipOffset.dx;
+    final nextWidth = chipRenderObject.size.width;
+    if (_categoryPillLeft != null &&
+        (nextLeft - _categoryPillLeft!).abs() < 0.5 &&
+        _categoryPillWidth != null &&
+        (nextWidth - _categoryPillWidth!).abs() < 0.5) {
+      return;
+    }
+
+    setState(() {
+      _categoryPillLeft = nextLeft;
+      _categoryPillWidth = nextWidth;
+    });
+  }
+
+  void _animateProductToCart(MenuProduct product, Rect origin) {
+    final now = DateTime.now();
+    final previousFlight = _lastCartFlightAt;
+    if (AppMotion.reduced(context) ||
+        (previousFlight != null &&
+            now.difference(previousFlight) < AppMotion.spatial)) {
+      HapticFeedback.selectionClick();
+      return;
+    }
+    _lastCartFlightAt = now;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      final targetRenderObject = _cartFlightTargetKey.currentContext
+          ?.findRenderObject();
+      final overlay = Overlay.maybeOf(context, rootOverlay: true);
+      final overlayRenderObject = overlay?.context.findRenderObject();
+      if (targetRenderObject is! RenderBox ||
+          !targetRenderObject.hasSize ||
+          overlay == null ||
+          overlayRenderObject is! RenderBox ||
+          !overlayRenderObject.hasSize) {
+        HapticFeedback.selectionClick();
+        return;
+      }
+
+      final targetRect =
+          targetRenderObject.localToGlobal(Offset.zero) &
+          targetRenderObject.size;
+      final start = overlayRenderObject.globalToLocal(origin.center);
+      final end = overlayRenderObject.globalToLocal(targetRect.center);
+
+      final previousEntry = _cartFlightEntry;
+      if (previousEntry?.mounted == true) previousEntry!.remove();
+
+      late final OverlayEntry entry;
+      entry = OverlayEntry(
+        builder: (_) => _WrapToCartFlight(
+          product: product,
+          start: start,
+          end: end,
+          onCompleted: () {
+            if (_cartFlightEntry != entry) return;
+            if (entry.mounted) entry.remove();
+            _cartFlightEntry = null;
+            HapticFeedback.selectionClick();
+            if (mounted) {
+              setState(() => _cartArrivalPulse += 1);
+            }
+          },
+        ),
+      );
+      _cartFlightEntry = entry;
+      overlay.insert(entry);
+    });
+  }
+
   void _showProductImagePreview(MenuProduct product) {
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) {
-        final dialogTheme = Theme.of(dialogContext);
-        final isDark = dialogTheme.brightness == Brightness.dark;
-
-        return Dialog(
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 24,
-          ),
-          backgroundColor: Colors.transparent,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 400),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final availableWidth = constraints.maxWidth.isFinite
-                    ? constraints.maxWidth - 32
-                    : 360.0;
-                final previewSize = availableWidth
-                    .clamp(120.0, 360.0)
-                    .toDouble();
-
-                return SingleChildScrollView(
-                  child: Container(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF1D1A18) : Colors.white,
-                      borderRadius: BorderRadius.circular(28),
-                      boxShadow: <BoxShadow>[
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.2),
-                          blurRadius: 30,
-                          offset: const Offset(0, 18),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Stack(
-                          children: <Widget>[
-                            Center(
-                              child: ProductImage(
-                                product: product,
-                                width: previewSize,
-                                height: previewSize,
-                                borderRadius: 24,
-                                fallbackFontSize: 96,
-                              ),
-                            ),
-                            Positioned(
-                              top: 8,
-                              right: 8,
-                              child: Material(
-                                color: isDark
-                                    ? const Color(0xFF2B2622)
-                                    : Colors.white,
-                                shape: const CircleBorder(),
-                                child: IconButton(
-                                  tooltip: MaterialLocalizations.of(
-                                    dialogContext,
-                                  ).closeButtonTooltip,
-                                  onPressed: () =>
-                                      Navigator.of(dialogContext).pop(),
-                                  icon: const Icon(Icons.close_rounded),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
-                        TypographyText(
-                          product.title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        TypographyText(
-                          formatSum(product.price),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: BaseColors.primary,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        );
-      },
+    Navigator.of(context).push<void>(
+      PageRouteBuilder<void>(
+        opaque: false,
+        barrierDismissible: true,
+        barrierColor: Colors.black.withValues(alpha: 0.48),
+        barrierLabel: MaterialLocalizations.of(
+          context,
+        ).modalBarrierDismissLabel,
+        transitionDuration: AppMotion.duration(context, AppMotion.spatial),
+        reverseTransitionDuration: AppMotion.duration(context, AppMotion.state),
+        pageBuilder: (routeContext, animation, _) => _ProductDetailPage(
+          product: product,
+          animation: animation,
+          heroTag: _productHeroTag(product),
+        ),
+        transitionsBuilder: (_, animation, _, child) => FadeTransition(
+          opacity: CurvedAnimation(parent: animation, curve: AppMotion.enter),
+          child: child,
+        ),
+      ),
     );
   }
+
+  String _productHeroTag(MenuProduct product) => 'menu-product-${product.id}';
 
   // -------------------------------------------------------------------------
   // Scroll-spy: detect which category section is in view
@@ -466,11 +515,15 @@ class _MenuScreenState extends State<MenuScreen> {
     final ratio = index / (widget.categories.length - 1);
     final targetOffset = (maxExtent * ratio).clamp(0.0, maxExtent);
 
-    await _scrollController.animateTo(
-      targetOffset,
-      duration: const Duration(milliseconds: 160),
-      curve: Curves.easeOutCubic,
-    );
+    if (AppMotion.reduced(context)) {
+      _scrollController.jumpTo(targetOffset);
+    } else {
+      await _scrollController.animateTo(
+        targetOffset,
+        duration: AppMotion.micro,
+        curve: AppMotion.enter,
+      );
+    }
   }
 
   Future<void> _scrollToSectionContext(BuildContext sectionContext) async {
@@ -493,11 +546,15 @@ class _MenuScreenState extends State<MenuScreen> {
       _scrollController.position.maxScrollExtent,
     );
 
-    await _scrollController.animateTo(
-      clampedOffset,
-      duration: const Duration(milliseconds: 280),
-      curve: Curves.easeOutCubic,
-    );
+    if (AppMotion.reduced(context)) {
+      _scrollController.jumpTo(clampedOffset);
+    } else {
+      await _scrollController.animateTo(
+        clampedOffset,
+        duration: AppMotion.spatial,
+        curve: AppMotion.enter,
+      );
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -534,11 +591,15 @@ class _MenuScreenState extends State<MenuScreen> {
 
     if ((targetOffset - _categoryScrollController.offset).abs() < 1) return;
 
-    _categoryScrollController.animateTo(
-      targetOffset,
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeOutCubic,
-    );
+    if (AppMotion.reduced(context)) {
+      _categoryScrollController.jumpTo(targetOffset);
+    } else {
+      _categoryScrollController.animateTo(
+        targetOffset,
+        duration: AppMotion.state,
+        curve: AppMotion.enter,
+      );
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -553,84 +614,108 @@ class _MenuScreenState extends State<MenuScreen> {
         ? _filteredProducts()
         : const <MenuProduct>[];
 
-    return RefreshIndicator(
-      color: BaseColors.primary,
-      onRefresh: widget.onRefresh,
-      child: CustomScrollView(
-        controller: _scrollController,
-        cacheExtent: 1200,
-        physics: const BouncingScrollPhysics(
-          parent: AlwaysScrollableScrollPhysics(),
-        ),
-        slivers: [
-          // -- Top bar, delivery toggle, promo banner
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  FadeSlideIn(child: _buildTopBar()),
-                  const SizedBox(height: 10),
-                  FadeSlideIn(
-                    delay: const Duration(milliseconds: 50),
-                    child: _buildDeliveryToggle(t),
-                  ),
-                  if (widget.promotions.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    FadeSlideIn(
-                      delay: const Duration(milliseconds: 100),
-                      child: PromoSlider(
-                        promotions: widget.promotions,
-                        locale: context
-                            .watch<LocaleController>()
-                            .locale
-                            .languageCode,
+    return Stack(
+      children: <Widget>[
+        RefreshIndicator(
+          color: BaseColors.primary,
+          onRefresh: widget.onRefresh,
+          child: CustomScrollView(
+            controller: _scrollController,
+            cacheExtent: 1200,
+            physics: const BouncingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
+            ),
+            slivers: [
+              // -- Top bar, delivery toggle, promo banner
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      FadeSlideIn(child: _buildTopBar(t)),
+                      const SizedBox(height: 10),
+                      FadeSlideIn(
+                        delay: const Duration(milliseconds: 50),
+                        child: _buildDeliveryToggle(t),
                       ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-
-          if (widget.products.isEmpty)
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: _buildMenuState(theme, t),
-            )
-          else ...[
-            // -- Sticky product search and category tabs
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: _CategoryHeaderDelegate(
-                height: _activeStickyHeaderHeight,
-                child: _buildProductsHeader(theme, t),
-              ),
-            ),
-
-            if (_hasSearchQuery)
-              if (searchResults.isEmpty)
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: _buildSearchEmptyState(theme, t),
-                )
-              else
-                _buildSearchResultsSliver(searchResults, theme, t)
-            else
-              // -- Product sections per category
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (_, index) => _buildCategorySection(index, theme),
-                    childCount: widget.categories.length,
+                      if (widget.promotions.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        FadeSlideIn(
+                          delay: const Duration(milliseconds: 100),
+                          child: PromoSlider(
+                            promotions: widget.promotions,
+                            locale: context
+                                .watch<LocaleController>()
+                                .locale
+                                .languageCode,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ),
-          ],
-        ],
-      ),
+
+              if (widget.products.isEmpty)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: _buildMenuState(theme, t),
+                )
+              else ...[
+                // -- Sticky product search and category tabs
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _CategoryHeaderDelegate(
+                    height: _activeStickyHeaderHeight,
+                    child: _buildProductsHeader(theme, t),
+                  ),
+                ),
+
+                if (_hasSearchQuery)
+                  if (searchResults.isEmpty)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: _buildSearchEmptyState(theme, t),
+                    )
+                  else
+                    _buildSearchResultsSliver(searchResults, theme, t)
+                else
+                  // -- Product sections per category
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (_, index) => _buildCategorySection(index, theme),
+                        childCount: widget.categories.length,
+                      ),
+                    ),
+                  ),
+              ],
+              if (widget.cartCount > 0)
+                const SliverToBoxAdapter(child: SizedBox(height: 90)),
+            ],
+          ),
+        ),
+        Positioned(
+          left: 16,
+          right: 16,
+          bottom: 12,
+          child: AnimatedSlide(
+            duration: AppMotion.duration(context, AppMotion.state),
+            curve: AppMotion.enter,
+            offset: widget.cartCount > 0 ? Offset.zero : const Offset(0, 1.4),
+            child: AnimatedOpacity(
+              duration: AppMotion.duration(context, AppMotion.micro),
+              opacity: widget.cartCount > 0 ? 1 : 0,
+              child: IgnorePointer(
+                ignoring: widget.cartCount <= 0,
+                child: _buildCartSummaryBar(t),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -638,12 +723,13 @@ class _MenuScreenState extends State<MenuScreen> {
   // Extracted widgets
   // -------------------------------------------------------------------------
 
-  Widget _buildTopBar() {
+  Widget _buildTopBar(L t) {
     return Row(
       children: [
         ActionIconButton(
           icon: Icons.menu_rounded,
           isDark: widget.isDark,
+          tooltip: t.menu,
           onTap: () => Scaffold.of(context).openDrawer(),
         ),
         const SizedBox(width: 14),
@@ -666,12 +752,16 @@ class _MenuScreenState extends State<MenuScreen> {
               children: [
                 Image.asset(_brandMarkAsset, height: 28),
                 const SizedBox(width: 12),
-                const TypographyText(
-                  'Enjoy Lavash',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.9,
+                const Expanded(
+                  child: TypographyText(
+                    'Enjoy Lavash',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.9,
+                    ),
                   ),
                 ),
               ],
@@ -679,7 +769,7 @@ class _MenuScreenState extends State<MenuScreen> {
           ),
         ),
         const SizedBox(width: 14),
-        _buildCartButton(),
+        _buildCartButton(t),
       ],
     );
   }
@@ -689,10 +779,30 @@ class _MenuScreenState extends State<MenuScreen> {
 
     final Widget state;
     if (widget.isMenuLoading) {
-      state = Center(
+      state = Padding(
         key: const ValueKey<String>('menu-loading'),
-        child: CircularProgressIndicator(
-          color: widget.isDark ? Colors.white : BaseColors.primary,
+        padding: const EdgeInsets.fromLTRB(16, 24, 16, 96),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            const SizedBox(
+              width: 28,
+              height: 28,
+              child: CircularProgressIndicator(strokeWidth: 2.6),
+            ),
+            const SizedBox(height: 14),
+            TypographyText(
+              t.menuLoading,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 22),
+            for (var index = 0; index < 3; index++) ...[
+              _MenuSkeletonCard(isDark: widget.isDark),
+              if (index < 2) const SizedBox(height: 10),
+            ],
+          ],
         ),
       );
     } else {
@@ -734,29 +844,30 @@ class _MenuScreenState extends State<MenuScreen> {
     }
 
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 260),
-      switchInCurve: Curves.easeOutCubic,
-      switchOutCurve: Curves.easeInCubic,
+      duration: AppMotion.duration(context, AppMotion.state),
+      switchInCurve: AppMotion.enter,
+      switchOutCurve: AppMotion.exit,
       child: state,
     );
   }
 
-  Widget _buildCartButton() {
+  Widget _buildCartButton(L t) {
     return Stack(
       clipBehavior: Clip.none,
       children: [
         ActionIconButton(
           icon: Icons.shopping_bag_outlined,
           isDark: widget.isDark,
+          tooltip: t.cart,
           onTap: widget.onCartTap,
         ),
         Positioned(
           top: -4,
           right: -4,
           child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 240),
-            switchInCurve: Curves.easeOutBack,
-            switchOutCurve: Curves.easeInCubic,
+            duration: AppMotion.duration(context, AppMotion.state),
+            switchInCurve: AppMotion.enter,
+            switchOutCurve: AppMotion.exit,
             transitionBuilder: (child, animation) =>
                 ScaleTransition(scale: animation, child: child),
             child: widget.cartCount > 0
@@ -782,6 +893,174 @@ class _MenuScreenState extends State<MenuScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildCartSummaryBar(L t) {
+    final isDark = widget.isDark;
+    final surface = isDark ? const Color(0xFF29231F) : Colors.white;
+    final foreground = isDark ? Colors.white : const Color(0xFF201C19);
+    final muted = isDark ? const Color(0xFFC9C1BA) : BaseColors.textGray;
+    final border = isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : BaseColors.primary.withValues(alpha: 0.22);
+    final shadow = isDark
+        ? Colors.black.withValues(alpha: 0.28)
+        : BaseColors.primary.withValues(alpha: 0.18);
+    final totalSurface = isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : BaseColors.surfaceTint;
+    final totalBorder = isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : BaseColors.primary.withValues(alpha: 0.16);
+    final arrowSurface = isDark
+        ? Colors.white.withValues(alpha: 0.1)
+        : BaseColors.primary.withValues(alpha: 0.12);
+
+    return Semantics(
+      button: true,
+      label:
+          '${t.viewCart}, ${t.cartItemsCount(widget.cartCount)}, '
+          '${formatSum(widget.cartTotal)}',
+      child: Material(
+        key: const ValueKey<String>('menu-cart-summary-bar'),
+        color: surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(22),
+          side: BorderSide(color: border),
+        ),
+        elevation: isDark ? 10 : 14,
+        shadowColor: shadow,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: widget.onCartTap,
+          splashColor: BaseColors.primary.withValues(alpha: 0.08),
+          highlightColor: BaseColors.primary.withValues(alpha: 0.04),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 68),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Row(
+                children: <Widget>[
+                  TweenAnimationBuilder<double>(
+                    key: ValueKey<int>(_cartArrivalPulse),
+                    duration: AppMotion.duration(context, AppMotion.micro),
+                    curve: AppMotion.enter,
+                    tween: Tween<double>(
+                      begin: _cartArrivalPulse == 0 ? 1 : 0.86,
+                      end: 1,
+                    ),
+                    builder: (context, scale, child) =>
+                        Transform.scale(scale: scale, child: child),
+                    child: Container(
+                      key: _cartFlightTargetKey,
+                      width: 44,
+                      height: 44,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: <Color>[
+                            BaseColors.primary,
+                            BaseColors.primaryDark,
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: <BoxShadow>[
+                          BoxShadow(
+                            color: BaseColors.primary.withValues(alpha: 0.26),
+                            blurRadius: 14,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: TypographyText(
+                        '${widget.cartCount}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        TypographyText(
+                          t.viewCart,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: foreground,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        TypographyText(
+                          t.cartItemsCount(widget.cartCount),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: muted,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 136),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: totalSurface,
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: totalBorder),
+                      ),
+                      child: TypographyText(
+                        formatSum(widget.cartTotal),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.end,
+                        style: TextStyle(
+                          color: isDark ? Colors.white : BaseColors.primaryDark,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    width: 30,
+                    height: 30,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: arrowSurface,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.arrow_forward_rounded,
+                      color: isDark ? Colors.white : BaseColors.primaryDark,
+                      size: 19,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -817,9 +1096,12 @@ class _MenuScreenState extends State<MenuScreen> {
           Expanded(
             child: GestureDetector(
               onTap: () async {
-                final branch = await showBranchBottomSheet(context);
+                final branch = await showBranchBottomSheet(
+                  context,
+                  selectedBranchId: widget.selectedBranch?.id,
+                );
                 if (branch != null) {
-                  widget.onBranchSelected(branch);
+                  await widget.onBranchSelected(branch);
                 }
               },
               child: DeliveryChip(
@@ -849,14 +1131,52 @@ class _MenuScreenState extends State<MenuScreen> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                 child: SizedBox(
-                  height: 46,
-                  child: ListView.separated(
+                  height: 48,
+                  child: SingleChildScrollView(
                     controller: _categoryScrollController,
                     physics: const BouncingScrollPhysics(),
                     scrollDirection: Axis.horizontal,
-                    itemCount: widget.categories.length,
-                    separatorBuilder: (_, _) => const SizedBox(width: 10),
-                    itemBuilder: (_, index) => _buildCategoryChip(index),
+                    child: Stack(
+                      key: _categoryPillTrackKey,
+                      alignment: Alignment.centerLeft,
+                      children: <Widget>[
+                        if (_categoryPillLeft != null &&
+                            _categoryPillWidth != null)
+                          AnimatedPositioned(
+                            duration: AppMotion.duration(
+                              context,
+                              AppMotion.state,
+                            ),
+                            curve: AppMotion.standard,
+                            left: _categoryPillLeft,
+                            top: 0,
+                            width: _categoryPillWidth,
+                            height: 48,
+                            child: const DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: BaseColors.primary,
+                                borderRadius: BorderRadius.all(
+                                  Radius.circular(18),
+                                ),
+                              ),
+                            ),
+                          ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            for (
+                              var index = 0;
+                              index < widget.categories.length;
+                              index++
+                            ) ...<Widget>[
+                              _buildCategoryChip(index),
+                              if (index < widget.categories.length - 1)
+                                const SizedBox(width: 10),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -868,8 +1188,8 @@ class _MenuScreenState extends State<MenuScreen> {
 
   Widget _buildSearchField(L t) {
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOutCubic,
+      duration: AppMotion.duration(context, AppMotion.micro),
+      curve: AppMotion.enter,
       height: 60,
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
@@ -913,17 +1233,13 @@ class _MenuScreenState extends State<MenuScreen> {
             ),
           ),
           AnimatedSwitcher(
-            duration: const Duration(milliseconds: 160),
+            duration: AppMotion.duration(context, AppMotion.micro),
             child: _hasSearchQuery
                 ? IconButton(
                     key: const ValueKey<String>('clear-search'),
                     tooltip: t.clearSearch,
                     onPressed: () {
-                      _searchController.clear();
-                      setState(() => _searchQuery = '');
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        _scrollSelectedChipIntoView();
-                      });
+                      _clearSearch();
                     },
                     icon: const Icon(Icons.close_rounded),
                   )
@@ -972,8 +1288,10 @@ class _MenuScreenState extends State<MenuScreen> {
                 product: product,
                 isDark: widget.isDark,
                 quantity: widget.cartQuantities[product.id] ?? 0,
+                imageHeroTag: _productHeroTag(product),
                 onImageTap: () => _showProductImagePreview(product),
                 onAdd: () => widget.onAddToCart(product),
+                onAddOrigin: (origin) => _animateProductToCart(product, origin),
                 onDecrease: () => widget.onDecreaseFromCart(product),
                 onIncrease: () => widget.onAddToCart(product),
               ),
@@ -1008,6 +1326,12 @@ class _MenuScreenState extends State<MenuScreen> {
               fontWeight: FontWeight.w800,
             ),
           ),
+          const SizedBox(height: 18),
+          OutlinedButton.icon(
+            onPressed: _clearSearch,
+            icon: const Icon(Icons.close_rounded, size: 19),
+            label: TypographyText(t.searchAgain),
+          ),
         ],
       ),
     );
@@ -1018,28 +1342,51 @@ class _MenuScreenState extends State<MenuScreen> {
     final labelColor = isActive || widget.isDark
         ? Colors.white
         : const Color(0xFF14110F);
+    final hasSharedPill = _categoryPillLeft != null;
 
     return KeyedSubtree(
       key: _categoryChipKeys[index],
-      child: ChoiceChip(
-        label: TypographyText(
-          widget.categories[index],
-          style: TextStyle(
-            color: labelColor,
-            fontWeight: FontWeight.w700,
-            fontSize: 15,
+      child: Semantics(
+        button: true,
+        selected: isActive,
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(18),
+          child: Ink(
+            decoration: BoxDecoration(
+              color: hasSharedPill
+                  ? Colors.transparent
+                  : isActive
+                  ? BaseColors.primary
+                  : widget.isDark
+                  ? const Color(0xFF201C19)
+                  : const Color(0xFFF1EDE7),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(18),
+              onTap: () => _scrollToCategory(index),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 48),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Center(
+                    child: AnimatedDefaultTextStyle(
+                      duration: AppMotion.duration(context, AppMotion.micro),
+                      curve: AppMotion.standard,
+                      style: TextStyle(
+                        color: labelColor,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                      child: TypographyText(widget.categories[index]),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
-        selected: isActive,
-        showCheckmark: false,
-        side: BorderSide.none,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        backgroundColor: widget.isDark
-            ? const Color(0xFF201C19)
-            : const Color(0xFFF1EDE7),
-        selectedColor: BaseColors.primary,
-        onSelected: (_) => _scrollToCategory(index),
       ),
     );
   }
@@ -1075,8 +1422,11 @@ class _MenuScreenState extends State<MenuScreen> {
                       product: product,
                       isDark: widget.isDark,
                       quantity: widget.cartQuantities[product.id] ?? 0,
+                      imageHeroTag: _productHeroTag(product),
                       onImageTap: () => _showProductImagePreview(product),
                       onAdd: () => widget.onAddToCart(product),
+                      onAddOrigin: (origin) =>
+                          _animateProductToCart(product, origin),
                       onDecrease: () => widget.onDecreaseFromCart(product),
                       onIncrease: () => widget.onAddToCart(product),
                     ),
@@ -1090,9 +1440,449 @@ class _MenuScreenState extends State<MenuScreen> {
   }
 }
 
+class _WrapToCartFlight extends StatefulWidget {
+  const _WrapToCartFlight({
+    required this.product,
+    required this.start,
+    required this.end,
+    required this.onCompleted,
+  });
+
+  final MenuProduct product;
+  final Offset start;
+  final Offset end;
+  final VoidCallback onCompleted;
+
+  @override
+  State<_WrapToCartFlight> createState() => _WrapToCartFlightState();
+}
+
+class _WrapToCartFlightState extends State<_WrapToCartFlight>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: AppMotion.spatial,
+  );
+  late final Animation<double> _animation = CurvedAnimation(
+    parent: _controller,
+    curve: AppMotion.enter,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addStatusListener(_handleStatus);
+    _controller.forward();
+  }
+
+  void _handleStatus(AnimationStatus status) {
+    if (status != AnimationStatus.completed) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) widget.onCompleted();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller
+      ..removeStatusListener(_handleStatus)
+      ..dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final viewSize = MediaQuery.sizeOf(context);
+    final lowerEndpoint = widget.start.dy > widget.end.dy
+        ? widget.start.dy
+        : widget.end.dy;
+    final controlY = (lowerEndpoint + 64)
+        .clamp(24.0, viewSize.height - 24)
+        .toDouble();
+    final control = Offset((widget.start.dx + widget.end.dx) / 2, controlY);
+
+    return Positioned.fill(
+      key: const ValueKey<String>('wrap-to-cart-flight'),
+      child: ExcludeSemantics(
+        child: IgnorePointer(
+          child: AnimatedBuilder(
+            animation: _animation,
+            builder: (context, _) {
+              final progress = _animation.value;
+              final firstLeg = Offset.lerp(widget.start, control, progress)!;
+              final secondLeg = Offset.lerp(control, widget.end, progress)!;
+              final position = Offset.lerp(firstLeg, secondLeg, progress)!;
+              final scale = Tween<double>(
+                begin: 1,
+                end: 0.42,
+              ).transform(progress);
+              final opacity =
+                  (progress < 0.82
+                          ? 1.0
+                          : ((1 - progress) / 0.18).clamp(0.0, 1.0))
+                      .toDouble();
+
+              return Stack(
+                children: <Widget>[
+                  Positioned.fill(
+                    child: CustomPaint(
+                      painter: _SmileTrailPainter(
+                        start: widget.start,
+                        control: control,
+                        end: widget.end,
+                        progress: progress,
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: position.dx - 26,
+                    top: position.dy - 26,
+                    width: 52,
+                    height: 52,
+                    child: Opacity(
+                      opacity: opacity,
+                      child: Transform.rotate(
+                        angle: (progress - 0.5) * 0.08,
+                        child: Transform.scale(
+                          scale: scale,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface,
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(
+                                color: BaseColors.primary,
+                                width: 2,
+                              ),
+                              boxShadow: <BoxShadow>[
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.18),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(3),
+                              child: ProductImage(
+                                product: widget.product,
+                                width: 46,
+                                height: 46,
+                                borderRadius: 14,
+                                fallbackFontSize: 26,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SmileTrailPainter extends CustomPainter {
+  const _SmileTrailPainter({
+    required this.start,
+    required this.control,
+    required this.end,
+    required this.progress,
+  });
+
+  final Offset start;
+  final Offset control;
+  final Offset end;
+  final double progress;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path()
+      ..moveTo(start.dx, start.dy)
+      ..quadraticBezierTo(control.dx, control.dy, end.dx, end.dy);
+    final metrics = path.computeMetrics().toList(growable: false);
+    if (metrics.isEmpty) return;
+
+    final metric = metrics.first;
+    final visiblePath = metric.extractPath(0, metric.length * progress);
+    canvas.drawPath(
+      visiblePath,
+      Paint()
+        ..color = BaseColors.primaryDark.withValues(alpha: 0.3 * (1 - progress))
+        ..strokeWidth = 4
+        ..strokeCap = StrokeCap.round
+        ..style = PaintingStyle.stroke,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _SmileTrailPainter oldDelegate) {
+    return oldDelegate.progress != progress ||
+        oldDelegate.start != start ||
+        oldDelegate.control != control ||
+        oldDelegate.end != end;
+  }
+}
+
+class _ProductDetailPage extends StatelessWidget {
+  const _ProductDetailPage({
+    required this.product,
+    required this.animation,
+    required this.heroTag,
+  });
+
+  final MenuProduct product;
+  final Animation<double> animation;
+  final Object heroTag;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final sheetAnimation = animation.drive(CurveTween(curve: AppMotion.enter));
+    final detailsAnimation = animation.drive(
+      CurveTween(curve: const Interval(0.28, 1, curve: Curves.easeOutCubic)),
+    );
+
+    return Semantics(
+      key: const ValueKey<String>('product-detail-page'),
+      scopesRoute: true,
+      namesRoute: true,
+      explicitChildNodes: true,
+      label: product.title,
+      child: Material(
+        color: Colors.transparent,
+        child: Stack(
+          children: <Widget>[
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => Navigator.of(context).pop(),
+              ),
+            ),
+            SafeArea(
+              minimum: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 0.06),
+                    end: Offset.zero,
+                  ).animate(sheetAnimation),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: 520,
+                      maxHeight: MediaQuery.sizeOf(context).height * 0.9,
+                    ),
+                    child: Material(
+                      color: isDark ? const Color(0xFF1D1A18) : Colors.white,
+                      borderRadius: BorderRadius.circular(30),
+                      clipBehavior: Clip.antiAlias,
+                      elevation: 18,
+                      shadowColor: Colors.black.withValues(alpha: 0.28),
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            final previewSize = (constraints.maxWidth - 8)
+                                .clamp(180.0, 360.0)
+                                .toDouble();
+                            return Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Stack(
+                                  alignment: Alignment.center,
+                                  children: <Widget>[
+                                    Container(
+                                      width: 38,
+                                      height: 4,
+                                      decoration: BoxDecoration(
+                                        color: isDark
+                                            ? Colors.white.withValues(
+                                                alpha: 0.2,
+                                              )
+                                            : Colors.black.withValues(
+                                                alpha: 0.1,
+                                              ),
+                                        borderRadius: BorderRadius.circular(
+                                          999,
+                                        ),
+                                      ),
+                                    ),
+                                    Align(
+                                      alignment: Alignment.centerRight,
+                                      child: IconButton(
+                                        tooltip: MaterialLocalizations.of(
+                                          context,
+                                        ).closeButtonTooltip,
+                                        onPressed: () =>
+                                            Navigator.of(context).pop(),
+                                        icon: const Icon(Icons.close_rounded),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Center(
+                                  child: Hero(
+                                    tag: heroTag,
+                                    createRectTween: (begin, end) =>
+                                        MaterialRectCenterArcTween(
+                                          begin: begin,
+                                          end: end,
+                                        ),
+                                    child: ProductImage(
+                                      product: product,
+                                      width: previewSize,
+                                      height: previewSize,
+                                      borderRadius: 26,
+                                      fallbackFontSize: 96,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                FadeTransition(
+                                  opacity: detailsAnimation,
+                                  child: SizeTransition(
+                                    sizeFactor: detailsAnimation,
+                                    axisAlignment: -1,
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: <Widget>[
+                                        TypographyText(
+                                          product.title,
+                                          style: const TextStyle(
+                                            fontSize: 24,
+                                            fontWeight: FontWeight.w900,
+                                            height: 1.08,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        TypographyText(
+                                          product.category,
+                                          style: TextStyle(
+                                            color: isDark
+                                                ? BaseColors.lightTextGray
+                                                : BaseColors.textGray,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 14),
+                                        TypographyText(
+                                          formatSum(product.price),
+                                          style: const TextStyle(
+                                            color: BaseColors.primary,
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.w900,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Sticky header delegate for the category tab bar
 // ---------------------------------------------------------------------------
+
+class _MenuSkeletonCard extends StatelessWidget {
+  const _MenuSkeletonCard({required this.isDark});
+
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    final baseColor = isDark
+        ? const Color(0xFF1D1A18)
+        : const Color(0xFFFFFFFF);
+    final highlightColor = isDark
+        ? const Color(0xFF302A26)
+        : const Color(0xFFF0E8E1);
+
+    return Container(
+      height: 118,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: baseColor,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 94,
+            height: 94,
+            decoration: BoxDecoration(
+              color: highlightColor,
+              borderRadius: BorderRadius.circular(20),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                FractionallySizedBox(
+                  widthFactor: 0.84,
+                  child: Container(
+                    height: 14,
+                    decoration: BoxDecoration(
+                      color: highlightColor,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                FractionallySizedBox(
+                  widthFactor: 0.52,
+                  child: Container(
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: highlightColor,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                FractionallySizedBox(
+                  widthFactor: 0.66,
+                  child: Container(
+                    height: 14,
+                    decoration: BoxDecoration(
+                      color: highlightColor,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _CategoryHeaderDelegate extends SliverPersistentHeaderDelegate {
   const _CategoryHeaderDelegate({required this.height, required this.child});

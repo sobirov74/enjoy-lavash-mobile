@@ -50,4 +50,51 @@ void main() {
     expect(failure, isA<ServerFailure>());
     expect(failure.message, 'Номер телефона обязателен');
   });
+
+  test('maps migration statuses to explicit failure types', () {
+    Failure mapStatus(int statusCode, {Headers? headers}) {
+      final options = RequestOptions(
+        path: '/auth/request-otp',
+        headers: {'Accept-Language': 'en'},
+      );
+      return mapDioError(
+        DioException.badResponse(
+          statusCode: statusCode,
+          requestOptions: options,
+          response: Response(
+            requestOptions: options,
+            statusCode: statusCode,
+            headers: headers,
+          ),
+        ),
+      );
+    }
+
+    expect(mapStatus(409), isA<ConflictFailure>());
+    expect(mapStatus(413), isA<PayloadTooLargeFailure>());
+    expect(mapStatus(503), isA<ServiceUnavailableFailure>());
+
+    final rateLimit = mapStatus(
+      429,
+      headers: Headers.fromMap({
+        'retry-after': ['45'],
+      }),
+    );
+    expect(rateLimit, isA<RateLimitFailure>());
+    expect(
+      (rateLimit as RateLimitFailure).retryAfter,
+      const Duration(seconds: 45),
+    );
+  });
+
+  test('uses localized defaults for migration status codes', () {
+    expect(
+      resolveApiErrorMessage(data: null, statusCode: 429, languageCode: 'ru'),
+      'Слишком много запросов. Попробуйте позже.',
+    );
+    expect(
+      resolveApiErrorMessage(data: null, statusCode: 503, languageCode: 'uz'),
+      'Xizmat vaqtincha ishlamayapti. Qayta urinib ko‘ring.',
+    );
+  });
 }

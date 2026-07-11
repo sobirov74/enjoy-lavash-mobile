@@ -16,12 +16,14 @@ class _DeleteAccountSheetState extends State<_DeleteAccountSheet> {
 
     final navigator = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
+    final locationController = context.read<LocationController>();
     final result = await controller.deleteAccount();
 
     if (!mounted) return;
 
     switch (result) {
       case Success():
+        locationController.clearPersonalData();
         navigator.pop();
         messenger.showSnackBar(appSnackBar(t.accountDeleted));
       case Error(:final failure):
@@ -247,9 +249,7 @@ class _DeleteAccountSheetState extends State<_DeleteAccountSheet> {
                         )
                       : const Icon(Icons.delete_forever_rounded, size: 20),
                   label: TypographyText(
-                    deleting
-                        ? t.deleting
-                        : t.deleteMyAccount,
+                    deleting ? t.deleting : t.deleteMyAccount,
                     style: const TextStyle(fontWeight: FontWeight.w800),
                   ),
                 ),

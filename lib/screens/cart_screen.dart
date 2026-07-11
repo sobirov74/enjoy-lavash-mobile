@@ -115,22 +115,23 @@ class CartScreen extends StatelessWidget {
   }
 
   Widget _buildCartContent(ThemeData theme, L t, int totalItems) {
-    return CustomScrollView(
-      slivers: <Widget>[
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
-            child: Row(
-              children: <Widget>[
-                TypographyText(
-                  t.cart,
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontSize: 32,
-                    fontWeight: FontWeight.w800,
-                  ),
+    return Column(
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+          child: Row(
+            children: <Widget>[
+              TypographyText(
+                t.cart,
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w800,
                 ),
-                const SizedBox(width: 12),
-                AnimatedSwitcher(
+              ),
+              const SizedBox(width: 12),
+              Semantics(
+                label: t.cartItemsCount(totalItems),
+                child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 220),
                   switchInCurve: Curves.easeOutBack,
                   switchOutCurve: Curves.easeInCubic,
@@ -156,13 +157,16 @@ class CartScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          sliver: SliverList.builder(
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            physics: const BouncingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
+            ),
             itemCount: items.length,
             findChildIndexCallback: (key) {
               final valueKey = key as ValueKey<String>;
@@ -192,119 +196,109 @@ class CartScreen extends StatelessWidget {
             },
           ),
         ),
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
-            child: Align(
-              alignment: Alignment.bottomCenter,
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1D1A18) : Colors.white,
-                  borderRadius: BorderRadius.circular(22),
-                  boxShadow: <BoxShadow>[
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.06),
-                      blurRadius: 30,
-                      offset: const Offset(0, 12),
-                    ),
-                  ],
+        _buildCheckoutBar(theme, t),
+      ],
+    );
+  }
+
+  Widget _buildCheckoutBar(ThemeData theme, L t) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1D1A18) : Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: isDark ? const Color(0xFF302A26) : BaseColors.borderLight,
+        ),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.07),
+            blurRadius: 30,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              TypographyText(
+                t.total,
+                style: TextStyle(
+                  color: isDark ? const Color(0xFFAAA39A) : BaseColors.textGray,
+                  fontSize: 16,
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: <Widget>[
-                        TypographyText(
-                          t.total,
-                          style: TextStyle(
-                            color: isDark
-                                ? const Color(0xFFAAA39A)
-                                : BaseColors.textGray,
-                            fontSize: 16,
+              ),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 220),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                transitionBuilder: (child, animation) => FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 0.35),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: child,
+                  ),
+                ),
+                child: TypographyText(
+                  formatSum(totalAmount),
+                  key: ValueKey<int>(totalAmount),
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: BaseColors.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: isCheckingOut ? null : onCheckout,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 180),
+                transitionBuilder: (child, animation) => FadeTransition(
+                  opacity: animation,
+                  child: ScaleTransition(
+                    scale: Tween<double>(begin: 0.8, end: 1).animate(animation),
+                    child: child,
+                  ),
+                ),
+                child: isCheckingOut
+                    ? const SizedBox(
+                        key: ValueKey<String>('checkout-loading'),
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.4,
+                          color: BaseColors.white,
+                        ),
+                      )
+                    : Row(
+                        key: const ValueKey<String>('checkout-label'),
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          TypographyText(
+                            t.checkout,
+                            style: const TextStyle(color: BaseColors.white),
                           ),
-                        ),
-                        AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 220),
-                          switchInCurve: Curves.easeOutCubic,
-                          switchOutCurve: Curves.easeInCubic,
-                          transitionBuilder: (child, animation) =>
-                              FadeTransition(
-                                opacity: animation,
-                                child: SlideTransition(
-                                  position: Tween<Offset>(
-                                    begin: const Offset(0, 0.35),
-                                    end: Offset.zero,
-                                  ).animate(animation),
-                                  child: child,
-                                ),
-                              ),
-                          child: TypographyText(
-                            formatSum(totalAmount),
-                            key: ValueKey<int>(totalAmount),
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w800,
-                              color: BaseColors.primary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: BaseColors.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 15),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                        ),
-                        onPressed: isCheckingOut ? null : onCheckout,
-                        child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 180),
-                          transitionBuilder: (child, animation) =>
-                              FadeTransition(
-                                opacity: animation,
-                                child: ScaleTransition(
-                                  scale: Tween<double>(
-                                    begin: 0.8,
-                                    end: 1,
-                                  ).animate(animation),
-                                  child: child,
-                                ),
-                              ),
-                          child: isCheckingOut
-                              ? const SizedBox(
-                                  key: ValueKey<String>('checkout-loading'),
-                                  width: 22,
-                                  height: 22,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.4,
-                                    color: BaseColors.white,
-                                  ),
-                                )
-                              : TypographyText(
-                                  t.checkout,
-                                  key: const ValueKey<String>('checkout-label'),
-                                  style: const TextStyle(
-                                    color: BaseColors.white,
-                                  ),
-                                ),
-                        ),
+                          const SizedBox(width: 8),
+                          const Icon(Icons.arrow_forward_rounded, size: 20),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

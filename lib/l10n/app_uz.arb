@@ -20,10 +20,44 @@
   "cart": "Savat",
   "total": "Jami",
   "checkout": "Buyurtma berish",
+  "viewCart": "Savatni ochish",
+  "cartItemsCount": "{count} ta mahsulot",
+  "@cartItemsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "itemRemovedFromCart": "{product} savatdan olib tashlandi",
+  "@itemRemovedFromCart": {
+    "placeholders": {
+      "product": { "type": "String" }
+    }
+  },
+  "undo": "Qaytarish",
+  "increaseQuantity": "Miqdorni oshirish",
+  "decreaseQuantity": "Miqdorni kamaytirish",
+  "menuLoading": "Menyu tayyorlanmoqda...",
+  "searchAgain": "Qidiruvni tozalash",
   "orderCreated": "Buyurtma yaratildi",
+  "orderSuccessTitle": "Buyurtmangiz qabul qilindi!",
+  "orderSuccessMessage": "Buyurtma oshxonaga yuborildi. Holatini profilingizda kuzatib boring.",
+  "orderSuccessNumber": "Buyurtma #{number}",
+  "@orderSuccessNumber": {
+    "placeholders": {
+      "number": { "type": "String" }
+    }
+  },
+  "trackOrder": "Buyurtmani kuzatish",
+  "orderSuccessPaymentOpening": "Xavfsiz to'lov sahifasi ochilmoqda…",
+  "orderSuccessPaymentOpened": "Ochilgan sahifada to'lovni yakunlang.",
+  "orderSuccessPayOnReceipt": "Buyurtmani olganda to'lov qilasiz.",
+  "orderSuccessPaymentPaid": "To'lov qabul qilindi. Hammasi tayyor.",
+  "orderSuccessPaymentFailed": "To'lov yakunlanmadi. Keyingi qadamni buyurtma tafsilotlarida ko'ring.",
+  "orderSuccessPaymentRefunded": "Ushbu to'lov qaytarildi.",
   "orderCreateFailed": "Buyurtma yaratib bo'lmadi. Qayta urinib ko'ring.",
   "selectDeliveryAddressFirst": "Avval yetkazib berish manzilini tanlang",
   "selectPickupBranchFirst": "Avval olib ketish filialini tanlang",
+  "paymentMethodsUnavailable": "To'lov usullari vaqtincha mavjud emas. Qayta urinib ko'ring.",
 
   "profile": "Profil",
   "guest": "Mehmon",
@@ -111,10 +145,24 @@
   "phoneNumber": "Telefon raqami",
   "smsCode": "SMS kod",
   "nameOptional": "Ism (ixtiyoriy)",
-  "demoCode": "Demo kod: {code}",
-  "@demoCode": {
+  "otpCodeExpiresIn": "Kod {time} dan keyin tugaydi",
+  "@otpCodeExpiresIn": {
     "placeholders": {
-      "code": { "type": "String" }
+      "time": { "type": "String" }
+    }
+  },
+  "otpCodeExpired": "Tasdiqlash kodining muddati tugadi.",
+  "resendCode": "Kodni qayta yuborish",
+  "resendCodeIn": "{time} dan keyin qayta yuborish",
+  "@resendCodeIn": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "tryAgainIn": "{time} dan keyin qayta urining",
+  "@tryAgainIn": {
+    "placeholders": {
+      "time": { "type": "String" }
     }
   },
   "sendCode": "Kod yuborish",

@@ -10,6 +10,10 @@ class FileUploadRequest {
   final List<int> bytes;
   final String filename;
   final String fieldName;
+
+  static const int maxSizeBytes = 10 * 1024 * 1024;
+
+  bool get isTooLarge => bytes.length > maxSizeBytes;
 }
 
 class FileUploadResultModel {

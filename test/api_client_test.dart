@@ -63,8 +63,9 @@ void main() {
         everyElement(200),
       );
       expect(
-        adapter.requests
-            .where((request) => request.path == ApiEndpoints.clientRefresh),
+        adapter.requests.where(
+          (request) => request.path == ApiEndpoints.clientRefresh,
+        ),
         hasLength(1),
       );
       expect(
@@ -161,6 +162,143 @@ void main() {
       expect(await TokenStorage.getRefreshToken(), isNull);
     },
   );
+
+  test('logs out when client refresh returns 401', () async {
+    await TokenStorage.saveAccessToken('old-access');
+    await TokenStorage.saveRefreshToken('old-refresh');
+    var loggedOut = false;
+
+    final adapter = _RecordingAdapter(
+      onFetch: (options) async {
+        if (options.uri.path == ApiEndpoints.clientRefresh ||
+            options.uri.path == ApiEndpoints.clientOrders) {
+          return _jsonResponse({'message': 'expired'}, statusCode: 401);
+        }
+        return _jsonResponse({'message': 'not found'}, statusCode: 404);
+      },
+    );
+    final apiClient = ApiClient(
+      baseUrl: 'https://example.test',
+      httpClientAdapter: adapter,
+      onLogout: () async => loggedOut = true,
+    );
+
+    await expectLater(
+      apiClient.dio.get(ApiEndpoints.clientOrders),
+      throwsA(isA<DioException>()),
+    );
+
+    expect(loggedOut, isTrue);
+    expect(await TokenStorage.getAccessToken(), isNull);
+    expect(await TokenStorage.getRefreshToken(), isNull);
+  });
+
+  test(
+    'does not retain a consumed refresh token from a malformed response',
+    () async {
+      await TokenStorage.saveAccessToken('old-access');
+      await TokenStorage.saveRefreshToken('old-refresh');
+      var loggedOut = false;
+
+      final adapter = _RecordingAdapter(
+        onFetch: (options) async {
+          if (options.uri.path == ApiEndpoints.clientRefresh) {
+            return _jsonResponse({'access_token': 'new-access'});
+          }
+          if (options.uri.path == ApiEndpoints.clientOrders) {
+            return _jsonResponse({'message': 'expired'}, statusCode: 401);
+          }
+          return _jsonResponse({'message': 'not found'}, statusCode: 404);
+        },
+      );
+      final apiClient = ApiClient(
+        baseUrl: 'https://example.test',
+        httpClientAdapter: adapter,
+        onLogout: () async => loggedOut = true,
+      );
+
+      await expectLater(
+        apiClient.dio.get(ApiEndpoints.clientOrders),
+        throwsA(isA<DioException>()),
+      );
+
+      expect(loggedOut, isTrue);
+      expect(await TokenStorage.getAccessToken(), isNull);
+      expect(await TokenStorage.getRefreshToken(), isNull);
+    },
+  );
+
+  test('scopes the mobile token to client-protected routes', () async {
+    await TokenStorage.saveAccessToken('client-access');
+    final adapter = _RecordingAdapter(
+      onFetch: (options) async => _jsonResponse({'ok': true}),
+    );
+    final apiClient = ApiClient(
+      baseUrl: 'https://example.test',
+      httpClientAdapter: adapter,
+    );
+
+    await apiClient.dio.get(ApiEndpoints.branches);
+    await apiClient.dio.get(ApiEndpoints.me);
+    await apiClient.dio.get(ApiEndpoints.clientOrders);
+
+    expect(adapter.requests[0].authorization, isNull);
+    expect(adapter.requests[1].authorization, isNull);
+    expect(adapter.requests[2].authorization, 'Bearer client-access');
+  });
+
+  test(
+    'client-session cleanup preserves unrelated secure credentials',
+    () async {
+      const storage = FlutterSecureStorage();
+      await storage.write(key: 'admin_access_token', value: 'admin-token');
+      await TokenStorage.saveAccessToken('client-access');
+      await TokenStorage.saveRefreshToken('client-refresh');
+
+      await TokenStorage.clear();
+
+      expect(await TokenStorage.getAccessToken(), isNull);
+      expect(await TokenStorage.getRefreshToken(), isNull);
+      expect(await storage.read(key: 'admin_access_token'), 'admin-token');
+    },
+  );
+
+  test('an in-flight refresh cannot restore a cleared session', () async {
+    await TokenStorage.saveAccessToken('old-access');
+    await TokenStorage.saveRefreshToken('old-refresh');
+    final refreshStarted = Completer<void>();
+    final releaseRefresh = Completer<void>();
+
+    final adapter = _RecordingAdapter(
+      onFetch: (options) async {
+        if (options.uri.path == ApiEndpoints.clientRefresh) {
+          refreshStarted.complete();
+          await releaseRefresh.future;
+          return _jsonResponse({
+            'access_token': 'new-access',
+            'refresh_token': 'new-refresh',
+          });
+        }
+        if (options.uri.path == ApiEndpoints.clientOrders) {
+          return _jsonResponse({'message': 'expired'}, statusCode: 401);
+        }
+        return _jsonResponse({'message': 'not found'}, statusCode: 404);
+      },
+    );
+    final apiClient = ApiClient(
+      baseUrl: 'https://example.test',
+      httpClientAdapter: adapter,
+    );
+
+    final request = apiClient.dio.get(ApiEndpoints.clientOrders);
+    await refreshStarted.future;
+    await apiClient.clearClientSession();
+    releaseRefresh.complete();
+
+    await expectLater(request, throwsA(isA<DioException>()));
+    expect(await TokenStorage.getAccessToken(), isNull);
+    expect(await TokenStorage.getRefreshToken(), isNull);
+  });
 }
 
 class _RequestRecord {
@@ -201,10 +339,7 @@ class _RecordingAdapter implements HttpClientAdapter {
   void close({bool force = false}) {}
 }
 
-ResponseBody _jsonResponse(
-  Map<String, Object?> data, {
-  int statusCode = 200,
-}) {
+ResponseBody _jsonResponse(Map<String, Object?> data, {int statusCode = 200}) {
   return ResponseBody.fromString(
     jsonEncode(data),
     statusCode,

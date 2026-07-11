@@ -72,6 +72,8 @@ abstract class MobileBackendRepository {
 
   Future<Result<List<CustomerOrderModel>>> getOrders();
 
+  Future<Result<CustomerOrderModel>> getOrder({required String id});
+
   Future<Result<CustomerOrderModel>> createOrder(CreateOrderRequest request);
 
   Future<Result<CustomerOrderModel>> retryOrderPayment({required String id});

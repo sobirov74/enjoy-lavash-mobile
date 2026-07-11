@@ -37,6 +37,7 @@ class MobilePushNotificationService {
 
   static const String _notificationsEnabledKey = 'push_notifications_enabled';
   static const String _registeredPushTokenKey = 'registered_push_token';
+  static const String _pushRegistrationIdKey = 'push_registration_id';
   static const String _deviceIdKey = 'push_notification_device_id';
 
   static const MethodChannel _apnsChannel = MethodChannel(
@@ -49,8 +50,13 @@ class MobilePushNotificationService {
   StreamSubscription<RemoteMessage>? _foregroundMessageSubscription;
   StreamSubscription<RemoteMessage>? _openedMessageSubscription;
   String? _lastRegisteredToken;
+  String? _lastRegistrationId;
+  String? _registrationLocale;
   bool _messagingReady = false;
   bool _messagingInitialised = false;
+  bool _registrationEnabled = false;
+  int _registrationGeneration = 0;
+  Future<void> _registrationMutationTail = Future<void>.value();
 
   Dio get _dio => _apiClient.dio;
 
@@ -127,16 +133,118 @@ class MobilePushNotificationService {
   }
 
   Future<void> syncToken({String? locale}) async {
+    final generation = ++_registrationGeneration;
+    _registrationEnabled = true;
+    _registrationLocale = locale;
     final platform = _platformName();
     if (platform == null) return;
 
     final settings = await _ensureNotificationPermission();
-    if (!settings.enabled) return;
+    if (!settings.enabled) {
+      if (generation == _registrationGeneration) {
+        _registrationEnabled = false;
+      }
+      return;
+    }
 
     final token = await _getPlatformToken();
-    if (token == null || token.isEmpty) return;
+    if (token == null || token.isEmpty) {
+      if (generation == _registrationGeneration) {
+        _registrationEnabled = false;
+      }
+      return;
+    }
 
-    await _dio.post(
+    await _serializeRegistrationMutation(
+      () => _registerToken(
+        platform: platform,
+        token: token,
+        locale: locale,
+        generation: generation,
+      ),
+    );
+
+    if ((platform == 'android' || platform == 'ios') &&
+        _tokenRefreshSubscription == null &&
+        await _ensureMessagingReady()) {
+      _tokenRefreshSubscription = FirebaseMessaging.instance.onTokenRefresh
+          .listen((newToken) {
+            unawaited(_registerRefreshedToken(newToken));
+          });
+    }
+  }
+
+  Future<void> deleteRegisteredToken() async {
+    _registrationEnabled = false;
+    _registrationGeneration++;
+    await _serializeRegistrationMutation(_deleteStoredRegistration);
+  }
+
+  Future<void> clearLocalRegistration({bool resetDeviceId = false}) async {
+    _registrationEnabled = false;
+    _registrationGeneration++;
+    await _serializeRegistrationMutation(() async {
+      final preferences = await SharedPreferences.getInstance();
+      await _clearStoredRegistration(preferences);
+      if (resetDeviceId) {
+        await preferences.remove(_deviceIdKey);
+      }
+    });
+  }
+
+  Future<void> dispose() async {
+    _registrationEnabled = false;
+    _registrationGeneration++;
+    await _tokenRefreshSubscription?.cancel();
+    await _foregroundMessageSubscription?.cancel();
+    await _openedMessageSubscription?.cancel();
+  }
+
+  Future<void> _registerRefreshedToken(String token) async {
+    if (!_registrationEnabled) return;
+    final generation = _registrationGeneration;
+    final platform = _platformName();
+    if (platform == null) return;
+    try {
+      await _serializeRegistrationMutation(
+        () => _registerToken(
+          platform: platform,
+          token: token,
+          locale: _registrationLocale,
+          generation: generation,
+        ),
+      );
+    } catch (error) {
+      debugPrint('Push token refresh registration failed: $error');
+    }
+  }
+
+  Future<void> _registerToken({
+    required String platform,
+    required String token,
+    required int generation,
+    String? locale,
+  }) async {
+    if (!_registrationEnabled || generation != _registrationGeneration) return;
+
+    final preferences = await SharedPreferences.getInstance();
+    final previousToken =
+        _lastRegisteredToken ?? preferences.getString(_registeredPushTokenKey);
+    final previousRegistrationId =
+        _lastRegistrationId ?? preferences.getString(_pushRegistrationIdKey);
+
+    if (previousToken != null &&
+        previousToken != token &&
+        previousRegistrationId?.isNotEmpty == true) {
+      await _deleteRegistration(previousRegistrationId!);
+      await _clearStoredRegistration(preferences);
+    } else if (previousToken != null && previousToken != token) {
+      // Legacy installs may know only the raw token. Never put it back into a
+      // URL; discard the obsolete local record and register cleanly by ID.
+      await _clearStoredRegistration(preferences);
+    }
+
+    final response = await _dio.post(
       ApiEndpoints.clientPushTokens,
       data: await _registrationPayload(
         platform: platform,
@@ -144,55 +252,56 @@ class MobilePushNotificationService {
         locale: locale,
       ),
     );
-    _lastRegisteredToken = token;
-    final preferences = await SharedPreferences.getInstance();
-    await preferences.setString(_registeredPushTokenKey, token);
-
-    if ((platform == 'android' || platform == 'ios') &&
-        _tokenRefreshSubscription == null &&
-        await _ensureMessagingReady()) {
-      _tokenRefreshSubscription = FirebaseMessaging.instance.onTokenRefresh
-          .listen((newToken) {
-            unawaited(_registerRefreshedToken(newToken, locale: locale));
-          });
-    }
-  }
-
-  Future<void> deleteRegisteredToken() async {
-    final preferences = await SharedPreferences.getInstance();
-    final token =
-        _lastRegisteredToken ?? preferences.getString(_registeredPushTokenKey);
-    if (token == null || token.isEmpty) return;
-
-    await _dio.delete(ApiEndpoints.clientPushToken(token));
-    _lastRegisteredToken = null;
-    await preferences.remove(_registeredPushTokenKey);
-  }
-
-  Future<void> dispose() async {
-    await _tokenRefreshSubscription?.cancel();
-    await _foregroundMessageSubscription?.cancel();
-    await _openedMessageSubscription?.cancel();
-  }
-
-  Future<void> _registerRefreshedToken(String token, {String? locale}) async {
-    final platform = _platformName();
-    if (platform == null) return;
-    try {
-      await _dio.post(
-        ApiEndpoints.clientPushTokens,
-        data: await _registrationPayload(
-          platform: platform,
-          token: token,
-          locale: locale,
-        ),
+    final registrationId = _registrationIdFromResponse(response.data);
+    if (registrationId == null) {
+      throw const FormatException(
+        'Push registration response is missing its id',
       );
-      _lastRegisteredToken = token;
-      final preferences = await SharedPreferences.getInstance();
-      await preferences.setString(_registeredPushTokenKey, token);
-    } on DioException catch (error) {
-      debugPrint('Push token refresh registration failed: ${error.message}');
     }
+
+    _lastRegisteredToken = token;
+    _lastRegistrationId = registrationId;
+    await preferences.setString(_registeredPushTokenKey, token);
+    await preferences.setString(_pushRegistrationIdKey, registrationId);
+  }
+
+  Future<void> _deleteStoredRegistration() async {
+    final preferences = await SharedPreferences.getInstance();
+    final registrationId =
+        _lastRegistrationId ?? preferences.getString(_pushRegistrationIdKey);
+    if (registrationId?.isNotEmpty == true) {
+      await _deleteRegistration(registrationId!);
+    }
+    await _clearStoredRegistration(preferences);
+  }
+
+  Future<void> _deleteRegistration(String registrationId) async {
+    try {
+      await _dio.delete(
+        ApiEndpoints.clientPushTokenRegistration(registrationId),
+      );
+    } on DioException catch (error) {
+      if (error.response?.statusCode != 404) rethrow;
+    }
+  }
+
+  Future<void> _clearStoredRegistration(SharedPreferences preferences) async {
+    _lastRegisteredToken = null;
+    _lastRegistrationId = null;
+    await preferences.remove(_registeredPushTokenKey);
+    await preferences.remove(_pushRegistrationIdKey);
+  }
+
+  Future<T> _serializeRegistrationMutation<T>(Future<T> Function() mutation) {
+    final completer = Completer<T>();
+    _registrationMutationTail = _registrationMutationTail.then((_) async {
+      try {
+        completer.complete(await mutation());
+      } catch (error, stackTrace) {
+        completer.completeError(error, stackTrace);
+      }
+    });
+    return completer.future;
   }
 
   Future<String?> _getPlatformToken() async {
@@ -385,4 +494,22 @@ class MobilePushNotificationService {
       debugPrint('Open campaign from push: ${message.data['notificationId']}');
     }
   }
+}
+
+String? _registrationIdFromResponse(Object? data) {
+  if (data is! Map) return null;
+
+  final id = data['id'];
+  if (id is String && id.trim().isNotEmpty) return id.trim();
+
+  for (final key in const [
+    'data',
+    'registration',
+    'pushTokenRegistration',
+    'push_token_registration',
+  ]) {
+    final nested = _registrationIdFromResponse(data[key]);
+    if (nested != null) return nested;
+  }
+  return null;
 }

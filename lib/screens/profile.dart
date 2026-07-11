@@ -12,6 +12,7 @@ import 'package:intl/intl.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:enjoy_lavash_mobile/app/locale_controller.dart';
+import 'package:enjoy_lavash_mobile/app/location_controller.dart';
 import 'package:enjoy_lavash_mobile/app/theme_controller.dart';
 import 'package:enjoy_lavash_mobile/core/error/failures.dart';
 import 'package:enjoy_lavash_mobile/core/error/result.dart';
@@ -24,6 +25,7 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/order_mo
 import 'package:enjoy_lavash_mobile/features/mobile_backend/presentation/mobile_backend_controller.dart';
 import 'package:enjoy_lavash_mobile/screens/authorization_screen.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
+import 'package:enjoy_lavash_mobile/theme/app_motion.dart';
 
 part 'profile/delete_account_sheet.dart';
 part 'profile/profile_sections.dart';
@@ -34,6 +36,29 @@ part 'profile/order_helpers.dart';
 part 'profile/order_row.dart';
 part 'profile/order_details_sheet.dart';
 part 'profile/order_detail_widgets.dart';
+
+Future<void> showProfileOrderDetailsSheet({
+  required BuildContext context,
+  required CustomerOrderModel order,
+  required String locale,
+  required List<BranchModel> branches,
+  required List<ClientAddress> addresses,
+}) {
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) {
+      return _OrderDetailsSheet(
+        order: order,
+        locale: locale,
+        branches: branches,
+        addresses: addresses,
+      );
+    },
+  );
+}
 
 class Profile extends StatefulWidget {
   const Profile({super.key, this.onRefresh});

@@ -46,14 +46,11 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
         data: request.toJson(),
       );
       final data = VerifyOtpResponse.fromJson(asJsonMap(response.data));
-      if (data.accessToken.isNotEmpty) {
-        await TokenStorage.clear();
-        await TokenStorage.saveAccessToken(data.accessToken);
-        if (data.refreshToken?.isNotEmpty == true) {
-          await TokenStorage.saveRefreshToken(data.refreshToken!);
-        }
-        await TokenStorage.saveRefreshTokenExpiresAt(
-          data.refreshTokenExpiresAt,
+      if (data.accessToken.isNotEmpty && data.refreshToken.isNotEmpty) {
+        await _apiClient.replaceClientSession(
+          accessToken: data.accessToken,
+          refreshToken: data.refreshToken,
+          refreshTokenExpiresAt: data.refreshTokenExpiresAt,
         );
       }
       return data;
@@ -62,14 +59,14 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
 
   @override
   Future<Result<void>> logout() {
-    return _guard(TokenStorage.clear);
+    return _guard(_apiClient.clearClientSession);
   }
 
   @override
   Future<Result<void>> deleteAccount() {
     return _guard(() async {
       await _dio.delete(ApiEndpoints.clientMe);
-      await TokenStorage.clear();
+      await _apiClient.clearClientSession();
     });
   }
 
@@ -261,6 +258,14 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
   }
 
   @override
+  Future<Result<CustomerOrderModel>> getOrder({required String id}) {
+    return _guard(() async {
+      final response = await _dio.get(ApiEndpoints.clientOrder(id));
+      return CustomerOrderModel.fromJson(asJsonMap(response.data));
+    });
+  }
+
+  @override
   Future<Result<CustomerOrderModel>> createOrder(CreateOrderRequest request) {
     return _guard(() async {
       final response = await _dio.post(
@@ -355,6 +360,13 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
 
   @override
   Future<Result<FileUploadResultModel>> uploadFile(FileUploadRequest request) {
+    if (request.isTooLarge) {
+      return Future<Result<FileUploadResultModel>>.value(
+        const Error<FileUploadResultModel>(
+          PayloadTooLargeFailure('File must be 10 MB or smaller'),
+        ),
+      );
+    }
     return _guard(() async {
       final response = await _dio.post(
         ApiEndpoints.filesUpload,
@@ -417,18 +429,16 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
         'branchId': branchId?.trim().isEmpty == true ? null : branchId?.trim(),
       }),
     );
-    final methods = asJsonMapList(
-      _listPayload(response.data, key: 'paymentMethods'),
-    )
-        .map(PaymentMethodModel.fromJson)
-        .where((method) => method.code != MobilePaymentMethod.unknown)
-        .toList(growable: false);
-    return methods
-      ..sort((a, b) {
-        final sortComparison = a.sortOrder.compareTo(b.sortOrder);
-        if (sortComparison != 0) return sortComparison;
-        return a.code.index.compareTo(b.code.index);
-      });
+    final methods =
+        asJsonMapList(_listPayload(response.data, key: 'paymentMethods'))
+            .map(PaymentMethodModel.fromJson)
+            .where((method) => method.code != MobilePaymentMethod.unknown)
+            .toList(growable: false);
+    return methods..sort((a, b) {
+      final sortComparison = a.sortOrder.compareTo(b.sortOrder);
+      if (sortComparison != 0) return sortComparison;
+      return a.code.index.compareTo(b.code.index);
+    });
   }
 
   Future<ClientProfile> _fetchProfile() async {

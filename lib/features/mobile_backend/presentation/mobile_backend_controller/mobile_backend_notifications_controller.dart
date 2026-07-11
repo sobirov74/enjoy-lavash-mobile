@@ -3,14 +3,14 @@ part of '../mobile_backend_controller.dart';
 extension _MobileBackendNotificationsController on MobileBackendController {
   Future<void> _refreshPushNotificationSettings() async {
     _pushNotificationSettings = await _pushNotifications.getSettings();
-    notifyListeners();
+    _notifyListeners();
   }
 
   Future<Result<PushNotificationSettings>> _setPushNotificationsEnabled(
     bool enabled,
   ) async {
     _pushNotificationsUpdating = true;
-    notifyListeners();
+    _notifyListeners();
 
     try {
       final settings = await _pushNotifications.setNotificationsEnabled(
@@ -22,11 +22,11 @@ extension _MobileBackendNotificationsController on MobileBackendController {
       return Success(settings);
     } catch (error) {
       final failure = UnknownFailure(error.toString());
-      this._applyFailure(failure, notify: false);
+      _applyFailure(failure, notify: false);
       return Error(failure);
     } finally {
       _pushNotificationsUpdating = false;
-      notifyListeners();
+      _notifyListeners();
     }
   }
 
@@ -48,7 +48,7 @@ extension _MobileBackendNotificationsController on MobileBackendController {
     }
 
     _notificationsLoading = true;
-    notifyListeners();
+    _notifyListeners();
 
     final result = await _repository.getNotifications(
       limit: limit,
@@ -57,21 +57,21 @@ extension _MobileBackendNotificationsController on MobileBackendController {
     );
     switch (result) {
       case Success(:final data):
-        this._applyNotifications(data);
+        _applyNotifications(data);
         _failure = null;
       case Error(:final failure):
-        this._applyFailure(failure, notify: false);
+        _applyFailure(failure, notify: false);
     }
 
     _notificationsLoading = false;
-    notifyListeners();
+    _notifyListeners();
     return result;
   }
 
   Future<Result<int>> _refreshNotificationUnreadCount() async {
     if (_client == null) {
       _notificationUnreadCount = 0;
-      notifyListeners();
+      _notifyListeners();
       return const Success(0);
     }
 
@@ -80,9 +80,9 @@ extension _MobileBackendNotificationsController on MobileBackendController {
       case Success(:final data):
         _notificationUnreadCount = data;
         _failure = null;
-        notifyListeners();
+        _notifyListeners();
       case Error(:final failure):
-        this._applyFailure(failure);
+        _applyFailure(failure);
     }
     return result;
   }
@@ -104,9 +104,9 @@ extension _MobileBackendNotificationsController on MobileBackendController {
             )
             .toList(growable: false);
         _failure = null;
-        notifyListeners();
+        _notifyListeners();
       case Error(:final failure):
-        this._applyFailure(failure);
+        _applyFailure(failure);
     }
     return result;
   }
@@ -126,22 +126,22 @@ extension _MobileBackendNotificationsController on MobileBackendController {
             )
             .toList(growable: false);
         _failure = null;
-        notifyListeners();
+        _notifyListeners();
       case Error(:final failure):
-        this._applyFailure(failure);
+        _applyFailure(failure);
     }
     return result;
   }
 
   void _startPushNotificationSync({String? locale}) {
-    unawaited(this._syncPushNotificationToken(locale: locale));
+    unawaited(_syncPushNotificationToken(locale: locale));
   }
 
   Future<void> _syncPushNotificationToken({String? locale}) async {
     try {
       await _pushNotifications.syncToken(locale: locale);
       _pushNotificationSettings = await _pushNotifications.getSettings();
-      notifyListeners();
+      _notifyListeners();
     } catch (error) {
       debugPrint('Push notification sync failed: $error');
     }

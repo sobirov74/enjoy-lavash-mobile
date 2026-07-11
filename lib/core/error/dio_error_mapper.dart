@@ -25,7 +25,16 @@ Failure mapDioError(DioException e) {
       if (status == 401) {
         return AuthFailure(serverMessage);
       }
-      return ServerFailure(status, serverMessage);
+      return switch (status) {
+        409 => ConflictFailure(serverMessage),
+        413 => PayloadTooLargeFailure(serverMessage),
+        429 => RateLimitFailure(
+          message: serverMessage,
+          retryAfter: _retryAfter(e),
+        ),
+        503 => ServiceUnavailableFailure(serverMessage),
+        _ => ServerFailure(status, serverMessage),
+      };
 
     case DioExceptionType.cancel:
       return const UnknownFailure('Request cancelled');
@@ -39,6 +48,50 @@ Failure mapDioError(DioException e) {
       }
       return UnknownFailure(e.message ?? 'Unknown error');
   }
+}
+
+Duration? _retryAfter(DioException error) {
+  final header = error.response?.headers.value('retry-after')?.trim();
+  final fromHeader = _retryAfterValue(header);
+  if (fromHeader != null) return fromHeader;
+
+  final data = error.response?.data;
+  if (data is Map) {
+    for (final key in const [
+      'retryAfter',
+      'retry_after',
+      'retryAfterSeconds',
+      'retry_after_seconds',
+    ]) {
+      final parsed = _retryAfterValue(data[key]);
+      if (parsed != null) return parsed;
+    }
+  }
+  return null;
+}
+
+Duration? _retryAfterValue(Object? value) {
+  if (value is num && value >= 0) {
+    return Duration(seconds: value.ceil());
+  }
+  if (value is! String || value.trim().isEmpty) return null;
+
+  final normalized = value.trim();
+  final seconds = num.tryParse(normalized);
+  if (seconds != null && seconds >= 0) {
+    return Duration(seconds: seconds.ceil());
+  }
+
+  DateTime? retryAt = DateTime.tryParse(normalized)?.toUtc();
+  if (retryAt == null) {
+    try {
+      retryAt = HttpDate.parse(normalized).toUtc();
+    } on FormatException {
+      return null;
+    }
+  }
+  final remaining = retryAt.difference(DateTime.now().toUtc());
+  return remaining.isNegative ? Duration.zero : remaining;
 }
 
 String? _requestLanguage(DioException e) {

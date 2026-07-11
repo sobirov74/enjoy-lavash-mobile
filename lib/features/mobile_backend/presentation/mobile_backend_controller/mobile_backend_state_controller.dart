@@ -15,19 +15,19 @@ extension _MobileBackendStateController on MobileBackendController {
       _status = MobileBackendStatus.loaded;
     }
     if (notify) {
-      notifyListeners();
+      _notifyListeners();
     }
   }
 
   bool _applyFailure(Failure failure, {bool notify = true}) {
     if (failure is AuthFailure) {
-      this._clearAuthenticatedState(notify: notify);
+      _clearAuthenticatedState(notify: notify);
       return true;
     }
 
     _failure = failure;
     if (notify) {
-      notifyListeners();
+      _notifyListeners();
     }
     return false;
   }

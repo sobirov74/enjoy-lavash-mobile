@@ -14,19 +14,12 @@ class _OrderRow extends StatelessWidget {
   final List<ClientAddress> addresses;
 
   void _showDetails(BuildContext context) {
-    showModalBottomSheet<void>(
+    showProfileOrderDetailsSheet(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return _OrderDetailsSheet(
-          order: order,
-          locale: locale,
-          branches: branches,
-          addresses: addresses,
-        );
-      },
+      order: order,
+      locale: locale,
+      branches: branches,
+      addresses: addresses,
     );
   }
 

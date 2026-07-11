@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:enjoy_lavash_mobile/core/api/api_endpoints.dart';
 import 'package:enjoy_lavash_mobile/core/api/base_url.dart';
@@ -5,11 +7,6 @@ import 'package:enjoy_lavash_mobile/core/storage/token_storage.dart';
 import 'package:flutter/foundation.dart';
 
 const _refreshEndpoint = ApiEndpoints.clientRefresh;
-const _authFlowEndpoints = <String>{
-  ApiEndpoints.requestOtp,
-  ApiEndpoints.verifyOtp,
-  ApiEndpoints.clientRefresh,
-};
 const _logoutTriggerCodes = {401};
 const _defaultLanguage = 'uz';
 const _enableNetworkLogs =
@@ -63,9 +60,9 @@ class ApiClient {
       dio.interceptors.add(
         LogInterceptor(
           request: true,
-          requestHeader: true,
-          requestBody: true,
-          responseBody: true,
+          requestHeader: false,
+          requestBody: false,
+          responseBody: false,
           responseHeader: false,
           error: true,
           logPrint: _debugLog,
@@ -85,6 +82,8 @@ class ApiClient {
   // Single-flight: only one refresh at a time.
   Future<_RefreshResult>? _refreshPromise;
   Future<void>? _logoutPromise;
+  Future<void> _sessionMutationTail = Future<void>.value();
+  int _sessionGeneration = 0;
 
   void setOnLogout(LogoutCallback? callback) {
     _onLogout = callback;
@@ -96,11 +95,30 @@ class ApiClient {
     _refreshDio.options.headers['Accept-Language'] = _languageCode;
   }
 
+  Future<void> replaceClientSession({
+    required String accessToken,
+    required String refreshToken,
+    DateTime? refreshTokenExpiresAt,
+  }) {
+    _sessionGeneration++;
+    return _serializeSessionMutation(() async {
+      await TokenStorage.clear();
+      await TokenStorage.saveAccessToken(accessToken);
+      await TokenStorage.saveRefreshToken(refreshToken);
+      await TokenStorage.saveRefreshTokenExpiresAt(refreshTokenExpiresAt);
+    });
+  }
+
+  Future<void> clearClientSession() {
+    _sessionGeneration++;
+    return _serializeSessionMutation(TokenStorage.clear);
+  }
+
   InterceptorsWrapper _authInterceptor() {
     return InterceptorsWrapper(
       onRequest: (options, handler) async {
         options.headers['Accept-Language'] ??= _languageCode;
-        if (!_isAuthFlowEndpoint(options.path)) {
+        if (_isClientProtectedEndpoint(options.path)) {
           final token = await TokenStorage.getAccessToken();
           if (token != null) {
             options.headers['Authorization'] = 'Bearer $token';
@@ -112,7 +130,7 @@ class ApiClient {
         final status = error.response?.statusCode ?? 0;
         final requestPath = error.requestOptions.path;
 
-        if (_isAuthFlowEndpoint(requestPath)) {
+        if (!_isClientProtectedEndpoint(requestPath)) {
           return handler.next(error);
         }
 
@@ -157,6 +175,7 @@ class ApiClient {
   }
 
   Future<_RefreshResult> _doRefresh() async {
+    final sessionGeneration = _sessionGeneration;
     final refreshToken = await TokenStorage.getRefreshToken();
     if (refreshToken == null) return const _RefreshResult.sessionExpired();
 
@@ -173,22 +192,32 @@ class ApiClient {
           'accessToken',
           'token',
         ]);
-        final newRefresh =
-            _stringValue(data, const ['refresh_token', 'refreshToken']) ??
-            refreshToken;
+        final newRefresh = _stringValue(data, const [
+          'refresh_token',
+          'refreshToken',
+        ]);
         final refreshExpiresAt = _dateTimeValue(data, const [
           'refresh_token_expires_at',
           'refreshTokenExpiresAt',
         ]);
 
-        if (newAccess != null && newRefresh.isNotEmpty) {
-          await TokenStorage.saveAccessToken(newAccess);
-          await TokenStorage.saveRefreshToken(newRefresh);
-          await TokenStorage.saveRefreshTokenExpiresAt(refreshExpiresAt);
+        if (newAccess != null &&
+            newRefresh != null &&
+            refreshExpiresAt != null) {
+          final stored = await _serializeSessionMutation(() async {
+            if (sessionGeneration != _sessionGeneration) return false;
+            await TokenStorage.saveAccessToken(newAccess);
+            await TokenStorage.saveRefreshToken(newRefresh);
+            await TokenStorage.saveRefreshTokenExpiresAt(refreshExpiresAt);
+            return sessionGeneration == _sessionGeneration;
+          });
+          if (!stored) return const _RefreshResult.failed();
           return _RefreshResult.success(newAccess);
         }
       }
-      return const _RefreshResult.failed();
+      // A successful refresh rotates the server token. If the response is
+      // malformed, the previous refresh token is no longer safe to reuse.
+      return const _RefreshResult.sessionExpired();
     } on DioException catch (e) {
       final status = e.response?.statusCode ?? 0;
       if (_logoutTriggerCodes.contains(status)) {
@@ -206,8 +235,20 @@ class ApiClient {
   }
 
   Future<void> _performLogout() async {
-    await TokenStorage.clear();
+    await clearClientSession();
     await _onLogout?.call();
+  }
+
+  Future<T> _serializeSessionMutation<T>(Future<T> Function() mutation) {
+    final completer = Completer<T>();
+    _sessionMutationTail = _sessionMutationTail.then((_) async {
+      try {
+        completer.complete(await mutation());
+      } catch (error, stackTrace) {
+        completer.completeError(error, stackTrace);
+      }
+    });
+    return completer.future;
   }
 }
 
@@ -260,9 +301,12 @@ Object? _firstValue(Object? data, List<String> keys) {
   return null;
 }
 
-bool _isAuthFlowEndpoint(String path) {
+bool _isClientProtectedEndpoint(String path) {
   final parsedPath = Uri.tryParse(path)?.path ?? path;
-  return _authFlowEndpoints.contains(parsedPath);
+  return parsedPath == ApiEndpoints.clientMe ||
+      parsedPath.startsWith('${ApiEndpoints.clientMe}/') ||
+      parsedPath == ApiEndpoints.filesUpload ||
+      parsedPath == ApiEndpoints.filesDelete;
 }
 
 String _normalizeLanguage(String languageCode) {

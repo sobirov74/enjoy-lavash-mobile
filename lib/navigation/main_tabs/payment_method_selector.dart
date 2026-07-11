@@ -4,12 +4,18 @@ class _PaymentMethodSelector extends StatelessWidget {
   const _PaymentMethodSelector({
     required this.methods,
     required this.selectedMethod,
+    required this.isLoading,
+    required this.onRetry,
     required this.onChanged,
+    this.errorText,
   });
 
   final List<PaymentMethodModel> methods;
   final MobilePaymentMethod selectedMethod;
+  final bool isLoading;
+  final VoidCallback onRetry;
   final ValueChanged<MobilePaymentMethod> onChanged;
+  final String? errorText;
 
   @override
   Widget build(BuildContext context) {
@@ -44,21 +50,69 @@ class _PaymentMethodSelector extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          Column(
-            children: <Widget>[
-              for (int i = 0; i < methods.length; i++) ...[
-                _PaymentMethodChip(
-                  key: ValueKey<String>(methods[i].id),
-                  method: methods[i],
-                  selected: methods[i].code == selectedMethod,
-                  onTap: () => onChanged(methods[i].code),
-                ),
-                if (i < methods.length - 1) const SizedBox(height: 8),
+          if (isLoading)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: CircularProgressIndicator(strokeWidth: 2.4),
+              ),
+            )
+          else if (methods.isEmpty)
+            _PaymentMethodsUnavailable(
+              message: errorText ?? t.paymentMethodsUnavailable,
+              retryLabel: t.retry,
+              onRetry: onRetry,
+            )
+          else
+            Column(
+              children: <Widget>[
+                for (int i = 0; i < methods.length; i++) ...[
+                  _PaymentMethodChip(
+                    key: ValueKey<String>(methods[i].id),
+                    method: methods[i],
+                    selected: methods[i].code == selectedMethod,
+                    onTap: () => onChanged(methods[i].code),
+                  ),
+                  if (i < methods.length - 1) const SizedBox(height: 8),
+                ],
               ],
-            ],
-          ),
+            ),
         ],
       ),
+    );
+  }
+}
+
+class _PaymentMethodsUnavailable extends StatelessWidget {
+  const _PaymentMethodsUnavailable({
+    required this.message,
+    required this.retryLabel,
+    required this.onRetry,
+  });
+
+  final String message;
+  final String retryLabel;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: <Widget>[
+        TypographyText(
+          message,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: BaseColors.textGray,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextButton.icon(
+          onPressed: onRetry,
+          icon: const Icon(Icons.refresh_rounded, size: 18),
+          label: TypographyText(retryLabel),
+        ),
+      ],
     );
   }
 }

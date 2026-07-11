@@ -20,10 +20,44 @@
   "cart": "Cart",
   "total": "Total",
   "checkout": "Checkout",
+  "viewCart": "View cart",
+  "cartItemsCount": "{count, plural, =1{1 item} other{{count} items}}",
+  "@cartItemsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "itemRemovedFromCart": "{product} removed from cart",
+  "@itemRemovedFromCart": {
+    "placeholders": {
+      "product": { "type": "String" }
+    }
+  },
+  "undo": "Undo",
+  "increaseQuantity": "Increase quantity",
+  "decreaseQuantity": "Decrease quantity",
+  "menuLoading": "Preparing the menu...",
+  "searchAgain": "Clear search",
   "orderCreated": "Order created",
+  "orderSuccessTitle": "We've got your order!",
+  "orderSuccessMessage": "Your ticket is with the kitchen. Follow every update from your profile.",
+  "orderSuccessNumber": "Order #{number}",
+  "@orderSuccessNumber": {
+    "placeholders": {
+      "number": { "type": "String" }
+    }
+  },
+  "trackOrder": "Track order",
+  "orderSuccessPaymentOpening": "Opening the secure payment page…",
+  "orderSuccessPaymentOpened": "Complete payment in the page we opened.",
+  "orderSuccessPayOnReceipt": "Pay when you receive your order.",
+  "orderSuccessPaymentPaid": "Payment received. You're all set.",
+  "orderSuccessPaymentFailed": "Payment was not completed. Check order details for the next step.",
+  "orderSuccessPaymentRefunded": "This payment has been refunded.",
   "orderCreateFailed": "Could not create order. Try again.",
   "selectDeliveryAddressFirst": "Select a delivery address first",
   "selectPickupBranchFirst": "Select a pickup branch first",
+  "paymentMethodsUnavailable": "Payment methods are temporarily unavailable. Try again.",
 
   "profile": "Profile",
   "guest": "Guest",
@@ -111,10 +145,24 @@
   "phoneNumber": "Phone number",
   "smsCode": "SMS code",
   "nameOptional": "Name (optional)",
-  "demoCode": "Demo code: {code}",
-  "@demoCode": {
+  "otpCodeExpiresIn": "Code expires in {time}",
+  "@otpCodeExpiresIn": {
     "placeholders": {
-      "code": { "type": "String" }
+      "time": { "type": "String" }
+    }
+  },
+  "otpCodeExpired": "The confirmation code has expired.",
+  "resendCode": "Resend code",
+  "resendCodeIn": "Resend in {time}",
+  "@resendCodeIn": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "tryAgainIn": "Try again in {time}",
+  "@tryAgainIn": {
+    "placeholders": {
+      "time": { "type": "String" }
     }
   },
   "sendCode": "Send code",

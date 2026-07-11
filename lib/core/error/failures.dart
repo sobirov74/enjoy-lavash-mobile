@@ -27,6 +27,35 @@ class ServerFailure extends Failure {
   final int statusCode;
 }
 
+/// The request conflicts with the current server state (HTTP 409).
+class ConflictFailure extends ServerFailure {
+  const ConflictFailure([String message = 'Request conflict'])
+    : super(409, message);
+}
+
+/// The request body is larger than the server accepts (HTTP 413).
+class PayloadTooLargeFailure extends ServerFailure {
+  const PayloadTooLargeFailure([String message = 'Request is too large'])
+    : super(413, message);
+}
+
+/// The action is temporarily rate limited (HTTP 429).
+class RateLimitFailure extends ServerFailure {
+  const RateLimitFailure({
+    String message = 'Too many requests',
+    this.retryAfter,
+  }) : super(429, message);
+
+  final Duration? retryAfter;
+}
+
+/// The backend is temporarily unable to serve the request (HTTP 503).
+class ServiceUnavailableFailure extends ServerFailure {
+  const ServiceUnavailableFailure([
+    String message = 'Service temporarily unavailable',
+  ]) : super(503, message);
+}
+
 /// Reading/writing local cache failed.
 class CacheFailure extends Failure {
   const CacheFailure([super.message = 'Cache error']);

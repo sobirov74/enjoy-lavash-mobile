@@ -178,6 +178,20 @@ class LocationController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void clearPersonalData() {
+    _status = LocationStatus.initial;
+    _addressName = '';
+    _district = '';
+    _latitude = null;
+    _longitude = null;
+    _houseNumber = '';
+    _entrance = '';
+    _floor = '';
+    _apartment = '';
+    _comment = '';
+    notifyListeners();
+  }
+
   void _setStatus(LocationStatus status) {
     _status = status;
     notifyListeners();

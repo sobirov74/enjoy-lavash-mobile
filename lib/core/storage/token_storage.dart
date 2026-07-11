@@ -3,9 +3,12 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class TokenStorage {
   static const _storage = FlutterSecureStorage();
 
-  static const _accessTokenKey = 'access_token';
-  static const _refreshTokenKey = 'refresh_token';
-  static const _refreshTokenExpiresAtKey = 'refresh_token_expires_at';
+  // Keep mobile-client credentials isolated from any admin credentials that may
+  // coexist in secure storage on development or managed devices.
+  static const _accessTokenKey = 'mobile_client_access_token';
+  static const _refreshTokenKey = 'mobile_client_refresh_token';
+  static const _refreshTokenExpiresAtKey =
+      'mobile_client_refresh_token_expires_at';
 
   static Future<void> saveAccessToken(String token) async {
     await _storage.write(key: _accessTokenKey, value: token);
@@ -42,6 +45,10 @@ class TokenStorage {
   }
 
   static Future<void> clear() async {
-    await _storage.deleteAll();
+    await Future.wait(<Future<void>>[
+      _storage.delete(key: _accessTokenKey),
+      _storage.delete(key: _refreshTokenKey),
+      _storage.delete(key: _refreshTokenExpiresAtKey),
+    ]);
   }
 }

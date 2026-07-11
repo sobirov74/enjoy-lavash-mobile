@@ -55,7 +55,72 @@ class LUz extends L {
   String get checkout => 'Buyurtma berish';
 
   @override
+  String get viewCart => 'Savatni ochish';
+
+  @override
+  String cartItemsCount(int count) {
+    return '$count ta mahsulot';
+  }
+
+  @override
+  String itemRemovedFromCart(String product) {
+    return '$product savatdan olib tashlandi';
+  }
+
+  @override
+  String get undo => 'Qaytarish';
+
+  @override
+  String get increaseQuantity => 'Miqdorni oshirish';
+
+  @override
+  String get decreaseQuantity => 'Miqdorni kamaytirish';
+
+  @override
+  String get menuLoading => 'Menyu tayyorlanmoqda...';
+
+  @override
+  String get searchAgain => 'Qidiruvni tozalash';
+
+  @override
   String get orderCreated => 'Buyurtma yaratildi';
+
+  @override
+  String get orderSuccessTitle => 'Buyurtmangiz qabul qilindi!';
+
+  @override
+  String get orderSuccessMessage =>
+      'Buyurtma oshxonaga yuborildi. Holatini profilingizda kuzatib boring.';
+
+  @override
+  String orderSuccessNumber(String number) {
+    return 'Buyurtma #$number';
+  }
+
+  @override
+  String get trackOrder => 'Buyurtmani kuzatish';
+
+  @override
+  String get orderSuccessPaymentOpening =>
+      'Xavfsiz to\'lov sahifasi ochilmoqda…';
+
+  @override
+  String get orderSuccessPaymentOpened =>
+      'Ochilgan sahifada to\'lovni yakunlang.';
+
+  @override
+  String get orderSuccessPayOnReceipt => 'Buyurtmani olganda to\'lov qilasiz.';
+
+  @override
+  String get orderSuccessPaymentPaid =>
+      'To\'lov qabul qilindi. Hammasi tayyor.';
+
+  @override
+  String get orderSuccessPaymentFailed =>
+      'To\'lov yakunlanmadi. Keyingi qadamni buyurtma tafsilotlarida ko\'ring.';
+
+  @override
+  String get orderSuccessPaymentRefunded => 'Ushbu to\'lov qaytarildi.';
 
   @override
   String get orderCreateFailed =>
@@ -67,6 +132,10 @@ class LUz extends L {
 
   @override
   String get selectPickupBranchFirst => 'Avval olib ketish filialini tanlang';
+
+  @override
+  String get paymentMethodsUnavailable =>
+      'To\'lov usullari vaqtincha mavjud emas. Qayta urinib ko\'ring.';
 
   @override
   String get profile => 'Profil';
@@ -304,8 +373,24 @@ class LUz extends L {
   String get nameOptional => 'Ism (ixtiyoriy)';
 
   @override
-  String demoCode(String code) {
-    return 'Demo kod: $code';
+  String otpCodeExpiresIn(String time) {
+    return 'Kod $time dan keyin tugaydi';
+  }
+
+  @override
+  String get otpCodeExpired => 'Tasdiqlash kodining muddati tugadi.';
+
+  @override
+  String get resendCode => 'Kodni qayta yuborish';
+
+  @override
+  String resendCodeIn(String time) {
+    return '$time dan keyin qayta yuborish';
+  }
+
+  @override
+  String tryAgainIn(String time) {
+    return '$time dan keyin qayta urining';
   }
 
   @override

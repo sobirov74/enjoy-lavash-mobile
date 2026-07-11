@@ -29,6 +29,11 @@ const Map<String, Map<String, String>> _errorMessages = {
     'UNAUTHORIZED': 'Authentication is required',
     'FORBIDDEN': 'You do not have permission',
     'NOT_FOUND': 'Not found',
+    'CONFLICT': 'The request conflicts with the latest server state',
+    'PAYLOAD_TOO_LARGE': 'The request is too large',
+    'RATE_LIMITED': 'Too many requests. Please try again later.',
+    'SERVICE_UNAVAILABLE':
+        'The service is temporarily unavailable. Please try again.',
     'INTERNAL_SERVER_ERROR': 'Internal server error',
   },
   'ru': {
@@ -60,6 +65,10 @@ const Map<String, Map<String, String>> _errorMessages = {
     'UNAUTHORIZED': 'Требуется авторизация',
     'FORBIDDEN': 'У вас нет доступа',
     'NOT_FOUND': 'Не найдено',
+    'CONFLICT': 'Запрос конфликтует с актуальным состоянием данных',
+    'PAYLOAD_TOO_LARGE': 'Размер запроса слишком большой',
+    'RATE_LIMITED': 'Слишком много запросов. Попробуйте позже.',
+    'SERVICE_UNAVAILABLE': 'Сервис временно недоступен. Попробуйте ещё раз.',
     'INTERNAL_SERVER_ERROR': 'Внутренняя ошибка сервера',
   },
   'uz': {
@@ -90,6 +99,11 @@ const Map<String, Map<String, String>> _errorMessages = {
     'UNAUTHORIZED': 'Avtorizatsiya talab qilinadi',
     'FORBIDDEN': "Sizda ruxsat yo'q",
     'NOT_FOUND': 'Topilmadi',
+    'CONFLICT': "So'rov serverdagi joriy holatga zid",
+    'PAYLOAD_TOO_LARGE': "So'rov hajmi juda katta",
+    'RATE_LIMITED': "So'rovlar juda ko'p. Keyinroq urinib ko'ring.",
+    'SERVICE_UNAVAILABLE':
+        'Xizmat vaqtincha ishlamayapti. Qayta urinib ko‘ring.',
     'INTERNAL_SERVER_ERROR': 'Server ichki xatosi',
   },
 };
@@ -135,6 +149,18 @@ String _defaultMessageForStatus(String language, int statusCode) {
   }
   if (statusCode == 404) {
     return _translatedMessage(language, 'NOT_FOUND')!;
+  }
+  if (statusCode == 409) {
+    return _translatedMessage(language, 'CONFLICT')!;
+  }
+  if (statusCode == 413) {
+    return _translatedMessage(language, 'PAYLOAD_TOO_LARGE')!;
+  }
+  if (statusCode == 429) {
+    return _translatedMessage(language, 'RATE_LIMITED')!;
+  }
+  if (statusCode == 503) {
+    return _translatedMessage(language, 'SERVICE_UNAVAILABLE')!;
   }
   if (statusCode >= 500) {
     return _translatedMessage(language, 'INTERNAL_SERVER_ERROR')!;

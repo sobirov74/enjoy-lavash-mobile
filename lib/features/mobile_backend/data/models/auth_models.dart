@@ -4,23 +4,19 @@ import 'json_helpers.dart';
 class OtpRequestResponse {
   const OtpRequestResponse({
     required this.phoneNumber,
-    this.codeExpiresAt,
-    this.demoCode,
+    required this.codeExpiresAt,
   });
 
   final String phoneNumber;
-  final DateTime? codeExpiresAt;
-  final String? demoCode;
+  final DateTime codeExpiresAt;
 
   factory OtpRequestResponse.fromJson(Map<String, dynamic> json) {
     return OtpRequestResponse(
       phoneNumber: readString(json, const ['phoneNumber', 'phone_number']),
-      codeExpiresAt: readDateTime(json, const [
+      codeExpiresAt: _requiredDateTime(json, const [
         'codeExpiresAt',
         'code_expires_at',
-      ]),
-      demoCode:
-          stringOrNull(json['demoCode']) ?? stringOrNull(json['demo_code']),
+      ], fieldName: 'codeExpiresAt'),
     );
   }
 }
@@ -51,31 +47,41 @@ class VerifyOtpRequest {
 class VerifyOtpResponse {
   const VerifyOtpResponse({
     required this.accessToken,
+    required this.refreshToken,
+    required this.refreshTokenExpiresAt,
     required this.tokenType,
     required this.client,
-    this.refreshToken,
-    this.refreshTokenExpiresAt,
     this.isNewClient = false,
   });
 
   final String accessToken;
-  final String? refreshToken;
-  final DateTime? refreshTokenExpiresAt;
+  final String refreshToken;
+  final DateTime refreshTokenExpiresAt;
   final String tokenType;
   final ClientProfile client;
   final bool isNewClient;
 
   factory VerifyOtpResponse.fromJson(Map<String, dynamic> json) {
     return VerifyOtpResponse(
-      accessToken: readString(json, const ['access_token', 'accessToken']),
-      refreshToken:
-          stringOrNull(json['refresh_token']) ??
-          stringOrNull(json['refreshToken']),
-      refreshTokenExpiresAt: readDateTime(json, const [
-        'refresh_token_expires_at',
-        'refreshTokenExpiresAt',
-      ]),
-      tokenType: readString(json, const ['token_type', 'tokenType']),
+      accessToken: _requiredString(
+        json,
+        const ['access_token', 'accessToken'],
+        fieldName: 'access_token',
+      ),
+      refreshToken: _requiredString(json, const [
+        'refresh_token',
+        'refreshToken',
+      ], fieldName: 'refresh_token'),
+      refreshTokenExpiresAt: _requiredDateTime(
+        json,
+        const ['refresh_token_expires_at', 'refreshTokenExpiresAt'],
+        fieldName: 'refresh_token_expires_at',
+      ),
+      tokenType: _requiredString(
+        json,
+        const ['token_type', 'tokenType'],
+        fieldName: 'token_type',
+      ),
       client: ClientProfile.fromJson(asJsonMap(json['client'])),
       isNewClient: readBool(json, const [
         'clientCreated',
@@ -90,4 +96,28 @@ class VerifyOtpResponse {
       ]),
     );
   }
+}
+
+String _requiredString(
+  Map<String, dynamic> json,
+  List<String> keys, {
+  required String fieldName,
+}) {
+  final value = readString(json, keys).trim();
+  if (value.isEmpty) {
+    throw FormatException('Missing required response field: $fieldName');
+  }
+  return value;
+}
+
+DateTime _requiredDateTime(
+  Map<String, dynamic> json,
+  List<String> keys, {
+  required String fieldName,
+}) {
+  final value = readDateTime(json, keys);
+  if (value == null) {
+    throw FormatException('Missing or invalid response field: $fieldName');
+  }
+  return value;
 }

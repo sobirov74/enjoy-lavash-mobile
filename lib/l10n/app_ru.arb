@@ -20,10 +20,44 @@
   "cart": "Корзина",
   "total": "Итого",
   "checkout": "Оформить заказ",
+  "viewCart": "Открыть корзину",
+  "cartItemsCount": "Товаров: {count}",
+  "@cartItemsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "itemRemovedFromCart": "{product} удалён из корзины",
+  "@itemRemovedFromCart": {
+    "placeholders": {
+      "product": { "type": "String" }
+    }
+  },
+  "undo": "Вернуть",
+  "increaseQuantity": "Увеличить количество",
+  "decreaseQuantity": "Уменьшить количество",
+  "menuLoading": "Готовим меню...",
+  "searchAgain": "Очистить поиск",
   "orderCreated": "Заказ создан",
+  "orderSuccessTitle": "Заказ принят!",
+  "orderSuccessMessage": "Заказ уже передан на кухню. Следите за его статусом в профиле.",
+  "orderSuccessNumber": "Заказ №{number}",
+  "@orderSuccessNumber": {
+    "placeholders": {
+      "number": { "type": "String" }
+    }
+  },
+  "trackOrder": "Отслеживать заказ",
+  "orderSuccessPaymentOpening": "Открываем защищённую страницу оплаты…",
+  "orderSuccessPaymentOpened": "Завершите оплату на открытой странице.",
+  "orderSuccessPayOnReceipt": "Оплатите заказ при получении.",
+  "orderSuccessPaymentPaid": "Оплата получена. Всё готово.",
+  "orderSuccessPaymentFailed": "Оплата не завершена. Следующий шаг указан в деталях заказа.",
+  "orderSuccessPaymentRefunded": "Оплата возвращена.",
   "orderCreateFailed": "Не удалось создать заказ. Попробуйте еще раз.",
   "selectDeliveryAddressFirst": "Сначала выберите адрес доставки",
   "selectPickupBranchFirst": "Сначала выберите филиал для самовывоза",
+  "paymentMethodsUnavailable": "Способы оплаты временно недоступны. Попробуйте снова.",
 
   "profile": "Профиль",
   "guest": "Гость",
@@ -111,10 +145,24 @@
   "phoneNumber": "Номер телефона",
   "smsCode": "SMS-код",
   "nameOptional": "Имя (необязательно)",
-  "demoCode": "Демо-код: {code}",
-  "@demoCode": {
+  "otpCodeExpiresIn": "Код действует ещё {time}",
+  "@otpCodeExpiresIn": {
     "placeholders": {
-      "code": { "type": "String" }
+      "time": { "type": "String" }
+    }
+  },
+  "otpCodeExpired": "Срок действия кода истёк.",
+  "resendCode": "Отправить код снова",
+  "resendCodeIn": "Повторная отправка через {time}",
+  "@resendCodeIn": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "tryAgainIn": "Повторите через {time}",
+  "@tryAgainIn": {
+    "placeholders": {
+      "time": { "type": "String" }
     }
   },
   "sendCode": "Отправить код",

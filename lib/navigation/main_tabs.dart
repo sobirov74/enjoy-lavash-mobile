@@ -6,6 +6,7 @@ import 'package:enjoy_lavash_mobile/core/error/failures.dart';
 import 'package:enjoy_lavash_mobile/core/error/result.dart';
 import 'package:enjoy_lavash_mobile/core/services/app_share_service.dart';
 import 'package:enjoy_lavash_mobile/core/services/external_url_launcher.dart';
+import 'package:enjoy_lavash_mobile/core/storage/cart_storage.dart';
 import 'package:enjoy_lavash_mobile/features/models/cart_line.dart';
 import 'package:enjoy_lavash_mobile/features/models/menu_product.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/address_model.dart';
@@ -21,10 +22,10 @@ import 'package:enjoy_lavash_mobile/screens/cart_screen.dart';
 import 'package:enjoy_lavash_mobile/screens/menu_screen.dart';
 import 'package:enjoy_lavash_mobile/screens/profile.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
+import 'package:enjoy_lavash_mobile/theme/app_motion.dart';
 import 'package:enjoy_lavash_mobile/theme/theme_extensions.dart';
 import 'package:enjoy_lavash_mobile/utils/price_formatter.dart';
 import 'package:enjoy_lavash_mobile/widgets/app_snack_bar.dart';
-import 'package:enjoy_lavash_mobile/widgets/delivery_chip.dart';
 import 'package:enjoy_lavash_mobile/widgets/fade_slide_in.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
@@ -33,6 +34,7 @@ import 'package:provider/provider.dart';
 part 'main_tabs/checkout_models.dart';
 part 'main_tabs/main_tabs_bottom_navigation.dart';
 part 'main_tabs/main_tabs_drawer.dart';
+part 'main_tabs/order_success_screen.dart';
 part 'main_tabs/order_confirmation_sheet.dart';
 part 'main_tabs/order_type_toggle.dart';
 part 'main_tabs/payment_method_selector.dart';
@@ -56,10 +58,27 @@ class _MainTabsState extends State<MainTabs> {
   String? _deliveryBranchId;
   String _promoCode = '';
   bool _isCheckingOut = false;
+  bool _cartEditedSinceLaunch = false;
 
   /// Built once so cart/category updates don't rebuild the profile subtree;
   /// it listens to its providers internally.
   late final Widget _profileTab = Profile(onRefresh: _refreshProfileData);
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_restoreSavedCart());
+  }
+
+  Future<void> _restoreSavedCart() async {
+    final savedCart = await CartStorage.read();
+    if (!mounted || _cartEditedSinceLaunch || savedCart.isEmpty) return;
+    setState(() => _cart.addAll(savedCart));
+  }
+
+  void _persistCart() {
+    unawaited(CartStorage.save(_cart));
+  }
 
   List<CartLine> _buildCartLines(List<MenuProduct> products) {
     final productById = <String, MenuProduct>{
@@ -91,20 +110,43 @@ class _MainTabsState extends State<MainTabs> {
 
   void _addToCart(MenuProduct product) {
     setState(() {
+      _cartEditedSinceLaunch = true;
       _cart.update(product.id, (value) => value + 1, ifAbsent: () => 1);
     });
+    _persistCart();
   }
 
   void _updateCart(MenuProduct product, int delta) {
+    final previousQuantity = _cart[product.id] ?? 0;
+    var removedLine = false;
     setState(() {
-      final current = _cart[product.id] ?? 0;
-      final next = current + delta;
+      _cartEditedSinceLaunch = true;
+      final next = previousQuantity + delta;
       if (next <= 0) {
         _cart.remove(product.id);
+        removedLine = previousQuantity > 0;
       } else {
         _cart[product.id] = next;
       }
     });
+    _persistCart();
+
+    if (removedLine) {
+      final messenger = ScaffoldMessenger.of(context);
+      showAutoClosingAppSnackBar(
+        messenger,
+        L.of(context).itemRemovedFromCart(product.title),
+        actionLabel: L.of(context).undo,
+        onAction: () {
+          if (!mounted) return;
+          setState(() {
+            _cartEditedSinceLaunch = true;
+            _cart[product.id] = previousQuantity;
+          });
+          _persistCart();
+        },
+      );
+    }
   }
 
   void _setSelectedCategory(int index) {
@@ -133,14 +175,14 @@ class _MainTabsState extends State<MainTabs> {
     });
 
     if (shouldReloadCatalog) {
-      _refreshCatalogForBranch(null);
+      unawaited(_refreshCatalogForBranch(null));
     }
     if (type == MobileOrderType.delivery) {
-      _refreshPaymentMethodsForBranch(null);
+      unawaited(_refreshPaymentMethodsForBranch(null));
     }
   }
 
-  void _setPickupBranch(BranchModel? branch) {
+  Future<void> _setPickupBranch(BranchModel? branch) async {
     setState(() {
       _selectedBranch = branch;
       if (branch != null) {
@@ -148,27 +190,25 @@ class _MainTabsState extends State<MainTabs> {
       }
     });
 
-    _refreshCatalogForBranch(branch?.id);
-    _refreshPaymentMethodsForBranch(branch?.id);
+    await Future.wait<void>([
+      _refreshCatalogForBranch(branch?.id),
+      _refreshPaymentMethodsForBranch(branch?.id),
+    ]);
   }
 
-  void _refreshCatalogForBranch(String? branchId) {
+  Future<void> _refreshCatalogForBranch(String? branchId) async {
     final language = context.read<LocaleController>().locale.languageCode;
-    unawaited(
-      context.read<MobileBackendController>().refreshCatalog(
-        language: language,
-        branchId: branchId,
-      ),
+    await context.read<MobileBackendController>().refreshCatalog(
+      language: language,
+      branchId: branchId,
     );
   }
 
-  void _refreshPaymentMethodsForBranch(String? branchId) {
+  Future<void> _refreshPaymentMethodsForBranch(String? branchId) async {
     final language = context.read<LocaleController>().locale.languageCode;
-    unawaited(
-      context.read<MobileBackendController>().refreshPaymentMethods(
-        language: language,
-        branchId: branchId,
-      ),
+    await context.read<MobileBackendController>().refreshPaymentMethods(
+      language: language,
+      branchId: branchId,
     );
   }
 
@@ -423,7 +463,7 @@ class _MainTabsState extends State<MainTabs> {
         branch = await showBranchBottomSheet(context);
         if (!mounted) return null;
         if (branch != null) {
-          _setPickupBranch(branch);
+          await _setPickupBranch(branch);
         }
       }
 
@@ -497,7 +537,7 @@ class _MainTabsState extends State<MainTabs> {
       if (orderType == MobileOrderType.delivery) {
         _deliveryBranchId = branchId?.isNotEmpty == true ? branchId : null;
         if (_deliveryBranchId != null) {
-          _refreshPaymentMethodsForBranch(_deliveryBranchId);
+          unawaited(_refreshPaymentMethodsForBranch(_deliveryBranchId));
         }
       }
       return Success(_checkoutPreviewDetails(request: request, preview: data));
@@ -524,7 +564,7 @@ class _MainTabsState extends State<MainTabs> {
         branch = await showBranchBottomSheet(context);
         if (!mounted) return null;
         if (branch != null) {
-          _setPickupBranch(branch);
+          await _setPickupBranch(branch);
         }
       }
 
@@ -592,6 +632,7 @@ class _MainTabsState extends State<MainTabs> {
           cartLines: cartLines,
           initialOrderType: _orderType,
           initialPromoCode: _promoCode,
+          initialPickupBranchId: _selectedBranch?.id,
           initialPickupBranchText: _trimmedOrNull(_selectedBranch?.name),
           initialDeliveryAddressText: _currentDeliveryAddressText(),
           onBranchSelected: _setPickupBranch,
@@ -655,22 +696,37 @@ class _MainTabsState extends State<MainTabs> {
     switch (result) {
       case Success(:final data):
         setState(() {
+          _cartEditedSinceLaunch = true;
           _cart.clear();
           _promoCode = '';
           _currentIndex = 2;
         });
+        _persistCart();
         final paymentUrl = data.paymentUrl?.trim();
-        if (paymentUrl?.isNotEmpty == true) {
-          final opened = await ExternalUrlLauncher.open(paymentUrl!);
-          if (!mounted) return;
-          _showSnack(
-            opened
-                ? L.of(context).orderCreatedPaymentOnline
-                : L.of(context).orderCreatedPaymentPageOpenFailed,
-          );
-        } else {
-          _showSnack(L.of(context).orderCreated);
-        }
+        await Navigator.of(context).push<void>(
+          PageRouteBuilder<void>(
+            transitionDuration: AppMotion.duration(context, AppMotion.state),
+            reverseTransitionDuration: AppMotion.duration(
+              context,
+              AppMotion.micro,
+            ),
+            pageBuilder: (_, _, _) => OrderSuccessScreen(
+              order: data,
+              openPaymentPage: paymentUrl?.isNotEmpty == true
+                  ? () => ExternalUrlLauncher.open(paymentUrl!)
+                  : null,
+              onTrackOrder: () => _openCreatedOrder(data),
+            ),
+            transitionsBuilder: (_, animation, _, child) => FadeTransition(
+              opacity: CurvedAnimation(
+                parent: animation,
+                curve: AppMotion.enter,
+                reverseCurve: AppMotion.exit,
+              ),
+              child: child,
+            ),
+          ),
+        );
       case Error(:final failure):
         if (failure is AuthFailure) {
           await Navigator.of(context).push<bool>(
@@ -686,6 +742,37 @@ class _MainTabsState extends State<MainTabs> {
               : L.of(context).orderCreateFailed,
         );
     }
+  }
+
+  void _openCreatedOrder(CustomerOrderModel createdOrder) {
+    if (!mounted) return;
+
+    if (_currentIndex != 2) {
+      setState(() => _currentIndex = 2);
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      final backend = context.read<MobileBackendController>();
+      var order = createdOrder;
+      for (final candidate in backend.orders) {
+        if (candidate.id == createdOrder.id) {
+          order = candidate;
+          break;
+        }
+      }
+
+      unawaited(
+        showProfileOrderDetailsSheet(
+          context: context,
+          order: order,
+          locale: context.read<LocaleController>().locale.languageCode,
+          branches: backend.branches,
+          addresses: backend.addresses,
+        ),
+      );
+    });
   }
 
   @override
@@ -706,78 +793,87 @@ class _MainTabsState extends State<MainTabs> {
         ? 0
         : _selectedCategoryIndex.clamp(0, categories.length - 1);
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      drawer: _MainTabsDrawer(
-        isDark: isDark,
-        t: t,
-        onTabSelected: _selectTab,
-        onShareApp: () => unawaited(_shareApp(t)),
-      ),
-      body: SafeArea(
-        child: FadeIndexedStack(
-          index: _currentIndex,
-          children: <Widget>[
-            MenuScreen(
-              isDark: isDark,
-              isMenuLoading:
-                  backend.status == MobileBackendStatus.loading &&
-                  products.isEmpty,
-              menuErrorText:
-                  backend.status == MobileBackendStatus.error &&
-                      products.isEmpty
-                  ? backend.failure?.message
-                  : null,
-              menuFailure:
-                  backend.status == MobileBackendStatus.error &&
-                      products.isEmpty
-                  ? backend.failure
-                  : null,
-              selectedCategoryIndex: selectedCategoryIndex,
-              categories: categories,
-              products: products,
-              promotions: promotions,
-              orderType: _orderType,
-              selectedBranch: _selectedBranch,
-              onCategorySelected: _setSelectedCategory,
-              onAddToCart: _addToCart,
-              onDecreaseFromCart: (product) => _updateCart(product, -1),
-              onCartTap: () => _selectTab(1),
-              onOrderTypeChanged: _setOrderType,
-              onBranchSelected: _setPickupBranch,
-              onRefresh: _refreshMenuData,
-              onRetryMenu: () =>
-                  context.read<MobileBackendController>().bootstrap(
-                    language: context
-                        .read<LocaleController>()
-                        .locale
-                        .languageCode,
-                    branchId: _selectedBranch?.id,
-                  ),
-              cartCount: totalItems,
-              cartQuantities: _cart,
-            ),
-            CartScreen(
-              isDark: isDark,
-              items: cartLines,
-              totalAmount: totalAmount,
-              isCheckingOut: _isCheckingOut,
-              onDecrease: (product) => _updateCart(product, -1),
-              onIncrease: (product) => _updateCart(product, 1),
-              onBrowseMenu: () => _selectTab(0),
-              onCheckout: () => unawaited(_handleCheckout(cartLines)),
-            ),
-            _profileTab,
-          ],
+    return PopScope(
+      canPop: _currentIndex == 0,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && _currentIndex != 0) {
+          _selectTab(0);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        drawer: _MainTabsDrawer(
+          isDark: isDark,
+          t: t,
+          onTabSelected: _selectTab,
+          onShareApp: () => unawaited(_shareApp(t)),
         ),
-      ),
-      bottomNavigationBar: _MainTabsBottomNavigation(
-        theme: theme,
-        isDark: isDark,
-        currentIndex: _currentIndex,
-        totalItems: totalItems,
-        t: t,
-        onDestinationSelected: _selectTab,
+        body: SafeArea(
+          child: FadeIndexedStack(
+            index: _currentIndex,
+            children: <Widget>[
+              MenuScreen(
+                isDark: isDark,
+                isMenuLoading:
+                    backend.status == MobileBackendStatus.loading &&
+                    products.isEmpty,
+                menuErrorText:
+                    backend.status == MobileBackendStatus.error &&
+                        products.isEmpty
+                    ? backend.failure?.message
+                    : null,
+                menuFailure:
+                    backend.status == MobileBackendStatus.error &&
+                        products.isEmpty
+                    ? backend.failure
+                    : null,
+                selectedCategoryIndex: selectedCategoryIndex,
+                categories: categories,
+                products: products,
+                promotions: promotions,
+                orderType: _orderType,
+                selectedBranch: _selectedBranch,
+                onCategorySelected: _setSelectedCategory,
+                onAddToCart: _addToCart,
+                onDecreaseFromCart: (product) => _updateCart(product, -1),
+                onCartTap: () => _selectTab(1),
+                onOrderTypeChanged: _setOrderType,
+                onBranchSelected: _setPickupBranch,
+                onRefresh: _refreshMenuData,
+                onRetryMenu: () =>
+                    context.read<MobileBackendController>().bootstrap(
+                      language: context
+                          .read<LocaleController>()
+                          .locale
+                          .languageCode,
+                      branchId: _selectedBranch?.id,
+                    ),
+                cartCount: totalItems,
+                cartTotal: totalAmount,
+                cartQuantities: _cart,
+              ),
+              CartScreen(
+                isDark: isDark,
+                items: cartLines,
+                totalAmount: totalAmount,
+                isCheckingOut: _isCheckingOut,
+                onDecrease: (product) => _updateCart(product, -1),
+                onIncrease: (product) => _updateCart(product, 1),
+                onBrowseMenu: () => _selectTab(0),
+                onCheckout: () => unawaited(_handleCheckout(cartLines)),
+              ),
+              _profileTab,
+            ],
+          ),
+        ),
+        bottomNavigationBar: _MainTabsBottomNavigation(
+          theme: theme,
+          isDark: isDark,
+          currentIndex: _currentIndex,
+          totalItems: totalItems,
+          t: t,
+          onDestinationSelected: _selectTab,
+        ),
       ),
     );
   }

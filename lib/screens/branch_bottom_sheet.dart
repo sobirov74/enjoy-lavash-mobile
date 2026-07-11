@@ -6,20 +6,25 @@ import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-Future<BranchModel?> showBranchBottomSheet(BuildContext context) {
+Future<BranchModel?> showBranchBottomSheet(
+  BuildContext context, {
+  String? selectedBranchId,
+}) {
   return showModalBottomSheet<BranchModel>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (_) => ChangeNotifierProvider.value(
       value: context.read<MobileBackendController>(),
-      child: const _BranchSheet(),
+      child: _BranchSheet(selectedBranchId: selectedBranchId),
     ),
   );
 }
 
 class _BranchSheet extends StatelessWidget {
-  const _BranchSheet();
+  const _BranchSheet({this.selectedBranchId});
+
+  final String? selectedBranchId;
 
   @override
   Widget build(BuildContext context) {
@@ -107,6 +112,7 @@ class _BranchSheet extends StatelessWidget {
                       return _BranchCard(
                         branch: branch,
                         isDark: isDark,
+                        isSelected: branch.id == selectedBranchId,
                         onTap: () => Navigator.pop(context, branch),
                       );
                     },
@@ -122,11 +128,13 @@ class _BranchCard extends StatelessWidget {
   const _BranchCard({
     required this.branch,
     required this.isDark,
+    required this.isSelected,
     required this.onTap,
   });
 
   final BranchModel branch;
   final bool isDark;
+  final bool isSelected;
   final VoidCallback onTap;
 
   String get _workingHours {
@@ -142,86 +150,102 @@ class _BranchCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final workingHours = _workingHours;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF2A2522) : const Color(0xFFF8F4EF),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: BaseColors.primary.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Icon(
-                Icons.storefront_rounded,
-                color: BaseColors.primary,
-                size: 24,
-              ),
+    return Semantics(
+      key: ValueKey<String>('branch-card-${branch.id}'),
+      button: true,
+      selected: isSelected,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? BaseColors.primary.withValues(alpha: isDark ? 0.16 : 0.10)
+                : (isDark ? const Color(0xFF2A2522) : const Color(0xFFF8F4EF)),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isSelected ? BaseColors.primary : Colors.transparent,
+              width: 1.5,
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TypographyText(
-                    branch.name,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (branch.address?.isNotEmpty == true) ...[
-                    const SizedBox(height: 4),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: BaseColors.primary.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  Icons.storefront_rounded,
+                  color: BaseColors.primary,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     TypographyText(
-                      branch.address!,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: isDark
-                            ? const Color(0xFF9E9790)
-                            : BaseColors.textGray,
+                      branch.name,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                  ],
-                  if (workingHours.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.access_time_rounded,
-                          size: 14,
-                          color: BaseColors.primary,
+                    if (branch.address?.isNotEmpty == true) ...[
+                      const SizedBox(height: 4),
+                      TypographyText(
+                        branch.address!,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: isDark
+                              ? const Color(0xFF9E9790)
+                              : BaseColors.textGray,
                         ),
-                        const SizedBox(width: 4),
-                        TypographyText(
-                          workingHours,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                    if (workingHours.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.access_time_rounded,
+                            size: 14,
                             color: BaseColors.primary,
                           ),
-                        ),
-                      ],
-                    ),
+                          const SizedBox(width: 4),
+                          TypographyText(
+                            workingHours,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: BaseColors.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: isDark ? const Color(0xFF9E9790) : BaseColors.textGray,
-            ),
-          ],
+              Icon(
+                isSelected
+                    ? Icons.check_circle_rounded
+                    : Icons.chevron_right_rounded,
+                color: isSelected
+                    ? BaseColors.primary
+                    : (isDark ? const Color(0xFF9E9790) : BaseColors.textGray),
+              ),
+            ],
+          ),
         ),
       ),
     );

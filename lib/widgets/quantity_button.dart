@@ -1,5 +1,7 @@
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
+import 'package:enjoy_lavash_mobile/theme/app_motion.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
+import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 /// Quantity label that pops with a scale + fade whenever the value changes.
@@ -11,9 +13,9 @@ class AnimatedQuantityText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 180),
-      switchInCurve: Curves.easeOutCubic,
-      switchOutCurve: Curves.easeInCubic,
+      duration: AppMotion.duration(context, AppMotion.micro),
+      switchInCurve: AppMotion.enter,
+      switchOutCurve: AppMotion.exit,
       transitionBuilder: (child, animation) => FadeTransition(
         opacity: animation,
         child: ScaleTransition(
@@ -46,19 +48,37 @@ class QuantityButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tooltip = emphasized || icon == Icons.add_rounded
+        ? L.of(context).increaseQuantity
+        : L.of(context).decreaseQuantity;
+
     return Material(
-      color: emphasized ? BaseColors.primary : const Color(0xFFF3F0EB),
+      color: emphasized
+          ? BaseColors.primary
+          : Theme.of(context).brightness == Brightness.dark
+          ? const Color(0xFF332D28)
+          : const Color(0xFFF3F0EB),
       borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: onTap,
-        child: SizedBox(
-          width: 36,
-          height: 36,
-          child: Icon(
-            icon,
-            size: 18,
-            color: emphasized ? Colors.white : const Color(0xFF14110F),
+      child: Tooltip(
+        message: tooltip,
+        child: Semantics(
+          button: true,
+          label: tooltip,
+          excludeSemantics: true,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: onTap,
+            child: SizedBox(
+              width: 40,
+              height: 40,
+              child: Icon(
+                icon,
+                size: 19,
+                color: emphasized
+                    ? Colors.white
+                    : Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
           ),
         ),
       ),

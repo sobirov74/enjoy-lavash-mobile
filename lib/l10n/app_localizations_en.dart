@@ -55,7 +55,76 @@ class LEn extends L {
   String get checkout => 'Checkout';
 
   @override
+  String get viewCart => 'View cart';
+
+  @override
+  String cartItemsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items',
+      one: '1 item',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String itemRemovedFromCart(String product) {
+    return '$product removed from cart';
+  }
+
+  @override
+  String get undo => 'Undo';
+
+  @override
+  String get increaseQuantity => 'Increase quantity';
+
+  @override
+  String get decreaseQuantity => 'Decrease quantity';
+
+  @override
+  String get menuLoading => 'Preparing the menu...';
+
+  @override
+  String get searchAgain => 'Clear search';
+
+  @override
   String get orderCreated => 'Order created';
+
+  @override
+  String get orderSuccessTitle => 'We\'ve got your order!';
+
+  @override
+  String get orderSuccessMessage =>
+      'Your ticket is with the kitchen. Follow every update from your profile.';
+
+  @override
+  String orderSuccessNumber(String number) {
+    return 'Order #$number';
+  }
+
+  @override
+  String get trackOrder => 'Track order';
+
+  @override
+  String get orderSuccessPaymentOpening => 'Opening the secure payment page…';
+
+  @override
+  String get orderSuccessPaymentOpened =>
+      'Complete payment in the page we opened.';
+
+  @override
+  String get orderSuccessPayOnReceipt => 'Pay when you receive your order.';
+
+  @override
+  String get orderSuccessPaymentPaid => 'Payment received. You\'re all set.';
+
+  @override
+  String get orderSuccessPaymentFailed =>
+      'Payment was not completed. Check order details for the next step.';
+
+  @override
+  String get orderSuccessPaymentRefunded => 'This payment has been refunded.';
 
   @override
   String get orderCreateFailed => 'Could not create order. Try again.';
@@ -65,6 +134,10 @@ class LEn extends L {
 
   @override
   String get selectPickupBranchFirst => 'Select a pickup branch first';
+
+  @override
+  String get paymentMethodsUnavailable =>
+      'Payment methods are temporarily unavailable. Try again.';
 
   @override
   String get profile => 'Profile';
@@ -301,8 +374,24 @@ class LEn extends L {
   String get nameOptional => 'Name (optional)';
 
   @override
-  String demoCode(String code) {
-    return 'Demo code: $code';
+  String otpCodeExpiresIn(String time) {
+    return 'Code expires in $time';
+  }
+
+  @override
+  String get otpCodeExpired => 'The confirmation code has expired.';
+
+  @override
+  String get resendCode => 'Resend code';
+
+  @override
+  String resendCodeIn(String time) {
+    return 'Resend in $time';
+  }
+
+  @override
+  String tryAgainIn(String time) {
+    return 'Try again in $time';
   }
 
   @override

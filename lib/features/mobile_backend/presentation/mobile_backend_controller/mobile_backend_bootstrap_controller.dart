@@ -10,7 +10,7 @@ extension _MobileBackendBootstrapController on MobileBackendController {
         _client = data;
         _failure = null;
       case Error(:final failure):
-        this._applyFailure(failure);
+        _applyFailure(failure);
         return;
     }
 
@@ -20,12 +20,12 @@ extension _MobileBackendBootstrapController on MobileBackendController {
         _addresses = data;
       case Error(:final failure):
         if (failure is AuthFailure) {
-          this._applyFailure(failure);
+          _applyFailure(failure);
           return;
         }
-        this._applyFailure(failure, notify: false);
+        _applyFailure(failure, notify: false);
         if (_client == null) {
-          notifyListeners();
+          _notifyListeners();
           return;
         }
     }
@@ -36,25 +36,25 @@ extension _MobileBackendBootstrapController on MobileBackendController {
         _orders = data;
       case Error(:final failure):
         if (failure is AuthFailure) {
-          this._applyFailure(failure);
+          _applyFailure(failure);
           return;
         }
-        this._applyFailure(failure, notify: false);
+        _applyFailure(failure, notify: false);
     }
 
     final notificationsResult = await _repository.getNotifications();
     switch (notificationsResult) {
       case Success(:final data):
-        this._applyNotifications(data);
+        _applyNotifications(data);
       case Error(:final failure):
         if (failure is AuthFailure) {
-          this._applyFailure(failure);
+          _applyFailure(failure);
           return;
         }
-        this._applyFailure(failure, notify: false);
+        _applyFailure(failure, notify: false);
     }
 
-    notifyListeners();
+    _notifyListeners();
   }
 
   Future<void> _bootstrap({required String language, String? branchId}) async {
@@ -62,7 +62,7 @@ extension _MobileBackendBootstrapController on MobileBackendController {
 
     _status = MobileBackendStatus.loading;
     _failure = null;
-    notifyListeners();
+    _notifyListeners();
 
     final result = await _repository.bootstrap(
       language: language,
@@ -74,13 +74,18 @@ extension _MobileBackendBootstrapController on MobileBackendController {
         _branches = data.branches;
         _promotions = data.promotions;
         _paymentMethods = data.paymentMethods;
+        _paymentMethodsBranchId = branchId?.trim().isEmpty == true
+            ? null
+            : branchId?.trim();
+        _paymentMethodsFailure = null;
+        _paymentMethodsLoading = false;
         _client = data.client;
         _addresses = data.addresses;
         _orders = data.orders;
-        this._applyCatalog(data.catalog);
+        _applyCatalog(data.catalog);
         final client = data.client;
         if (client != null) {
-          this._startPushNotificationSync(locale: language);
+          _startPushNotificationSync(locale: language);
           unawaited(syncClientLanguage(language: language));
           unawaited(refreshNotifications());
         } else {
@@ -90,12 +95,12 @@ extension _MobileBackendBootstrapController on MobileBackendController {
         }
         _status = MobileBackendStatus.loaded;
       case Error(:final failure):
-        if (!this._applyFailure(failure, notify: false)) {
+        if (!_applyFailure(failure, notify: false)) {
           _status = MobileBackendStatus.error;
         }
     }
 
-    notifyListeners();
+    _notifyListeners();
   }
 
   Future<Result<CatalogModel>> _refreshCatalog({
@@ -109,11 +114,11 @@ extension _MobileBackendBootstrapController on MobileBackendController {
 
     switch (result) {
       case Success(:final data):
-        this._applyCatalog(data);
+        _applyCatalog(data);
         _failure = null;
-        notifyListeners();
+        _notifyListeners();
       case Error(:final failure):
-        this._applyFailure(failure);
+        _applyFailure(failure);
     }
 
     return result;

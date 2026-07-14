@@ -20,7 +20,7 @@ class EmptyList extends StatelessWidget {
           Transform.translate(
             offset: const Offset(0, -50),
             child: Image.asset(
-              'assets/images/bluvia-logo.png',
+              'assets/images/enjoy-logo.png',
               width: 250,
               height: 250,
             ),

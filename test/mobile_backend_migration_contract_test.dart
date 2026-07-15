@@ -8,6 +8,7 @@ import 'package:enjoy_lavash_mobile/core/api/api_endpoints.dart';
 import 'package:enjoy_lavash_mobile/core/error/result.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/cart_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/file_upload_model.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/order_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/repositories/mobile_backend_repository_impl.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -47,6 +48,66 @@ void main() {
 
     expect(result, isA<Success<CartPreviewModel>>());
     expect(recordedRequest.uri.path, '/clients/me/cart/preview');
+  });
+
+  test('create order posts the top-level comment', () async {
+    late RequestOptions recordedRequest;
+    final adapter = _Adapter((options) async {
+      recordedRequest = options;
+      return _jsonResponse({
+        'id': 'order-1',
+        'type': 'DELIVERY',
+        'status': 'NEW',
+        'paymentMethod': 'CASH',
+        'totalAmount': 10000,
+        'items': const [],
+        'statusLog': const [],
+      });
+    });
+    final repository = MobileBackendRepositoryImpl(
+      ApiClient(baseUrl: 'https://example.test', httpClientAdapter: adapter),
+    );
+
+    final result = await repository.createOrder(
+      const CreateOrderRequest(
+        type: MobileOrderType.delivery,
+        items: [
+          CartItemInput(
+            productId: 'prod-classic-lavash',
+            quantity: 2,
+            modifiers: [
+              CartModifierInput(modifierId: 'mod-lavash-standard'),
+              CartModifierInput(modifierId: 'mod-cheese'),
+            ],
+          ),
+        ],
+        addressId: 'addr-ali-home',
+        promoCode: 'FIRST20',
+        paymentMethod: MobilePaymentMethod.cash,
+        comment: 'Less spicy please',
+      ),
+    );
+
+    expect(result, isA<Success<CustomerOrderModel>>());
+    expect(recordedRequest.uri.path, '/clients/me/orders');
+    final data = recordedRequest.data as Map<String, Object?>;
+    expect(data, {
+      'type': 'DELIVERY',
+      'addressId': 'addr-ali-home',
+      'items': [
+        {
+          'productId': 'prod-classic-lavash',
+          'quantity': 2,
+          'modifiers': [
+            {'modifierId': 'mod-lavash-standard'},
+            {'modifierId': 'mod-cheese'},
+          ],
+        },
+      ],
+      'paymentMethod': 'CASH',
+      'promoCode': 'FIRST20',
+      'comment': 'Less spicy please',
+    });
   });
 
   test('push registration deletion addresses the record ID', () {

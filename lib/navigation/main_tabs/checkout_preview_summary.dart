@@ -152,6 +152,7 @@ class _PreviewTotals extends StatelessWidget {
     final appliedPromotion = preview.appliedPromotion;
     final promoCode = appliedPromotion?.code?.trim();
     final promoTitle = appliedPromotion?.title?.trim();
+    final promotionStatusMessage = _promotionStatusMessage(preview);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -205,6 +206,12 @@ class _PreviewTotals extends StatelessWidget {
             label: t.delivery,
             value: formatSum(preview.deliveryAmount),
           ),
+        if (preview.promotionDeliveryDiscountAmount > 0)
+          _PreviewAmountRow(
+            label: '${t.delivery} ${t.discount.toLowerCase()}',
+            value: '-${formatSum(preview.promotionDeliveryDiscountAmount)}',
+            valueColor: BaseColors.primary,
+          ),
         if (preview.serviceFeeAmount > 0)
           _PreviewAmountRow(
             label: t.serviceFee,
@@ -246,6 +253,10 @@ class _PreviewTotals extends StatelessWidget {
             ),
           ),
         ],
+        if (promotionStatusMessage != null) ...[
+          const SizedBox(height: 8),
+          _PreviewPromotionStatus(message: promotionStatusMessage),
+        ],
         const Padding(
           padding: EdgeInsets.symmetric(vertical: 10),
           child: Divider(height: 1, color: Color(0x1A8C8278)),
@@ -257,6 +268,74 @@ class _PreviewTotals extends StatelessWidget {
           valueColor: BaseColors.primary,
         ),
       ],
+    );
+  }
+
+  String? _promotionStatusMessage(CartPreviewModel preview) {
+    if (!preview.hasPromotionStatus ||
+        preview.promotionStatus == CartPromotionStatus.none ||
+        preview.promotionStatus == CartPromotionStatus.applied) {
+      return null;
+    }
+
+    final reason = preview.promotionStatusReason?.trim();
+    if (reason?.isNotEmpty == true) return reason;
+    return switch (preview.promotionStatus) {
+      CartPromotionStatus.notFound => 'Promo code was not found',
+      CartPromotionStatus.inactive => 'Promo code is inactive',
+      CartPromotionStatus.notStarted => 'Promo code is not active yet',
+      CartPromotionStatus.expired => 'Promo code has expired',
+      CartPromotionStatus.globalLimitReached =>
+        'Promotion usage limit was reached',
+      CartPromotionStatus.clientLimitReached =>
+        'You have already used this promo code',
+      CartPromotionStatus.clientRequired => 'Sign in to use this promo code',
+      CartPromotionStatus.conditionsNotMet =>
+        'Promo code conditions were not met',
+      CartPromotionStatus.configurationError =>
+        'Promo code cannot be applied right now',
+      CartPromotionStatus.unknown => 'Promo code could not be applied',
+      CartPromotionStatus.none || CartPromotionStatus.applied => null,
+    };
+  }
+}
+
+class _PreviewPromotionStatus extends StatelessWidget {
+  const _PreviewPromotionStatus({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: BaseColors.danger.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const Icon(
+            Icons.info_outline_rounded,
+            color: BaseColors.danger,
+            size: 18,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: TypographyText(
+              message,
+              style: const TextStyle(
+                color: BaseColors.danger,
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                height: 1.25,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

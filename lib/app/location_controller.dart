@@ -46,6 +46,8 @@ class LocationController extends ChangeNotifier {
   }
 
   Future<void> requestPermissionAndLocate() async {
+    if (_status == LocationStatus.loading) return;
+
     _setStatus(LocationStatus.loading);
 
     try {
@@ -69,8 +71,10 @@ class LocationController extends ChangeNotifier {
         return;
       }
 
-      _setStatus(LocationStatus.granted);
-      await _fetchCurrentLocation();
+      final didLocate = await _fetchCurrentLocation();
+      if (didLocate) {
+        _setStatus(LocationStatus.granted);
+      }
     } catch (error, stackTrace) {
       debugPrint('Location permission flow failed: $error');
       debugPrintStack(stackTrace: stackTrace);
@@ -78,7 +82,7 @@ class LocationController extends ChangeNotifier {
     }
   }
 
-  Future<void> _fetchCurrentLocation() async {
+  Future<bool> _fetchCurrentLocation() async {
     try {
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
@@ -100,9 +104,10 @@ class LocationController extends ChangeNotifier {
         _district = result.district;
       }
 
-      notifyListeners();
+      return true;
     } catch (_) {
       _setStatus(LocationStatus.error);
+      return false;
     }
   }
 

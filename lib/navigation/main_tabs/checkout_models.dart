@@ -5,11 +5,13 @@ class _OrderCreationResult {
     required this.orderType,
     required this.paymentMethod,
     this.promoCode,
+    this.comment,
   });
 
   final MobileOrderType orderType;
   final MobilePaymentMethod paymentMethod;
   final String? promoCode;
+  final String? comment;
 }
 
 class _CheckoutAddressDetails {

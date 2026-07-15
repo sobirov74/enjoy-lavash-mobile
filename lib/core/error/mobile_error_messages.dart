@@ -116,15 +116,25 @@ String resolveApiErrorMessage({
   final language = _normalizeLanguage(languageCode);
   final body = _asMap(data);
   final errorCode = _stringValue(body?['errorCode'] ?? body?['error_code']);
+  final serverMessage = _extractServerMessage(data);
+  if (_prefersServerMessage(errorCode) &&
+      serverMessage != null &&
+      serverMessage.isNotEmpty) {
+    return serverMessage;
+  }
+
   final translated = _translatedMessage(language, errorCode);
   if (translated != null) return translated;
 
-  final serverMessage = _extractServerMessage(data);
   if (serverMessage != null && serverMessage.isNotEmpty) {
     return serverMessage;
   }
 
   return _defaultMessageForStatus(language, statusCode);
+}
+
+bool _prefersServerMessage(String? errorCode) {
+  return errorCode == 'VALIDATION_FAILED' || errorCode == 'BAD_REQUEST';
 }
 
 String _normalizeLanguage(String? languageCode) {

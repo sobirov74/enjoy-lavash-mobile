@@ -7,6 +7,7 @@ class _OrderConfirmationSheet extends StatefulWidget {
     required this.initialPromoCode,
     required this.onPreviewRequested,
     required this.onBranchSelected,
+    this.initialComment,
     this.initialPickupBranchId,
     this.initialPickupBranchText,
     this.initialDeliveryAddressText,
@@ -17,6 +18,7 @@ class _OrderConfirmationSheet extends StatefulWidget {
   final String initialPromoCode;
   final _CartPreviewRequester onPreviewRequested;
   final Future<void> Function(BranchModel?) onBranchSelected;
+  final String? initialComment;
   final String? initialPickupBranchId;
   final String? initialPickupBranchText;
   final String? initialDeliveryAddressText;
@@ -30,6 +32,7 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
   late MobileOrderType _orderType;
   MobilePaymentMethod _paymentMethod = MobilePaymentMethod.cash;
   late final TextEditingController _promoCodeController;
+  late final TextEditingController _commentController;
   _CheckoutPreviewDetails? _previewDetails;
   MobileOrderType? _lastPreviewOrderType;
   MobilePaymentMethod? _lastPreviewPaymentMethod;
@@ -51,6 +54,7 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
     _pickupBranchId = widget.initialPickupBranchId;
     _pickupBranchText = widget.initialPickupBranchText;
     _promoCodeController = TextEditingController(text: widget.initialPromoCode);
+    _commentController = TextEditingController(text: widget.initialComment);
     _promoCodeController.addListener(_onPromoCodeChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -62,6 +66,7 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
   void dispose() {
     _promoCodeController.removeListener(_onPromoCodeChanged);
     _promoCodeController.dispose();
+    _commentController.dispose();
     super.dispose();
   }
 
@@ -71,6 +76,24 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
   }
 
   bool get _hasPromoCodeInput => _normalizedPromoCode != null;
+
+  String? get _normalizedComment {
+    final comment = _commentController.text.trim();
+    return comment.isEmpty ? null : comment;
+  }
+
+  String? get _promoCodeForOrder {
+    final promoCode = _normalizedPromoCode;
+    if (promoCode == null) return null;
+
+    final preview = _previewDetails?.preview;
+    if (preview == null) return promoCode;
+    if (!preview.hasPromotionStatus) return promoCode;
+
+    return preview.promotionStatus == CartPromotionStatus.applied
+        ? promoCode
+        : null;
+  }
 
   bool get _previewMatchesCurrentInput {
     return _previewDetails != null &&
@@ -86,9 +109,45 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
 
   MobilePaymentMethod get _currentPaymentMethod {
     final methods = _availablePaymentMethods;
-    if (methods.isEmpty) return MobilePaymentMethod.unknown;
+    if (methods.isEmpty) {
+      if (_isUsablePaymentMethod(_paymentMethod)) {
+        return _paymentMethod;
+      }
+      final previewedMethod = _lastPreviewPaymentMethod;
+      if (_isUsablePaymentMethod(previewedMethod)) {
+        return previewedMethod!;
+      }
+      return MobilePaymentMethod.unknown;
+    }
     final hasSelected = methods.any((method) => method.code == _paymentMethod);
     return hasSelected ? _paymentMethod : methods.first.code;
+  }
+
+  bool _isUsablePaymentMethod(MobilePaymentMethod? method) {
+    return method != null && method != MobilePaymentMethod.unknown;
+  }
+
+  List<PaymentMethodModel> _paymentMethodsForDisplay(
+    List<PaymentMethodModel> methods,
+    MobilePaymentMethod currentPaymentMethod,
+    L t,
+  ) {
+    if (methods.isNotEmpty) return methods;
+    if (!_isUsablePaymentMethod(currentPaymentMethod)) {
+      return const <PaymentMethodModel>[];
+    }
+
+    return <PaymentMethodModel>[
+      PaymentMethodModel(
+        id: 'preview-${currentPaymentMethod.value}',
+        code: currentPaymentMethod,
+        name: _confirmationPaymentLabel(currentPaymentMethod, t),
+        isOnline:
+            currentPaymentMethod == MobilePaymentMethod.payme ||
+            currentPaymentMethod == MobilePaymentMethod.click,
+        sortOrder: 0,
+      ),
+    ];
   }
 
   void _onPromoCodeChanged() {
@@ -98,9 +157,6 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
 
   Future<bool> _loadPreview() async {
     if (_isPreviewLoading || _isChangingDestination) return false;
-    if (_availablePaymentMethods.isEmpty) {
-      return _showPreviewError(L.of(context).paymentMethodsUnavailable);
-    }
 
     final orderType = _orderType;
     final paymentMethod = _currentPaymentMethod;
@@ -155,6 +211,7 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
     int inputVersion,
   ) {
     setState(() {
+      _paymentMethod = paymentMethod;
       _previewDetails = details;
       _lastPreviewOrderType = orderType;
       _lastPreviewPaymentMethod = paymentMethod;
@@ -185,7 +242,8 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
       _OrderCreationResult(
         orderType: _orderType,
         paymentMethod: _currentPaymentMethod,
-        promoCode: _normalizedPromoCode,
+        promoCode: _promoCodeForOrder,
+        comment: _normalizedComment,
       ),
     );
   }
@@ -334,13 +392,12 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     final backend = context.watch<MobileBackendController>();
-    final paymentMethods = backend.paymentMethods;
-    final currentPaymentMethod =
-        paymentMethods.any((method) => method.code == _paymentMethod)
-        ? _paymentMethod
-        : paymentMethods.isEmpty
-        ? MobilePaymentMethod.unknown
-        : paymentMethods.first.code;
+    final currentPaymentMethod = _currentPaymentMethod;
+    final paymentMethods = _paymentMethodsForDisplay(
+      backend.paymentMethods,
+      currentPaymentMethod,
+      t,
+    );
 
     return Container(
       constraints: BoxConstraints(
@@ -428,11 +485,23 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
             _PaymentMethodSelector(
               methods: paymentMethods,
               selectedMethod: currentPaymentMethod,
-              isLoading: backend.paymentMethodsLoading,
+              isLoading:
+                  backend.paymentMethodsLoading && paymentMethods.isEmpty,
               errorText: backend.paymentMethodsFailure?.message,
               onRetry: () => unawaited(_retryPaymentMethods()),
               onChanged: _selectPaymentMethod,
             ),
+            const SizedBox(height: 14),
+            TypographyText(
+              t.commentLabel,
+              style: const TextStyle(
+                color: BaseColors.textGray,
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 8),
+            _OrderCommentField(controller: _commentController),
             const SizedBox(height: 14),
             _OrderItemsSection(cartLines: widget.cartLines),
             const SizedBox(height: 14),
@@ -469,10 +538,7 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    onPressed:
-                        _isPreviewLoading ||
-                            backend.paymentMethodsLoading ||
-                            paymentMethods.isEmpty
+                    onPressed: _isPreviewLoading || paymentMethods.isEmpty
                         ? null
                         : () => unawaited(_confirmOrder()),
                     child: TypographyText(
@@ -485,6 +551,58 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _OrderCommentField extends StatelessWidget {
+  const _OrderCommentField({required this.controller});
+
+  final TextEditingController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = L.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF2A2522) : const Color(0xFFF8F4EF),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isDark ? const Color(0xFF3A332D) : const Color(0xFFEDE2D7),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const Padding(
+            padding: EdgeInsets.only(top: 11),
+            child: Icon(Icons.notes_rounded, color: BaseColors.primary),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: TextField(
+              controller: controller,
+              minLines: 2,
+              maxLines: 4,
+              textCapitalization: TextCapitalization.sentences,
+              textInputAction: TextInputAction.newline,
+              cursorColor: BaseColors.primary,
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                hintText: t.commentHint,
+                hintStyle: TextStyle(
+                  color: isDark ? const Color(0xFF9E9790) : BaseColors.textGray,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

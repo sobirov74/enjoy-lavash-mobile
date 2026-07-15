@@ -28,6 +28,26 @@ void main() {
     expect(message, 'Backend fallback');
   });
 
+  test('preserves detailed backend validation messages', () {
+    final message = resolveApiErrorMessage(
+      data: {
+        'errorCode': 'VALIDATION_FAILED',
+        'message': [
+          'branchId must be provided for coordinate delivery',
+          'paymentMethod is not available',
+        ],
+      },
+      statusCode: 400,
+      languageCode: 'en',
+    );
+
+    expect(
+      message,
+      'branchId must be provided for coordinate delivery\n'
+      'paymentMethod is not available',
+    );
+  });
+
   test('maps Dio bad response with local error code message', () {
     final failure = mapDioError(
       DioException.badResponse(

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:enjoy_lavash_mobile/app/locale_controller.dart';
 import 'package:enjoy_lavash_mobile/app/location_controller.dart';
@@ -272,24 +273,6 @@ class _MainTabsState extends State<MainTabs> {
     return addresses.first;
   }
 
-  CreateOrderAddressInput _inlineAddressFromClientAddress(
-    ClientAddress address,
-  ) {
-    return CreateOrderAddressInput(
-      latitude: address.latitude,
-      longitude: address.longitude,
-      label: _trimmedOrNull(address.label),
-      text: _formatClientAddressText(address),
-      street: _trimmedOrNull(address.street),
-      houseNumber: _trimmedOrNull(address.houseNumber),
-      apartmentNumber: _trimmedOrNull(address.apartmentNumber),
-      entrance: _trimmedOrNull(address.entrance),
-      floor: _trimmedOrNull(address.floor),
-      doorCode: _trimmedOrNull(address.doorCode),
-      comment: _trimmedOrNull(address.comment),
-    );
-  }
-
   String? _formatClientAddressText(ClientAddress address) {
     final parts = <String>[
       if (address.street.trim().isNotEmpty) address.street.trim(),
@@ -330,9 +313,21 @@ class _MainTabsState extends State<MainTabs> {
     return null;
   }
 
-  _CheckoutAddressDetails? _checkoutAddressDetails(
-    CartPreviewAddressInput? input,
-  ) {
+  _CheckoutAddressDetails? _checkoutAddressDetails(CartPreviewRequest request) {
+    final addresses = context.read<MobileBackendController>().addresses;
+    final requestedAddressId = _trimmedOrNull(request.addressId);
+    if (requestedAddressId != null) {
+      for (final address in addresses) {
+        if (address.id == requestedAddressId) {
+          return _CheckoutAddressDetails(
+            label: _trimmedOrNull(address.label),
+            text: _formatClientAddressText(address),
+          );
+        }
+      }
+    }
+
+    final input = request.address;
     if (input == null) return null;
 
     final location = context.read<LocationController>();
@@ -349,7 +344,6 @@ class _MainTabsState extends State<MainTabs> {
       }
     }
 
-    final addresses = context.read<MobileBackendController>().addresses;
     for (final address in addresses) {
       if (_coordinatesMatch(
         input.latitude,
@@ -405,7 +399,7 @@ class _MainTabsState extends State<MainTabs> {
       branchName: _trimmedOrNull(branch?.name),
       branchAddress: _trimmedOrNull(branch?.address),
       address: request.type == MobileOrderType.delivery
-          ? _checkoutAddressDetails(request.address)
+          ? _checkoutAddressDetails(request)
           : null,
     );
   }
@@ -432,19 +426,60 @@ class _MainTabsState extends State<MainTabs> {
     return CartPreviewAddressInput(latitude: latitude, longitude: longitude);
   }
 
-  CartPreviewAddressInput _previewAddressFromClientAddress(
-    ClientAddress address,
-  ) {
-    return CartPreviewAddressInput(
-      latitude: address.latitude,
-      longitude: address.longitude,
-    );
-  }
-
   void _showSnack(String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(appSnackBar(message));
+  }
+
+  Future<void> _showOrderCreationError(Failure failure) async {
+    if (!mounted) return;
+
+    final t = L.of(context);
+    final title = switch (failure) {
+      AuthFailure() => t.errorAuthorizationExpired,
+      NetworkFailure() => t.errorConnectionProblem,
+      TimeoutFailure() => t.errorSlowNetwork,
+      ServerFailure() => t.errorBackend,
+      _ => t.errorGenericTitle,
+    };
+    final message = failure.message.trim().isEmpty
+        ? t.orderCreateFailed
+        : failure.message.trim();
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        scrollable: true,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        title: Row(
+          children: <Widget>[
+            const Icon(Icons.error_outline_rounded, color: BaseColors.primary),
+            const SizedBox(width: 10),
+            Expanded(
+              child: TypographyText(
+                title,
+                style: const TextStyle(
+                  fontSize: 19,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: SelectableText(
+          message,
+          style: const TextStyle(fontSize: 15, height: 1.4),
+        ),
+        actions: <Widget>[
+          TextButton.icon(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            icon: const Icon(Icons.close_rounded, size: 18),
+            label: TypographyText(t.close),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<CartPreviewRequest?> _buildCartPreviewRequest(
@@ -484,12 +519,13 @@ class _MainTabsState extends State<MainTabs> {
     final backend = context.read<MobileBackendController>();
     final location = context.read<LocationController>();
     var address = _previewAddressFromLocation(location);
+    String? addressId;
     final savedAddress = _defaultAddress(backend.addresses);
     if (address == null && savedAddress != null) {
-      address = _previewAddressFromClientAddress(savedAddress);
+      addressId = savedAddress.id;
     }
 
-    if (address == null) {
+    if (address == null && addressId == null) {
       await showAddressBottomSheet(context);
       if (!mounted) return null;
       address = _previewAddressFromLocation(location);
@@ -497,17 +533,18 @@ class _MainTabsState extends State<MainTabs> {
         context.read<MobileBackendController>().addresses,
       );
       if (address == null && fallbackSavedAddress != null) {
-        address = _previewAddressFromClientAddress(fallbackSavedAddress);
+        addressId = fallbackSavedAddress.id;
       }
     }
 
-    if (address == null) {
+    if (address == null && addressId == null) {
       _showSnack(t.selectDeliveryAddressFirst);
       return null;
     }
 
     return CartPreviewRequest(
       type: MobileOrderType.delivery,
+      addressId: addressId,
       address: address,
       items: items,
       paymentMethod: paymentMethod,
@@ -529,23 +566,75 @@ class _MainTabsState extends State<MainTabs> {
     );
     if (!mounted || request == null) return null;
 
-    final result = await context.read<MobileBackendController>().previewCart(
-      request,
-    );
+    _logOrderPreview('request', request.toJson());
+    final backend = context.read<MobileBackendController>();
+    final result = await backend.previewCart(request);
     if (result case Success(:final data)) {
+      _logOrderPreview('response', _cartPreviewLogPayload(data));
       final branchId = data.branchId?.trim();
       if (orderType == MobileOrderType.delivery) {
         _deliveryBranchId = branchId?.isNotEmpty == true ? branchId : null;
-        if (_deliveryBranchId != null) {
+        final paymentMethodsBranchId = backend.paymentMethodsBranchId?.trim();
+        if (_deliveryBranchId != null &&
+            paymentMethodsBranchId != _deliveryBranchId) {
           unawaited(_refreshPaymentMethodsForBranch(_deliveryBranchId));
         }
       }
       return Success(_checkoutPreviewDetails(request: request, preview: data));
     }
     if (result case Error(:final failure)) {
+      _logOrderPreview('error', {
+        'type': failure.runtimeType.toString(),
+        'message': failure.message,
+      });
       return Error<_CheckoutPreviewDetails>(failure);
     }
     return null;
+  }
+
+  void _logOrderPreview(String label, Object? payload) {
+    _logCheckoutPayload('OrderPreview', label, payload);
+  }
+
+  void _logOrderCreation(String label, Object? payload) {
+    _logCheckoutPayload('OrderCreate', label, payload);
+  }
+
+  void _logCheckoutPayload(String scope, String label, Object? payload) {
+    try {
+      const encoder = JsonEncoder.withIndent('  ');
+      debugPrint('[$scope] $label:\n${encoder.convert(payload)}');
+    } catch (_) {
+      debugPrint('[$scope] $label: $payload');
+    }
+  }
+
+  Map<String, Object?> _cartPreviewLogPayload(CartPreviewModel preview) {
+    return {
+      'branchId': preview.branchId,
+      'deliveryDistanceMeters': preview.deliveryDistanceMeters,
+      'itemsAmount': preview.itemsAmount,
+      'modifiersAmount': preview.modifiersAmount,
+      'discountAmount': preview.discountAmount,
+      'deliveryAmount': preview.deliveryAmount,
+      'promotionDeliveryDiscountAmount':
+          preview.promotionDeliveryDiscountAmount,
+      'serviceFeeAmount': preview.serviceFeeAmount,
+      'totalAmount': preview.totalAmount,
+      'promotionStatus': preview.hasPromotionStatus
+          ? preview.promotionStatus.value
+          : null,
+      'promotionStatusReason': preview.promotionStatusReason,
+      'bonusItems': preview.bonusItems,
+      'appliedPromotion': preview.appliedPromotion == null
+          ? null
+          : {
+              'id': preview.appliedPromotion!.id,
+              'code': preview.appliedPromotion!.code,
+              'title': preview.appliedPromotion!.title,
+              'discountAmount': preview.appliedPromotion!.discountAmount,
+            },
+    };
   }
 
   Future<CreateOrderRequest?> _buildCreateOrderRequest(
@@ -553,10 +642,12 @@ class _MainTabsState extends State<MainTabs> {
     required MobileOrderType orderType,
     required MobilePaymentMethod paymentMethod,
     String? promoCode,
+    String? comment,
   }) async {
     final t = L.of(context);
     final items = _buildOrderItems(cartLines);
     final normalizedPromoCode = _normalizePromoCode(promoCode);
+    final normalizedComment = _trimmedOrNull(comment);
 
     if (orderType == MobileOrderType.pickup) {
       var branch = _selectedBranch;
@@ -579,18 +670,20 @@ class _MainTabsState extends State<MainTabs> {
         items: items,
         paymentMethod: paymentMethod,
         promoCode: normalizedPromoCode,
+        comment: normalizedComment,
       );
     }
 
     final backend = context.read<MobileBackendController>();
     final location = context.read<LocationController>();
     var address = _inlineAddressFromLocation(location);
+    String? addressId;
     final savedAddress = _defaultAddress(backend.addresses);
     if (address == null && savedAddress != null) {
-      address = _inlineAddressFromClientAddress(savedAddress);
+      addressId = savedAddress.id;
     }
 
-    if (address == null) {
+    if (address == null && addressId == null) {
       await showAddressBottomSheet(context);
       if (!mounted) return null;
       address = _inlineAddressFromLocation(location);
@@ -598,24 +691,24 @@ class _MainTabsState extends State<MainTabs> {
         context.read<MobileBackendController>().addresses,
       );
       if (address == null && fallbackSavedAddress != null) {
-        address = _inlineAddressFromClientAddress(fallbackSavedAddress);
+        addressId = fallbackSavedAddress.id;
       }
     }
 
-    if (address == null) {
+    if (address == null && addressId == null) {
       _showSnack(t.selectDeliveryAddressFirst);
       return null;
     }
 
-    final comment = location.comment.trim();
     return CreateOrderRequest(
       type: MobileOrderType.delivery,
       address: address,
-      branchId: _deliveryBranchId,
+      addressId: addressId,
+      branchId: address == null ? null : _deliveryBranchId,
       items: items,
       paymentMethod: paymentMethod,
       promoCode: normalizedPromoCode,
-      comment: comment.isEmpty ? null : comment,
+      comment: normalizedComment,
     );
   }
 
@@ -632,6 +725,9 @@ class _MainTabsState extends State<MainTabs> {
           cartLines: cartLines,
           initialOrderType: _orderType,
           initialPromoCode: _promoCode,
+          initialComment: _orderType == MobileOrderType.delivery
+              ? _trimmedOrNull(context.read<LocationController>().comment)
+              : null,
           initialPickupBranchId: _selectedBranch?.id,
           initialPickupBranchText: _trimmedOrNull(_selectedBranch?.name),
           initialDeliveryAddressText: _currentDeliveryAddressText(),
@@ -673,9 +769,6 @@ class _MainTabsState extends State<MainTabs> {
     final orderDetails = await _showOrderConfirmation(cartLines);
     if (!mounted || orderDetails == null) return;
 
-    if (_orderType != orderDetails.orderType) {
-      _setOrderType(orderDetails.orderType);
-    }
     setState(() => _promoCode = orderDetails.promoCode ?? '');
 
     final request = await _buildCreateOrderRequest(
@@ -683,13 +776,28 @@ class _MainTabsState extends State<MainTabs> {
       orderType: orderDetails.orderType,
       paymentMethod: orderDetails.paymentMethod,
       promoCode: orderDetails.promoCode,
+      comment: orderDetails.comment,
     );
     if (!mounted || request == null) return;
 
+    if (_orderType != orderDetails.orderType) {
+      _setOrderType(orderDetails.orderType);
+    }
+
+    _logOrderCreation('request', request.toJson());
     setState(() => _isCheckingOut = true);
     final result = await context.read<MobileBackendController>().createOrder(
       request,
     );
+    if (result case Success(:final data)) {
+      _logOrderCreation('response', data.raw);
+    }
+    if (result case Error(:final failure)) {
+      _logOrderCreation('error', {
+        'type': failure.runtimeType.toString(),
+        'message': failure.message,
+      });
+    }
     if (!mounted) return;
 
     setState(() => _isCheckingOut = false);
@@ -728,6 +836,8 @@ class _MainTabsState extends State<MainTabs> {
           ),
         );
       case Error(:final failure):
+        await _showOrderCreationError(failure);
+        if (!mounted) return;
         if (failure is AuthFailure) {
           await Navigator.of(context).push<bool>(
             MaterialPageRoute<bool>(
@@ -736,11 +846,6 @@ class _MainTabsState extends State<MainTabs> {
           );
           return;
         }
-        _showSnack(
-          failure.message.isNotEmpty
-              ? failure.message
-              : L.of(context).orderCreateFailed,
-        );
     }
   }
 

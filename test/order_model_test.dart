@@ -3,6 +3,71 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/order_mo
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('serializes authenticated delivery preview with saved address id', () {
+    const request = CartPreviewRequest(
+      type: MobileOrderType.delivery,
+      addressId: 'addr-ali-home',
+      items: [CartItemInput(productId: 'prod-classic-lavash', quantity: 2)],
+      paymentMethod: MobilePaymentMethod.cash,
+      promoCode: 'FIRST20',
+    );
+
+    expect(request.toJson(), {
+      'type': 'DELIVERY',
+      'addressId': 'addr-ali-home',
+      'items': [
+        {'productId': 'prod-classic-lavash', 'quantity': 2, 'modifiers': []},
+      ],
+      'paymentMethod': 'CASH',
+      'promoCode': 'FIRST20',
+    });
+  });
+
+  test('parses cart preview promotion result fields', () {
+    final preview = CartPreviewModel.fromJson({
+      'itemsAmount': 64000,
+      'modifiersAmount': 10000,
+      'discountAmount': 14800,
+      'deliveryAmount': 10000,
+      'serviceFeeAmount': 0,
+      'totalAmount': 69200,
+      'promotionStatus': 'CLIENT_LIMIT_REACHED',
+      'promotionStatusReason': 'Client promotion usage limit was reached',
+      'promotionDeliveryDiscountAmount': 10000,
+      'bonusItems': [
+        {'productId': 'prod-gift', 'quantity': 1},
+      ],
+    });
+
+    expect(preview.promotionStatus, CartPromotionStatus.clientLimitReached);
+    expect(preview.hasPromotionStatus, isTrue);
+    expect(
+      preview.promotionStatusReason,
+      'Client promotion usage limit was reached',
+    );
+    expect(preview.promotionDeliveryDiscountAmount, 10000);
+    expect(preview.bonusItems.single['productId'], 'prod-gift');
+  });
+
+  test('uses backend message as cart preview promotion error fallback', () {
+    final preview = CartPreviewModel.fromJson({
+      'itemsAmount': 64000,
+      'modifiersAmount': 0,
+      'discountAmount': 0,
+      'deliveryAmount': 10000,
+      'serviceFeeAmount': 0,
+      'totalAmount': 74000,
+      'promotionStatus': 'CONDITIONS_NOT_MET',
+      'message': 'Minimum order amount was not reached',
+    });
+
+    expect(preview.promotionStatus, CartPromotionStatus.conditionsNotMet);
+    expect(
+      preview.promotionStatusReason,
+      'Minimum order amount was not reached',
+    );
+  });
+
   test('serializes coordinate delivery with branch id', () {
     final request = CreateOrderRequest(
       type: MobileOrderType.delivery,
@@ -57,6 +122,7 @@ void main() {
         CartItemInput(productId: 'prod-classic-lavash', quantity: 1),
       ],
       paymentMethod: MobilePaymentMethod.cash,
+      comment: 'Less spicy please',
     );
 
     expect(request.toJson(), {
@@ -66,6 +132,7 @@ void main() {
         {'productId': 'prod-classic-lavash', 'quantity': 1, 'modifiers': []},
       ],
       'paymentMethod': 'CASH',
+      'comment': 'Less spicy please',
     });
   });
 

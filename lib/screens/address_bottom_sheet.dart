@@ -542,7 +542,7 @@ class _AnimatedAddressCardState extends State<_AnimatedAddressCard>
               ),
               const SizedBox(width: 8),
               GestureDetector(
-                onTap: widget.onLocate,
+                onTap: widget.isLoading ? null : widget.onLocate,
                 child: Container(
                   width: 40,
                   height: 40,
@@ -550,10 +550,24 @@ class _AnimatedAddressCardState extends State<_AnimatedAddressCard>
                     color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Icon(
-                    Icons.my_location_rounded,
-                    color: Colors.white,
-                    size: 22,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 180),
+                    child: widget.isLoading
+                        ? const SizedBox(
+                            key: ValueKey('locating-loader'),
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(
+                            key: ValueKey('locating-icon'),
+                            Icons.my_location_rounded,
+                            color: Colors.white,
+                            size: 22,
+                          ),
                   ),
                 ),
               ),

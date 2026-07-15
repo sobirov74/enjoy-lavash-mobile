@@ -70,6 +70,41 @@ class PaymentMethodModel {
   }
 }
 
+enum CartPromotionStatus {
+  none('NONE'),
+  applied('APPLIED'),
+  notFound('NOT_FOUND'),
+  inactive('INACTIVE'),
+  notStarted('NOT_STARTED'),
+  expired('EXPIRED'),
+  globalLimitReached('GLOBAL_LIMIT_REACHED'),
+  clientLimitReached('CLIENT_LIMIT_REACHED'),
+  clientRequired('CLIENT_REQUIRED'),
+  conditionsNotMet('CONDITIONS_NOT_MET'),
+  configurationError('CONFIGURATION_ERROR'),
+  unknown('UNKNOWN');
+
+  const CartPromotionStatus(this.value);
+  final String value;
+
+  factory CartPromotionStatus.fromJson(String? value) {
+    return switch (value?.trim().toUpperCase()) {
+      'APPLIED' => CartPromotionStatus.applied,
+      'NOT_FOUND' => CartPromotionStatus.notFound,
+      'INACTIVE' => CartPromotionStatus.inactive,
+      'NOT_STARTED' => CartPromotionStatus.notStarted,
+      'EXPIRED' => CartPromotionStatus.expired,
+      'GLOBAL_LIMIT_REACHED' => CartPromotionStatus.globalLimitReached,
+      'CLIENT_LIMIT_REACHED' => CartPromotionStatus.clientLimitReached,
+      'CLIENT_REQUIRED' => CartPromotionStatus.clientRequired,
+      'CONDITIONS_NOT_MET' => CartPromotionStatus.conditionsNotMet,
+      'CONFIGURATION_ERROR' => CartPromotionStatus.configurationError,
+      'NONE' || null || '' => CartPromotionStatus.none,
+      _ => CartPromotionStatus.unknown,
+    };
+  }
+}
+
 class CartModifierInput {
   const CartModifierInput({required this.modifierId, this.quantity});
 
@@ -124,12 +159,14 @@ class CartPreviewRequest {
     required this.items,
     required this.paymentMethod,
     this.branchId,
+    this.addressId,
     this.address,
     this.promoCode,
   });
 
   final MobileOrderType type;
   final String? branchId;
+  final String? addressId;
   final CartPreviewAddressInput? address;
   final List<CartItemInput> items;
   final MobilePaymentMethod paymentMethod;
@@ -139,6 +176,7 @@ class CartPreviewRequest {
     return withoutNulls({
       'type': type.value,
       'branchId': branchId,
+      'addressId': addressId,
       'address': address?.toJson(),
       'items': items.map((item) => item.toJson()).toList(growable: false),
       'paymentMethod': paymentMethod.value,
@@ -155,6 +193,11 @@ class CartPreviewModel {
     required this.deliveryAmount,
     required this.serviceFeeAmount,
     required this.totalAmount,
+    this.promotionStatus = CartPromotionStatus.none,
+    this.hasPromotionStatus = false,
+    this.promotionStatusReason,
+    this.promotionDeliveryDiscountAmount = 0,
+    this.bonusItems = const <Map<String, dynamic>>[],
     this.appliedPromotion,
     this.branchId,
     this.deliveryDistanceMeters,
@@ -166,6 +209,11 @@ class CartPreviewModel {
   final int deliveryAmount;
   final int serviceFeeAmount;
   final int totalAmount;
+  final CartPromotionStatus promotionStatus;
+  final bool hasPromotionStatus;
+  final String? promotionStatusReason;
+  final int promotionDeliveryDiscountAmount;
+  final List<Map<String, dynamic>> bonusItems;
   final AppliedPromotionModel? appliedPromotion;
   final String? branchId;
   final int? deliveryDistanceMeters;
@@ -190,6 +238,25 @@ class CartPreviewModel {
         'service_fee_amount',
       ]),
       totalAmount: readInt(json, const ['totalAmount', 'total_amount']),
+      promotionStatus: CartPromotionStatus.fromJson(
+        stringOrNull(json['promotionStatus']) ??
+            stringOrNull(json['promotion_status']),
+      ),
+      hasPromotionStatus:
+          json.containsKey('promotionStatus') ||
+          json.containsKey('promotion_status'),
+      promotionStatusReason: _previewMessage(json, const [
+        'promotionStatusReason',
+        'promotion_status_reason',
+        'errorMessage',
+        'error_message',
+        'message',
+      ]),
+      promotionDeliveryDiscountAmount: readInt(json, const [
+        'promotionDeliveryDiscountAmount',
+        'promotion_delivery_discount_amount',
+      ]),
+      bonusItems: asJsonMapList(json['bonusItems'] ?? json['bonus_items']),
       appliedPromotion:
           json['appliedPromotion'] == null && json['applied_promotion'] == null
           ? null
@@ -239,6 +306,27 @@ int? _optionalInt(Map<String, dynamic> json, List<String> keys) {
     if (value is int) return value;
     if (value is num) return value.toInt();
     if (value is String) return int.tryParse(value);
+  }
+  return null;
+}
+
+String? _previewMessage(Map<String, dynamic> json, List<String> keys) {
+  for (final key in keys) {
+    final value = json[key];
+    if (value == null) continue;
+    if (value is List) {
+      final messages = <String>[];
+      for (final item in value) {
+        final message = stringOrNull(item)?.trim();
+        if (message?.isNotEmpty == true) messages.add(message!);
+      }
+      final message = messages.join('\n');
+      if (message.isNotEmpty) return message;
+      continue;
+    }
+
+    final message = stringOrNull(value)?.trim();
+    if (message?.isNotEmpty == true) return message;
   }
   return null;
 }

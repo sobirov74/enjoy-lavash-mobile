@@ -13,10 +13,11 @@ i18n text fields use `{ ru?: string, uz?: string, en?: string }` format.
 
 ### Client Auth (OTP-based for mobile app)
 
-| Method | Endpoint            | Auth | Description              |
-| ------ | ------------------- | ---- | ------------------------ |
-| POST   | `/auth/request-otp` | -    | Request OTP code         |
-| POST   | `/auth/verify-otp`  | -    | Verify OTP and get token |
+| Method | Endpoint               | Auth | Description                   |
+| ------ | ---------------------- | ---- | ----------------------------- |
+| POST   | `/auth/request-otp`    | -    | Request OTP code              |
+| POST   | `/auth/verify-otp`     | -    | Verify OTP and get tokens     |
+| POST   | `/auth/client/refresh` | -    | Refresh mobile client session |
 
 ### Admin Auth (username/password)
 
@@ -62,7 +63,7 @@ OTP_DEMO_CODE=1111
 ```
 
 Phones in `OTP_DEMO_PHONE_WHITELIST` do not receive an SMS. They can verify using `OTP_DEMO_CODE`.
-The whitelist accepts copdeplmma, semicolon, or newline separated Uzbekistan phone numbers.
+The whitelist accepts comma, semicolon, or newline separated Uzbekistan phone numbers.
 
 ### 2. Verify OTP
 
@@ -88,6 +89,8 @@ POST /auth/verify-otp
 ```json
 {
   "access_token": "eyJhbG...",
+  "refresh_token": "W0H5...",
+  "refresh_token_expires_at": "2026-08-07T12:00:00.000Z",
   "token_type": "Bearer",
   "client_created": true,
   "client": {
@@ -111,6 +114,12 @@ POST /auth/verify-otp
 client account. It is `false` when the phone number already belongs to an
 existing active client.
 
+Mobile refresh tokens rotate. After every successful
+`POST /auth/client/refresh`, replace the stored `access_token`,
+`refresh_token`, and `refresh_token_expires_at`. See
+[`MOBILE_CLIENT_AUTH.md`](./MOBILE_CLIENT_AUTH.md) for the mobile refresh
+implementation notes and session lifetime settings.
+
 ### Using the token
 
 ```
@@ -130,7 +139,7 @@ POST /auth/login
 **Body:**
 
 ```json
-{ "username": "admin", "password": "admin" }
+{ "username": "owner", "password": "your-12-plus-character-password" }
 ```
 
 **Response 200:**
@@ -161,7 +170,8 @@ POST /auth/refresh
 ## Mobile Client Auth Flow
 
 Client OTP verification now returns a rotating refresh token. The client refresh
-session is active for 3 days by default.
+session is active for 90 days by default unless `CLIENT_REFRESH_TTL_SECONDS`
+overrides it.
 
 ### Verify OTP
 
@@ -175,7 +185,7 @@ Response 200 includes:
 {
   "access_token": "eyJhbG...",
   "refresh_token": "W0H5...",
-  "refresh_token_expires_at": "2026-07-05T12:00:00.000Z",
+  "refresh_token_expires_at": "2026-09-30T12:00:00.000Z",
   "token_type": "Bearer",
   "client_created": false,
   "client": { "id": "...", "phoneNumber": "+998901234567" }
@@ -195,8 +205,22 @@ POST /auth/client/refresh
 ```
 
 The response returns a new access token and a new refresh token. Replace both
-stored tokens after every successful refresh. See `MOBILE_CLIENT_AUTH.md` for
-mobile implementation details.
+stored tokens after every successful refresh. See
+[`MOBILE_CLIENT_AUTH.md`](./MOBILE_CLIENT_AUTH.md) for mobile implementation
+details and instructions for prolonging sessions.
+
+On mobile, do not log the user out on the first `401` from an expired access
+token. Call `/auth/client/refresh` once, persist the rotated tokens, and retry
+the original request. If the app was rebuilt and secure storage still contains
+the refresh token, it can refresh silently. If storage was wiped, request OTP
+again for the same phone number.
+
+After login or app startup, register the current push token with
+`POST /clients/me/push-tokens` so notifications can be sent to the active
+device. Active order checks should use the authenticated order endpoints
+(`GET /clients/me/orders` or `GET /clients/me/orders/:id`); the OTP-verified
+phone identity is already used by the backend to recover orders for the same
+phone number.
 
 ---
 
@@ -360,6 +384,9 @@ pricing.
   "deliveryAmount": 10000,
   "serviceFeeAmount": 0,
   "totalAmount": 69200,
+  "promotionStatus": "APPLIED",
+  "promotionDeliveryDiscountAmount": 0,
+  "bonusItems": [],
   "appliedPromotion": { "id": "...", "code": "FIRST20", ... },
   "items": [
     {
@@ -375,11 +402,228 @@ pricing.
 }
 ```
 
+`POST /cart/preview` is safe for anonymous website usage. It calculates public
+and automatic promotions, but client-limited promo codes return
+`promotionStatus: "CLIENT_REQUIRED"` instead of applying a discount. For logged
+in mobile users, prefer `POST /clients/me/cart/preview` so the backend can check
+per-client limits and "new client" rules.
+
+For pickup preview, `branchId`, `iikoOrganizationId`, and
+`iikoOrganisationId` use the same branch-selection semantics as order creation.
+An iiko organization UUID may also be supplied in the legacy `organisationId`
+field; when it identifies a branch, the backend resolves its local organisation
+before pricing.
+
 ### Promotions
 
 | Method | Endpoint             | Description            |
 | ------ | -------------------- | ---------------------- |
 | GET    | `/promotions/active` | List active promotions |
+
+**GET /promotions/active Query params:**
+
+| Param            | Required | Description                                                         |
+| ---------------- | -------- | ------------------------------------------------------------------- |
+| `organisationId` | no       | Organisation id. If omitted, backend uses the default organisation. |
+
+**Body:** none.
+
+**Response 200:**
+
+```json
+[
+  {
+    "id": "promo-free-delivery",
+    "createdAt": "2026-07-09T10:00:00.000Z",
+    "updatedAt": "2026-07-09T10:00:00.000Z",
+    "deletedAt": null,
+    "organisationId": "org-enjoy-lavash",
+    "code": "FREEDEL",
+    "titleI18n": {
+      "ru": "Бесплатная доставка",
+      "uz": "Bepul yetkazib berish",
+      "en": "Free delivery"
+    },
+    "isActive": true,
+    "startDate": null,
+    "endDate": null,
+    "usageLimit": null,
+    "usageCount": 0,
+    "conditions": {
+      "autoApply": true,
+      "minOrderAmount": 150000,
+      "orderType": "DELIVERY"
+    },
+    "reward": {
+      "type": "FREE_DELIVERY",
+      "applyTo": "DELIVERY"
+    }
+  },
+  {
+    "id": "promo-appgift",
+    "createdAt": "2026-07-09T10:00:00.000Z",
+    "updatedAt": "2026-07-09T10:00:00.000Z",
+    "deletedAt": null,
+    "organisationId": "org-enjoy-lavash",
+    "code": "APPGIFT",
+    "titleI18n": {
+      "ru": "Подарок в приложении",
+      "uz": "Ilova sovg'asi",
+      "en": "App gift"
+    },
+    "isActive": true,
+    "startDate": "2026-07-01T00:00:00.000Z",
+    "endDate": "2026-07-31T23:59:59.000Z",
+    "usageLimit": 1000,
+    "usageCount": 42,
+    "conditions": {
+      "autoApply": true,
+      "sources": ["MOBILE_APP"],
+      "minOrderAmount": 100000
+    },
+    "reward": {
+      "type": "FREE_PRODUCT",
+      "freeProductId": "prod-cola",
+      "freeProductQuantity": 1,
+      "applyTo": "PRODUCTS"
+    }
+  }
+]
+```
+
+Only currently usable promotions are returned: active, inside date window, and
+below global `usageLimit`. Client-specific limits are checked during cart
+preview/order creation, not by this listing endpoint.
+
+#### Promotion Result Fields
+
+Every cart preview response includes:
+
+| Field                             | Meaning                                                                                                                                                                                                    |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `promotionStatus`                 | Current promo result: `NONE`, `APPLIED`, `NOT_FOUND`, `INACTIVE`, `NOT_STARTED`, `EXPIRED`, `GLOBAL_LIMIT_REACHED`, `CLIENT_LIMIT_REACHED`, `CLIENT_REQUIRED`, `CONDITIONS_NOT_MET`, `CONFIGURATION_ERROR` |
+| `promotionStatusReason`           | Human-readable reason for non-applied requested promo codes                                                                                                                                                |
+| `appliedPromotion`                | Promotion object when `promotionStatus = "APPLIED"`                                                                                                                                                        |
+| `discountAmount`                  | Discount subtracted from product/modifier amount                                                                                                                                                           |
+| `promotionDeliveryDiscountAmount` | Delivery discount value, e.g. original delivery fee for free delivery                                                                                                                                      |
+| `bonusItems`                      | Gift products added by a `FREE_PRODUCT` promotion                                                                                                                                                          |
+
+Bonus products also appear inside `items` as normal order lines with
+`isBonus: true`, `unitPrice: 0`, `totalPrice: 0`, `originalUnitPrice`,
+`promotionId`, and `promotionCode`. Render them in the cart/order UI as gifts,
+not as paid products.
+
+Invalid or ineligible promo codes do not change the preview total. Order
+creation rejects an explicitly requested unusable promo code with `400`, so the
+app should call preview before creating the order.
+
+#### Promotion Conditions
+
+Admin-created promotions store flexible `conditions` JSON:
+
+```ts
+type PromotionConditions = {
+  autoApply?: boolean; // true = can apply without promoCode
+  minOrderAmount?: number; // product + modifier total, before delivery
+  productIds?: string[];
+  categoryIds?: string[];
+  branchIds?: string[];
+  orderType?: "DELIVERY" | "PICKUP";
+  weekdays?: number[]; // 1=Monday ... 7=Sunday
+  paymentMethods?: PaymentMethod[];
+  sources?: ("MOBILE_APP" | "WEBSITE" | "ADMIN_PANEL")[];
+  perClientUsageLimit?: number; // e.g. 2 or 3 uses per client/phone
+  maxPreviousOrders?: number; // 0 = only clients with no prior valid orders
+};
+```
+
+`sources: ["MOBILE_APP"]` targets orders created through
+`POST /clients/me/orders`. `maxPreviousOrders` counts previous non-cancelled
+orders for the same client/phone.
+
+#### Promotion Rewards
+
+```ts
+type PromotionReward =
+  | {
+      type: "PERCENT";
+      value: number;
+      maxDiscountAmount?: number;
+      applyTo: "ORDER";
+    }
+  | { type: "FIXED"; value: number; applyTo: "ORDER" }
+  | { type: "FREE_DELIVERY"; applyTo: "DELIVERY" }
+  | {
+      type: "FREE_PRODUCT";
+      freeProductId: string; // product id, slug, or iiko id
+      freeProductQuantity?: number;
+      applyTo: "PRODUCTS";
+    };
+```
+
+Examples:
+
+Automatic mobile gift:
+
+```json
+{
+  "code": "APPGIFT",
+  "titleI18n": {
+    "ru": "Подарок в приложении",
+    "uz": "Ilova sovg'asi",
+    "en": "App gift"
+  },
+  "conditions": {
+    "autoApply": true,
+    "sources": ["MOBILE_APP"],
+    "minOrderAmount": 100000
+  },
+  "reward": {
+    "type": "FREE_PRODUCT",
+    "freeProductId": "prod-cola",
+    "freeProductQuantity": 1,
+    "applyTo": "PRODUCTS"
+  }
+}
+```
+
+New-client promo code usable 3 times:
+
+```json
+{
+  "code": "NEW3",
+  "titleI18n": {
+    "ru": "Для новых клиентов",
+    "uz": "Yangi mijozlarga",
+    "en": "New clients"
+  },
+  "conditions": {
+    "perClientUsageLimit": 3,
+    "maxPreviousOrders": 0
+  },
+  "reward": {
+    "type": "PERCENT",
+    "value": 20,
+    "maxDiscountAmount": 30000,
+    "applyTo": "ORDER"
+  }
+}
+```
+
+Threshold automatic discount:
+
+```json
+{
+  "code": "BIGORDER",
+  "titleI18n": {
+    "ru": "Скидка за большой заказ",
+    "uz": "Katta buyurtma chegirmasi",
+    "en": "Big order discount"
+  },
+  "conditions": { "autoApply": true, "minOrderAmount": 200000 },
+  "reward": { "type": "FIXED", "value": 25000, "applyTo": "ORDER" }
+}
+```
 
 ### Payment Methods
 
@@ -388,8 +632,9 @@ pricing.
 | GET    | `/payment-methods` | Enabled payment methods (localized) |
 
 Use this to render the payment selector in the app. Only enabled methods are
-returned, sorted by `sortOrder`. Pass `branchId` after branch selection; `PAYME`
-is returned only when that branch has enabled Payme credentials.
+returned, sorted by `sortOrder`. Pass `branchId` after branch selection;
+`PAYME` and `CLICK` are returned only when the method is globally enabled and
+that branch has enabled credentials for the provider.
 
 **Query params:** `lang` (`ru`/`uz`/`en`), `branchId`, or
 `Accept-Language` header.
@@ -412,6 +657,14 @@ is returned only when that branch has enabled Payme credentials.
     "name": "Payme",
     "isOnline": true,
     "sortOrder": 2,
+    "icon": null
+  },
+  {
+    "id": "pm-click",
+    "code": "CLICK",
+    "name": "Click",
+    "isOnline": true,
+    "sortOrder": 3,
     "icon": null
   }
 ]
@@ -523,6 +776,66 @@ All fields are optional.
 Required: `label`, `street`, `houseNumber`, `latitude`, `longitude`.
 First address is auto-set as default.
 
+### Mobile Cart Preview
+
+| Method | Endpoint                   | Description                                              |
+| ------ | -------------------------- | -------------------------------------------------------- |
+| POST   | `/clients/me/cart/preview` | Authenticated cart total with client-specific promotions |
+
+Use the same body as `POST /cart/preview`. For delivery, this authenticated
+endpoint also accepts `addressId` from `GET /clients/me/addresses` and resolves
+its coordinates; when both `addressId` and inline `address` are present, the
+saved address is used. The public `POST /cart/preview` endpoint still requires
+inline address coordinates. The backend automatically uses the bearer token to
+set `source: "MOBILE_APP"`, `clientId`, client phone, and previous non-cancelled
+order count. Use this endpoint before order creation for:
+
+- promo codes with `perClientUsageLimit`
+- "new client" rules using `maxPreviousOrders`
+- app-only promotions using `sources: ["MOBILE_APP"]`
+
+Response shape is the same as public cart preview. If the user has already used
+a code too many times:
+
+```json
+{
+  "promotionStatus": "CLIENT_LIMIT_REACHED",
+  "promotionStatusReason": "Client promotion usage limit was reached",
+  "discountAmount": 0,
+  "bonusItems": []
+}
+```
+
+If a promo adds a gift product:
+
+```json
+{
+  "promotionStatus": "APPLIED",
+  "appliedPromotion": { "code": "APPGIFT", "...": "..." },
+  "bonusItems": [
+    {
+      "productId": "prod-cola",
+      "quantity": 1,
+      "unitPrice": 0,
+      "originalUnitPrice": 12000,
+      "totalPrice": 0,
+      "isBonus": true,
+      "promotionCode": "APPGIFT"
+    }
+  ],
+  "items": [
+    { "productId": "prod-classic-lavash", "quantity": 2, "...": "..." },
+    {
+      "productId": "prod-cola",
+      "quantity": 1,
+      "unitPrice": 0,
+      "isBonus": true,
+      "...": "..."
+    }
+  ]
+}
+```
+
 ### Orders
 
 | Method | Endpoint                               | Description          |
@@ -584,6 +897,16 @@ Pickup:
 }
 ```
 
+Promo handling:
+
+- Call cart preview first and display `promotionStatus`.
+- If `promoCode` is sent to order creation and is not still applicable, the
+  backend returns `400` and does not create the order.
+- Automatic promotions are recalculated during order creation; if conditions no
+  longer match, the order is created without that automatic promotion.
+- Gift products from `FREE_PRODUCT` promotions are saved in `items` with
+  `isBonus: true`, `unitPrice: 0`, and `totalPrice: 0`.
+
 For `DELIVERY`, prefer `addressId` from `GET /clients/me/addresses`. The
 backend resolves the saved address coordinates before pricing and stores an order
 snapshot of `deliveryAddressLabel`, `deliveryAddressText`, `deliveryLatitude`,
@@ -608,16 +931,35 @@ response includes `iikoOrderId` after iiko accepts the order; otherwise it is
 `null`. If iiko returns `errorInfo`, the backend logs the iiko error and keeps
 `iikoOrderId: null`.
 
-For iiko pickup, the backend sends `orderServiceType: DeliveryByClient` unless
-`IIKO_PICKUP_ORDER_TYPE_ID` is configured. If pickup orders are not appearing in
-iiko, check that the iiko organization has a client-pickup delivery order type
-or set `IIKO_PICKUP_ORDER_TYPE_ID` to the exact order type id. Delivery can be
-overridden similarly with `IIKO_DELIVERY_ORDER_TYPE_ID`.
+For iiko delivery, the backend uses the iiko delivery API
+`/api/1/deliveries/create` and sends a `deliveryPoint`. If no saved address or
+coordinates are available, the backend does not send the order to iiko because
+iiko would receive a delivery without an address. Set
+`IIKO_DELIVERY_ORDER_TYPE_ID` only when the organization requires a specific
+courier-delivery order type.
 
-**Online payment (Payme):** when `paymentMethod` is an online method, the
+For iiko pickup, the backend uses the delivery API
+`/api/1/deliveries/create` without a `deliveryPoint` and sends
+`orderServiceType: DeliveryByClient` and `createOrderSettings.servicePrint:
+true`. Because the current public delivery-create schema does not document
+`servicePrint`, the backend also requests the pickup bill through the supported
+`/api/1/deliveries/print_delivery_bill` command after iiko accepts the order.
+`IIKO_TRANSPORT_TO_FRONT_TIMEOUT_SECONDS` and `IIKO_CHECK_STOP_LIST` can
+override the default `30` seconds / `true` values used for transporting the
+order to the terminal.
+
+When a promotion produces `discountAmount > 0`, the backend sends the same
+amount to iiko in `discountsInfo` as an RMS flexible-sum discount. Set
+`IIKO_DISCOUNT_TYPE_ID` to pin the iiko discount type. If it is not configured,
+the backend loads `/api/1/discounts` and selects the first non-deleted manual
+`FlexibleSum` discount that is not a surcharge. If no suitable type exists, the
+iiko push fails instead of creating an order whose full-price items disagree
+with its discounted payment total.
+
+**Online payment (Payme / Click):** when `paymentMethod` is an online method, the
 created-order response includes a `paymentUrl`. Open it (in-app browser /
 redirect) to let the user pay. The order is created with
-`paymentStatus: PENDING` and is sent to iiko only after Payme confirms payment
+`paymentStatus: PENDING` and is sent to iiko only after the provider confirms payment.
 Poll `GET /clients/me/orders/:id` (or use a deep link) to detect
 `paymentStatus: PAID`.
 
@@ -635,14 +977,15 @@ Poll `GET /clients/me/orders/:id` (or use a deep link) to detect
 }
 ```
 
-If Payme fails or the user abandons checkout, call
+If Payme or Click fails, or the user abandons checkout, call
 `POST /clients/me/orders/:id/retry-payment` while the order is active. The
 backend allows at most two online attempts. If the online payment window expires
 without payment, the order is converted to `paymentMethod: CASH` instead of
 being cancelled.
 
-`PAYME` is hidden from `/payment-methods?branchId=...` when the branch has no
-enabled Payme config. Creating a Payme order for such a branch returns an error.
+`PAYME` and `CLICK` are hidden from `/payment-methods?branchId=...` when the
+branch has no enabled config for that provider. Creating an online order for an
+unconfigured branch returns an error.
 
 **POST /clients/me/orders/:id/cancel Body:**
 
@@ -678,6 +1021,26 @@ Any non-terminal status → CANCELLED
 
 ```
 PENDING | PAID | FAILED | REFUNDED
+```
+
+### PromotionRewardType
+
+```
+PERCENT | FIXED | FREE_DELIVERY | FREE_PRODUCT
+```
+
+### PromotionSource
+
+```
+MOBILE_APP | WEBSITE | ADMIN_PANEL
+```
+
+### PromotionApplicationStatus
+
+```
+NONE | APPLIED | NOT_FOUND | INACTIVE | NOT_STARTED | EXPIRED |
+GLOBAL_LIMIT_REACHED | CLIENT_LIMIT_REACHED | CLIENT_REQUIRED |
+CONDITIONS_NOT_MET | CONFIGURATION_ERROR
 ```
 
 ### Language
@@ -758,37 +1121,402 @@ Product image and mobile visibility fields:
 
 ### Branches
 
-| Method | Endpoint                           | Permission        | Description                 |
-| ------ | ---------------------------------- | ----------------- | --------------------------- |
-| POST   | `/admin/branches`                  | `branches.create` | Create branch               |
-| PATCH  | `/admin/branches/:id`              | `branches.update` | Update branch               |
-| DELETE | `/admin/branches/:id`              | `branches.delete` | Delete branch               |
-| PATCH  | `/admin/branches/:id/availability` | `branches.update` | Update product availability |
+| Method | Endpoint                           | Permission           | Description                 |
+| ------ | ---------------------------------- | -------------------- | --------------------------- |
+| GET    | `/admin/branches`                  | `branches.view_list` | List branches               |
+| GET    | `/admin/branches/:id`              | `branches.view_list` | Get branch                  |
+| POST   | `/admin/branches`                  | `branches.create`    | Create branch               |
+| PATCH  | `/admin/branches/:id`              | `branches.update`    | Update branch               |
+| DELETE | `/admin/branches/:id`              | `branches.delete`    | Delete branch               |
+| PATCH  | `/admin/branches/:id/availability` | `branches.update`    | Update product availability |
 
-Branch create/update accepts optional Payme config:
+Branch create/update accepts optional Payme and Click config:
 
 ```json
 {
   "payme": {
-    "merchantId": "payme-merchant-branch-1",
+    "merchantId": "payme-cashbox-id-branch-1",
     "key": "cashbox-secret",
+    "isEnabled": true
+  },
+  "click": {
+    "merchantId": "click-merchant-id",
+    "serviceId": "click-service-id",
+    "merchantUserId": "click-merchant-user-id",
+    "secretKey": "click-secret",
     "isEnabled": true
   }
 }
 ```
 
-The raw `key` is encrypted before storage and is never returned. Responses
+The raw Payme `key` and Click `secretKey` are encrypted before storage and are never returned. Responses
 include safe metadata only: `configured`, `isEnabled`, `merchantId`, and
-`keyPreview`.
+`keyPreview`; Click responses also include `serviceId` and `merchantUserId`.
+For Payme, `merchantId` is the cashbox/web-cash id used in checkout links. For
+Click, `merchantId` and `serviceId` are used in checkout links and callbacks,
+and `merchantUserId` is stored for future Merchant API status/reversal calls.
 
 ### Promotions
 
-| Method | Endpoint                | Permission          | Description         |
-| ------ | ----------------------- | ------------------- | ------------------- |
-| GET    | `/admin/promotions`     | `promotions.update` | List all promotions |
-| POST   | `/admin/promotions`     | `promotions.create` | Create promotion    |
-| PATCH  | `/admin/promotions/:id` | `promotions.update` | Update promotion    |
-| DELETE | `/admin/promotions/:id` | `promotions.delete` | Delete promotion    |
+| Method | Endpoint                | Permission             | Description         |
+| ------ | ----------------------- | ---------------------- | ------------------- |
+| GET    | `/admin/promotions`     | `promotions.view_list` | List all promotions |
+| POST   | `/admin/promotions`     | `promotions.create`    | Create promotion    |
+| PATCH  | `/admin/promotions/:id` | `promotions.update`    | Update promotion    |
+| DELETE | `/admin/promotions/:id` | `promotions.delete`    | Delete promotion    |
+
+#### GET /admin/promotions
+
+List all non-deleted promotions. This endpoint is for the admin panel table.
+
+**Query params:**
+
+| Param            | Required | Description                                                                              |
+| ---------------- | -------- | ---------------------------------------------------------------------------------------- |
+| `organisationId` | no       | Filter by organisation id. If omitted, returns all organisations visible to the backend. |
+
+**Body:** none.
+
+**Response 200:**
+
+```json
+[
+  {
+    "id": "promo-new3",
+    "createdAt": "2026-07-09T10:00:00.000Z",
+    "updatedAt": "2026-07-09T10:00:00.000Z",
+    "deletedAt": null,
+    "organisationId": "org-enjoy-lavash",
+    "code": "NEW3",
+    "titleI18n": {
+      "ru": "Для новых клиентов",
+      "uz": "Yangi mijozlarga",
+      "en": "New clients"
+    },
+    "isActive": true,
+    "startDate": null,
+    "endDate": null,
+    "usageLimit": 500,
+    "usageCount": 18,
+    "conditions": {
+      "perClientUsageLimit": 3,
+      "maxPreviousOrders": 0
+    },
+    "reward": {
+      "type": "PERCENT",
+      "value": 20,
+      "maxDiscountAmount": 30000,
+      "applyTo": "ORDER"
+    }
+  }
+]
+```
+
+#### POST /admin/promotions
+
+Create a promotion. `code` is normalized to uppercase.
+
+**Body:**
+
+```json
+{
+  "organisationId": "org-enjoy-lavash",
+  "code": "NEW3",
+  "titleI18n": {
+    "ru": "Для новых клиентов",
+    "uz": "Yangi mijozlarga",
+    "en": "New clients"
+  },
+  "isActive": true,
+  "startDate": null,
+  "endDate": "2026-08-31T23:59:59.000Z",
+  "usageLimit": 500,
+  "conditions": {
+    "perClientUsageLimit": 3,
+    "maxPreviousOrders": 0,
+    "minOrderAmount": 50000,
+    "sources": ["MOBILE_APP", "WEBSITE"]
+  },
+  "reward": {
+    "type": "PERCENT",
+    "value": 20,
+    "maxDiscountAmount": 30000,
+    "applyTo": "ORDER"
+  }
+}
+```
+
+**Alternative legacy body:**
+
+```json
+{
+  "code": "SAVE15000",
+  "titleI18n": {
+    "ru": "Скидка 15 000",
+    "uz": "15 000 chegirma",
+    "en": "15,000 off"
+  },
+  "conditions": { "minOrderAmount": 100000 },
+  "rewardType": "FIXED",
+  "value": 15000
+}
+```
+
+**Response 201:**
+
+```json
+{
+  "id": "promo-new3",
+  "createdAt": "2026-07-09T10:00:00.000Z",
+  "updatedAt": "2026-07-09T10:00:00.000Z",
+  "deletedAt": null,
+  "organisationId": "org-enjoy-lavash",
+  "code": "NEW3",
+  "titleI18n": {
+    "ru": "Для новых клиентов",
+    "uz": "Yangi mijozlarga",
+    "en": "New clients"
+  },
+  "isActive": true,
+  "startDate": null,
+  "endDate": "2026-08-31T23:59:59.000Z",
+  "usageLimit": 500,
+  "usageCount": 0,
+  "conditions": {
+    "perClientUsageLimit": 3,
+    "maxPreviousOrders": 0,
+    "minOrderAmount": 50000,
+    "sources": ["MOBILE_APP", "WEBSITE"]
+  },
+  "reward": {
+    "type": "PERCENT",
+    "value": 20,
+    "maxDiscountAmount": 30000,
+    "applyTo": "ORDER"
+  }
+}
+```
+
+**Common 400 errors:**
+
+```json
+{ "message": "code is required", "statusCode": 400 }
+```
+
+```json
+{ "message": "rewardType is required", "statusCode": 400 }
+```
+
+#### PATCH /admin/promotions/:id
+
+Update a promotion. Body is partial; send only changed fields. When changing the
+reward, send the full new `reward` object or the legacy flattened reward fields.
+
+**Body:**
+
+```json
+{
+  "isActive": false,
+  "endDate": "2026-07-31T23:59:59.000Z"
+}
+```
+
+**Body changing reward and conditions:**
+
+```json
+{
+  "conditions": {
+    "autoApply": true,
+    "sources": ["MOBILE_APP"],
+    "minOrderAmount": 120000
+  },
+  "reward": {
+    "type": "FREE_PRODUCT",
+    "freeProductId": "prod-cola",
+    "freeProductQuantity": 1,
+    "applyTo": "PRODUCTS"
+  }
+}
+```
+
+**Response 200:**
+
+```json
+{
+  "id": "promo-appgift",
+  "createdAt": "2026-07-09T10:00:00.000Z",
+  "updatedAt": "2026-07-09T12:30:00.000Z",
+  "deletedAt": null,
+  "organisationId": "org-enjoy-lavash",
+  "code": "APPGIFT",
+  "titleI18n": {
+    "ru": "Подарок в приложении",
+    "uz": "Ilova sovg'asi",
+    "en": "App gift"
+  },
+  "isActive": true,
+  "startDate": null,
+  "endDate": null,
+  "usageLimit": null,
+  "usageCount": 42,
+  "conditions": {
+    "autoApply": true,
+    "sources": ["MOBILE_APP"],
+    "minOrderAmount": 120000
+  },
+  "reward": {
+    "type": "FREE_PRODUCT",
+    "freeProductId": "prod-cola",
+    "freeProductQuantity": 1,
+    "applyTo": "PRODUCTS"
+  }
+}
+```
+
+**404 response:**
+
+```json
+{ "message": "Promotion not found", "statusCode": 404 }
+```
+
+#### DELETE /admin/promotions/:id
+
+Soft-delete a promotion. Deleted promotions no longer appear in lists and cannot
+be applied to carts.
+
+**Body:** none.
+
+**Response 200:**
+
+```json
+{
+  "id": "promo-appgift",
+  "createdAt": "2026-07-09T10:00:00.000Z",
+  "updatedAt": "2026-07-09T12:45:00.000Z",
+  "deletedAt": "2026-07-09T12:45:00.000Z",
+  "organisationId": "org-enjoy-lavash",
+  "code": "APPGIFT",
+  "titleI18n": {
+    "ru": "Подарок в приложении",
+    "uz": "Ilova sovg'asi",
+    "en": "App gift"
+  },
+  "isActive": true,
+  "startDate": null,
+  "endDate": null,
+  "usageLimit": null,
+  "usageCount": 42,
+  "conditions": {
+    "autoApply": true,
+    "sources": ["MOBILE_APP"],
+    "minOrderAmount": 120000
+  },
+  "reward": {
+    "type": "FREE_PRODUCT",
+    "freeProductId": "prod-cola",
+    "freeProductQuantity": 1,
+    "applyTo": "PRODUCTS"
+  }
+}
+```
+
+Admin panel form guidance:
+
+| UI field                | API field                                                    |
+| ----------------------- | ------------------------------------------------------------ |
+| Code                    | `code`, uppercase is applied by backend                      |
+| Name/title              | `titleI18n`                                                  |
+| Active toggle           | `isActive`                                                   |
+| Start/end date          | `startDate`, `endDate` ISO strings or `null`                 |
+| Global usage limit      | `usageLimit`                                                 |
+| Auto apply without code | `conditions.autoApply`                                       |
+| Minimum cart amount     | `conditions.minOrderAmount`                                  |
+| Order source            | `conditions.sources`: `MOBILE_APP`, `WEBSITE`, `ADMIN_PANEL` |
+| Per-client uses         | `conditions.perClientUsageLimit`                             |
+| New-client rule         | `conditions.maxPreviousOrders`                               |
+| Reward type             | `reward.type`                                                |
+
+Create/update can send either a full `reward` object or legacy flattened fields
+(`rewardType`, `value`, `maxDiscountAmount`, `freeProductId`,
+`freeProductQuantity`). Prefer full `reward` for the admin panel because it is
+clearer and supports all reward types.
+
+**Create fixed discount code:**
+
+```json
+{
+  "organisationId": "org-enjoy-lavash",
+  "code": "SAVE15000",
+  "titleI18n": {
+    "ru": "Скидка 15 000",
+    "uz": "15 000 chegirma",
+    "en": "15,000 off"
+  },
+  "isActive": true,
+  "usageLimit": 500,
+  "conditions": {
+    "minOrderAmount": 100000,
+    "perClientUsageLimit": 2
+  },
+  "reward": {
+    "type": "FIXED",
+    "value": 15000,
+    "applyTo": "ORDER"
+  }
+}
+```
+
+**Create automatic mobile app gift:**
+
+```json
+{
+  "code": "APPGIFT",
+  "titleI18n": {
+    "ru": "Подарок в приложении",
+    "uz": "Ilova sovg'asi",
+    "en": "App gift"
+  },
+  "isActive": true,
+  "conditions": {
+    "autoApply": true,
+    "sources": ["MOBILE_APP"],
+    "minOrderAmount": 100000
+  },
+  "reward": {
+    "type": "FREE_PRODUCT",
+    "freeProductId": "prod-cola",
+    "freeProductQuantity": 1,
+    "applyTo": "PRODUCTS"
+  }
+}
+```
+
+**Create new-client promo code usable 3 times:**
+
+```json
+{
+  "code": "NEW3",
+  "titleI18n": {
+    "ru": "Для новых клиентов",
+    "uz": "Yangi mijozlarga",
+    "en": "New clients"
+  },
+  "conditions": {
+    "perClientUsageLimit": 3,
+    "maxPreviousOrders": 0
+  },
+  "reward": {
+    "type": "PERCENT",
+    "value": 20,
+    "maxDiscountAmount": 30000,
+    "applyTo": "ORDER"
+  }
+}
+```
+
+Admin panel should show `usageCount` as global uses. Per-client usage is enforced
+server-side through promotion usage records and does not require frontend
+bookkeeping.
 
 ### Reports
 
@@ -798,6 +1526,35 @@ include safe metadata only: `configured`, `isEnabled`, `merchantId`, and
 | GET    | `/admin/reports/products`   | `reports.products.view` | Product stats   |
 | GET    | `/admin/reports/promotions` | `reports.sales.view`    | Promotion usage |
 | GET    | `/admin/reports/branches`   | `reports.sales.view`    | Branch stats    |
+
+**GET /admin/reports/promotions Response:**
+
+```json
+[
+  {
+    "promoCode": "APPGIFT",
+    "promotionId": "promo-appgift",
+    "ordersCount": 42,
+    "discountAmount": 0,
+    "deliveryDiscountAmount": 0,
+    "bonusItemsQuantity": 42,
+    "totalBenefitAmount": 504000
+  },
+  {
+    "promoCode": "NEW3",
+    "promotionId": "promo-new3",
+    "ordersCount": 18,
+    "discountAmount": 420000,
+    "deliveryDiscountAmount": 0,
+    "bonusItemsQuantity": 0,
+    "totalBenefitAmount": 420000
+  }
+]
+```
+
+`ordersCount` counts created orders that consumed the promotion. This matches
+promo-code limit enforcement. It is not reduced by later cancellation/refund in
+the first version.
 
 #### SMS Provider Reports (Eskiz)
 
@@ -924,6 +1681,9 @@ Returns `{ url: "/uploads/filename.jpg" }`.
 
 ## Payment Webhooks (server-to-server, not for the app)
 
+Full Payme architecture, setup, and troubleshooting notes are in
+[`PAYME_INTEGRATION.md`](./PAYME_INTEGRATION.md).
+
 ### Payme Merchant API
 
 ```
@@ -931,12 +1691,28 @@ POST /payments/payme
 ```
 
 JSON-RPC endpoint for the Payme billing system. **Not called by the mobile app**
-— configure this URL in your Payme merchant cabinet. Authenticated via Basic
-auth using the selected branch cashbox key. Implements the standard methods:
-`CheckPerformTransaction`, `CreateTransaction`, `PerformTransaction`,
+— configure this URL in your Payme merchant cabinet. Implements the standard
+methods: `CheckPerformTransaction`, `CreateTransaction`, `PerformTransaction`,
 `CancelTransaction`, `CheckTransaction`, `GetStatement`.
 
-- The order is matched by the `order_id` account field.
+Auth supported by the webhook:
+
+- Merchant API Basic auth only:
+  `Authorization: Basic <base64(<login>:<cashbox_key>)>`.
+- `login` is the Merchant API login provided by Payme Business. The default is
+  `Paycom`; set `PAYME_MERCHANT_LOGIN` if Payme gives another login.
+- `cashbox_key` is the branch Payme key/password stored in the encrypted branch
+  Payme config.
+- `X-Auth` is for Subscribe API calls and is not accepted by this Merchant API
+  webhook.
+
+- The order is matched by the `order_num` account field. During rollout, the
+  webhook also accepts the old `order_id` field from previously generated
+  checkout links.
+- The Payme web-cash/cashbox account field in the merchant cabinet must also be
+  named `order_num`; checkout URL params and cabinet settings must match.
+- Payme may send Merchant API requests with `Content-Type: text/json`; the
+  webhook accepts that content type and returns `text/json; charset=utf-8`.
 - Branch credentials are resolved from the order/transaction branch; each branch
   has its own Payme merchant id and key.
 - Amount is validated against `order.totalAmount * 100` (tiyin).
@@ -945,12 +1721,51 @@ auth using the selected branch cashbox key. Implements the standard methods:
   `paymentStatus: FAILED` and can be retried. On `CancelTransaction` of a
   performed payment it becomes `REFUNDED` and the order is cancelled.
 
-**Server env:** `PAYMENT_SECRET_ENCRYPTION_KEY`, `PAYME_CHECKOUT_URL`
-(default `https://checkout.paycom.uz`), `PAYME_ACCOUNT_FIELD` (default
-`order_id`), `PAYME_RETURN_URL` (optional),
+**Server env:** `PAYMENT_SECRET_ENCRYPTION_KEY`, `PAYME_MERCHANT_LOGIN`
+(default `Paycom`), `PAYME_CHECKOUT_URL` (default
+`https://checkout.paycom.uz`), `PAYME_ACCOUNT_FIELD` (default `order_num`),
+`PAYME_RETURN_URL` (optional),
 `PAYMENT_ONLINE_TIMEOUT_MINUTES` (default `15`). `PAYME_MERCHANT_ID` and
 `PAYME_KEY` remain a development fallback for in-memory mode; production branch
 credentials are stored encrypted per branch.
+
+### Click Shop API
+
+```
+POST /payments/click
+```
+
+Form-urlencoded endpoint for Click callbacks. **Not called by the mobile app**
+— configure this URL in the Click merchant cabinet. The endpoint returns JSON
+and implements:
+
+- `action=0` Prepare
+- `action=1` Complete
+
+Important callback fields:
+
+- `merchant_trans_id` must be the local payment attempt id generated in the
+  Click checkout URL as `transaction_param`.
+- `merchant_prepare_id` on Complete must match the attempt number returned by
+  Prepare.
+- `service_id`, `amount`, and `sign_string` are validated against the branch
+  Click config and order total.
+- Amount is validated in UZS with two decimal places; Payme remains in tiyin.
+
+Click callbacks return Click error codes consistently: `0`, `-1`, `-2`, `-3`,
+`-4`, `-5`, `-6`, `-8`, `-9`.
+
+On successful Complete the order becomes `paymentStatus: PAID` and is pushed to
+iiko. If Click sends a negative Complete error, the attempt is marked failed and
+the order can be retried while the retry window allows it. Merchant-initiated
+Click reversal/status calls are not sent by this backend yet.
+
+**Server env:** `PAYMENT_SECRET_ENCRYPTION_KEY`, `CLICK_CHECKOUT_URL` (default
+`https://my.click.uz/services/pay/`), `CLICK_RETURN_URL` (optional),
+`PAYMENT_ONLINE_TIMEOUT_MINUTES` (default `15`). `CLICK_MERCHANT_ID`,
+`CLICK_SERVICE_ID`, `CLICK_SECRET_KEY`, and `CLICK_MERCHANT_USER_ID` remain a
+development fallback for in-memory mode; production branch credentials are
+stored encrypted per branch.
 
 ---
 
@@ -999,6 +1814,6 @@ Any non-terminal status → CANCELLED (by admin or client)
 2. **Cart flow**: Call `POST /cart/preview` to show pricing before order creation.
 3. **Delivery check**: Use `POST /delivery/preview` to check if address is deliverable and show delivery cost.
 4. **Modifiers**: Required modifier groups (`isRequired: true`) must have at least `minSelect` items selected.
-5. **Prices**: All API prices are whole UZS integers. Do not divide by 100 in the app; `32000` means 32,000 UZS. Payme is the only integration that converts order totals to tiyin internally.
+5. **Prices**: All API prices are whole UZS integers. Do not divide by 100 in the app; `32000` means 32,000 UZS. Payme converts order totals to tiyin internally; Click sends UZS with two decimal places.
 6. **Images**: Prepend base URL to image paths (e.g., `http://localhost:3000/uploads/products/classic-lavash.jpg`).
 7. **Swagger**: Full interactive docs at `/docs` with all request/response schemas.

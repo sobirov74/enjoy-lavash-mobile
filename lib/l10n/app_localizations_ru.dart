@@ -371,6 +371,15 @@ class LRu extends L {
   String get nameOptional => 'Имя (необязательно)';
 
   @override
+  String get birthDateTitle => 'Ваш особенный день 🎂';
+
+  @override
+  String get birthDate => 'Дата рождения';
+
+  @override
+  String get selectBirthDate => 'Выберите дату рождения';
+
+  @override
   String otpCodeExpiresIn(String time) {
     return 'Код действует ещё $time';
   }

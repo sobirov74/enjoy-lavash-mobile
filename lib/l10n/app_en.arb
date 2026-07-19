@@ -145,6 +145,9 @@
   "phoneNumber": "Phone number",
   "smsCode": "SMS code",
   "nameOptional": "Name (optional)",
+  "birthDateTitle": "Your special day 🎂",
+  "birthDate": "Date of birth",
+  "selectBirthDate": "Select your date of birth",
   "otpCodeExpiresIn": "Code expires in {time}",
   "@otpCodeExpiresIn": {
     "placeholders": {

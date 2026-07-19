@@ -373,6 +373,15 @@ class LUz extends L {
   String get nameOptional => 'Ism (ixtiyoriy)';
 
   @override
+  String get birthDateTitle => 'Sizning maxsus kuningiz 🎂';
+
+  @override
+  String get birthDate => 'Tug\'ilgan sana';
+
+  @override
+  String get selectBirthDate => 'Tug\'ilgan sanani tanlang';
+
+  @override
   String otpCodeExpiresIn(String time) {
     return 'Kod $time dan keyin tugaydi';
   }

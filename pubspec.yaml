@@ -79,9 +79,10 @@ flutter_launcher_icons:
   android: true
   ios: true
   image_path: "assets/images/enjoy-logo.png"
-  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_background: "#000000"
   adaptive_icon_foreground: "assets/images/enjoy-logo.png"
   remove_alpha_ios: true
+  background_color_ios: "#000000"
 
 flutter_native_splash:
   color: "#FFFFFF"

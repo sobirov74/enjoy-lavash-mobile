@@ -112,23 +112,15 @@ import UserNotifications
     }
 
     pendingApnsTokenResult = result
-    UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) {
-      [weak self] granted,
-      error in
+    UNUserNotificationCenter.current().getNotificationSettings { [weak self] settings in
       DispatchQueue.main.async {
         guard let self else { return }
-        if let error {
-          self.pendingApnsTokenResult?(
-            FlutterError(
-              code: "APNS_AUTHORIZATION_FAILED",
-              message: error.localizedDescription,
-              details: nil
-            )
-          )
-          self.pendingApnsTokenResult = nil
-          return
+        var isAuthorized = settings.authorizationStatus == .authorized ||
+          settings.authorizationStatus == .provisional
+        if #available(iOS 14.0, *) {
+          isAuthorized = isAuthorized || settings.authorizationStatus == .ephemeral
         }
-        guard granted else {
+        guard isAuthorized else {
           self.pendingApnsTokenResult?(nil)
           self.pendingApnsTokenResult = nil
           return

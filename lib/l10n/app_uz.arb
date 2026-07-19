@@ -145,6 +145,9 @@
   "phoneNumber": "Telefon raqami",
   "smsCode": "SMS kod",
   "nameOptional": "Ism (ixtiyoriy)",
+  "birthDateTitle": "Sizning maxsus kuningiz 🎂",
+  "birthDate": "Tug'ilgan sana",
+  "selectBirthDate": "Tug'ilgan sanani tanlang",
   "otpCodeExpiresIn": "Kod {time} dan keyin tugaydi",
   "@otpCodeExpiresIn": {
     "placeholders": {

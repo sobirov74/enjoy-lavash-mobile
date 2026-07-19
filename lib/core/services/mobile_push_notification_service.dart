@@ -133,13 +133,26 @@ class MobilePushNotificationService {
   }
 
   Future<void> syncToken({String? locale}) async {
+    await _syncToken(locale: locale, requestPermission: true);
+  }
+
+  Future<void> syncTokenIfPermissionGranted({String? locale}) async {
+    await _syncToken(locale: locale, requestPermission: false);
+  }
+
+  Future<void> _syncToken({
+    required bool requestPermission,
+    String? locale,
+  }) async {
     final generation = ++_registrationGeneration;
     _registrationEnabled = true;
     _registrationLocale = locale;
     final platform = _platformName();
     if (platform == null) return;
 
-    final settings = await _ensureNotificationPermission();
+    final settings = requestPermission
+        ? await _ensureNotificationPermission()
+        : await getSettings();
     if (!settings.enabled) {
       if (generation == _registrationGeneration) {
         _registrationEnabled = false;
@@ -164,7 +177,7 @@ class MobilePushNotificationService {
       ),
     );
 
-    if ((platform == 'android' || platform == 'ios') &&
+    if (platform == 'android' &&
         _tokenRefreshSubscription == null &&
         await _ensureMessagingReady()) {
       _tokenRefreshSubscription = FirebaseMessaging.instance.onTokenRefresh
@@ -307,7 +320,7 @@ class MobilePushNotificationService {
   Future<String?> _getPlatformToken() async {
     switch (defaultTargetPlatform) {
       case TargetPlatform.iOS:
-        return _getIosToken();
+        return _requestApnsToken();
       case TargetPlatform.android:
         if (!await _ensureMessagingReady()) return null;
         return FirebaseMessaging.instance.getToken();
@@ -381,21 +394,6 @@ class MobilePushNotificationService {
     } on MissingPluginException {
       return null;
     }
-  }
-
-  Future<String?> _getIosToken() async {
-    final apnsToken = await _requestApnsToken();
-    if (await _ensureMessagingReady()) {
-      try {
-        final token = await FirebaseMessaging.instance.getToken();
-        if (token != null && token.isNotEmpty) return token;
-      } on FirebaseException catch (error) {
-        debugPrint('FCM token request failed on iOS: ${error.message}');
-      } on PlatformException catch (error) {
-        debugPrint('FCM token request failed on iOS: ${error.message}');
-      }
-    }
-    return apnsToken;
   }
 
   Future<PushNotificationSettings> _ensureNotificationPermission() async {

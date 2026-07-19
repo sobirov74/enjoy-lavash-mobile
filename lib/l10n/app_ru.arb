@@ -145,6 +145,9 @@
   "phoneNumber": "Номер телефона",
   "smsCode": "SMS-код",
   "nameOptional": "Имя (необязательно)",
+  "birthDateTitle": "Ваш особенный день 🎂",
+  "birthDate": "Дата рождения",
+  "selectBirthDate": "Выберите дату рождения",
   "otpCodeExpiresIn": "Код действует ещё {time}",
   "@otpCodeExpiresIn": {
     "placeholders": {

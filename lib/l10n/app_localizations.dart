@@ -789,6 +789,24 @@ abstract class L {
   /// **'Ism (ixtiyoriy)'**
   String get nameOptional;
 
+  /// No description provided for @birthDateTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sizning maxsus kuningiz 🎂'**
+  String get birthDateTitle;
+
+  /// No description provided for @birthDate.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tug\'ilgan sana'**
+  String get birthDate;
+
+  /// No description provided for @selectBirthDate.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tug\'ilgan sanani tanlang'**
+  String get selectBirthDate;
+
   /// No description provided for @otpCodeExpiresIn.
   ///
   /// In uz, this message translates to:

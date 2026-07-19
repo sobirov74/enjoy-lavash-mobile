@@ -139,7 +139,7 @@ extension _MobileBackendNotificationsController on MobileBackendController {
 
   Future<void> _syncPushNotificationToken({String? locale}) async {
     try {
-      await _pushNotifications.syncToken(locale: locale);
+      await _pushNotifications.syncTokenIfPermissionGranted(locale: locale);
       _pushNotificationSettings = await _pushNotifications.getSettings();
       _notifyListeners();
     } catch (error) {

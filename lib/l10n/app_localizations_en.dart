@@ -374,6 +374,15 @@ class LEn extends L {
   String get nameOptional => 'Name (optional)';
 
   @override
+  String get birthDateTitle => 'Your special day 🎂';
+
+  @override
+  String get birthDate => 'Date of birth';
+
+  @override
+  String get selectBirthDate => 'Select your date of birth';
+
+  @override
   String otpCodeExpiresIn(String time) {
     return 'Code expires in $time';
   }

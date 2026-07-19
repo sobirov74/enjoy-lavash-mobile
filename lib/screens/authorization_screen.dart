@@ -170,8 +170,7 @@ class _AuthorizationScreenState extends State<AuthorizationScreen>
     });
 
     final controller = context.read<MobileBackendController>();
-    await _startSmsCodeListener();
-    if (!mounted) return;
+    unawaited(_startSmsCodeListener());
 
     final result = await controller.requestOtp(phoneNumber: phoneNumber);
     if (!mounted) return;
@@ -251,7 +250,7 @@ class _AuthorizationScreenState extends State<AuthorizationScreen>
       case Success(:final data):
         TextInput.finishAutofillContext();
         FocusScope.of(context).unfocus();
-        await _showNamePromptIfNeeded(data);
+        await _showProfilePromptsIfNeeded(data);
         if (!mounted) return;
         Navigator.of(context).pop(true);
       case Error(:final failure):
@@ -275,16 +274,35 @@ class _AuthorizationScreenState extends State<AuthorizationScreen>
     });
   }
 
-  Future<void> _showNamePromptIfNeeded(VerifyOtpResponse response) async {
+  Future<void> _showProfilePromptsIfNeeded(VerifyOtpResponse response) async {
     final hasName = response.client.fullName.trim().isNotEmpty;
-    if (!response.isNewClient && hasName) return;
+    if (response.isNewClient || !hasName) {
+      final currentName = response.client.fullName.trim();
+      final initialName =
+          response.isNewClient &&
+              currentName == response.client.phoneNumber.trim()
+          ? ''
+          : currentName;
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => _NamePromptSheet(initialName: initialName),
+      );
+    }
+
+    if (!mounted) return;
+    final client =
+        context.read<MobileBackendController>().client ?? response.client;
+    if (client.birthDate != null) return;
 
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _NamePromptSheet(initialName: response.client.fullName),
+      builder: (_) => const _BirthDatePromptSheet(),
     );
   }
 
@@ -923,6 +941,216 @@ class _NamePromptSheetState extends State<_NamePromptSheet> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BirthDatePromptSheet extends StatefulWidget {
+  const _BirthDatePromptSheet();
+
+  @override
+  State<_BirthDatePromptSheet> createState() => _BirthDatePromptSheetState();
+}
+
+class _BirthDatePromptSheetState extends State<_BirthDatePromptSheet> {
+  DateTime? _selectedDate;
+  bool _isSaving = false;
+  String? _errorText;
+
+  Future<void> _selectBirthDate() async {
+    if (_isSaving) return;
+
+    final now = DateTime.now();
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? DateTime(now.year - 18, 1, 1),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(now.year, now.month, now.day),
+      currentDate: now,
+      helpText: L.of(context).birthDate,
+    );
+    if (!mounted || pickedDate == null) return;
+
+    setState(() {
+      _selectedDate = DateTime(
+        pickedDate.year,
+        pickedDate.month,
+        pickedDate.day,
+      );
+      _errorText = null;
+    });
+  }
+
+  Future<void> _saveBirthDate() async {
+    if (_isSaving) return;
+
+    final birthDate = _selectedDate;
+    if (birthDate == null) {
+      setState(() => _errorText = L.of(context).selectBirthDate);
+      return;
+    }
+
+    setState(() {
+      _isSaving = true;
+      _errorText = null;
+    });
+
+    final result = await context.read<MobileBackendController>().updateProfile(
+      ClientProfileUpdate(birthDate: birthDate),
+    );
+    if (!mounted) return;
+
+    switch (result) {
+      case Success():
+        Navigator.of(context).pop();
+      case Error(:final failure):
+        setState(() {
+          _isSaving = false;
+          _errorText = failure.message;
+        });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final t = L.of(context);
+    final selectedDate = _selectedDate;
+    final selectedDateText = selectedDate == null
+        ? t.selectBirthDate
+        : MaterialLocalizations.of(context).formatMediumDate(selectedDate);
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+      decoration: BoxDecoration(
+        color: theme.scaffoldBackgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Center(
+              child: Container(
+                width: 46,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? const Color(0xFF3A332D)
+                      : const Color(0xFFE8DED4),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+            ),
+            TypographyText(
+              t.birthDateTitle,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 18),
+            Semantics(
+              button: true,
+              label: t.birthDate,
+              value: selectedDate == null ? null : selectedDateText,
+              child: InkWell(
+                key: const ValueKey<String>('birth-date-field'),
+                onTap: _isSaving ? null : _selectBirthDate,
+                borderRadius: BorderRadius.circular(20),
+                child: InputDecorator(
+                  decoration: InputDecoration(
+                    labelText: t.birthDate,
+                    prefixIcon: const Icon(Icons.cake_outlined),
+                    suffixIcon: const Icon(Icons.calendar_month_outlined),
+                    filled: true,
+                    fillColor: isDark ? const Color(0xFF1D1A18) : Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                  child: TypographyText(
+                    selectedDateText,
+                    style: TextStyle(
+                      color: selectedDate == null
+                          ? BaseColors.textGray
+                          : theme.colorScheme.onSurface,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            if (_errorText != null) ...[
+              const SizedBox(height: 12),
+              TypographyText(
+                _errorText!,
+                style: const TextStyle(
+                  color: BaseColors.danger,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+            const SizedBox(height: 18),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: TextButton(
+                    key: const ValueKey<String>('birth-date-skip-button'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: BaseColors.textGray,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    onPressed: _isSaving
+                        ? null
+                        : () => Navigator.of(context).pop(),
+                    child: TypographyText(t.skip),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: FilledButton(
+                    key: const ValueKey<String>('birth-date-save-button'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: BaseColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    onPressed: _isSaving ? null : _saveBirthDate,
+                    child: _isSaving
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : TypographyText(
+                            t.save,
+                            style: const TextStyle(color: BaseColors.white),
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

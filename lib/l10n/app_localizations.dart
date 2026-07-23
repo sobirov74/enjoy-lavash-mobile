@@ -1155,6 +1155,198 @@ abstract class L {
   /// **'Bildirishnomalar'**
   String get notifications;
 
+  /// No description provided for @notificationInbox.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xabarlar'**
+  String get notificationInbox;
+
+  /// No description provided for @notificationInboxSubtitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangiliklar va takliflar bir joyda'**
+  String get notificationInboxSubtitle;
+
+  /// No description provided for @markAllRead.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barchasini o\'qilgan qilish'**
+  String get markAllRead;
+
+  /// No description provided for @markUnread.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'qilmagan qilish'**
+  String get markUnread;
+
+  /// No description provided for @noNotifications.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozircha xabarlar yo\'q'**
+  String get noNotifications;
+
+  /// No description provided for @noNotificationsSubtitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma yangiliklari va shaxsiy takliflar shu yerda ko\'rinadi.'**
+  String get noNotificationsSubtitle;
+
+  /// No description provided for @myPromotions.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mening promokodlarim'**
+  String get myPromotions;
+
+  /// No description provided for @myPromotionsSubtitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Siz uchun ajratilgan maxsus promokodlardan foydalaning.'**
+  String get myPromotionsSubtitle;
+
+  /// No description provided for @personalOffers.
+  ///
+  /// In uz, this message translates to:
+  /// **'Siz uchun takliflar'**
+  String get personalOffers;
+
+  /// No description provided for @activePromotions.
+  ///
+  /// In uz, this message translates to:
+  /// **'Faol'**
+  String get activePromotions;
+
+  /// No description provided for @allPromotions.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barchasi'**
+  String get allPromotions;
+
+  /// No description provided for @activePromoCount.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count} ta faol'**
+  String activePromoCount(int count);
+
+  /// No description provided for @noAssignedPromotions.
+  ///
+  /// In uz, this message translates to:
+  /// **'Faol promokod yo\'q'**
+  String get noAssignedPromotions;
+
+  /// No description provided for @noAssignedPromotionsSubtitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangi shaxsiy taklif berilganda bu yerda paydo bo\'ladi.'**
+  String get noAssignedPromotionsSubtitle;
+
+  /// No description provided for @reward.
+  ///
+  /// In uz, this message translates to:
+  /// **'Foyda'**
+  String get reward;
+
+  /// No description provided for @conditions.
+  ///
+  /// In uz, this message translates to:
+  /// **'Shartlar'**
+  String get conditions;
+
+  /// No description provided for @validity.
+  ///
+  /// In uz, this message translates to:
+  /// **'Amal qilish muddati'**
+  String get validity;
+
+  /// No description provided for @usage.
+  ///
+  /// In uz, this message translates to:
+  /// **'Foydalanish'**
+  String get usage;
+
+  /// No description provided for @remainingUses.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count} marta foydalanish mumkin'**
+  String remainingUses(int count);
+
+  /// No description provided for @validFrom.
+  ///
+  /// In uz, this message translates to:
+  /// **'{date} dan amal qiladi'**
+  String validFrom(String date);
+
+  /// No description provided for @usePromo.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmada ishlatish'**
+  String get usePromo;
+
+  /// No description provided for @promoReadyForCheckout.
+  ///
+  /// In uz, this message translates to:
+  /// **'{code} promokodi buyurtma uchun tanlandi'**
+  String promoReadyForCheckout(String code);
+
+  /// No description provided for @promoStatusActive.
+  ///
+  /// In uz, this message translates to:
+  /// **'Faol'**
+  String get promoStatusActive;
+
+  /// No description provided for @promoStatusNotStarted.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tez orada'**
+  String get promoStatusNotStarted;
+
+  /// No description provided for @promoStatusUsed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ishlatilgan'**
+  String get promoStatusUsed;
+
+  /// No description provided for @promoStatusExpired.
+  ///
+  /// In uz, this message translates to:
+  /// **'Muddati tugagan'**
+  String get promoStatusExpired;
+
+  /// No description provided for @promoStatusRevoked.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bekor qilingan'**
+  String get promoStatusRevoked;
+
+  /// No description provided for @promoStatusInactive.
+  ///
+  /// In uz, this message translates to:
+  /// **'Faol emas'**
+  String get promoStatusInactive;
+
+  /// No description provided for @promoStatusLimitReached.
+  ///
+  /// In uz, this message translates to:
+  /// **'Limit tugagan'**
+  String get promoStatusLimitReached;
+
+  /// No description provided for @marketingOffers.
+  ///
+  /// In uz, this message translates to:
+  /// **'Aksiya va takliflar'**
+  String get marketingOffers;
+
+  /// No description provided for @marketingOffersSubtitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sizga mos promokod va chegirmalar haqida xabar oling'**
+  String get marketingOffersSubtitle;
+
+  /// No description provided for @marketingUpdateFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Aksiya xabarlari sozlamasini yangilab bo\'lmadi'**
+  String get marketingUpdateFailed;
+
   /// No description provided for @appearance.
   ///
   /// In uz, this message translates to:

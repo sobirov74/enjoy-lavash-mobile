@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import 'package:enjoy_lavash_mobile/core/api/api_client.dart';
 import 'package:enjoy_lavash_mobile/core/api/api_endpoints.dart';
 import 'package:enjoy_lavash_mobile/core/error/result.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/assigned_promotion_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/cart_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/file_upload_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/order_model.dart';
@@ -114,6 +115,55 @@ void main() {
     expect(
       ApiEndpoints.clientPushTokenRegistration('registration/id'),
       '/clients/me/push-token-registrations/registration%2Fid',
+    );
+  });
+
+  test('assigned promotions request supports the ALL status', () async {
+    late RequestOptions recordedRequest;
+    final adapter = _Adapter((options) async {
+      recordedRequest = options;
+      return _jsonResponse({
+        'items': [
+          {
+            'id': 'assignment-1',
+            'code': 'PRIVATE20',
+            'status': 'USED',
+            'title': 'Private offer',
+          },
+        ],
+      });
+    });
+    final repository = MobileBackendRepositoryImpl(
+      ApiClient(baseUrl: 'https://example.test', httpClientAdapter: adapter),
+    );
+
+    final result = await repository.getAssignedPromotions(includeAll: true);
+
+    expect(result, isA<Success<List<AssignedPromotionModel>>>());
+    expect(recordedRequest.uri.path, '/clients/me/promotions');
+    expect(recordedRequest.uri.queryParameters, {'status': 'ALL'});
+    expect(result.dataOrNull?.single.code, 'PRIVATE20');
+    expect(result.dataOrNull?.single.status, AssignedPromotionStatus.used);
+  });
+
+  test('notification unread mutation uses the notification ID route', () async {
+    late RequestOptions recordedRequest;
+    final adapter = _Adapter((options) async {
+      recordedRequest = options;
+      return _jsonResponse({'updated': 1, 'unreadCount': 3});
+    });
+    final repository = MobileBackendRepositoryImpl(
+      ApiClient(baseUrl: 'https://example.test', httpClientAdapter: adapter),
+    );
+
+    final result = await repository.markNotificationUnread(
+      notificationId: 'notification/id',
+    );
+
+    expect(result.isSuccess, isTrue);
+    expect(
+      recordedRequest.path,
+      '/clients/me/notifications/notification%2Fid/unread',
     );
   });
 

@@ -54,6 +54,23 @@ extension _MobileBackendBootstrapController on MobileBackendController {
         _applyFailure(failure, notify: false);
     }
 
+    final assignedPromotionsResult = await _repository.getAssignedPromotions(
+      language: _client?.language ?? 'uz',
+    );
+    switch (assignedPromotionsResult) {
+      case Success(:final data):
+        _assignedPromotions = data;
+        _assignedPromotionsIncludeAll = false;
+        _assignedPromotionsFailure = null;
+      case Error(:final failure):
+        if (failure is AuthFailure) {
+          _applyFailure(failure);
+          return;
+        }
+        _assignedPromotionsFailure = failure;
+        _applyFailure(failure, notify: false);
+    }
+
     _notifyListeners();
   }
 
@@ -88,10 +105,12 @@ extension _MobileBackendBootstrapController on MobileBackendController {
           _startPushNotificationSync(locale: language);
           unawaited(syncClientLanguage(language: language));
           unawaited(refreshNotifications());
+          unawaited(refreshAssignedPromotions(language: language));
         } else {
           _notifications = const <ClientNotificationItemModel>[];
           _notificationUnreadCount = 0;
           _notificationTotal = 0;
+          _assignedPromotions = const <AssignedPromotionModel>[];
         }
         _status = MobileBackendStatus.loaded;
       case Error(:final failure):

@@ -578,6 +578,115 @@ class LEn extends L {
   String get notifications => 'Notifications';
 
   @override
+  String get notificationInbox => 'Inbox';
+
+  @override
+  String get notificationInboxSubtitle => 'Updates and offers in one place';
+
+  @override
+  String get markAllRead => 'Mark all read';
+
+  @override
+  String get markUnread => 'Mark unread';
+
+  @override
+  String get noNotifications => 'No notifications yet';
+
+  @override
+  String get noNotificationsSubtitle =>
+      'Order updates and personal offers will appear here.';
+
+  @override
+  String get myPromotions => 'My promo codes';
+
+  @override
+  String get myPromotionsSubtitle =>
+      'Use special promo codes assigned just to you.';
+
+  @override
+  String get personalOffers => 'Offers for you';
+
+  @override
+  String get activePromotions => 'Active';
+
+  @override
+  String get allPromotions => 'All';
+
+  @override
+  String activePromoCount(int count) {
+    return '$count active';
+  }
+
+  @override
+  String get noAssignedPromotions => 'No active promo codes';
+
+  @override
+  String get noAssignedPromotionsSubtitle =>
+      'New personal offers will appear here automatically.';
+
+  @override
+  String get reward => 'Reward';
+
+  @override
+  String get conditions => 'Conditions';
+
+  @override
+  String get validity => 'Validity';
+
+  @override
+  String get usage => 'Usage';
+
+  @override
+  String remainingUses(int count) {
+    return '$count uses remaining';
+  }
+
+  @override
+  String validFrom(String date) {
+    return 'Valid from $date';
+  }
+
+  @override
+  String get usePromo => 'Use in order';
+
+  @override
+  String promoReadyForCheckout(String code) {
+    return 'Promo code $code selected for checkout';
+  }
+
+  @override
+  String get promoStatusActive => 'Active';
+
+  @override
+  String get promoStatusNotStarted => 'Coming soon';
+
+  @override
+  String get promoStatusUsed => 'Used';
+
+  @override
+  String get promoStatusExpired => 'Expired';
+
+  @override
+  String get promoStatusRevoked => 'Revoked';
+
+  @override
+  String get promoStatusInactive => 'Inactive';
+
+  @override
+  String get promoStatusLimitReached => 'Limit reached';
+
+  @override
+  String get marketingOffers => 'Promotions and offers';
+
+  @override
+  String get marketingOffersSubtitle =>
+      'Receive relevant promo codes and discount updates';
+
+  @override
+  String get marketingUpdateFailed =>
+      'Could not update promotional notifications';
+
+  @override
   String get appearance => 'Appearance';
 
   @override

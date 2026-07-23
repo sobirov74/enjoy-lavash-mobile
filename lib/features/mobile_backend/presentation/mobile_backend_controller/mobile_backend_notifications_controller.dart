@@ -47,7 +47,9 @@ extension _MobileBackendNotificationsController on MobileBackendController {
       );
     }
 
+    final requestVersion = ++_notificationsRequestVersion;
     _notificationsLoading = true;
+    _notificationsFailure = null;
     _notifyListeners();
 
     final result = await _repository.getNotifications(
@@ -55,16 +57,20 @@ extension _MobileBackendNotificationsController on MobileBackendController {
       offset: offset,
       unreadOnly: unreadOnly,
     );
-    switch (result) {
-      case Success(:final data):
-        _applyNotifications(data);
-        _failure = null;
-      case Error(:final failure):
-        _applyFailure(failure, notify: false);
-    }
+    if (requestVersion == _notificationsRequestVersion) {
+      switch (result) {
+        case Success(:final data):
+          _applyNotifications(data);
+          _notificationsFailure = null;
+          _failure = null;
+        case Error(:final failure):
+          _notificationsFailure = failure;
+          _applyFailure(failure, notify: false);
+      }
 
-    _notificationsLoading = false;
-    _notifyListeners();
+      _notificationsLoading = false;
+      _notifyListeners();
+    }
     return result;
   }
 
@@ -75,13 +81,17 @@ extension _MobileBackendNotificationsController on MobileBackendController {
       return const Success(0);
     }
 
+    final requestVersion = ++_notificationCountRequestVersion;
     final result = await _repository.getUnreadNotificationCount();
+    if (requestVersion != _notificationCountRequestVersion) return result;
     switch (result) {
       case Success(:final data):
         _notificationUnreadCount = data;
+        _notificationsFailure = null;
         _failure = null;
         _notifyListeners();
       case Error(:final failure):
+        _notificationsFailure = failure;
         _applyFailure(failure);
     }
     return result;
@@ -95,6 +105,9 @@ extension _MobileBackendNotificationsController on MobileBackendController {
     );
     switch (result) {
       case Success(:final data):
+        _notificationsRequestVersion++;
+        _notificationCountRequestVersion++;
+        _notificationsLoading = false;
         _notificationUnreadCount = data.unreadCount;
         _notifications = _notifications
             .map(
@@ -104,8 +117,39 @@ extension _MobileBackendNotificationsController on MobileBackendController {
             )
             .toList(growable: false);
         _failure = null;
+        _notificationsFailure = null;
         _notifyListeners();
       case Error(:final failure):
+        _notificationsFailure = failure;
+        _applyFailure(failure);
+    }
+    return result;
+  }
+
+  Future<Result<ClientNotificationReadResultModel>> _markNotificationUnread({
+    required String notificationId,
+  }) async {
+    final result = await _repository.markNotificationUnread(
+      notificationId: notificationId,
+    );
+    switch (result) {
+      case Success(:final data):
+        _notificationsRequestVersion++;
+        _notificationCountRequestVersion++;
+        _notificationsLoading = false;
+        _notificationUnreadCount = data.unreadCount;
+        _notifications = _notifications
+            .map(
+              (notification) => notification.notificationId == notificationId
+                  ? notification.copyWith(clearReadAt: true, isRead: false)
+                  : notification,
+            )
+            .toList(growable: false);
+        _failure = null;
+        _notificationsFailure = null;
+        _notifyListeners();
+      case Error(:final failure):
+        _notificationsFailure = failure;
         _applyFailure(failure);
     }
     return result;
@@ -116,6 +160,9 @@ extension _MobileBackendNotificationsController on MobileBackendController {
     final result = await _repository.markAllNotificationsRead();
     switch (result) {
       case Success(:final data):
+        _notificationsRequestVersion++;
+        _notificationCountRequestVersion++;
+        _notificationsLoading = false;
         _notificationUnreadCount = data.unreadCount;
         final now = DateTime.now();
         _notifications = _notifications
@@ -126,11 +173,65 @@ extension _MobileBackendNotificationsController on MobileBackendController {
             )
             .toList(growable: false);
         _failure = null;
+        _notificationsFailure = null;
         _notifyListeners();
       case Error(:final failure):
+        _notificationsFailure = failure;
         _applyFailure(failure);
     }
     return result;
+  }
+
+  Future<Result<List<AssignedPromotionModel>>> _refreshAssignedPromotions({
+    required bool includeAll,
+    required String language,
+  }) async {
+    if (_client == null) {
+      _assignedPromotions = const <AssignedPromotionModel>[];
+      _assignedPromotionsIncludeAll = includeAll;
+      _assignedPromotionsFailure = null;
+      _notifyListeners();
+      return const Success(<AssignedPromotionModel>[]);
+    }
+
+    final requestVersion = ++_assignedPromotionsRequestVersion;
+    _assignedPromotionsLoading = true;
+    _assignedPromotionsFailure = null;
+    _notifyListeners();
+
+    final result = await _repository.getAssignedPromotions(
+      includeAll: includeAll,
+      language: language,
+    );
+    if (requestVersion == _assignedPromotionsRequestVersion) {
+      switch (result) {
+        case Success(:final data):
+          _assignedPromotions = data;
+          _assignedPromotionsIncludeAll = includeAll;
+          _assignedPromotionsFailure = null;
+          _failure = null;
+        case Error(:final failure):
+          _assignedPromotionsFailure = failure;
+          _applyFailure(failure, notify: false);
+      }
+      _assignedPromotionsLoading = false;
+      _notifyListeners();
+    }
+    return result;
+  }
+
+  Future<void> _handleAppResumed({String? locale}) async {
+    final client = _client;
+    if (client == null) return;
+
+    _startPushNotificationSync(locale: locale ?? client.language);
+    await Future.wait<Object?>([
+      refreshNotificationUnreadCount(),
+      refreshAssignedPromotions(
+        language: locale ?? client.language,
+        includeAll: _assignedPromotionsIncludeAll,
+      ),
+    ]);
   }
 
   void _startPushNotificationSync({String? locale}) {
@@ -148,8 +249,10 @@ extension _MobileBackendNotificationsController on MobileBackendController {
   }
 
   void _applyNotifications(ClientNotificationInboxModel inbox) {
+    _notificationCountRequestVersion++;
     _notifications = inbox.items;
     _notificationUnreadCount = inbox.unreadCount;
     _notificationTotal = inbox.total;
+    _notificationsFailure = null;
   }
 }

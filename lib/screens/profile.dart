@@ -21,9 +21,12 @@ import 'package:enjoy_lavash_mobile/core/services/external_url_launcher.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/address_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/branch_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/cart_model.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/client_profile_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/order_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/presentation/mobile_backend_controller.dart';
 import 'package:enjoy_lavash_mobile/screens/authorization_screen.dart';
+import 'package:enjoy_lavash_mobile/screens/assigned_promotions_screen.dart';
+import 'package:enjoy_lavash_mobile/screens/notifications_screen.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
 import 'package:enjoy_lavash_mobile/theme/app_motion.dart';
 
@@ -61,9 +64,10 @@ Future<void> showProfileOrderDetailsSheet({
 }
 
 class Profile extends StatefulWidget {
-  const Profile({super.key, this.onRefresh});
+  const Profile({super.key, this.onRefresh, this.onPromoSelected});
 
   final Future<void> Function()? onRefresh;
+  final ValueChanged<String>? onPromoSelected;
 
   @override
   State<Profile> createState() => _ProfileState();
@@ -71,6 +75,7 @@ class Profile extends StatefulWidget {
 
 class _ProfileState extends State<Profile> {
   late final Future<String?> _appVersionFuture;
+  bool _marketingConsentUpdating = false;
 
   @override
   void initState() {
@@ -163,6 +168,26 @@ class _ProfileState extends State<Profile> {
     ).push(MaterialPageRoute<void>(builder: (_) => const _AllOrdersScreen()));
   }
 
+  Future<void> _openNotifications(BuildContext context) async {
+    final code = await Navigator.of(context).push<String>(
+      MaterialPageRoute<String>(builder: (_) => const NotificationsScreen()),
+    );
+    if (code != null) {
+      widget.onPromoSelected?.call(code);
+    }
+  }
+
+  Future<void> _openAssignedPromotions(BuildContext context) async {
+    final code = await Navigator.of(context).push<String>(
+      MaterialPageRoute<String>(
+        builder: (_) => const AssignedPromotionsScreen(),
+      ),
+    );
+    if (code != null) {
+      widget.onPromoSelected?.call(code);
+    }
+  }
+
   Future<void> _setPushNotifications(BuildContext context, bool enabled) async {
     final t = L.of(context);
     final result = await context
@@ -187,6 +212,25 @@ class _ProfileState extends State<Profile> {
                 : t.notificationUpdateFailed,
           ),
         );
+    }
+  }
+
+  Future<void> _setMarketingConsent(BuildContext context, bool enabled) async {
+    if (_marketingConsentUpdating) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final fallbackMessage = L.of(context).marketingUpdateFailed;
+    setState(() => _marketingConsentUpdating = true);
+    final result = await context.read<MobileBackendController>().updateProfile(
+      ClientProfileUpdate(marketingConsent: enabled),
+    );
+    if (!mounted) return;
+    setState(() => _marketingConsentUpdating = false);
+    if (result case Error(:final failure)) {
+      messenger.showSnackBar(
+        appSnackBar(
+          failure.message.trim().isNotEmpty ? failure.message : fallbackMessage,
+        ),
+      );
     }
   }
 
@@ -229,6 +273,9 @@ class _ProfileState extends State<Profile> {
     final primaryAddressText = mobileBackend.addresses.isEmpty
         ? null
         : _formatAddress(mobileBackend.addresses.first);
+    final activePromotionCount = mobileBackend.assignedPromotions
+        .where((promotion) => promotion.canBeUsed)
+        .length;
 
     return RefreshIndicator(
       color: BaseColors.primary,
@@ -257,6 +304,7 @@ class _ProfileState extends State<Profile> {
                     isAuthorized: isAuthorized,
                     displayName: displayName,
                     subtitle: profileSubtitle,
+                    bonusBalance: client?.bonusBalance,
                     onSignIn: () => unawaited(_showAuthorizationModal(context)),
                   ),
                   const SizedBox(height: 16),
@@ -267,6 +315,19 @@ class _ProfileState extends State<Profile> {
                       onRetry: widget.onRefresh == null
                           ? null
                           : () => unawaited(widget.onRefresh!()),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  if (isAuthorized) ...[
+                    _ProfileBenefitsSection(
+                      isDark: isDark,
+                      unreadCount: mobileBackend.notificationUnreadCount,
+                      activePromotionCount: activePromotionCount,
+                      onNotificationsTap: () =>
+                          unawaited(_openNotifications(context)),
+                      onPromotionsTap: () =>
+                          unawaited(_openAssignedPromotions(context)),
                     ),
                     const SizedBox(height: 16),
                   ],
@@ -290,6 +351,11 @@ class _ProfileState extends State<Profile> {
                         !mobileBackend.pushNotificationsUpdating,
                     onNotificationsChanged: (value) =>
                         unawaited(_setPushNotifications(context, value)),
+                    isAuthorized: isAuthorized,
+                    marketingConsent: client?.marketingConsent ?? false,
+                    marketingConsentLoading: _marketingConsentUpdating,
+                    onMarketingConsentChanged: (value) =>
+                        unawaited(_setMarketingConsent(context, value)),
                     onThemeChanged: (mode) =>
                         unawaited(themeController.setTheme(mode)),
                     onLocaleChanged: (locale) {

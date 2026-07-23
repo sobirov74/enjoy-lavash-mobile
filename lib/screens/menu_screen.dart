@@ -58,6 +58,8 @@ class MenuScreen extends StatefulWidget {
     required this.cartCount,
     required this.cartTotal,
     required this.cartQuantities,
+    this.notificationUnreadCount = 0,
+    this.onNotificationsTap,
     this.menuFailure,
     this.menuErrorText,
   });
@@ -81,6 +83,8 @@ class MenuScreen extends StatefulWidget {
   final int cartCount;
   final int cartTotal;
   final Map<String, int> cartQuantities;
+  final int notificationUnreadCount;
+  final VoidCallback? onNotificationsTap;
   final Failure? menuFailure;
   final String? menuErrorText;
 
@@ -769,7 +773,48 @@ class _MenuScreenState extends State<MenuScreen> {
           ),
         ),
         const SizedBox(width: 14),
+        _buildNotificationButton(t),
+        const SizedBox(width: 8),
         _buildCartButton(t),
+      ],
+    );
+  }
+
+  Widget _buildNotificationButton(L t) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: <Widget>[
+        ActionIconButton(
+          icon: Icons.notifications_none_rounded,
+          isDark: widget.isDark,
+          tooltip: t.notificationInbox,
+          onTap: widget.onNotificationsTap,
+        ),
+        if (widget.notificationUnreadCount > 0)
+          Positioned(
+            top: -4,
+            right: -4,
+            child: Container(
+              constraints: const BoxConstraints(minWidth: 22),
+              height: 22,
+              alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(horizontal: 5),
+              decoration: const BoxDecoration(
+                color: BaseColors.primary,
+                borderRadius: BorderRadius.all(Radius.circular(99)),
+              ),
+              child: TypographyText(
+                widget.notificationUnreadCount > 99
+                    ? '99+'
+                    : '${widget.notificationUnreadCount}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }

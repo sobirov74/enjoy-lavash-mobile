@@ -250,6 +250,8 @@ HttpClientAdapter _authAdapter({
           'limit': 50,
           'offset': 0,
         });
+      case ApiEndpoints.clientPromotions:
+        return _jsonResponse({'items': const <Object?>[]});
       default:
         throw StateError(
           'Unexpected request: ${options.method} ${options.path}',

@@ -234,6 +234,58 @@
   "notificationPermissionDenied": "Bildirishnomalarga ruxsat berilmadi",
   "notificationUpdateFailed": "Bildirishnoma sozlamalarini yangilab bo'lmadi",
   "notifications": "Bildirishnomalar",
+  "notificationInbox": "Xabarlar",
+  "notificationInboxSubtitle": "Yangiliklar va takliflar bir joyda",
+  "markAllRead": "Barchasini o'qilgan qilish",
+  "markUnread": "O'qilmagan qilish",
+  "noNotifications": "Hozircha xabarlar yo'q",
+  "noNotificationsSubtitle": "Buyurtma yangiliklari va shaxsiy takliflar shu yerda ko'rinadi.",
+  "myPromotions": "Mening promokodlarim",
+  "myPromotionsSubtitle": "Siz uchun ajratilgan maxsus promokodlardan foydalaning.",
+  "personalOffers": "Siz uchun takliflar",
+  "activePromotions": "Faol",
+  "allPromotions": "Barchasi",
+  "activePromoCount": "{count} ta faol",
+  "@activePromoCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "noAssignedPromotions": "Faol promokod yo'q",
+  "noAssignedPromotionsSubtitle": "Yangi shaxsiy taklif berilganda bu yerda paydo bo'ladi.",
+  "reward": "Foyda",
+  "conditions": "Shartlar",
+  "validity": "Amal qilish muddati",
+  "usage": "Foydalanish",
+  "remainingUses": "{count} marta foydalanish mumkin",
+  "@remainingUses": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "validFrom": "{date} dan amal qiladi",
+  "@validFrom": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "usePromo": "Buyurtmada ishlatish",
+  "promoReadyForCheckout": "{code} promokodi buyurtma uchun tanlandi",
+  "@promoReadyForCheckout": {
+    "placeholders": {
+      "code": { "type": "String" }
+    }
+  },
+  "promoStatusActive": "Faol",
+  "promoStatusNotStarted": "Tez orada",
+  "promoStatusUsed": "Ishlatilgan",
+  "promoStatusExpired": "Muddati tugagan",
+  "promoStatusRevoked": "Bekor qilingan",
+  "promoStatusInactive": "Faol emas",
+  "promoStatusLimitReached": "Limit tugagan",
+  "marketingOffers": "Aksiya va takliflar",
+  "marketingOffersSubtitle": "Sizga mos promokod va chegirmalar haqida xabar oling",
+  "marketingUpdateFailed": "Aksiya xabarlari sozlamasini yangilab bo'lmadi",
   "appearance": "Ko'rinish",
   "chooseAppColorMode": "Ilova rang rejimini tanlang",
   "language": "Til",

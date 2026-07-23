@@ -6,6 +6,7 @@ import 'package:enjoy_lavash_mobile/core/error/failures.dart';
 import 'package:enjoy_lavash_mobile/core/error/result.dart';
 import 'package:enjoy_lavash_mobile/core/storage/token_storage.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/address_model.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/assigned_promotion_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/app_version_policy_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/auth_models.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/branch_model.dart';
@@ -349,12 +350,52 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
   }
 
   @override
+  Future<Result<ClientNotificationReadResultModel>> markNotificationUnread({
+    required String notificationId,
+  }) {
+    return _guard(() async {
+      final response = await _dio.post(
+        ApiEndpoints.clientNotificationUnread(notificationId),
+      );
+      return ClientNotificationReadResultModel.fromJson(
+        asJsonMap(response.data),
+      );
+    });
+  }
+
+  @override
   Future<Result<ClientNotificationReadResultModel>> markAllNotificationsRead() {
     return _guard(() async {
       final response = await _dio.post(ApiEndpoints.clientNotificationsReadAll);
       return ClientNotificationReadResultModel.fromJson(
         asJsonMap(response.data),
       );
+    });
+  }
+
+  @override
+  Future<Result<List<AssignedPromotionModel>>> getAssignedPromotions({
+    bool includeAll = false,
+    String language = 'uz',
+  }) {
+    return _guard(() async {
+      final response = await _dio.get(
+        ApiEndpoints.clientPromotions,
+        queryParameters: includeAll ? const {'status': 'ALL'} : null,
+      );
+      final responseMap = asJsonMap(response.data);
+      final nestedData = asJsonMap(responseMap['data']);
+      final payloadMap = nestedData.isEmpty ? responseMap : nestedData;
+      final payload =
+          payloadMap['items'] ??
+          payloadMap['assignments'] ??
+          payloadMap['promotions'] ??
+          response.data;
+      return asJsonMapList(payload)
+          .map(
+            (json) => AssignedPromotionModel.fromJson(json, language: language),
+          )
+          .toList(growable: false);
     });
   }
 

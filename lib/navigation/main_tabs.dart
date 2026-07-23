@@ -7,6 +7,7 @@ import 'package:enjoy_lavash_mobile/core/error/failures.dart';
 import 'package:enjoy_lavash_mobile/core/error/result.dart';
 import 'package:enjoy_lavash_mobile/core/services/app_share_service.dart';
 import 'package:enjoy_lavash_mobile/core/services/external_url_launcher.dart';
+import 'package:enjoy_lavash_mobile/core/services/mobile_push_notification_service.dart';
 import 'package:enjoy_lavash_mobile/core/storage/cart_storage.dart';
 import 'package:enjoy_lavash_mobile/features/models/cart_line.dart';
 import 'package:enjoy_lavash_mobile/features/models/menu_product.dart';
@@ -17,10 +18,12 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/order_mo
 import 'package:enjoy_lavash_mobile/features/mobile_backend/presentation/mobile_backend_controller.dart';
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/screens/address_bottom_sheet.dart';
+import 'package:enjoy_lavash_mobile/screens/assigned_promotions_screen.dart';
 import 'package:enjoy_lavash_mobile/screens/authorization_screen.dart';
 import 'package:enjoy_lavash_mobile/screens/branch_bottom_sheet.dart';
 import 'package:enjoy_lavash_mobile/screens/cart_screen.dart';
 import 'package:enjoy_lavash_mobile/screens/menu_screen.dart';
+import 'package:enjoy_lavash_mobile/screens/notifications_screen.dart';
 import 'package:enjoy_lavash_mobile/screens/profile.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
 import 'package:enjoy_lavash_mobile/theme/app_motion.dart';
@@ -60,10 +63,14 @@ class _MainTabsState extends State<MainTabs> {
   String _promoCode = '';
   bool _isCheckingOut = false;
   bool _cartEditedSinceLaunch = false;
+  bool _pushNavigationScheduled = false;
 
   /// Built once so cart/category updates don't rebuild the profile subtree;
   /// it listens to its providers internally.
-  late final Widget _profileTab = Profile(onRefresh: _refreshProfileData);
+  late final Widget _profileTab = Profile(
+    onRefresh: _refreshProfileData,
+    onPromoSelected: _applyAssignedPromoCode,
+  );
 
   @override
   void initState() {
@@ -107,6 +114,71 @@ class _MainTabsState extends State<MainTabs> {
 
   Future<void> _shareApp(L t) async {
     await AppShareService.share(t);
+  }
+
+  Future<bool> _ensureAuthenticated() async {
+    if (context.read<MobileBackendController>().isAuthenticated) return true;
+    await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(builder: (_) => const AuthorizationScreen()),
+    );
+    return mounted && context.read<MobileBackendController>().isAuthenticated;
+  }
+
+  Future<void> _openNotifications() async {
+    if (!await _ensureAuthenticated() || !mounted) return;
+    final code = await Navigator.of(context).push<String>(
+      MaterialPageRoute<String>(builder: (_) => const NotificationsScreen()),
+    );
+    if (code != null && mounted) {
+      _applyAssignedPromoCode(code);
+    }
+  }
+
+  Future<void> _openAssignedPromotions({String? highlightedCode}) async {
+    if (!await _ensureAuthenticated() || !mounted) return;
+    final code = await Navigator.of(context).push<String>(
+      MaterialPageRoute<String>(
+        builder: (_) => AssignedPromotionsScreen(
+          initialShowAll: highlightedCode?.trim().isNotEmpty == true,
+          highlightedCode: highlightedCode,
+        ),
+      ),
+    );
+    if (code != null && mounted) {
+      _applyAssignedPromoCode(code);
+    }
+  }
+
+  void _applyAssignedPromoCode(String code) {
+    final normalized = code.trim();
+    if (normalized.isEmpty || !mounted) return;
+    final products = context.read<MobileBackendController>().menuProducts;
+    final hasCartItems = _buildCartLines(products).isNotEmpty;
+    setState(() {
+      _promoCode = normalized;
+      _currentIndex = hasCartItems ? 1 : 0;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      appSnackBar(L.of(context).promoReadyForCheckout(normalized)),
+    );
+  }
+
+  Future<void> _handlePushNavigation(PushNotificationMessage message) async {
+    if (!message.openedByUser || !mounted) return;
+    if (!await _ensureAuthenticated() || !mounted) return;
+    final notificationId = message.notificationId?.trim();
+    if (notificationId?.isNotEmpty == true) {
+      await context.read<MobileBackendController>().markNotificationRead(
+        notificationId: notificationId!,
+      );
+      if (!mounted) return;
+    }
+
+    if (message.opensPromotions) {
+      await _openAssignedPromotions(highlightedCode: message.promotionCode);
+      return;
+    }
+    await _openNotifications();
   }
 
   void _addToCart(MenuProduct product) {
@@ -886,6 +958,24 @@ class _MainTabsState extends State<MainTabs> {
     final isDark = theme.brightness == Brightness.dark;
     final t = L.of(context);
     final backend = context.watch<MobileBackendController>();
+    final pendingPushMessage = backend.pendingPushMessage;
+    if (pendingPushMessage != null && !_pushNavigationScheduled) {
+      final message = backend.takePendingPushMessage();
+      if (message != null) {
+        _pushNavigationScheduled = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          try {
+            await _handlePushNavigation(message);
+          } finally {
+            if (mounted) {
+              setState(() => _pushNavigationScheduled = false);
+            } else {
+              _pushNavigationScheduled = false;
+            }
+          }
+        });
+      }
+    }
     final categories = backend.menuCategories;
     final products = backend.menuProducts;
     final promotions = backend.promotions
@@ -956,6 +1046,8 @@ class _MainTabsState extends State<MainTabs> {
                 cartCount: totalItems,
                 cartTotal: totalAmount,
                 cartQuantities: _cart,
+                notificationUnreadCount: backend.notificationUnreadCount,
+                onNotificationsTap: () => unawaited(_openNotifications()),
               ),
               CartScreen(
                 isDark: isDark,

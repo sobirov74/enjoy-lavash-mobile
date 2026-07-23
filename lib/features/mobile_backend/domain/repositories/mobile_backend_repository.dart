@@ -1,5 +1,6 @@
 import 'package:enjoy_lavash_mobile/core/error/result.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/address_model.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/assigned_promotion_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/app_version_policy_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/auth_models.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/branch_model.dart';
@@ -95,7 +96,16 @@ abstract class MobileBackendRepository {
     required String notificationId,
   });
 
+  Future<Result<ClientNotificationReadResultModel>> markNotificationUnread({
+    required String notificationId,
+  });
+
   Future<Result<ClientNotificationReadResultModel>> markAllNotificationsRead();
+
+  Future<Result<List<AssignedPromotionModel>>> getAssignedPromotions({
+    bool includeAll = false,
+    String language = 'uz',
+  });
 
   Future<Result<FileUploadResultModel>> uploadFile(FileUploadRequest request);
 

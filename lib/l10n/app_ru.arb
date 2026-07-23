@@ -234,6 +234,58 @@
   "notificationPermissionDenied": "Разрешение на уведомления не выдано",
   "notificationUpdateFailed": "Не удалось обновить настройки уведомлений",
   "notifications": "Уведомления",
+  "notificationInbox": "Входящие",
+  "notificationInboxSubtitle": "Новости и предложения в одном месте",
+  "markAllRead": "Прочитать все",
+  "markUnread": "Отметить непрочитанным",
+  "noNotifications": "Уведомлений пока нет",
+  "noNotificationsSubtitle": "Здесь появятся новости о заказах и персональные предложения.",
+  "myPromotions": "Мои промокоды",
+  "myPromotionsSubtitle": "Используйте специальные промокоды, назначенные именно вам.",
+  "personalOffers": "Предложения для вас",
+  "activePromotions": "Активные",
+  "allPromotions": "Все",
+  "activePromoCount": "Активных: {count}",
+  "@activePromoCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "noAssignedPromotions": "Нет активных промокодов",
+  "noAssignedPromotionsSubtitle": "Новое персональное предложение появится здесь автоматически.",
+  "reward": "Выгода",
+  "conditions": "Условия",
+  "validity": "Срок действия",
+  "usage": "Использование",
+  "remainingUses": "Осталось применений: {count}",
+  "@remainingUses": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "validFrom": "Действует с {date}",
+  "@validFrom": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "usePromo": "Использовать в заказе",
+  "promoReadyForCheckout": "Промокод {code} выбран для заказа",
+  "@promoReadyForCheckout": {
+    "placeholders": {
+      "code": { "type": "String" }
+    }
+  },
+  "promoStatusActive": "Активен",
+  "promoStatusNotStarted": "Скоро",
+  "promoStatusUsed": "Использован",
+  "promoStatusExpired": "Истёк",
+  "promoStatusRevoked": "Отозван",
+  "promoStatusInactive": "Неактивен",
+  "promoStatusLimitReached": "Лимит исчерпан",
+  "marketingOffers": "Акции и предложения",
+  "marketingOffersSubtitle": "Получайте подходящие промокоды и новости о скидках",
+  "marketingUpdateFailed": "Не удалось обновить настройку рекламных уведомлений",
   "appearance": "Оформление",
   "chooseAppColorMode": "Выберите цветовой режим приложения",
   "language": "Язык",

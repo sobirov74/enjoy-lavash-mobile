@@ -60,6 +60,14 @@ extension _MobileBackendOrderController on MobileBackendController {
         if (_status == MobileBackendStatus.initial) {
           _status = MobileBackendStatus.loaded;
         }
+        if (request.promoCode?.trim().isNotEmpty == true) {
+          unawaited(
+            refreshAssignedPromotions(
+              includeAll: _assignedPromotionsIncludeAll,
+              language: _client?.language ?? 'uz',
+            ),
+          );
+        }
         _notifyListeners();
       case Error(:final failure):
         _applyFailure(failure, notify: failure is AuthFailure);

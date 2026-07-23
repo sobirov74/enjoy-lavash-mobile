@@ -88,7 +88,7 @@ Future<void> _startApp() async {
           value: mobileBackendController,
         ),
       ],
-      child: const MyApp(),
+      child: const InitialLocationLoader(child: MyApp()),
     ),
   );
 }

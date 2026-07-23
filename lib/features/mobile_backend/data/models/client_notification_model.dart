@@ -33,23 +33,39 @@ class ClientNotificationItemModel {
     required this.id,
     required this.notificationId,
     required this.deliveryId,
+    required this.recipientId,
+    required this.kind,
     required this.title,
     required this.body,
     required this.deepLink,
     required this.sentAt,
     required this.readAt,
     required this.isRead,
+    required this.promotionAssignmentId,
+    required this.promotionCode,
   });
 
   final String id;
   final String notificationId;
   final String deliveryId;
+  final String recipientId;
+  final String kind;
   final String title;
   final String body;
   final String? deepLink;
   final DateTime? sentAt;
   final DateTime? readAt;
   final bool isRead;
+  final String? promotionAssignmentId;
+  final String? promotionCode;
+
+  bool get opensPromotions {
+    final normalizedKind = kind.trim().toUpperCase();
+    if (normalizedKind.contains('PROMOTION')) return true;
+    if (promotionAssignmentId != null || promotionCode != null) return true;
+    final link = deepLink?.trim().toLowerCase();
+    return link != null && link.contains('promotion');
+  }
 
   factory ClientNotificationItemModel.fromJson(Map<String, dynamic> json) {
     final notificationId = readString(json, const [
@@ -60,26 +76,46 @@ class ClientNotificationItemModel {
       id: readString(json, const ['id'], fallback: notificationId),
       notificationId: notificationId,
       deliveryId: readString(json, const ['deliveryId', 'delivery_id']),
+      recipientId: readString(json, const ['recipientId', 'recipient_id']),
+      kind: readString(json, const ['kind', 'type']),
       title: readString(json, const ['title']),
       body: readString(json, const ['body']),
       deepLink: _nonEmptyString(json, const ['deepLink', 'deep_link']),
       sentAt: readDateTime(json, const ['sentAt', 'sent_at']),
       readAt: readDateTime(json, const ['readAt', 'read_at']),
       isRead: readBool(json, const ['isRead', 'is_read']),
+      promotionAssignmentId: _nonEmptyString(json, const [
+        'promotionAssignmentId',
+        'promotion_assignment_id',
+      ]),
+      promotionCode: _nonEmptyString(json, const [
+        'promotionCode',
+        'promotion_code',
+        'promoCode',
+        'promo_code',
+      ]),
     );
   }
 
-  ClientNotificationItemModel copyWith({DateTime? readAt, bool? isRead}) {
+  ClientNotificationItemModel copyWith({
+    DateTime? readAt,
+    bool clearReadAt = false,
+    bool? isRead,
+  }) {
     return ClientNotificationItemModel(
       id: id,
       notificationId: notificationId,
       deliveryId: deliveryId,
+      recipientId: recipientId,
+      kind: kind,
       title: title,
       body: body,
       deepLink: deepLink,
       sentAt: sentAt,
-      readAt: readAt ?? this.readAt,
+      readAt: clearReadAt ? null : readAt ?? this.readAt,
       isRead: isRead ?? this.isRead,
+      promotionAssignmentId: promotionAssignmentId,
+      promotionCode: promotionCode,
     );
   }
 }

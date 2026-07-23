@@ -32,6 +32,64 @@ class PushNotificationSettings {
       supported && !permissionGranted && !permissionPermanentlyDenied;
 }
 
+class PushNotificationMessage {
+  const PushNotificationMessage({
+    required this.type,
+    required this.notificationId,
+    required this.promotionAssignmentId,
+    required this.promotionCode,
+    required this.deepLink,
+    required this.openedByUser,
+  });
+
+  final String type;
+  final String? notificationId;
+  final String? promotionAssignmentId;
+  final String? promotionCode;
+  final String? deepLink;
+  final bool openedByUser;
+
+  bool get opensPromotions {
+    final normalizedType = type.trim().toLowerCase();
+    if (normalizedType == 'promotion_assignment' ||
+        normalizedType == 'promotion_expiry_reminder') {
+      return true;
+    }
+    if (promotionAssignmentId != null || promotionCode != null) return true;
+    return deepLink?.toLowerCase().contains('promotion') ?? false;
+  }
+
+  factory PushNotificationMessage.fromRemoteMessage(
+    RemoteMessage message, {
+    required bool openedByUser,
+  }) {
+    String? nonEmpty(List<String> keys) {
+      for (final key in keys) {
+        final value = message.data[key]?.toString().trim();
+        if (value != null && value.isNotEmpty) return value;
+      }
+      return null;
+    }
+
+    return PushNotificationMessage(
+      type: nonEmpty(const ['type']) ?? 'unknown',
+      notificationId: nonEmpty(const ['notificationId', 'notification_id']),
+      promotionAssignmentId: nonEmpty(const [
+        'promotionAssignmentId',
+        'promotion_assignment_id',
+      ]),
+      promotionCode: nonEmpty(const [
+        'promotionCode',
+        'promotion_code',
+        'promoCode',
+        'promo_code',
+      ]),
+      deepLink: nonEmpty(const ['deepLink', 'deep_link']),
+      openedByUser: openedByUser,
+    );
+  }
+}
+
 class MobilePushNotificationService {
   MobilePushNotificationService(this._apiClient);
 
@@ -45,6 +103,8 @@ class MobilePushNotificationService {
   );
 
   final ApiClient _apiClient;
+  final StreamController<PushNotificationMessage> _messageController =
+      StreamController<PushNotificationMessage>.broadcast();
 
   StreamSubscription<String>? _tokenRefreshSubscription;
   StreamSubscription<RemoteMessage>? _foregroundMessageSubscription;
@@ -59,6 +119,7 @@ class MobilePushNotificationService {
   Future<void> _registrationMutationTail = Future<void>.value();
 
   Dio get _dio => _apiClient.dio;
+  Stream<PushNotificationMessage> get messages => _messageController.stream;
 
   Future<void> configureMessageHandlers() async {
     if (!await _ensureMessagingReady()) return;
@@ -66,6 +127,7 @@ class MobilePushNotificationService {
     _foregroundMessageSubscription ??= FirebaseMessaging.onMessage.listen((
       message,
     ) {
+      _emitMessage(message, openedByUser: false);
       final notification = message.notification;
       final title = notification?.title?.trim();
       final body = notification?.body?.trim();
@@ -211,6 +273,7 @@ class MobilePushNotificationService {
     await _tokenRefreshSubscription?.cancel();
     await _foregroundMessageSubscription?.cancel();
     await _openedMessageSubscription?.cancel();
+    await _messageController.close();
   }
 
   Future<void> _registerRefreshedToken(String token) async {
@@ -483,14 +546,17 @@ class MobilePushNotificationService {
   }
 
   void _handleOpenedMessage(RemoteMessage message) {
-    final type = message.data['type'];
-    if (type == 'order_status') {
-      debugPrint('Open order from push: ${message.data['orderId']}');
-      return;
-    }
-    if (type == 'campaign') {
-      debugPrint('Open campaign from push: ${message.data['notificationId']}');
-    }
+    _emitMessage(message, openedByUser: true);
+  }
+
+  void _emitMessage(RemoteMessage message, {required bool openedByUser}) {
+    if (_messageController.isClosed) return;
+    _messageController.add(
+      PushNotificationMessage.fromRemoteMessage(
+        message,
+        openedByUser: openedByUser,
+      ),
+    );
   }
 }
 

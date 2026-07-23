@@ -25,6 +25,7 @@ class ApiEndpoints {
       "/clients/me/notifications/unread-count";
   static const clientNotificationsReadAll =
       "/clients/me/notifications/read-all";
+  static const clientPromotions = "/clients/me/promotions";
   static const filesUpload = "/files/upload";
   static const filesDelete = "/files/delete";
 
@@ -49,4 +50,7 @@ class ApiEndpoints {
 
   static String clientNotificationRead(String notificationId) =>
       "$clientNotifications/${Uri.encodeComponent(notificationId)}/read";
+
+  static String clientNotificationUnread(String notificationId) =>
+      "$clientNotifications/${Uri.encodeComponent(notificationId)}/unread";
 }

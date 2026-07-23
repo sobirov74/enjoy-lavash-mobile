@@ -6,6 +6,7 @@ class _ProfileHeaderCard extends StatelessWidget {
     required this.isAuthorized,
     required this.displayName,
     required this.subtitle,
+    required this.bonusBalance,
     required this.onSignIn,
   });
 
@@ -13,6 +14,7 @@ class _ProfileHeaderCard extends StatelessWidget {
   final bool isAuthorized;
   final String displayName;
   final String subtitle;
+  final int? bonusBalance;
   final VoidCallback onSignIn;
 
   @override
@@ -71,6 +73,43 @@ class _ProfileHeaderCard extends StatelessWidget {
                         fontSize: 15,
                       ),
                     ),
+                    if (isAuthorized && bonusBalance != null) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: BaseColors.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(99),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            const Icon(
+                              Icons.stars_rounded,
+                              color: BaseColors.primary,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 5),
+                            Flexible(
+                              child: TypographyText(
+                                '${L.of(context).accumulatedPoints}: '
+                                '$bonusBalance',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: BaseColors.primaryDark,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -93,6 +132,10 @@ class _ProfileSettingsSection extends StatelessWidget {
     required this.notificationsLoading,
     required this.notificationsToggleEnabled,
     required this.onNotificationsChanged,
+    required this.isAuthorized,
+    required this.marketingConsent,
+    required this.marketingConsentLoading,
+    required this.onMarketingConsentChanged,
     required this.onThemeChanged,
     required this.onLocaleChanged,
   });
@@ -104,6 +147,10 @@ class _ProfileSettingsSection extends StatelessWidget {
   final bool notificationsLoading;
   final bool notificationsToggleEnabled;
   final ValueChanged<bool> onNotificationsChanged;
+  final bool isAuthorized;
+  final bool marketingConsent;
+  final bool marketingConsentLoading;
+  final ValueChanged<bool> onMarketingConsentChanged;
   final ValueChanged<ThemeMode> onThemeChanged;
   final ValueChanged<Locale> onLocaleChanged;
 
@@ -119,6 +166,7 @@ class _ProfileSettingsSection extends StatelessWidget {
         children: <Widget>[
           _NotificationSwitchTile(
             isDark: isDark,
+            icon: Icons.notifications_active_outlined,
             title: t.notifications,
             subtitle: notificationsSubtitle,
             value: notificationsEnabled,
@@ -126,6 +174,19 @@ class _ProfileSettingsSection extends StatelessWidget {
             enabled: notificationsToggleEnabled,
             onChanged: onNotificationsChanged,
           ),
+          if (isAuthorized) ...[
+            const _SettingsDivider(),
+            _NotificationSwitchTile(
+              isDark: isDark,
+              icon: Icons.local_offer_outlined,
+              title: t.marketingOffers,
+              subtitle: t.marketingOffersSubtitle,
+              value: marketingConsent,
+              loading: marketingConsentLoading,
+              enabled: !marketingConsentLoading,
+              onChanged: onMarketingConsentChanged,
+            ),
+          ],
           const _SettingsDivider(),
           _SettingsHeader(
             icon: Icons.palette_outlined,
@@ -169,6 +230,164 @@ class _ProfileSettingsSection extends StatelessWidget {
             onChanged: onLocaleChanged,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ProfileBenefitsSection extends StatelessWidget {
+  const _ProfileBenefitsSection({
+    required this.isDark,
+    required this.unreadCount,
+    required this.activePromotionCount,
+    required this.onNotificationsTap,
+    required this.onPromotionsTap,
+  });
+
+  final bool isDark;
+  final int unreadCount;
+  final int activePromotionCount;
+  final VoidCallback onNotificationsTap;
+  final VoidCallback onPromotionsTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = L.of(context);
+    return FadeSlideIn(
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: _ProfileShortcutCard(
+              isDark: isDark,
+              icon: Icons.notifications_rounded,
+              title: t.notificationInbox,
+              subtitle: t.notificationInboxSubtitle,
+              badge: unreadCount > 0
+                  ? unreadCount > 99
+                        ? '99+'
+                        : '$unreadCount'
+                  : null,
+              onTap: onNotificationsTap,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _ProfileShortcutCard(
+              isDark: isDark,
+              icon: Icons.confirmation_number_rounded,
+              title: t.myPromotions,
+              subtitle: t.activePromoCount(activePromotionCount),
+              onTap: onPromotionsTap,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileShortcutCard extends StatelessWidget {
+  const _ProfileShortcutCard({
+    required this.isDark,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.badge,
+  });
+
+  final bool isDark;
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final String? badge;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: isDark ? const Color(0xFF1D1A18) : Colors.white,
+      borderRadius: BorderRadius.circular(24),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 152),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    Container(
+                      width: 44,
+                      height: 44,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: BaseColors.primary.withValues(
+                          alpha: isDark ? 0.2 : 0.1,
+                        ),
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: Icon(icon, color: BaseColors.primary),
+                    ),
+                    const Spacer(),
+                    if (badge != null)
+                      Container(
+                        constraints: const BoxConstraints(minWidth: 25),
+                        height: 25,
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        decoration: const BoxDecoration(
+                          color: BaseColors.primary,
+                          borderRadius: BorderRadius.all(Radius.circular(99)),
+                        ),
+                        child: TypographyText(
+                          badge!,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      )
+                    else
+                      const Icon(
+                        Icons.arrow_forward_rounded,
+                        color: BaseColors.primary,
+                        size: 20,
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 13),
+                TypographyText(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    height: 1.15,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                TypographyText(
+                  subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: isDark
+                        ? BaseColors.lightTextGray
+                        : BaseColors.textGray,
+                    fontSize: 12,
+                    height: 1.25,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -569,6 +569,115 @@ class LRu extends L {
   String get notifications => 'Уведомления';
 
   @override
+  String get notificationInbox => 'Входящие';
+
+  @override
+  String get notificationInboxSubtitle => 'Новости и предложения в одном месте';
+
+  @override
+  String get markAllRead => 'Прочитать все';
+
+  @override
+  String get markUnread => 'Отметить непрочитанным';
+
+  @override
+  String get noNotifications => 'Уведомлений пока нет';
+
+  @override
+  String get noNotificationsSubtitle =>
+      'Здесь появятся новости о заказах и персональные предложения.';
+
+  @override
+  String get myPromotions => 'Мои промокоды';
+
+  @override
+  String get myPromotionsSubtitle =>
+      'Используйте специальные промокоды, назначенные именно вам.';
+
+  @override
+  String get personalOffers => 'Предложения для вас';
+
+  @override
+  String get activePromotions => 'Активные';
+
+  @override
+  String get allPromotions => 'Все';
+
+  @override
+  String activePromoCount(int count) {
+    return 'Активных: $count';
+  }
+
+  @override
+  String get noAssignedPromotions => 'Нет активных промокодов';
+
+  @override
+  String get noAssignedPromotionsSubtitle =>
+      'Новое персональное предложение появится здесь автоматически.';
+
+  @override
+  String get reward => 'Выгода';
+
+  @override
+  String get conditions => 'Условия';
+
+  @override
+  String get validity => 'Срок действия';
+
+  @override
+  String get usage => 'Использование';
+
+  @override
+  String remainingUses(int count) {
+    return 'Осталось применений: $count';
+  }
+
+  @override
+  String validFrom(String date) {
+    return 'Действует с $date';
+  }
+
+  @override
+  String get usePromo => 'Использовать в заказе';
+
+  @override
+  String promoReadyForCheckout(String code) {
+    return 'Промокод $code выбран для заказа';
+  }
+
+  @override
+  String get promoStatusActive => 'Активен';
+
+  @override
+  String get promoStatusNotStarted => 'Скоро';
+
+  @override
+  String get promoStatusUsed => 'Использован';
+
+  @override
+  String get promoStatusExpired => 'Истёк';
+
+  @override
+  String get promoStatusRevoked => 'Отозван';
+
+  @override
+  String get promoStatusInactive => 'Неактивен';
+
+  @override
+  String get promoStatusLimitReached => 'Лимит исчерпан';
+
+  @override
+  String get marketingOffers => 'Акции и предложения';
+
+  @override
+  String get marketingOffersSubtitle =>
+      'Получайте подходящие промокоды и новости о скидках';
+
+  @override
+  String get marketingUpdateFailed =>
+      'Не удалось обновить настройку рекламных уведомлений';
+
+  @override
   String get appearance => 'Оформление';
 
   @override

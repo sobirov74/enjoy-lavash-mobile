@@ -234,6 +234,58 @@
   "notificationPermissionDenied": "Notification permission was not allowed",
   "notificationUpdateFailed": "Could not update notification settings",
   "notifications": "Notifications",
+  "notificationInbox": "Inbox",
+  "notificationInboxSubtitle": "Updates and offers in one place",
+  "markAllRead": "Mark all read",
+  "markUnread": "Mark unread",
+  "noNotifications": "No notifications yet",
+  "noNotificationsSubtitle": "Order updates and personal offers will appear here.",
+  "myPromotions": "My promo codes",
+  "myPromotionsSubtitle": "Use special promo codes assigned just to you.",
+  "personalOffers": "Offers for you",
+  "activePromotions": "Active",
+  "allPromotions": "All",
+  "activePromoCount": "{count} active",
+  "@activePromoCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "noAssignedPromotions": "No active promo codes",
+  "noAssignedPromotionsSubtitle": "New personal offers will appear here automatically.",
+  "reward": "Reward",
+  "conditions": "Conditions",
+  "validity": "Validity",
+  "usage": "Usage",
+  "remainingUses": "{count} uses remaining",
+  "@remainingUses": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "validFrom": "Valid from {date}",
+  "@validFrom": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "usePromo": "Use in order",
+  "promoReadyForCheckout": "Promo code {code} selected for checkout",
+  "@promoReadyForCheckout": {
+    "placeholders": {
+      "code": { "type": "String" }
+    }
+  },
+  "promoStatusActive": "Active",
+  "promoStatusNotStarted": "Coming soon",
+  "promoStatusUsed": "Used",
+  "promoStatusExpired": "Expired",
+  "promoStatusRevoked": "Revoked",
+  "promoStatusInactive": "Inactive",
+  "promoStatusLimitReached": "Limit reached",
+  "marketingOffers": "Promotions and offers",
+  "marketingOffersSubtitle": "Receive relevant promo codes and discount updates",
+  "marketingUpdateFailed": "Could not update promotional notifications",
   "appearance": "Appearance",
   "chooseAppColorMode": "Choose the app color mode",
   "language": "Language",

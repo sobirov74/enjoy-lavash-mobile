@@ -5,6 +5,7 @@ import 'package:enjoy_lavash_mobile/core/error/failures.dart';
 import 'package:enjoy_lavash_mobile/core/error/result.dart';
 import 'package:enjoy_lavash_mobile/core/services/mobile_push_notification_service.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/address_model.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/assigned_promotion_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/auth_models.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/branch_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/cart_model.dart';
@@ -27,10 +28,16 @@ part 'mobile_backend_controller/mobile_backend_state_controller.dart';
 enum MobileBackendStatus { initial, loading, loaded, error }
 
 class MobileBackendController extends ChangeNotifier {
-  MobileBackendController(this._repository, this._pushNotifications);
+  MobileBackendController(this._repository, this._pushNotifications) {
+    _pushMessageSubscription = _pushNotifications.messages.listen(
+      _handlePushMessage,
+    );
+  }
 
   final MobileBackendRepository _repository;
   final MobilePushNotificationService _pushNotifications;
+  late final StreamSubscription<PushNotificationMessage>
+  _pushMessageSubscription;
 
   MobileBackendStatus _status = MobileBackendStatus.initial;
   Failure? _failure;
@@ -47,10 +54,20 @@ class MobileBackendController extends ChangeNotifier {
   List<CustomerOrderModel> _orders = const <CustomerOrderModel>[];
   List<ClientNotificationItemModel> _notifications =
       const <ClientNotificationItemModel>[];
+  List<AssignedPromotionModel> _assignedPromotions =
+      const <AssignedPromotionModel>[];
   ClientProfile? _client;
   int _notificationUnreadCount = 0;
   int _notificationTotal = 0;
   bool _notificationsLoading = false;
+  Failure? _notificationsFailure;
+  int _notificationsRequestVersion = 0;
+  int _notificationCountRequestVersion = 0;
+  bool _assignedPromotionsLoading = false;
+  bool _assignedPromotionsIncludeAll = false;
+  Failure? _assignedPromotionsFailure;
+  int _assignedPromotionsRequestVersion = 0;
+  PushNotificationMessage? _pendingPushMessage;
   PushNotificationSettings? _pushNotificationSettings;
   bool _pushNotificationsUpdating = false;
   bool _accountDeleting = false;
@@ -68,16 +85,53 @@ class MobileBackendController extends ChangeNotifier {
   List<ClientAddress> get addresses => _addresses;
   List<CustomerOrderModel> get orders => _orders;
   List<ClientNotificationItemModel> get notifications => _notifications;
+  List<AssignedPromotionModel> get assignedPromotions => _assignedPromotions;
   ClientProfile? get client => _client;
   int get notificationUnreadCount => _notificationUnreadCount;
   int get notificationTotal => _notificationTotal;
   bool get notificationsLoading => _notificationsLoading;
+  Failure? get notificationsFailure => _notificationsFailure;
+  bool get assignedPromotionsLoading => _assignedPromotionsLoading;
+  bool get assignedPromotionsIncludeAll => _assignedPromotionsIncludeAll;
+  Failure? get assignedPromotionsFailure => _assignedPromotionsFailure;
+  PushNotificationMessage? get pendingPushMessage => _pendingPushMessage;
   PushNotificationSettings? get pushNotificationSettings =>
       _pushNotificationSettings;
   bool get pushNotificationsUpdating => _pushNotificationsUpdating;
   bool get accountDeleting => _accountDeleting;
   bool get isAuthenticated => _client != null;
   bool get isLoading => _status == MobileBackendStatus.loading;
+
+  PushNotificationMessage? takePendingPushMessage() {
+    final message = _pendingPushMessage;
+    _pendingPushMessage = null;
+    return message;
+  }
+
+  void _handlePushMessage(PushNotificationMessage message) {
+    if (message.openedByUser) {
+      _pendingPushMessage = message;
+    }
+    if (_client != null) {
+      unawaited(refreshNotificationUnreadCount());
+      unawaited(refreshNotifications());
+      if (message.opensPromotions) {
+        unawaited(
+          refreshAssignedPromotions(
+            language: _client?.language ?? 'uz',
+            includeAll: true,
+          ),
+        );
+      }
+    }
+    _notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    unawaited(_pushMessageSubscription.cancel());
+    super.dispose();
+  }
 
   // Controller behavior is split into private extensions. Keeping the
   // ChangeNotifier call inside the class preserves its protected contract.
@@ -147,8 +201,28 @@ class MobileBackendController extends ChangeNotifier {
     return _markNotificationRead(notificationId: notificationId);
   }
 
+  Future<Result<ClientNotificationReadResultModel>> markNotificationUnread({
+    required String notificationId,
+  }) {
+    return _markNotificationUnread(notificationId: notificationId);
+  }
+
   Future<Result<ClientNotificationReadResultModel>> markAllNotificationsRead() {
     return _markAllNotificationsRead();
+  }
+
+  Future<Result<List<AssignedPromotionModel>>> refreshAssignedPromotions({
+    bool includeAll = false,
+    String language = 'uz',
+  }) {
+    return _refreshAssignedPromotions(
+      includeAll: includeAll,
+      language: language,
+    );
+  }
+
+  Future<void> handleAppResumed({String? locale}) {
+    return _handleAppResumed(locale: locale);
   }
 
   Future<Result<CartPreviewModel>> previewCart(CartPreviewRequest request) {

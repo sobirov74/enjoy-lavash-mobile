@@ -18,6 +18,7 @@ extension _MobileBackendAuthController on MobileBackendController {
         _startPushNotificationSync(locale: language);
         unawaited(syncClientLanguage(language: language));
         unawaited(refreshNotifications());
+        unawaited(refreshAssignedPromotions(language: language));
         if (_status == MobileBackendStatus.initial) {
           _status = MobileBackendStatus.loaded;
         }

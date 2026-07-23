@@ -571,6 +571,115 @@ class LUz extends L {
   String get notifications => 'Bildirishnomalar';
 
   @override
+  String get notificationInbox => 'Xabarlar';
+
+  @override
+  String get notificationInboxSubtitle => 'Yangiliklar va takliflar bir joyda';
+
+  @override
+  String get markAllRead => 'Barchasini o\'qilgan qilish';
+
+  @override
+  String get markUnread => 'O\'qilmagan qilish';
+
+  @override
+  String get noNotifications => 'Hozircha xabarlar yo\'q';
+
+  @override
+  String get noNotificationsSubtitle =>
+      'Buyurtma yangiliklari va shaxsiy takliflar shu yerda ko\'rinadi.';
+
+  @override
+  String get myPromotions => 'Mening promokodlarim';
+
+  @override
+  String get myPromotionsSubtitle =>
+      'Siz uchun ajratilgan maxsus promokodlardan foydalaning.';
+
+  @override
+  String get personalOffers => 'Siz uchun takliflar';
+
+  @override
+  String get activePromotions => 'Faol';
+
+  @override
+  String get allPromotions => 'Barchasi';
+
+  @override
+  String activePromoCount(int count) {
+    return '$count ta faol';
+  }
+
+  @override
+  String get noAssignedPromotions => 'Faol promokod yo\'q';
+
+  @override
+  String get noAssignedPromotionsSubtitle =>
+      'Yangi shaxsiy taklif berilganda bu yerda paydo bo\'ladi.';
+
+  @override
+  String get reward => 'Foyda';
+
+  @override
+  String get conditions => 'Shartlar';
+
+  @override
+  String get validity => 'Amal qilish muddati';
+
+  @override
+  String get usage => 'Foydalanish';
+
+  @override
+  String remainingUses(int count) {
+    return '$count marta foydalanish mumkin';
+  }
+
+  @override
+  String validFrom(String date) {
+    return '$date dan amal qiladi';
+  }
+
+  @override
+  String get usePromo => 'Buyurtmada ishlatish';
+
+  @override
+  String promoReadyForCheckout(String code) {
+    return '$code promokodi buyurtma uchun tanlandi';
+  }
+
+  @override
+  String get promoStatusActive => 'Faol';
+
+  @override
+  String get promoStatusNotStarted => 'Tez orada';
+
+  @override
+  String get promoStatusUsed => 'Ishlatilgan';
+
+  @override
+  String get promoStatusExpired => 'Muddati tugagan';
+
+  @override
+  String get promoStatusRevoked => 'Bekor qilingan';
+
+  @override
+  String get promoStatusInactive => 'Faol emas';
+
+  @override
+  String get promoStatusLimitReached => 'Limit tugagan';
+
+  @override
+  String get marketingOffers => 'Aksiya va takliflar';
+
+  @override
+  String get marketingOffersSubtitle =>
+      'Sizga mos promokod va chegirmalar haqida xabar oling';
+
+  @override
+  String get marketingUpdateFailed =>
+      'Aksiya xabarlari sozlamasini yangilab bo\'lmadi';
+
+  @override
   String get appearance => 'Ko\'rinish';
 
   @override

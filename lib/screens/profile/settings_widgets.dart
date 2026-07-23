@@ -23,9 +23,7 @@ class _LanguageSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final selectedIndex = _options.indexWhere(
-      (entry) => entry.locale == value,
-    );
+    final selectedIndex = _options.indexWhere((entry) => entry.locale == value);
     final activeIndex = selectedIndex == -1 ? 0 : selectedIndex;
     final backgroundColor = isDark
         ? const Color(0xFF201C19)
@@ -39,9 +37,7 @@ class _LanguageSelector extends StatelessWidget {
           const gap = 4.0;
           final optionCount = _options.length;
           final itemWidth =
-              (constraints.maxWidth -
-                  padding * 2 -
-                  gap * (optionCount - 1)) /
+              (constraints.maxWidth - padding * 2 - gap * (optionCount - 1)) /
               optionCount;
           final indicatorLeft = padding + activeIndex * (itemWidth + gap);
 
@@ -169,6 +165,7 @@ class _LanguageSegmentButtonState extends State<_LanguageSegmentButton> {
 class _NotificationSwitchTile extends StatelessWidget {
   const _NotificationSwitchTile({
     required this.isDark,
+    required this.icon,
     required this.title,
     required this.subtitle,
     required this.value,
@@ -178,6 +175,7 @@ class _NotificationSwitchTile extends StatelessWidget {
   });
 
   final bool isDark;
+  final IconData icon;
   final String title;
   final String subtitle;
   final bool value;
@@ -197,10 +195,7 @@ class _NotificationSwitchTile extends StatelessWidget {
             color: BaseColors.primary.withValues(alpha: isDark ? 0.22 : 0.12),
             borderRadius: BorderRadius.circular(16),
           ),
-          child: const Icon(
-            Icons.notifications_active_outlined,
-            color: BaseColors.primary,
-          ),
+          child: Icon(icon, color: BaseColors.primary),
         ),
         const SizedBox(width: 14),
         Expanded(

@@ -1664,6 +1664,282 @@ abstract class L {
   /// In uz, this message translates to:
   /// **'Oshxona buyurtmasi'**
   String get kitchenOrder;
+
+  /// No description provided for @loyaltyWallet.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mening ballarim'**
+  String get loyaltyWallet;
+
+  /// No description provided for @spendablePoints.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sarflash uchun mavjud'**
+  String get spendablePoints;
+
+  /// No description provided for @reservedPoints.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmalar uchun band qilingan'**
+  String get reservedPoints;
+
+  /// No description provided for @loyaltyDebt.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ballar bo\'yicha qarz'**
+  String get loyaltyDebt;
+
+  /// No description provided for @loyaltyDebtHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangi ballar avval ushbu qarzni qoplaydi.'**
+  String get loyaltyDebtHint;
+
+  /// No description provided for @pointsExpiringSoon.
+  ///
+  /// In uz, this message translates to:
+  /// **'7 kun ichida tugaydi'**
+  String get pointsExpiringSoon;
+
+  /// No description provided for @nextPointsExpiry.
+  ///
+  /// In uz, this message translates to:
+  /// **'Eng yaqin tugash sanasi'**
+  String get nextPointsExpiry;
+
+  /// No description provided for @loyaltyHistory.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ballar tarixi'**
+  String get loyaltyHistory;
+
+  /// No description provided for @loyaltyHistoryEmpty.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ballar bilan amallar shu yerda ko\'rinadi.'**
+  String get loyaltyHistoryEmpty;
+
+  /// No description provided for @loyaltyProgramUnavailable.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ballar dasturi vaqtincha mavjud emas.'**
+  String get loyaltyProgramUnavailable;
+
+  /// No description provided for @loyaltyRedemptionUnavailable.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozir ballarni sarflash imkoni yo\'q.'**
+  String get loyaltyRedemptionUnavailable;
+
+  /// No description provided for @loyaltyHowItWorks.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ballar qanday ishlaydi'**
+  String get loyaltyHowItWorks;
+
+  /// No description provided for @loyaltyPointValueInfo.
+  ///
+  /// In uz, this message translates to:
+  /// **'1 ball 1 so\'mga teng.'**
+  String get loyaltyPointValueInfo;
+
+  /// No description provided for @loyaltyEarningInfo.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ball miqdori buyurtma yetkazilgandagi faol aksiyaga bog\'liq.'**
+  String get loyaltyEarningInfo;
+
+  /// No description provided for @loyaltyValidityInfo.
+  ///
+  /// In uz, this message translates to:
+  /// **'Olingan ballar ko\'rsatilgan muddat davomida amal qiladi.'**
+  String get loyaltyValidityInfo;
+
+  /// No description provided for @loyaltyFeesDeliveryAllowed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazib berishni ballar bilan to\'lash mumkin.'**
+  String get loyaltyFeesDeliveryAllowed;
+
+  /// No description provided for @loyaltyFeesDeliveryNotAllowed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazib berishni ballar bilan to\'lab bo\'lmaydi.'**
+  String get loyaltyFeesDeliveryNotAllowed;
+
+  /// No description provided for @loyaltyFeesServiceAllowed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xizmat haqini ballar bilan to\'lash mumkin.'**
+  String get loyaltyFeesServiceAllowed;
+
+  /// No description provided for @loyaltyFeesServiceNotAllowed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xizmat haqini ballar bilan to\'lab bo\'lmaydi.'**
+  String get loyaltyFeesServiceNotAllowed;
+
+  /// No description provided for @validForDays.
+  ///
+  /// In uz, this message translates to:
+  /// **'Amal qilish muddati (kun)'**
+  String get validForDays;
+
+  /// No description provided for @usePoints.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ballar bilan to\'lash'**
+  String get usePoints;
+
+  /// No description provided for @pointsAvailable.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mavjud ballar'**
+  String get pointsAvailable;
+
+  /// No description provided for @pointsInputHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Butun ball kiriting'**
+  String get pointsInputHint;
+
+  /// No description provided for @useMaximum.
+  ///
+  /// In uz, this message translates to:
+  /// **'Maksimumini ishlatish'**
+  String get useMaximum;
+
+  /// No description provided for @clearPoints.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tozalash'**
+  String get clearPoints;
+
+  /// No description provided for @continueWithoutPoints.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ballarsiz davom etish'**
+  String get continueWithoutPoints;
+
+  /// No description provided for @pointsDebtCheckout.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qarz mavjud paytda ballarni ishlatib bo\'lmaydi.'**
+  String get pointsDebtCheckout;
+
+  /// No description provided for @fullyPaidWithPoints.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'liq ballar bilan to\'landi'**
+  String get fullyPaidWithPoints;
+
+  /// No description provided for @orderBeforePoints.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ballargacha buyurtma summasi'**
+  String get orderBeforePoints;
+
+  /// No description provided for @pointsUsed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ishlatilgan ballar'**
+  String get pointsUsed;
+
+  /// No description provided for @amountToPay.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'lov summasi'**
+  String get amountToPay;
+
+  /// No description provided for @estimatedPoints.
+  ///
+  /// In uz, this message translates to:
+  /// **'Taxminiy ballar'**
+  String get estimatedPoints;
+
+  /// No description provided for @estimatedPointsHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yakuniy miqdor buyurtma yetkazilganda aniqlanadi.'**
+  String get estimatedPointsHint;
+
+  /// No description provided for @loyaltyPending.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazilgandan so\'ng hisoblanadi'**
+  String get loyaltyPending;
+
+  /// No description provided for @loyaltyEarned.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ballar qo\'shildi'**
+  String get loyaltyEarned;
+
+  /// No description provided for @loyaltyNoReward.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ball berilmadi'**
+  String get loyaltyNoReward;
+
+  /// No description provided for @loyaltyReversed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ball berish bekor qilindi'**
+  String get loyaltyReversed;
+
+  /// No description provided for @loyaltyRestored.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ballar qaytarildi'**
+  String get loyaltyRestored;
+
+  /// No description provided for @transactionEarn.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ballar olindi'**
+  String get transactionEarn;
+
+  /// No description provided for @transactionSpend.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ballar ishlatildi'**
+  String get transactionSpend;
+
+  /// No description provided for @transactionRelease.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ballar qaytarildi'**
+  String get transactionRelease;
+
+  /// No description provided for @transactionExpiry.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ballar muddati tugadi'**
+  String get transactionExpiry;
+
+  /// No description provided for @transactionReversal.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ball berish bekor qilindi'**
+  String get transactionReversal;
+
+  /// No description provided for @transactionDebtRepayment.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qarz qoplandi'**
+  String get transactionDebtRepayment;
+
+  /// No description provided for @transactionOpeningBalance.
+  ///
+  /// In uz, this message translates to:
+  /// **'Boshlang\'ich balans'**
+  String get transactionOpeningBalance;
+
+  /// No description provided for @transactionBalanceUpdate.
+  ///
+  /// In uz, this message translates to:
+  /// **'Balans yangilandi'**
+  String get transactionBalanceUpdate;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

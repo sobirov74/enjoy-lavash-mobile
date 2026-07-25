@@ -9,6 +9,7 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/catalog_
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/client_notification_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/client_profile_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/file_upload_model.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/loyalty_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/order_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/promotion_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/entities/mobile_bootstrap.dart';
@@ -75,7 +76,17 @@ abstract class MobileBackendRepository {
 
   Future<Result<CustomerOrderModel>> getOrder({required String id});
 
-  Future<Result<CustomerOrderModel>> createOrder(CreateOrderRequest request);
+  Future<Result<CustomerOrderModel>> createOrder(
+    CreateOrderRequest request, {
+    String? idempotencyKey,
+  });
+
+  Future<Result<LoyaltyWalletModel>> getLoyaltyWallet();
+
+  Future<Result<LoyaltyTransactionPageModel>> getLoyaltyTransactions({
+    int limit = 50,
+    String? cursor,
+  });
 
   Future<Result<CustomerOrderModel>> retryOrderPayment({required String id});
 

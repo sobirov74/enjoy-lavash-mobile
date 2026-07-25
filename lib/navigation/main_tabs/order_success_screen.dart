@@ -189,6 +189,11 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
                       isDark: isDark,
                       title: t.payment,
                     ),
+                    if (widget.order.loyaltyRedeemedAmount > 0 ||
+                        widget.order.loyalty.eligible) ...[
+                      const SizedBox(height: 12),
+                      _OrderSuccessLoyaltyCard(order: widget.order),
+                    ],
                   ],
                 ),
               ),
@@ -231,6 +236,16 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
         widget.order.paymentMethod == MobilePaymentMethod.payme ||
         widget.order.paymentMethod == MobilePaymentMethod.click ||
         widget.openPaymentPage != null;
+
+    if (widget.order.totalAmount == 0 &&
+        widget.order.loyaltyRedeemedAmount > 0) {
+      return _OrderSuccessPaymentPresentation(
+        icon: Icons.stars_rounded,
+        accent: BaseColors.success,
+        status: t.fullyPaidWithPoints,
+        message: t.orderSuccessPaymentPaid,
+      );
+    }
 
     if (_paymentPageState == _PaymentPageLaunchState.opening) {
       return _OrderSuccessPaymentPresentation(
@@ -292,6 +307,122 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
       message: _paymentPageState == _PaymentPageLaunchState.opened
           ? t.orderSuccessPaymentOpened
           : t.paymentLinkUnavailable,
+    );
+  }
+}
+
+class _OrderSuccessLoyaltyCard extends StatelessWidget {
+  const _OrderSuccessLoyaltyCard({required this.order});
+
+  final CustomerOrderModel order;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = L.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accrual = order.loyalty.accrual;
+    final accrualText = switch (accrual.status) {
+      LoyaltyAccrualStatus.pending => t.loyaltyPending,
+      LoyaltyAccrualStatus.earned =>
+        '${t.loyaltyEarned}: '
+            '+${_formatLoyaltyPoints(context, accrual.creditedAmount)}',
+      LoyaltyAccrualStatus.noReward => t.loyaltyNoReward,
+      LoyaltyAccrualStatus.reversed => t.loyaltyReversed,
+      LoyaltyAccrualStatus.notEligible || LoyaltyAccrualStatus.unknown => null,
+    };
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1D1A18) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0x1A8C8278)),
+      ),
+      child: Column(
+        children: <Widget>[
+          _OrderSuccessAmountLine(
+            label: t.orderBeforePoints,
+            value: formatSum(order.totalBeforePointsAmount),
+          ),
+          if (order.loyaltyRedeemedAmount > 0) ...[
+            const SizedBox(height: 8),
+            _OrderSuccessAmountLine(
+              label: t.pointsUsed,
+              value:
+                  '-${_formatLoyaltyPoints(context, order.loyaltyRedeemedAmount)}',
+              color: BaseColors.primary,
+            ),
+          ],
+          const SizedBox(height: 8),
+          _OrderSuccessAmountLine(
+            label: t.amountToPay,
+            value: formatSum(order.totalAmount),
+            color: BaseColors.primary,
+            strong: true,
+          ),
+          if (accrualText != null) ...[
+            const Divider(height: 22),
+            Row(
+              children: <Widget>[
+                const Icon(
+                  Icons.auto_awesome_rounded,
+                  color: BaseColors.success,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TypographyText(
+                    accrualText,
+                    style: const TextStyle(
+                      color: BaseColors.success,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _OrderSuccessAmountLine extends StatelessWidget {
+  const _OrderSuccessAmountLine({
+    required this.label,
+    required this.value,
+    this.color,
+    this.strong = false,
+  });
+
+  final String label;
+  final String value;
+  final Color? color;
+  final bool strong;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: <Widget>[
+        Expanded(
+          child: TypographyText(
+            label,
+            style: const TextStyle(color: BaseColors.textGray, fontSize: 13),
+          ),
+        ),
+        const SizedBox(width: 8),
+        TypographyText(
+          value,
+          style: TextStyle(
+            color: color,
+            fontSize: strong ? 16 : 14,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ],
     );
   }
 }

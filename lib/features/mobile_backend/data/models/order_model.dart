@@ -1,5 +1,6 @@
 import 'cart_model.dart';
 import 'json_helpers.dart';
+import 'loyalty_model.dart';
 
 enum MobileOrderStatus {
   newOrder('NEW'),
@@ -64,6 +65,7 @@ class CreateOrderRequest {
     this.promoCode,
     this.comment,
     this.scheduledFor,
+    this.loyaltyRedemptionAmount = 0,
   });
 
   final MobileOrderType type;
@@ -75,6 +77,7 @@ class CreateOrderRequest {
   final String? promoCode;
   final String? comment;
   final DateTime? scheduledFor;
+  final int loyaltyRedemptionAmount;
 
   Map<String, Object?> toJson() {
     return withoutNulls({
@@ -87,6 +90,7 @@ class CreateOrderRequest {
       'promoCode': promoCode,
       'comment': comment,
       'scheduledFor': scheduledFor?.toIso8601String(),
+      'loyaltyRedemptionAmount': loyaltyRedemptionAmount,
     });
   }
 }
@@ -141,6 +145,8 @@ class CustomerOrderModel {
     required this.type,
     required this.status,
     required this.totalAmount,
+    this.totalBeforePointsAmount = 0,
+    this.loyaltyRedeemedAmount = 0,
     required this.paymentMethod,
     required List<CustomerOrderItemModel> items,
     required List<OrderStatusLogModel> statusLog,
@@ -158,6 +164,7 @@ class CustomerOrderModel {
     this.createdAt,
     this.updatedAt,
     this.raw = const <String, dynamic>{},
+    this.loyalty = const OrderLoyaltySummaryModel.legacy(),
   }) : items = List<CustomerOrderItemModel>.unmodifiable(items),
        statusLog = List<OrderStatusLogModel>.unmodifiable(statusLog);
 
@@ -165,6 +172,8 @@ class CustomerOrderModel {
   final MobileOrderType type;
   final MobileOrderStatus status;
   final int totalAmount;
+  final int totalBeforePointsAmount;
+  final int loyaltyRedeemedAmount;
   final MobilePaymentMethod paymentMethod;
   final List<CustomerOrderItemModel> items;
   final List<OrderStatusLogModel> statusLog;
@@ -182,13 +191,30 @@ class CustomerOrderModel {
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final Map<String, dynamic> raw;
+  final OrderLoyaltySummaryModel loyalty;
 
   factory CustomerOrderModel.fromJson(Map<String, dynamic> json) {
+    final totalAmount = readInt(json, const ['totalAmount', 'total_amount']);
+    final loyaltyJson = asJsonMap(json['loyalty']);
+    final redemptionJson = asJsonMap(loyaltyJson['redemption']);
+    final loyaltyRedeemedAmount =
+        _orderOptionalInt(json, const [
+          'loyaltyRedeemedAmount',
+          'loyalty_redeemed_amount',
+        ]) ??
+        readInt(redemptionJson, const ['amount']);
     return CustomerOrderModel(
       id: readString(json, const ['id']),
       type: MobileOrderType.fromJson(stringOrNull(json['type'])),
       status: MobileOrderStatus.fromJson(stringOrNull(json['status'])),
-      totalAmount: readInt(json, const ['totalAmount', 'total_amount']),
+      totalAmount: totalAmount,
+      totalBeforePointsAmount:
+          _orderOptionalInt(json, const [
+            'totalBeforePointsAmount',
+            'total_before_points_amount',
+          ]) ??
+          (totalAmount + loyaltyRedeemedAmount),
+      loyaltyRedeemedAmount: loyaltyRedeemedAmount,
       paymentMethod: MobilePaymentMethod.fromJson(
         stringOrNull(json['paymentMethod']) ??
             stringOrNull(json['payment_method']),
@@ -231,8 +257,24 @@ class CustomerOrderModel {
       createdAt: readDateTime(json, const ['createdAt', 'created_at']),
       updatedAt: readDateTime(json, const ['updatedAt', 'updated_at']),
       raw: Map<String, dynamic>.unmodifiable(json),
+      loyalty: loyaltyJson.isEmpty
+          ? const OrderLoyaltySummaryModel.legacy()
+          : OrderLoyaltySummaryModel.fromJson(loyaltyJson),
     );
   }
+}
+
+int? _orderOptionalInt(Map<String, dynamic> json, List<String> keys) {
+  for (final key in keys) {
+    final value = json[key];
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) {
+      final parsed = int.tryParse(value);
+      if (parsed != null) return parsed;
+    }
+  }
+  return null;
 }
 
 class CustomerOrderItemModel {

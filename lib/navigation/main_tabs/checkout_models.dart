@@ -1,15 +1,19 @@
 part of 'package:enjoy_lavash_mobile/navigation/main_tabs.dart';
 
+enum _OrderFailureAction { close, retry, removePoints }
+
 class _OrderCreationResult {
   const _OrderCreationResult({
     required this.orderType,
     required this.paymentMethod,
+    required this.loyaltyRedemptionAmount,
     this.promoCode,
     this.comment,
   });
 
   final MobileOrderType orderType;
   final MobilePaymentMethod paymentMethod;
+  final int loyaltyRedemptionAmount;
   final String? promoCode;
   final String? comment;
 }
@@ -41,5 +45,6 @@ typedef _CartPreviewRequester =
     Future<Result<_CheckoutPreviewDetails>?> Function({
       required MobileOrderType orderType,
       required MobilePaymentMethod paymentMethod,
+      required int loyaltyRedemptionAmount,
       String? promoCode,
     });

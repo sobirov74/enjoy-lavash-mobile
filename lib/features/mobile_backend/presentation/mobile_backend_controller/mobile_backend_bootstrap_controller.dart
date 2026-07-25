@@ -71,6 +71,8 @@ extension _MobileBackendBootstrapController on MobileBackendController {
         _applyFailure(failure, notify: false);
     }
 
+    unawaited(refreshLoyaltyWallet());
+
     _notifyListeners();
   }
 
@@ -106,6 +108,7 @@ extension _MobileBackendBootstrapController on MobileBackendController {
           unawaited(syncClientLanguage(language: language));
           unawaited(refreshNotifications());
           unawaited(refreshAssignedPromotions(language: language));
+          unawaited(refreshLoyaltyWallet());
         } else {
           _notifications = const <ClientNotificationItemModel>[];
           _notificationUnreadCount = 0;

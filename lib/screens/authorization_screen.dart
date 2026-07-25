@@ -9,6 +9,7 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/presentation/mobile_
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
 import 'package:enjoy_lavash_mobile/theme/app_motion.dart';
+import 'package:enjoy_lavash_mobile/widgets/app_bottom_sheet_drag_handle.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -288,6 +289,9 @@ class _AuthorizationScreenState extends State<AuthorizationScreen>
         isScrollControlled: true,
         useSafeArea: true,
         backgroundColor: Colors.transparent,
+        enableDrag: true,
+        isDismissible: true,
+        showDragHandle: false,
         builder: (_) => _NamePromptSheet(initialName: initialName),
       );
     }
@@ -302,6 +306,9 @@ class _AuthorizationScreenState extends State<AuthorizationScreen>
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
+      enableDrag: true,
+      isDismissible: true,
+      showDragHandle: false,
       builder: (_) => const _BirthDatePromptSheet(),
     );
   }
@@ -836,18 +843,11 @@ class _NamePromptSheetState extends State<_NamePromptSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Center(
-                child: Container(
-                  width: 46,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 20),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? const Color(0xFF3A332D)
-                        : const Color(0xFFE8DED4),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
+              AppBottomSheetDragHandle(
+                margin: const EdgeInsets.only(bottom: 8),
+                color: isDark
+                    ? const Color(0xFF3A332D)
+                    : const Color(0xFFE8DED4),
               ),
               TypographyText(
                 t.nameOptional,
@@ -1035,18 +1035,9 @@ class _BirthDatePromptSheetState extends State<_BirthDatePromptSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Center(
-              child: Container(
-                width: 46,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 20),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF3A332D)
-                      : const Color(0xFFE8DED4),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
+            AppBottomSheetDragHandle(
+              margin: const EdgeInsets.only(bottom: 8),
+              color: isDark ? const Color(0xFF3A332D) : const Color(0xFFE8DED4),
             ),
             TypographyText(
               t.birthDateTitle,

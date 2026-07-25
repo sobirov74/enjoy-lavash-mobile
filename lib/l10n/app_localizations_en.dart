@@ -850,4 +850,149 @@ class LEn extends L {
 
   @override
   String get kitchenOrder => 'Kitchen order';
+
+  @override
+  String get loyaltyWallet => 'My points';
+
+  @override
+  String get spendablePoints => 'Available to spend';
+
+  @override
+  String get reservedPoints => 'Reserved for orders';
+
+  @override
+  String get loyaltyDebt => 'Points debt';
+
+  @override
+  String get loyaltyDebtHint =>
+      'New points will repay this amount before becoming available.';
+
+  @override
+  String get pointsExpiringSoon => 'Expiring in 7 days';
+
+  @override
+  String get nextPointsExpiry => 'Next expiry';
+
+  @override
+  String get loyaltyHistory => 'Points activity';
+
+  @override
+  String get loyaltyHistoryEmpty => 'Your points activity will appear here.';
+
+  @override
+  String get loyaltyProgramUnavailable =>
+      'The points program is temporarily unavailable.';
+
+  @override
+  String get loyaltyRedemptionUnavailable =>
+      'Spending points is currently unavailable.';
+
+  @override
+  String get loyaltyHowItWorks => 'How points work';
+
+  @override
+  String get loyaltyPointValueInfo => '1 point equals 1 UZS.';
+
+  @override
+  String get loyaltyEarningInfo =>
+      'Earnings depend on the campaign active when your order is delivered.';
+
+  @override
+  String get loyaltyValidityInfo =>
+      'Earned points remain valid for the program period shown here.';
+
+  @override
+  String get loyaltyFeesDeliveryAllowed => 'Points can cover delivery.';
+
+  @override
+  String get loyaltyFeesDeliveryNotAllowed => 'Points cannot cover delivery.';
+
+  @override
+  String get loyaltyFeesServiceAllowed => 'Points can cover the service fee.';
+
+  @override
+  String get loyaltyFeesServiceNotAllowed =>
+      'Points cannot cover the service fee.';
+
+  @override
+  String get validForDays => 'Validity (days)';
+
+  @override
+  String get usePoints => 'Pay with points';
+
+  @override
+  String get pointsAvailable => 'Available points';
+
+  @override
+  String get pointsInputHint => 'Enter whole points';
+
+  @override
+  String get useMaximum => 'Use maximum';
+
+  @override
+  String get clearPoints => 'Clear';
+
+  @override
+  String get continueWithoutPoints => 'Continue without points';
+
+  @override
+  String get pointsDebtCheckout =>
+      'Points cannot be used while there is an outstanding debt.';
+
+  @override
+  String get fullyPaidWithPoints => 'Fully paid with points';
+
+  @override
+  String get orderBeforePoints => 'Order before points';
+
+  @override
+  String get pointsUsed => 'Points used';
+
+  @override
+  String get amountToPay => 'Amount to pay';
+
+  @override
+  String get estimatedPoints => 'Estimated points';
+
+  @override
+  String get estimatedPointsHint => 'Finalized when the order is delivered.';
+
+  @override
+  String get loyaltyPending => 'Calculated after delivery';
+
+  @override
+  String get loyaltyEarned => 'Points credited';
+
+  @override
+  String get loyaltyNoReward => 'No points earned';
+
+  @override
+  String get loyaltyReversed => 'Points reversed';
+
+  @override
+  String get loyaltyRestored => 'Points restored';
+
+  @override
+  String get transactionEarn => 'Points earned';
+
+  @override
+  String get transactionSpend => 'Points used';
+
+  @override
+  String get transactionRelease => 'Points restored';
+
+  @override
+  String get transactionExpiry => 'Points expired';
+
+  @override
+  String get transactionReversal => 'Earning reversed';
+
+  @override
+  String get transactionDebtRepayment => 'Debt repaid';
+
+  @override
+  String get transactionOpeningBalance => 'Opening balance';
+
+  @override
+  String get transactionBalanceUpdate => 'Balance update';
 }

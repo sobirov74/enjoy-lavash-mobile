@@ -16,6 +16,7 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/client_n
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/client_profile_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/file_upload_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/json_helpers.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/loyalty_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/order_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/promotion_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/entities/mobile_bootstrap.dart';
@@ -267,13 +268,45 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
   }
 
   @override
-  Future<Result<CustomerOrderModel>> createOrder(CreateOrderRequest request) {
+  Future<Result<CustomerOrderModel>> createOrder(
+    CreateOrderRequest request, {
+    String? idempotencyKey,
+  }) {
     return _guard(() async {
+      final normalizedKey = idempotencyKey?.trim();
       final response = await _dio.post(
         ApiEndpoints.clientOrders,
         data: request.toJson(),
+        options: normalizedKey?.isNotEmpty == true
+            ? Options(headers: {'Idempotency-Key': normalizedKey})
+            : null,
       );
       return CustomerOrderModel.fromJson(asJsonMap(response.data));
+    });
+  }
+
+  @override
+  Future<Result<LoyaltyWalletModel>> getLoyaltyWallet() {
+    return _guard(() async {
+      final response = await _dio.get(ApiEndpoints.clientLoyaltyWallet);
+      return LoyaltyWalletModel.fromJson(asJsonMap(response.data));
+    });
+  }
+
+  @override
+  Future<Result<LoyaltyTransactionPageModel>> getLoyaltyTransactions({
+    int limit = 50,
+    String? cursor,
+  }) {
+    return _guard(() async {
+      final response = await _dio.get(
+        ApiEndpoints.clientLoyaltyTransactions,
+        queryParameters: withoutNulls({
+          'limit': limit.clamp(1, 100),
+          'cursor': cursor,
+        }),
+      );
+      return LoyaltyTransactionPageModel.fromJson(asJsonMap(response.data));
     });
   }
 

@@ -22,18 +22,25 @@ Failure mapDioError(DioException e) {
         statusCode: status,
         languageCode: _requestLanguage(e),
       );
+      final payload = _failurePayload(e.response?.data);
+      final failurePayload = ApiFailurePayload(
+        errorCode: payload.errorCode,
+        details: payload.details,
+        metadata: payload.metadata,
+      );
       if (status == 401) {
         return AuthFailure(serverMessage);
       }
       return switch (status) {
-        409 => ConflictFailure(serverMessage),
-        413 => PayloadTooLargeFailure(serverMessage),
+        409 => ConflictFailure(serverMessage, failurePayload),
+        413 => PayloadTooLargeFailure(serverMessage, failurePayload),
         429 => RateLimitFailure(
           message: serverMessage,
           retryAfter: _retryAfter(e),
+          payload: failurePayload,
         ),
-        503 => ServiceUnavailableFailure(serverMessage),
-        _ => ServerFailure(status, serverMessage),
+        503 => ServiceUnavailableFailure(serverMessage, failurePayload),
+        _ => ServerFailure(status, serverMessage, failurePayload),
       };
 
     case DioExceptionType.cancel:
@@ -48,6 +55,31 @@ Failure mapDioError(DioException e) {
       }
       return UnknownFailure(e.message ?? 'Unknown error');
   }
+}
+
+({String? errorCode, Object? details, Map<String, dynamic> metadata})
+_failurePayload(Object? data) {
+  if (data is! Map) {
+    return (
+      errorCode: null,
+      details: null,
+      metadata: const <String, dynamic>{},
+    );
+  }
+  final map = Map<String, dynamic>.from(data);
+  final metadataValue = map['metadata'];
+  final metadata = metadataValue is Map
+      ? Map<String, dynamic>.unmodifiable(
+          Map<String, dynamic>.from(metadataValue),
+        )
+      : const <String, dynamic>{};
+  final rawCode = map['errorCode'] ?? map['error_code'];
+  final errorCode = rawCode?.toString().trim();
+  return (
+    errorCode: errorCode?.isEmpty == true ? null : errorCode,
+    details: map['details'],
+    metadata: metadata,
+  );
 }
 
 Duration? _retryAfter(DioException error) {

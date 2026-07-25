@@ -46,9 +46,13 @@ extension _MobileBackendOrderController on MobileBackendController {
   }
 
   Future<Result<CustomerOrderModel>> _createOrder(
-    CreateOrderRequest request,
-  ) async {
-    final result = await _repository.createOrder(request);
+    CreateOrderRequest request, {
+    required String idempotencyKey,
+  }) async {
+    final result = await _repository.createOrder(
+      request,
+      idempotencyKey: idempotencyKey,
+    );
     switch (result) {
       case Success(:final data):
         _orders = <CustomerOrderModel>[
@@ -57,6 +61,7 @@ extension _MobileBackendOrderController on MobileBackendController {
             if (order.id != data.id) order,
         ];
         _failure = null;
+        unawaited(refreshLoyaltyWallet());
         if (_status == MobileBackendStatus.initial) {
           _status = MobileBackendStatus.loaded;
         }
@@ -81,6 +86,10 @@ extension _MobileBackendOrderController on MobileBackendController {
       case Success(:final data):
         _upsertOrder(data);
         _failure = null;
+        if (_isTerminalLoyaltyOrder(data)) {
+          unawaited(refreshLoyaltyWallet());
+          unawaited(refreshLoyaltyTransactions());
+        }
         _notifyListeners();
       case Error(:final failure):
         _applyFailure(failure);
@@ -113,5 +122,11 @@ extension _MobileBackendOrderController on MobileBackendController {
       for (final order in _orders)
         if (order.id == updatedOrder.id) updatedOrder else order,
     ];
+  }
+
+  bool _isTerminalLoyaltyOrder(CustomerOrderModel order) {
+    return order.status == MobileOrderStatus.delivered ||
+        order.status == MobileOrderStatus.cancelled ||
+        order.status == MobileOrderStatus.refunded;
   }
 }

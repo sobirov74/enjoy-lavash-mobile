@@ -1,4 +1,5 @@
 import 'json_helpers.dart';
+import 'loyalty_model.dart';
 
 enum MobileOrderType {
   delivery('DELIVERY'),
@@ -162,6 +163,7 @@ class CartPreviewRequest {
     this.addressId,
     this.address,
     this.promoCode,
+    this.loyaltyRedemptionAmount = 0,
   });
 
   final MobileOrderType type;
@@ -171,6 +173,7 @@ class CartPreviewRequest {
   final List<CartItemInput> items;
   final MobilePaymentMethod paymentMethod;
   final String? promoCode;
+  final int loyaltyRedemptionAmount;
 
   Map<String, Object?> toJson() {
     return withoutNulls({
@@ -181,6 +184,7 @@ class CartPreviewRequest {
       'items': items.map((item) => item.toJson()).toList(growable: false),
       'paymentMethod': paymentMethod.value,
       'promoCode': promoCode,
+      'loyaltyRedemptionAmount': loyaltyRedemptionAmount,
     });
   }
 }
@@ -193,6 +197,7 @@ class CartPreviewModel {
     required this.deliveryAmount,
     required this.serviceFeeAmount,
     required this.totalAmount,
+    required this.totalBeforePointsAmount,
     this.promotionStatus = CartPromotionStatus.none,
     this.hasPromotionStatus = false,
     this.promotionStatusReason,
@@ -201,6 +206,7 @@ class CartPreviewModel {
     this.appliedPromotion,
     this.branchId,
     this.deliveryDistanceMeters,
+    this.loyalty,
   });
 
   final int itemsAmount;
@@ -209,6 +215,7 @@ class CartPreviewModel {
   final int deliveryAmount;
   final int serviceFeeAmount;
   final int totalAmount;
+  final int totalBeforePointsAmount;
   final CartPromotionStatus promotionStatus;
   final bool hasPromotionStatus;
   final String? promotionStatusReason;
@@ -217,8 +224,11 @@ class CartPreviewModel {
   final AppliedPromotionModel? appliedPromotion;
   final String? branchId;
   final int? deliveryDistanceMeters;
+  final CartLoyaltyPreviewModel? loyalty;
 
   factory CartPreviewModel.fromJson(Map<String, dynamic> json) {
+    final totalAmount = readInt(json, const ['totalAmount', 'total_amount']);
+    final loyaltyJson = asJsonMap(json['loyalty']);
     return CartPreviewModel(
       itemsAmount: readInt(json, const ['itemsAmount', 'items_amount']),
       modifiersAmount: readInt(json, const [
@@ -237,7 +247,13 @@ class CartPreviewModel {
         'serviceFeeAmount',
         'service_fee_amount',
       ]),
-      totalAmount: readInt(json, const ['totalAmount', 'total_amount']),
+      totalAmount: totalAmount,
+      totalBeforePointsAmount:
+          _optionalInt(json, const [
+            'totalBeforePointsAmount',
+            'total_before_points_amount',
+          ]) ??
+          totalAmount,
       promotionStatus: CartPromotionStatus.fromJson(
         stringOrNull(json['promotionStatus']) ??
             stringOrNull(json['promotion_status']),
@@ -269,6 +285,9 @@ class CartPreviewModel {
         'deliveryDistanceMeters',
         'delivery_distance_meters',
       ]),
+      loyalty: loyaltyJson.isEmpty
+          ? null
+          : CartLoyaltyPreviewModel.fromJson(loyaltyJson),
     );
   }
 }

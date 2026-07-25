@@ -2,6 +2,7 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/branch_m
 import 'package:enjoy_lavash_mobile/features/mobile_backend/presentation/mobile_backend_controller.dart';
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
+import 'package:enjoy_lavash_mobile/widgets/app_bottom_sheet_drag_handle.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -14,6 +15,9 @@ Future<BranchModel?> showBranchBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
+    enableDrag: true,
+    isDismissible: true,
+    showDragHandle: false,
     builder: (_) => ChangeNotifierProvider.value(
       value: context.read<MobileBackendController>(),
       child: _BranchSheet(selectedBranchId: selectedBranchId),
@@ -48,16 +52,11 @@ class _BranchSheet extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const SizedBox(height: 12),
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF3A3530) : const Color(0xFFE0DBD5),
-              borderRadius: BorderRadius.circular(2),
-            ),
+          AppBottomSheetDragHandle(
+            margin: const EdgeInsets.only(top: 4),
+            color: isDark ? const Color(0xFF3A3530) : const Color(0xFFE0DBD5),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 4),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(

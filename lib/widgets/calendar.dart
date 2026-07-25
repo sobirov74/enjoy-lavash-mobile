@@ -1,5 +1,6 @@
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
+import 'package:enjoy_lavash_mobile/widgets/app_bottom_sheet_drag_handle.dart';
 import 'package:enjoy_lavash_mobile/widgets/button.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
@@ -17,6 +18,9 @@ class AppCalendarBottomSheet extends StatefulWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: isDark ? BaseColors.black600 : BaseColors.white,
+      enableDrag: true,
+      isDismissible: true,
+      showDragHandle: false,
       transitionAnimationController: AnimationController(
         vsync: Navigator.of(context),
         duration: const Duration(milliseconds: 450),
@@ -53,15 +57,9 @@ class _AppCalendarBottomSheetState extends State<AppCalendarBottomSheet> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          /// Drag indicator
-          Container(
-            width: 40,
-            height: 4,
+          AppBottomSheetDragHandle(
             margin: const EdgeInsets.only(bottom: 16),
-            decoration: BoxDecoration(
-              color: theme.dividerColor,
-              borderRadius: BorderRadius.circular(10),
-            ),
+            color: theme.dividerColor,
           ),
 
           /// Calendar

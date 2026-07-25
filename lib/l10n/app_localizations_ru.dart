@@ -841,4 +841,149 @@ class LRu extends L {
 
   @override
   String get kitchenOrder => 'Заказ кухни';
+
+  @override
+  String get loyaltyWallet => 'Мои баллы';
+
+  @override
+  String get spendablePoints => 'Доступно для оплаты';
+
+  @override
+  String get reservedPoints => 'Зарезервировано в заказах';
+
+  @override
+  String get loyaltyDebt => 'Задолженность по баллам';
+
+  @override
+  String get loyaltyDebtHint => 'Новые баллы сначала погасят эту сумму.';
+
+  @override
+  String get pointsExpiringSoon => 'Сгорят в течение 7 дней';
+
+  @override
+  String get nextPointsExpiry => 'Ближайшее сгорание';
+
+  @override
+  String get loyaltyHistory => 'История баллов';
+
+  @override
+  String get loyaltyHistoryEmpty => 'Здесь появятся операции с баллами.';
+
+  @override
+  String get loyaltyProgramUnavailable =>
+      'Программа баллов временно недоступна.';
+
+  @override
+  String get loyaltyRedemptionUnavailable =>
+      'Списание баллов сейчас недоступно.';
+
+  @override
+  String get loyaltyHowItWorks => 'Как работают баллы';
+
+  @override
+  String get loyaltyPointValueInfo => '1 балл равен 1 суму.';
+
+  @override
+  String get loyaltyEarningInfo =>
+      'Начисление зависит от акции, действующей при доставке заказа.';
+
+  @override
+  String get loyaltyValidityInfo =>
+      'Начисленные баллы действуют в течение указанного срока.';
+
+  @override
+  String get loyaltyFeesDeliveryAllowed => 'Баллами можно оплатить доставку.';
+
+  @override
+  String get loyaltyFeesDeliveryNotAllowed =>
+      'Баллами нельзя оплатить доставку.';
+
+  @override
+  String get loyaltyFeesServiceAllowed =>
+      'Баллами можно оплатить сервисный сбор.';
+
+  @override
+  String get loyaltyFeesServiceNotAllowed =>
+      'Баллами нельзя оплатить сервисный сбор.';
+
+  @override
+  String get validForDays => 'Срок действия (дни)';
+
+  @override
+  String get usePoints => 'Оплатить баллами';
+
+  @override
+  String get pointsAvailable => 'Доступные баллы';
+
+  @override
+  String get pointsInputHint => 'Введите целое число';
+
+  @override
+  String get useMaximum => 'Использовать максимум';
+
+  @override
+  String get clearPoints => 'Очистить';
+
+  @override
+  String get continueWithoutPoints => 'Продолжить без баллов';
+
+  @override
+  String get pointsDebtCheckout => 'Баллы недоступны, пока есть задолженность.';
+
+  @override
+  String get fullyPaidWithPoints => 'Полностью оплачено баллами';
+
+  @override
+  String get orderBeforePoints => 'Сумма до списания баллов';
+
+  @override
+  String get pointsUsed => 'Списано баллов';
+
+  @override
+  String get amountToPay => 'К оплате';
+
+  @override
+  String get estimatedPoints => 'Ожидаемые баллы';
+
+  @override
+  String get estimatedPointsHint => 'Итог определится после доставки.';
+
+  @override
+  String get loyaltyPending => 'Рассчитаем после доставки';
+
+  @override
+  String get loyaltyEarned => 'Баллы начислены';
+
+  @override
+  String get loyaltyNoReward => 'Баллы не начислены';
+
+  @override
+  String get loyaltyReversed => 'Начисление отменено';
+
+  @override
+  String get loyaltyRestored => 'Баллы возвращены';
+
+  @override
+  String get transactionEarn => 'Баллы начислены';
+
+  @override
+  String get transactionSpend => 'Баллы списаны';
+
+  @override
+  String get transactionRelease => 'Баллы возвращены';
+
+  @override
+  String get transactionExpiry => 'Баллы сгорели';
+
+  @override
+  String get transactionReversal => 'Начисление отменено';
+
+  @override
+  String get transactionDebtRepayment => 'Долг погашен';
+
+  @override
+  String get transactionOpeningBalance => 'Начальный баланс';
+
+  @override
+  String get transactionBalanceUpdate => 'Изменение баланса';
 }

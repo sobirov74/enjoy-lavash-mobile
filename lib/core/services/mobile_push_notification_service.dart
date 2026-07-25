@@ -59,6 +59,14 @@ class PushNotificationMessage {
     return deepLink?.toLowerCase().contains('promotion') ?? false;
   }
 
+  bool get opensLoyalty {
+    final normalizedType = type.trim().toLowerCase();
+    if (normalizedType == 'loyalty_expiry_reminder') return true;
+    final link = deepLink?.trim().toLowerCase();
+    return link == 'enjoylavash://loyalty' ||
+        link?.startsWith('enjoylavash://loyalty?') == true;
+  }
+
   factory PushNotificationMessage.fromRemoteMessage(
     RemoteMessage message, {
     required bool openedByUser,

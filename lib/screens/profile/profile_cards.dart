@@ -122,31 +122,3 @@ class _InfoRow extends StatelessWidget {
     );
   }
 }
-
-class _StatLine extends StatelessWidget {
-  const _StatLine({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: <Widget>[
-        Expanded(
-          child: TypographyText(
-            label,
-            style: const TextStyle(color: BaseColors.textGray),
-          ),
-        ),
-        TypographyText(
-          value,
-          style: const TextStyle(
-            color: BaseColors.primary,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ],
-    );
-  }
-}

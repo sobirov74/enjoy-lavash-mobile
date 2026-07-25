@@ -27,6 +27,9 @@ class _OrderRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = L.of(context);
     final colors = _statusColors(order.status);
+    final pointsRestored =
+        order.loyalty.redemption?.status == LoyaltyRedemptionStatus.released ||
+        order.loyalty.redemption?.status == LoyaltyRedemptionStatus.refunded;
     final date = _formatOrderDate(order.createdAt, locale);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surface = _statusSurfaceColors(order.status, isDark);
@@ -158,11 +161,35 @@ class _OrderRow extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    TypographyText(
-                      _formatOrderAmount(order.totalAmount),
-                      style: const TextStyle(
-                        color: BaseColors.primary,
-                        fontWeight: FontWeight.w800,
+                    Flexible(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: <Widget>[
+                          TypographyText(
+                            _formatOrderAmount(order.totalAmount),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: BaseColors.primary,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          if (order.loyaltyRedeemedAmount > 0)
+                            TypographyText(
+                              '${pointsRestored ? '+' : '-'}'
+                              '${NumberFormat.decimalPattern(locale).format(order.loyaltyRedeemedAmount)} '
+                              '${pointsRestored ? t.loyaltyRestored : t.pointsUsed}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: pointsRestored
+                                    ? BaseColors.success
+                                    : BaseColors.textGray,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                     const SizedBox(width: 2),

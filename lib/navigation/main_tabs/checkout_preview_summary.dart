@@ -262,11 +262,69 @@ class _PreviewTotals extends StatelessWidget {
           child: Divider(height: 1, color: Color(0x1A8C8278)),
         ),
         _PreviewAmountRow(
-          label: t.total,
+          label: t.orderBeforePoints,
+          value: formatSum(preview.totalBeforePointsAmount),
+        ),
+        if ((preview.loyalty?.appliedPoints ?? 0) > 0)
+          _PreviewAmountRow(
+            label: t.pointsUsed,
+            value:
+                '-${_formatLoyaltyPoints(context, preview.loyalty!.appliedPoints)}',
+            valueColor: BaseColors.primary,
+          ),
+        _PreviewAmountRow(
+          label: t.amountToPay,
           value: formatSum(preview.totalAmount),
           isTotal: true,
           valueColor: BaseColors.primary,
         ),
+        if (preview.loyalty != null) ...[
+          const SizedBox(height: 9),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: BaseColors.success.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                const Icon(
+                  Icons.auto_awesome_rounded,
+                  color: BaseColors.success,
+                  size: 19,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      TypographyText(
+                        '${t.estimatedPoints}: '
+                        '+${_formatLoyaltyPoints(context, preview.loyalty!.estimatedEarnPoints)}',
+                        style: const TextStyle(
+                          color: BaseColors.success,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      TypographyText(
+                        t.estimatedPointsHint,
+                        style: const TextStyle(
+                          color: BaseColors.textGray,
+                          fontSize: 11,
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }

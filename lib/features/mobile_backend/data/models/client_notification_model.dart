@@ -67,6 +67,14 @@ class ClientNotificationItemModel {
     return link != null && link.contains('promotion');
   }
 
+  bool get opensLoyalty {
+    final normalizedKind = kind.trim().toUpperCase();
+    if (normalizedKind == 'LOYALTY_EXPIRY_REMINDER') return true;
+    final link = deepLink?.trim().toLowerCase();
+    return link == 'enjoylavash://loyalty' ||
+        link?.startsWith('enjoylavash://loyalty?') == true;
+  }
+
   factory ClientNotificationItemModel.fromJson(Map<String, dynamic> json) {
     final notificationId = readString(json, const [
       'notificationId',

@@ -108,6 +108,7 @@ void main() {
       'paymentMethod': 'CASH',
       'promoCode': 'FIRST20',
       'comment': 'Less spicy please',
+      'loyaltyRedemptionAmount': 0,
     });
   });
 

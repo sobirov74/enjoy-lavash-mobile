@@ -5,6 +5,8 @@ extension _MobileBackendStateController on MobileBackendController {
     _notificationsRequestVersion++;
     _notificationCountRequestVersion++;
     _assignedPromotionsRequestVersion++;
+    _loyaltyWalletRequestVersion++;
+    _loyaltyTransactionsRequestVersion++;
     _client = null;
     _addresses = const <ClientAddress>[];
     _orders = const <CustomerOrderModel>[];
@@ -17,6 +19,14 @@ extension _MobileBackendStateController on MobileBackendController {
     _assignedPromotionsLoading = false;
     _assignedPromotionsIncludeAll = false;
     _assignedPromotionsFailure = null;
+    _loyaltyWallet = null;
+    _loyaltyWalletLoading = false;
+    _loyaltyWalletFailure = null;
+    _loyaltyTransactions = const <LoyaltyTransactionModel>[];
+    _loyaltyTransactionsNextCursor = null;
+    _loyaltyTransactionsLoading = false;
+    _loyaltyTransactionsLoadingMore = false;
+    _loyaltyTransactionsFailure = null;
     _failure = null;
     if (_status == MobileBackendStatus.initial ||
         _status == MobileBackendStatus.loading) {

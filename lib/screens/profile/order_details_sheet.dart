@@ -39,7 +39,8 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet> {
     super.dispose();
   }
 
-  bool get _canRetryPayment => _order.paymentRetryAvailable;
+  bool get _canRetryPayment =>
+      _order.totalAmount > 0 && _order.paymentRetryAvailable;
 
   bool get _shouldPollOrder {
     if (_order.paymentStatus == MobilePaymentStatus.pending) return true;
@@ -154,19 +155,8 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Center(
-              child: Container(
-                width: 44,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF4A4038)
-                      : const Color(0xFFE5DAD0),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
+            const AppBottomSheetDragHandle(),
+            const SizedBox(height: 6),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
@@ -365,6 +355,10 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet> {
                       ],
                     ],
             ),
+            if (order.loyaltyRedeemedAmount > 0 || order.loyalty.eligible) ...[
+              const SizedBox(height: 12),
+              _OrderLoyaltyDetailSection(order: order),
+            ],
             const SizedBox(height: 12),
             _OrderDetailSection(
               title: t.statusHistory,
@@ -411,30 +405,146 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet> {
               ),
             ],
             const SizedBox(height: 14),
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: TypographyText(
-                    t.total,
-                    style: const TextStyle(
-                      color: BaseColors.textGray,
-                      fontSize: 15,
-                    ),
-                  ),
-                ),
-                TypographyText(
-                  _formatOrderAmount(order.totalAmount),
-                  style: const TextStyle(
-                    color: BaseColors.primary,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
+            _OrderAmountDetailLine(
+              label: t.amountToPay,
+              value: _formatOrderAmount(order.totalAmount),
+              strong: true,
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _OrderLoyaltyDetailSection extends StatelessWidget {
+  const _OrderLoyaltyDetailSection({required this.order});
+
+  final CustomerOrderModel order;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = L.of(context);
+    final redemption = order.loyalty.redemption;
+    final accrual = order.loyalty.accrual;
+    final hasExpired =
+        accrual.status == LoyaltyAccrualStatus.earned &&
+        accrual.expiresAt != null &&
+        accrual.expiresAt!.isBefore(DateTime.now());
+    final accrualLabel = hasExpired
+        ? t.transactionExpiry
+        : switch (accrual.status) {
+            LoyaltyAccrualStatus.pending => t.loyaltyPending,
+            LoyaltyAccrualStatus.earned =>
+              '${t.loyaltyEarned}: '
+                  '+${NumberFormat.decimalPattern(Localizations.localeOf(context).toLanguageTag()).format(accrual.creditedAmount)}',
+            LoyaltyAccrualStatus.noReward => t.loyaltyNoReward,
+            LoyaltyAccrualStatus.reversed => t.loyaltyReversed,
+            LoyaltyAccrualStatus.notEligible ||
+            LoyaltyAccrualStatus.unknown => null,
+          };
+    final restored =
+        redemption?.status == LoyaltyRedemptionStatus.released ||
+        redemption?.status == LoyaltyRedemptionStatus.refunded;
+
+    return _OrderDetailSection(
+      title: t.loyaltyWallet,
+      children: <Widget>[
+        _OrderAmountDetailLine(
+          label: t.orderBeforePoints,
+          value: _formatOrderAmount(order.totalBeforePointsAmount),
+        ),
+        if (order.loyaltyRedeemedAmount > 0) ...[
+          const SizedBox(height: 9),
+          _OrderAmountDetailLine(
+            label: restored ? t.loyaltyRestored : t.pointsUsed,
+            value:
+                '${restored ? '+' : '-'}'
+                '${NumberFormat.decimalPattern(Localizations.localeOf(context).toLanguageTag()).format(order.loyaltyRedeemedAmount)}',
+            valueColor: restored ? BaseColors.success : BaseColors.primary,
+          ),
+        ],
+        const SizedBox(height: 9),
+        _OrderAmountDetailLine(
+          label: t.amountToPay,
+          value: _formatOrderAmount(order.totalAmount),
+          strong: true,
+        ),
+        if (accrualLabel != null) ...[
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 11),
+            child: Divider(height: 1, color: Color(0x1A8C8278)),
+          ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Icon(
+                accrual.status == LoyaltyAccrualStatus.reversed
+                    ? Icons.undo_rounded
+                    : Icons.auto_awesome_rounded,
+                color: accrual.status == LoyaltyAccrualStatus.reversed
+                    ? BaseColors.danger
+                    : BaseColors.success,
+                size: 19,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TypographyText(
+                  accrualLabel,
+                  style: TextStyle(
+                    color: accrual.status == LoyaltyAccrualStatus.reversed
+                        ? BaseColors.danger
+                        : BaseColors.success,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _OrderAmountDetailLine extends StatelessWidget {
+  const _OrderAmountDetailLine({
+    required this.label,
+    required this.value,
+    this.valueColor,
+    this.strong = false,
+  });
+
+  final String label;
+  final String value;
+  final Color? valueColor;
+  final bool strong;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Expanded(
+          child: TypographyText(
+            label,
+            style: const TextStyle(color: BaseColors.textGray, fontSize: 13),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Flexible(
+          child: TypographyText(
+            value,
+            textAlign: TextAlign.end,
+            style: TextStyle(
+              color: valueColor ?? (strong ? BaseColors.primary : null),
+              fontSize: strong ? 18 : 14,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

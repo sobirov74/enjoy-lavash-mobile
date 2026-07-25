@@ -12,6 +12,7 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/cart_mod
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/catalog_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/client_notification_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/client_profile_model.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/loyalty_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/order_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/promotion_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/repositories/mobile_backend_repository.dart';
@@ -23,6 +24,7 @@ part 'mobile_backend_controller/mobile_backend_bootstrap_controller.dart';
 part 'mobile_backend_controller/mobile_backend_catalog_adapter.dart';
 part 'mobile_backend_controller/mobile_backend_notifications_controller.dart';
 part 'mobile_backend_controller/mobile_backend_order_controller.dart';
+part 'mobile_backend_controller/mobile_backend_loyalty_controller.dart';
 part 'mobile_backend_controller/mobile_backend_state_controller.dart';
 
 enum MobileBackendStatus { initial, loading, loaded, error }
@@ -71,6 +73,17 @@ class MobileBackendController extends ChangeNotifier {
   PushNotificationSettings? _pushNotificationSettings;
   bool _pushNotificationsUpdating = false;
   bool _accountDeleting = false;
+  LoyaltyWalletModel? _loyaltyWallet;
+  bool _loyaltyWalletLoading = false;
+  Failure? _loyaltyWalletFailure;
+  int _loyaltyWalletRequestVersion = 0;
+  List<LoyaltyTransactionModel> _loyaltyTransactions =
+      const <LoyaltyTransactionModel>[];
+  String? _loyaltyTransactionsNextCursor;
+  bool _loyaltyTransactionsLoading = false;
+  bool _loyaltyTransactionsLoadingMore = false;
+  Failure? _loyaltyTransactionsFailure;
+  int _loyaltyTransactionsRequestVersion = 0;
 
   MobileBackendStatus get status => _status;
   Failure? get failure => _failure;
@@ -99,6 +112,15 @@ class MobileBackendController extends ChangeNotifier {
       _pushNotificationSettings;
   bool get pushNotificationsUpdating => _pushNotificationsUpdating;
   bool get accountDeleting => _accountDeleting;
+  LoyaltyWalletModel? get loyaltyWallet => _loyaltyWallet;
+  bool get loyaltyWalletLoading => _loyaltyWalletLoading;
+  Failure? get loyaltyWalletFailure => _loyaltyWalletFailure;
+  List<LoyaltyTransactionModel> get loyaltyTransactions => _loyaltyTransactions;
+  String? get loyaltyTransactionsNextCursor => _loyaltyTransactionsNextCursor;
+  bool get loyaltyTransactionsLoading => _loyaltyTransactionsLoading;
+  bool get loyaltyTransactionsLoadingMore => _loyaltyTransactionsLoadingMore;
+  Failure? get loyaltyTransactionsFailure => _loyaltyTransactionsFailure;
+  bool get hasMoreLoyaltyTransactions => _loyaltyTransactionsNextCursor != null;
   bool get isAuthenticated => _client != null;
   bool get isLoading => _status == MobileBackendStatus.loading;
 
@@ -122,6 +144,9 @@ class MobileBackendController extends ChangeNotifier {
             includeAll: true,
           ),
         );
+      }
+      if (message.opensLoyalty) {
+        unawaited(refreshLoyaltyWallet());
       }
     }
     _notifyListeners();
@@ -236,8 +261,27 @@ class MobileBackendController extends ChangeNotifier {
     return _refreshPaymentMethods(language: language, branchId: branchId);
   }
 
-  Future<Result<CustomerOrderModel>> createOrder(CreateOrderRequest request) {
-    return _createOrder(request);
+  Future<Result<CustomerOrderModel>> createOrder(
+    CreateOrderRequest request, {
+    required String idempotencyKey,
+  }) {
+    return _createOrder(request, idempotencyKey: idempotencyKey);
+  }
+
+  Future<Result<LoyaltyWalletModel>> refreshLoyaltyWallet() {
+    return _refreshLoyaltyWallet();
+  }
+
+  Future<Result<LoyaltyTransactionPageModel>> refreshLoyaltyTransactions({
+    int limit = 50,
+  }) {
+    return _refreshLoyaltyTransactions(limit: limit);
+  }
+
+  Future<Result<LoyaltyTransactionPageModel>> loadMoreLoyaltyTransactions({
+    int limit = 50,
+  }) {
+    return _loadMoreLoyaltyTransactions(limit: limit);
   }
 
   Future<Result<CustomerOrderModel>> refreshOrder({required String id}) {

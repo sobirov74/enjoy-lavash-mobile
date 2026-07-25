@@ -23,20 +23,44 @@ class NetworkFailure extends Failure {
 
 /// Server returned a non-2xx status code.
 class ServerFailure extends Failure {
-  const ServerFailure(this.statusCode, [super.message = 'Server error']);
+  const ServerFailure(
+    this.statusCode, [
+    super.message = 'Server error',
+    this.payload = const ApiFailurePayload(),
+  ]);
   final int statusCode;
+  final ApiFailurePayload payload;
+  String? get errorCode => payload.errorCode;
+  Object? get details => payload.details;
+  Map<String, dynamic> get metadata => payload.metadata;
+}
+
+class ApiFailurePayload {
+  const ApiFailurePayload({
+    this.errorCode,
+    this.details,
+    this.metadata = const <String, dynamic>{},
+  });
+
+  final String? errorCode;
+  final Object? details;
+  final Map<String, dynamic> metadata;
 }
 
 /// The request conflicts with the current server state (HTTP 409).
 class ConflictFailure extends ServerFailure {
-  const ConflictFailure([String message = 'Request conflict'])
-    : super(409, message);
+  const ConflictFailure([
+    String message = 'Request conflict',
+    ApiFailurePayload payload = const ApiFailurePayload(),
+  ]) : super(409, message, payload);
 }
 
 /// The request body is larger than the server accepts (HTTP 413).
 class PayloadTooLargeFailure extends ServerFailure {
-  const PayloadTooLargeFailure([String message = 'Request is too large'])
-    : super(413, message);
+  const PayloadTooLargeFailure([
+    String message = 'Request is too large',
+    ApiFailurePayload payload = const ApiFailurePayload(),
+  ]) : super(413, message, payload);
 }
 
 /// The action is temporarily rate limited (HTTP 429).
@@ -44,7 +68,8 @@ class RateLimitFailure extends ServerFailure {
   const RateLimitFailure({
     String message = 'Too many requests',
     this.retryAfter,
-  }) : super(429, message);
+    ApiFailurePayload payload = const ApiFailurePayload(),
+  }) : super(429, message, payload);
 
   final Duration? retryAfter;
 }
@@ -53,7 +78,8 @@ class RateLimitFailure extends ServerFailure {
 class ServiceUnavailableFailure extends ServerFailure {
   const ServiceUnavailableFailure([
     String message = 'Service temporarily unavailable',
-  ]) : super(503, message);
+    ApiFailurePayload payload = const ApiFailurePayload(),
+  ]) : super(503, message, payload);
 }
 
 /// Reading/writing local cache failed.

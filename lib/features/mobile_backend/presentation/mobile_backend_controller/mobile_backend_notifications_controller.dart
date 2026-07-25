@@ -231,6 +231,7 @@ extension _MobileBackendNotificationsController on MobileBackendController {
         language: locale ?? client.language,
         includeAll: _assignedPromotionsIncludeAll,
       ),
+      refreshLoyaltyWallet(),
     ]);
   }
 

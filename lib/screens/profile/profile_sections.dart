@@ -8,6 +8,7 @@ class _ProfileHeaderCard extends StatelessWidget {
     required this.subtitle,
     required this.bonusBalance,
     required this.onSignIn,
+    required this.onLoyaltyTap,
   });
 
   final bool isDark;
@@ -16,12 +17,13 @@ class _ProfileHeaderCard extends StatelessWidget {
   final String subtitle;
   final int? bonusBalance;
   final VoidCallback onSignIn;
+  final VoidCallback onLoyaltyTap;
 
   @override
   Widget build(BuildContext context) {
     return FadeSlideIn(
       child: GestureDetector(
-        onTap: isAuthorized ? null : onSignIn,
+        onTap: isAuthorized ? onLoyaltyTap : onSignIn,
         child: _SurfaceCard(
           isDark: isDark,
           padding: const EdgeInsets.all(20),
@@ -96,7 +98,7 @@ class _ProfileHeaderCard extends StatelessWidget {
                             Flexible(
                               child: TypographyText(
                                 '${L.of(context).accumulatedPoints}: '
-                                '$bonusBalance',
+                                '${NumberFormat.decimalPattern(Localizations.localeOf(context).toLanguageTag()).format(bonusBalance)}',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
@@ -501,26 +503,77 @@ class _RecentOrdersSection extends StatelessWidget {
 }
 
 class _CashbackSection extends StatelessWidget {
-  const _CashbackSection({required this.isDark});
+  const _CashbackSection({
+    required this.isDark,
+    required this.wallet,
+    this.onTap,
+  });
 
   final bool isDark;
+  final LoyaltyWalletModel? wallet;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final t = L.of(context);
 
+    final validity = wallet?.validityDays;
     return _SectionCard(
       isDark: isDark,
-      title: t.cashbackSystem,
+      title: t.loyaltyHowItWorks,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          _StatLine(label: t.perOrder, value: t.perOrderValue),
+          _ProfileLoyaltyInfo(
+            icon: Icons.equalizer_rounded,
+            text: t.loyaltyPointValueInfo,
+          ),
           const SizedBox(height: 10),
-          _StatLine(label: t.onePointEquals, value: t.onePointValue),
-          const SizedBox(height: 10),
-          _StatLine(label: t.canSpend, value: t.canSpendValue),
+          _ProfileLoyaltyInfo(
+            icon: Icons.auto_awesome_outlined,
+            text: t.loyaltyEarningInfo,
+          ),
+          if (validity != null && validity > 0) ...[
+            const SizedBox(height: 10),
+            _ProfileLoyaltyInfo(
+              icon: Icons.calendar_month_outlined,
+              text: '${t.validForDays}: $validity',
+            ),
+          ],
+          if (onTap != null) ...[
+            const SizedBox(height: 12),
+            TextButton.icon(
+              onPressed: onTap,
+              icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+              label: TypographyText(t.loyaltyWallet),
+            ),
+          ],
         ],
       ),
+    );
+  }
+}
+
+class _ProfileLoyaltyInfo extends StatelessWidget {
+  const _ProfileLoyaltyInfo({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Icon(icon, color: BaseColors.primary, size: 19),
+        const SizedBox(width: 10),
+        Expanded(
+          child: TypographyText(
+            text,
+            style: const TextStyle(fontSize: 13, height: 1.35),
+          ),
+        ),
+      ],
     );
   }
 }

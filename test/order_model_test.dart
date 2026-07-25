@@ -20,6 +20,7 @@ void main() {
       ],
       'paymentMethod': 'CASH',
       'promoCode': 'FIRST20',
+      'loyaltyRedemptionAmount': 0,
     });
   });
 
@@ -111,6 +112,7 @@ void main() {
         {'productId': 'prod-classic-lavash', 'quantity': 1, 'modifiers': []},
       ],
       'paymentMethod': 'CASH',
+      'loyaltyRedemptionAmount': 0,
     });
   });
 
@@ -133,6 +135,7 @@ void main() {
       ],
       'paymentMethod': 'CASH',
       'comment': 'Less spicy please',
+      'loyaltyRedemptionAmount': 0,
     });
   });
 

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/widgets/animated_error_message.dart';
+import 'package:enjoy_lavash_mobile/widgets/app_bottom_sheet_drag_handle.dart';
 import 'package:enjoy_lavash_mobile/widgets/app_snack_bar.dart';
 import 'package:enjoy_lavash_mobile/widgets/confirm_dialog.dart';
 import 'package:enjoy_lavash_mobile/widgets/fade_slide_in.dart';
@@ -22,11 +23,13 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/address_
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/branch_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/cart_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/client_profile_model.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/loyalty_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/order_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/presentation/mobile_backend_controller.dart';
 import 'package:enjoy_lavash_mobile/screens/authorization_screen.dart';
 import 'package:enjoy_lavash_mobile/screens/assigned_promotions_screen.dart';
 import 'package:enjoy_lavash_mobile/screens/notifications_screen.dart';
+import 'package:enjoy_lavash_mobile/screens/loyalty_wallet_screen.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
 import 'package:enjoy_lavash_mobile/theme/app_motion.dart';
 
@@ -52,6 +55,9 @@ Future<void> showProfileOrderDetailsSheet({
     isScrollControlled: true,
     useSafeArea: true,
     backgroundColor: Colors.transparent,
+    enableDrag: true,
+    isDismissible: true,
+    showDragHandle: false,
     builder: (context) {
       return _OrderDetailsSheet(
         order: order,
@@ -140,6 +146,9 @@ class _ProfileState extends State<Profile> {
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
+      enableDrag: true,
+      isDismissible: true,
+      showDragHandle: false,
       builder: (_) => const _DeleteAccountSheet(),
     );
   }
@@ -150,6 +159,8 @@ class _ProfileState extends State<Profile> {
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
+      enableDrag: true,
+      isDismissible: true,
       builder: (context) {
         return FractionallySizedBox(
           heightFactor: 0.92,
@@ -166,6 +177,12 @@ class _ProfileState extends State<Profile> {
     Navigator.of(
       context,
     ).push(MaterialPageRoute<void>(builder: (_) => const _AllOrdersScreen()));
+  }
+
+  Future<void> _openLoyaltyWallet(BuildContext context) {
+    return Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(builder: (_) => const LoyaltyWalletScreen()),
+    );
   }
 
   Future<void> _openNotifications(BuildContext context) async {
@@ -304,8 +321,11 @@ class _ProfileState extends State<Profile> {
                     isAuthorized: isAuthorized,
                     displayName: displayName,
                     subtitle: profileSubtitle,
-                    bonusBalance: client?.bonusBalance,
+                    bonusBalance:
+                        mobileBackend.loyaltyWallet?.spendableBalance ??
+                        client?.bonusBalance,
                     onSignIn: () => unawaited(_showAuthorizationModal(context)),
+                    onLoyaltyTap: () => unawaited(_openLoyaltyWallet(context)),
                   ),
                   const SizedBox(height: 16),
                   if (backendFailure != null) ...[
@@ -386,7 +406,13 @@ class _ProfileState extends State<Profile> {
                     const SizedBox(height: 16),
                   ],
 
-                  _CashbackSection(isDark: isDark),
+                  _CashbackSection(
+                    isDark: isDark,
+                    wallet: mobileBackend.loyaltyWallet,
+                    onTap: isAuthorized
+                        ? () => unawaited(_openLoyaltyWallet(context))
+                        : null,
+                  ),
                   const SizedBox(height: 16),
 
                   _ProfileActionsSection(

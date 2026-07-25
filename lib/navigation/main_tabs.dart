@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:enjoy_lavash_mobile/app/locale_controller.dart';
 import 'package:enjoy_lavash_mobile/app/location_controller.dart';
@@ -14,6 +15,7 @@ import 'package:enjoy_lavash_mobile/features/models/menu_product.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/address_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/branch_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/cart_model.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/loyalty_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/order_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/presentation/mobile_backend_controller.dart';
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
@@ -24,15 +26,19 @@ import 'package:enjoy_lavash_mobile/screens/branch_bottom_sheet.dart';
 import 'package:enjoy_lavash_mobile/screens/cart_screen.dart';
 import 'package:enjoy_lavash_mobile/screens/menu_screen.dart';
 import 'package:enjoy_lavash_mobile/screens/notifications_screen.dart';
+import 'package:enjoy_lavash_mobile/screens/loyalty_wallet_screen.dart';
 import 'package:enjoy_lavash_mobile/screens/profile.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
 import 'package:enjoy_lavash_mobile/theme/app_motion.dart';
 import 'package:enjoy_lavash_mobile/theme/theme_extensions.dart';
 import 'package:enjoy_lavash_mobile/utils/price_formatter.dart';
+import 'package:enjoy_lavash_mobile/widgets/app_bottom_sheet_drag_handle.dart';
 import 'package:enjoy_lavash_mobile/widgets/app_snack_bar.dart';
 import 'package:enjoy_lavash_mobile/widgets/fade_slide_in.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 part 'main_tabs/checkout_models.dart';
@@ -45,6 +51,12 @@ part 'main_tabs/payment_method_selector.dart';
 part 'main_tabs/promo_code_field.dart';
 part 'main_tabs/order_confirmation_items.dart';
 part 'main_tabs/checkout_preview_summary.dart';
+
+String _formatLoyaltyPoints(BuildContext context, int value) {
+  return NumberFormat.decimalPattern(
+    Localizations.localeOf(context).toLanguageTag(),
+  ).format(value);
+}
 
 class MainTabs extends StatefulWidget {
   const MainTabs({super.key});
@@ -176,6 +188,14 @@ class _MainTabsState extends State<MainTabs> {
 
     if (message.opensPromotions) {
       await _openAssignedPromotions(highlightedCode: message.promotionCode);
+      return;
+    }
+    if (message.opensLoyalty) {
+      await context.read<MobileBackendController>().refreshLoyaltyWallet();
+      if (!mounted) return;
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute<void>(builder: (_) => const LoyaltyWalletScreen()),
+      );
       return;
     }
     await _openNotifications();
@@ -504,8 +524,12 @@ class _MainTabsState extends State<MainTabs> {
       ..showSnackBar(appSnackBar(message));
   }
 
-  Future<void> _showOrderCreationError(Failure failure) async {
-    if (!mounted) return;
+  Future<_OrderFailureAction> _showOrderCreationError(
+    Failure failure, {
+    bool allowRetry = false,
+    bool allowRemovePoints = false,
+  }) async {
+    if (!mounted) return _OrderFailureAction.close;
 
     final t = L.of(context);
     final title = switch (failure) {
@@ -519,45 +543,69 @@ class _MainTabsState extends State<MainTabs> {
         ? t.orderCreateFailed
         : failure.message.trim();
 
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        scrollable: true,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        title: Row(
-          children: <Widget>[
-            const Icon(Icons.error_outline_rounded, color: BaseColors.primary),
-            const SizedBox(width: 10),
-            Expanded(
-              child: TypographyText(
-                title,
-                style: const TextStyle(
-                  fontSize: 19,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
+    return await showDialog<_OrderFailureAction>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            scrollable: true,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
             ),
-          ],
-        ),
-        content: SelectableText(
-          message,
-          style: const TextStyle(fontSize: 15, height: 1.4),
-        ),
-        actions: <Widget>[
-          TextButton.icon(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            icon: const Icon(Icons.close_rounded, size: 18),
-            label: TypographyText(t.close),
+            title: Row(
+              children: <Widget>[
+                const Icon(
+                  Icons.error_outline_rounded,
+                  color: BaseColors.primary,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TypographyText(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            content: SelectableText(
+              message,
+              style: const TextStyle(fontSize: 15, height: 1.4),
+            ),
+            actions: <Widget>[
+              TextButton.icon(
+                onPressed: () =>
+                    Navigator.of(dialogContext).pop(_OrderFailureAction.close),
+                icon: const Icon(Icons.close_rounded, size: 18),
+                label: TypographyText(t.close),
+              ),
+              if (allowRemovePoints)
+                TextButton.icon(
+                  onPressed: () => Navigator.of(
+                    dialogContext,
+                  ).pop(_OrderFailureAction.removePoints),
+                  icon: const Icon(Icons.stars_outlined, size: 18),
+                  label: TypographyText(t.continueWithoutPoints),
+                ),
+              if (allowRetry)
+                FilledButton.icon(
+                  onPressed: () => Navigator.of(
+                    dialogContext,
+                  ).pop(_OrderFailureAction.retry),
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  label: TypographyText(t.retry),
+                ),
+            ],
           ),
-        ],
-      ),
-    );
+        ) ??
+        _OrderFailureAction.close;
   }
 
   Future<CartPreviewRequest?> _buildCartPreviewRequest(
     List<CartLine> cartLines, {
     required MobileOrderType orderType,
     required MobilePaymentMethod paymentMethod,
+    int loyaltyRedemptionAmount = 0,
     String? promoCode,
   }) async {
     final t = L.of(context);
@@ -585,6 +633,7 @@ class _MainTabsState extends State<MainTabs> {
         items: items,
         paymentMethod: paymentMethod,
         promoCode: normalizedPromoCode,
+        loyaltyRedemptionAmount: loyaltyRedemptionAmount,
       );
     }
 
@@ -621,6 +670,7 @@ class _MainTabsState extends State<MainTabs> {
       items: items,
       paymentMethod: paymentMethod,
       promoCode: normalizedPromoCode,
+      loyaltyRedemptionAmount: loyaltyRedemptionAmount,
     );
   }
 
@@ -628,6 +678,7 @@ class _MainTabsState extends State<MainTabs> {
     List<CartLine> cartLines, {
     required MobileOrderType orderType,
     required MobilePaymentMethod paymentMethod,
+    required int loyaltyRedemptionAmount,
     String? promoCode,
   }) async {
     final request = await _buildCartPreviewRequest(
@@ -635,6 +686,7 @@ class _MainTabsState extends State<MainTabs> {
       orderType: orderType,
       paymentMethod: paymentMethod,
       promoCode: promoCode,
+      loyaltyRedemptionAmount: loyaltyRedemptionAmount,
     );
     if (!mounted || request == null) return null;
 
@@ -693,6 +745,15 @@ class _MainTabsState extends State<MainTabs> {
           preview.promotionDeliveryDiscountAmount,
       'serviceFeeAmount': preview.serviceFeeAmount,
       'totalAmount': preview.totalAmount,
+      'totalBeforePointsAmount': preview.totalBeforePointsAmount,
+      'loyalty': preview.loyalty == null
+          ? null
+          : {
+              'requestedPoints': preview.loyalty!.requestedPoints,
+              'appliedPoints': preview.loyalty!.appliedPoints,
+              'maxPointsToSpend': preview.loyalty!.maxPointsToSpend,
+              'estimatedEarnPoints': preview.loyalty!.estimatedEarnPoints,
+            },
       'promotionStatus': preview.hasPromotionStatus
           ? preview.promotionStatus.value
           : null,
@@ -713,6 +774,7 @@ class _MainTabsState extends State<MainTabs> {
     List<CartLine> cartLines, {
     required MobileOrderType orderType,
     required MobilePaymentMethod paymentMethod,
+    int loyaltyRedemptionAmount = 0,
     String? promoCode,
     String? comment,
   }) async {
@@ -743,6 +805,7 @@ class _MainTabsState extends State<MainTabs> {
         paymentMethod: paymentMethod,
         promoCode: normalizedPromoCode,
         comment: normalizedComment,
+        loyaltyRedemptionAmount: loyaltyRedemptionAmount,
       );
     }
 
@@ -781,6 +844,7 @@ class _MainTabsState extends State<MainTabs> {
       paymentMethod: paymentMethod,
       promoCode: normalizedPromoCode,
       comment: normalizedComment,
+      loyaltyRedemptionAmount: loyaltyRedemptionAmount,
     );
   }
 
@@ -792,6 +856,9 @@ class _MainTabsState extends State<MainTabs> {
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
+      enableDrag: true,
+      isDismissible: true,
+      showDragHandle: false,
       builder: (context) {
         return _OrderConfirmationSheet(
           cartLines: cartLines,
@@ -808,12 +875,14 @@ class _MainTabsState extends State<MainTabs> {
               ({
                 required MobileOrderType orderType,
                 required MobilePaymentMethod paymentMethod,
+                required int loyaltyRedemptionAmount,
                 String? promoCode,
               }) {
                 return _previewCartForCheckout(
                   cartLines,
                   orderType: orderType,
                   paymentMethod: paymentMethod,
+                  loyaltyRedemptionAmount: loyaltyRedemptionAmount,
                   promoCode: promoCode,
                 );
               },
@@ -849,6 +918,7 @@ class _MainTabsState extends State<MainTabs> {
       paymentMethod: orderDetails.paymentMethod,
       promoCode: orderDetails.promoCode,
       comment: orderDetails.comment,
+      loyaltyRedemptionAmount: orderDetails.loyaltyRedemptionAmount,
     );
     if (!mounted || request == null) return;
 
@@ -858,9 +928,44 @@ class _MainTabsState extends State<MainTabs> {
 
     _logOrderCreation('request', request.toJson());
     setState(() => _isCheckingOut = true);
-    final result = await context.read<MobileBackendController>().createOrder(
-      request,
-    );
+    final idempotencyKey = _newIdempotencyKey();
+    late Result<CustomerOrderModel> result;
+    var creationErrorShown = false;
+    var removePointsRequested = false;
+    do {
+      creationErrorShown = false;
+      result = await backend.createOrder(
+        request,
+        idempotencyKey: idempotencyKey,
+      );
+      if (!mounted) return;
+      if (result case Error(:final failure)) {
+        final retryable =
+            failure is NetworkFailure ||
+            failure is TimeoutFailure ||
+            (failure is ServerFailure && failure.statusCode >= 500);
+        if (retryable) {
+          creationErrorShown = true;
+          final canRemovePoints =
+              request.loyaltyRedemptionAmount > 0 &&
+              failure is ServerFailure &&
+              const <String>{
+                'LOYALTY_UNAVAILABLE',
+                'IIKO_LOYALTY_TENDER_UNAVAILABLE',
+              }.contains(failure.errorCode);
+          final action = await _showOrderCreationError(
+            failure,
+            allowRetry: true,
+            allowRemovePoints: canRemovePoints,
+          );
+          if (action == _OrderFailureAction.retry) {
+            continue;
+          }
+          removePointsRequested = action == _OrderFailureAction.removePoints;
+        }
+      }
+      break;
+    } while (true);
     if (result case Success(:final data)) {
       _logOrderCreation('response', data.raw);
     }
@@ -882,7 +987,9 @@ class _MainTabsState extends State<MainTabs> {
           _currentIndex = 2;
         });
         _persistCart();
-        final paymentUrl = data.paymentUrl?.trim();
+        final paymentUrl = data.totalAmount == 0
+            ? null
+            : data.paymentUrl?.trim();
         await Navigator.of(context).push<void>(
           PageRouteBuilder<void>(
             transitionDuration: AppMotion.duration(context, AppMotion.state),
@@ -908,7 +1015,20 @@ class _MainTabsState extends State<MainTabs> {
           ),
         );
       case Error(:final failure):
-        await _showOrderCreationError(failure);
+        final loyaltyCode = failure is ServerFailure ? failure.errorCode : null;
+        final resetLoyalty = const <String>{
+          'LOYALTY_AMOUNT_CHANGED',
+          'LOYALTY_DEBT_OUTSTANDING',
+          'LOYALTY_REDEMPTION_DISABLED',
+          'LOYALTY_PROGRAM_DISABLED',
+          'IDEMPOTENCY_KEY_REUSED',
+        }.contains(loyaltyCode);
+        if (resetLoyalty) {
+          await context.read<MobileBackendController>().refreshLoyaltyWallet();
+        }
+        if (!creationErrorShown) {
+          await _showOrderCreationError(failure);
+        }
         if (!mounted) return;
         if (failure is AuthFailure) {
           await Navigator.of(context).push<bool>(
@@ -918,7 +1038,22 @@ class _MainTabsState extends State<MainTabs> {
           );
           return;
         }
+        if (resetLoyalty || removePointsRequested) {
+          unawaited(_handleCheckout(cartLines));
+        }
     }
+  }
+
+  String _newIdempotencyKey() {
+    final bytes = List<int>.generate(16, (_) => Random.secure().nextInt(256));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    final value = bytes
+        .map((byte) => byte.toRadixString(16).padLeft(2, '0'))
+        .join();
+    return '${value.substring(0, 8)}-${value.substring(8, 12)}-'
+        '${value.substring(12, 16)}-${value.substring(16, 20)}-'
+        '${value.substring(20)}';
   }
 
   void _openCreatedOrder(CustomerOrderModel createdOrder) {

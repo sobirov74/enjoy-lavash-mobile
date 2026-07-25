@@ -5,8 +5,10 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/client_n
 import 'package:enjoy_lavash_mobile/features/mobile_backend/presentation/mobile_backend_controller.dart';
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/screens/assigned_promotions_screen.dart';
+import 'package:enjoy_lavash_mobile/screens/loyalty_wallet_screen.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
 import 'package:enjoy_lavash_mobile/widgets/animated_error_message.dart';
+import 'package:enjoy_lavash_mobile/widgets/app_bottom_sheet_drag_handle.dart';
 import 'package:enjoy_lavash_mobile/widgets/app_snack_bar.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
@@ -78,11 +80,23 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       return;
     }
 
+    if (notification.opensLoyalty) {
+      await context.read<MobileBackendController>().refreshLoyaltyWallet();
+      if (!mounted) return;
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute<void>(builder: (_) => const LoyaltyWalletScreen()),
+      );
+      return;
+    }
+
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
+      enableDrag: true,
+      isDismissible: true,
+      showDragHandle: false,
       builder: (_) => _NotificationDetailsSheet(notification: notification),
     );
   }
@@ -410,17 +424,10 @@ class _NotificationDetailsSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Center(
-            child: Container(
-              width: 44,
-              height: 5,
-              decoration: BoxDecoration(
-                color: isDark ? BaseColors.borderDark : BaseColors.borderLight,
-                borderRadius: BorderRadius.circular(99),
-              ),
-            ),
+          AppBottomSheetDragHandle(
+            color: isDark ? BaseColors.borderDark : BaseColors.borderLight,
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 12),
           Container(
             width: 52,
             height: 52,

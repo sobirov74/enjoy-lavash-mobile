@@ -1,6 +1,7 @@
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/promotion_model.dart';
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
+import 'package:enjoy_lavash_mobile/widgets/app_bottom_sheet_drag_handle.dart';
 import 'package:enjoy_lavash_mobile/widgets/app_snack_bar.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
@@ -57,6 +58,9 @@ class _PromoSliderState extends State<PromoSlider> {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
+      enableDrag: true,
+      isDismissible: true,
+      showDragHandle: false,
       builder: (context) => _PromotionDetailsSheet(
         promotion: promotion,
         locale: widget.locale,
@@ -285,19 +289,12 @@ class _PromotionDetailsSheet extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.2)
-                        : Colors.black.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
+              AppBottomSheetDragHandle(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.2)
+                    : Colors.black.withValues(alpha: 0.1),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 8),
               TypographyText(
                 promotion.title.isEmpty ? t.promotionDetails : promotion.title,
                 style: const TextStyle(

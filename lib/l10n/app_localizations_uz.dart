@@ -844,4 +844,153 @@ class LUz extends L {
 
   @override
   String get kitchenOrder => 'Oshxona buyurtmasi';
+
+  @override
+  String get loyaltyWallet => 'Mening ballarim';
+
+  @override
+  String get spendablePoints => 'Sarflash uchun mavjud';
+
+  @override
+  String get reservedPoints => 'Buyurtmalar uchun band qilingan';
+
+  @override
+  String get loyaltyDebt => 'Ballar bo\'yicha qarz';
+
+  @override
+  String get loyaltyDebtHint => 'Yangi ballar avval ushbu qarzni qoplaydi.';
+
+  @override
+  String get pointsExpiringSoon => '7 kun ichida tugaydi';
+
+  @override
+  String get nextPointsExpiry => 'Eng yaqin tugash sanasi';
+
+  @override
+  String get loyaltyHistory => 'Ballar tarixi';
+
+  @override
+  String get loyaltyHistoryEmpty =>
+      'Ballar bilan amallar shu yerda ko\'rinadi.';
+
+  @override
+  String get loyaltyProgramUnavailable =>
+      'Ballar dasturi vaqtincha mavjud emas.';
+
+  @override
+  String get loyaltyRedemptionUnavailable =>
+      'Hozir ballarni sarflash imkoni yo\'q.';
+
+  @override
+  String get loyaltyHowItWorks => 'Ballar qanday ishlaydi';
+
+  @override
+  String get loyaltyPointValueInfo => '1 ball 1 so\'mga teng.';
+
+  @override
+  String get loyaltyEarningInfo =>
+      'Ball miqdori buyurtma yetkazilgandagi faol aksiyaga bog\'liq.';
+
+  @override
+  String get loyaltyValidityInfo =>
+      'Olingan ballar ko\'rsatilgan muddat davomida amal qiladi.';
+
+  @override
+  String get loyaltyFeesDeliveryAllowed =>
+      'Yetkazib berishni ballar bilan to\'lash mumkin.';
+
+  @override
+  String get loyaltyFeesDeliveryNotAllowed =>
+      'Yetkazib berishni ballar bilan to\'lab bo\'lmaydi.';
+
+  @override
+  String get loyaltyFeesServiceAllowed =>
+      'Xizmat haqini ballar bilan to\'lash mumkin.';
+
+  @override
+  String get loyaltyFeesServiceNotAllowed =>
+      'Xizmat haqini ballar bilan to\'lab bo\'lmaydi.';
+
+  @override
+  String get validForDays => 'Amal qilish muddati (kun)';
+
+  @override
+  String get usePoints => 'Ballar bilan to\'lash';
+
+  @override
+  String get pointsAvailable => 'Mavjud ballar';
+
+  @override
+  String get pointsInputHint => 'Butun ball kiriting';
+
+  @override
+  String get useMaximum => 'Maksimumini ishlatish';
+
+  @override
+  String get clearPoints => 'Tozalash';
+
+  @override
+  String get continueWithoutPoints => 'Ballarsiz davom etish';
+
+  @override
+  String get pointsDebtCheckout =>
+      'Qarz mavjud paytda ballarni ishlatib bo\'lmaydi.';
+
+  @override
+  String get fullyPaidWithPoints => 'To\'liq ballar bilan to\'landi';
+
+  @override
+  String get orderBeforePoints => 'Ballargacha buyurtma summasi';
+
+  @override
+  String get pointsUsed => 'Ishlatilgan ballar';
+
+  @override
+  String get amountToPay => 'To\'lov summasi';
+
+  @override
+  String get estimatedPoints => 'Taxminiy ballar';
+
+  @override
+  String get estimatedPointsHint =>
+      'Yakuniy miqdor buyurtma yetkazilganda aniqlanadi.';
+
+  @override
+  String get loyaltyPending => 'Yetkazilgandan so\'ng hisoblanadi';
+
+  @override
+  String get loyaltyEarned => 'Ballar qo\'shildi';
+
+  @override
+  String get loyaltyNoReward => 'Ball berilmadi';
+
+  @override
+  String get loyaltyReversed => 'Ball berish bekor qilindi';
+
+  @override
+  String get loyaltyRestored => 'Ballar qaytarildi';
+
+  @override
+  String get transactionEarn => 'Ballar olindi';
+
+  @override
+  String get transactionSpend => 'Ballar ishlatildi';
+
+  @override
+  String get transactionRelease => 'Ballar qaytarildi';
+
+  @override
+  String get transactionExpiry => 'Ballar muddati tugadi';
+
+  @override
+  String get transactionReversal => 'Ball berish bekor qilindi';
+
+  @override
+  String get transactionDebtRepayment => 'Qarz qoplandi';
+
+  @override
+  String get transactionOpeningBalance => 'Boshlang\'ich balans';
+
+  @override
+  String get transactionBalanceUpdate => 'Balans yangilandi';
 }

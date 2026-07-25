@@ -26,6 +26,8 @@ class ApiEndpoints {
   static const clientNotificationsReadAll =
       "/clients/me/notifications/read-all";
   static const clientPromotions = "/clients/me/promotions";
+  static const clientLoyaltyWallet = "/clients/me/loyalty/wallet";
+  static const clientLoyaltyTransactions = "/clients/me/loyalty/transactions";
   static const filesUpload = "/files/upload";
   static const filesDelete = "/files/delete";
 

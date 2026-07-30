@@ -3,6 +3,7 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/presentation/mobile_
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
 import 'package:enjoy_lavash_mobile/widgets/app_bottom_sheet_drag_handle.dart';
+import 'package:enjoy_lavash_mobile/widgets/app_modal_bottom_sheet.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -11,7 +12,7 @@ Future<BranchModel?> showBranchBottomSheet(
   BuildContext context, {
   String? selectedBranchId,
 }) {
-  return showModalBottomSheet<BranchModel>(
+  return showAppModalBottomSheet<BranchModel>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,

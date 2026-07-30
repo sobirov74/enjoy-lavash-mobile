@@ -148,6 +148,10 @@
   "birthDateTitle": "Ваш особенный день 🎂",
   "birthDate": "Дата рождения",
   "selectBirthDate": "Выберите дату рождения",
+  "birthDateSubtitle": "Выберите дату несколькими прокрутками. Мы используем её для подарков ко дню рождения.",
+  "birthDateDay": "День",
+  "birthDateMonth": "Месяц",
+  "birthDateYear": "Год",
   "otpCodeExpiresIn": "Код действует ещё {time}",
   "@otpCodeExpiresIn": {
     "placeholders": {
@@ -200,6 +204,26 @@
   "calculatingTotal": "Считаем итог",
   "recalculate": "Пересчитать",
   "orderPreview": "Расчет заказа",
+  "orderDetails": "Детали заказа",
+  "viewOrderDetails": "Посмотреть детали заказа",
+  "deliveryBranch": "Филиал доставки",
+  "deliveryDestination": "Адрес доставки",
+  "deliveryDistance": "Расстояние доставки",
+  "distanceMeters": "{distance} м",
+  "@distanceMeters": {
+    "placeholders": {
+      "distance": { "type": "String" }
+    }
+  },
+  "distanceKilometers": "{distance} км",
+  "@distanceKilometers": {
+    "placeholders": {
+      "distance": { "type": "String" }
+    }
+  },
+  "roadRoute": "Маршрут по дорогам",
+  "estimatedRoute": "Примерный маршрут",
+  "previewEstimateNotice": "Филиал, маршрут, баллы и итоговая сумма подтверждаются при создании заказа.",
   "items": "Товары",
   "modifiers": "Добавки",
   "serviceFee": "Сервисный сбор",

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/widgets/animated_error_message.dart';
 import 'package:enjoy_lavash_mobile/widgets/app_bottom_sheet_drag_handle.dart';
+import 'package:enjoy_lavash_mobile/widgets/app_modal_bottom_sheet.dart';
 import 'package:enjoy_lavash_mobile/widgets/app_snack_bar.dart';
 import 'package:enjoy_lavash_mobile/widgets/confirm_dialog.dart';
 import 'package:enjoy_lavash_mobile/widgets/fade_slide_in.dart';
@@ -50,7 +51,7 @@ Future<void> showProfileOrderDetailsSheet({
   required List<BranchModel> branches,
   required List<ClientAddress> addresses,
 }) {
-  return showModalBottomSheet<void>(
+  return showAppModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
@@ -67,6 +68,12 @@ Future<void> showProfileOrderDetailsSheet({
       );
     },
   );
+}
+
+Future<void> showAllOrdersScreen(BuildContext context) {
+  return Navigator.of(
+    context,
+  ).push(MaterialPageRoute<void>(builder: (_) => const _AllOrdersScreen()));
 }
 
 class Profile extends StatefulWidget {
@@ -141,7 +148,7 @@ class _ProfileState extends State<Profile> {
   }
 
   Future<void> _showDeleteAccountSheet(BuildContext context) {
-    return showModalBottomSheet<void>(
+    return showAppModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
@@ -154,7 +161,7 @@ class _ProfileState extends State<Profile> {
   }
 
   Future<void> _showAuthorizationModal(BuildContext context) {
-    return showModalBottomSheet<void>(
+    return showAppModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
@@ -174,9 +181,7 @@ class _ProfileState extends State<Profile> {
   }
 
   void _openAllOrders(BuildContext context) {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute<void>(builder: (_) => const _AllOrdersScreen()));
+    unawaited(showAllOrdersScreen(context));
   }
 
   Future<void> _openLoyaltyWallet(BuildContext context) {

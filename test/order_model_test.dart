@@ -26,6 +26,9 @@ void main() {
 
   test('parses cart preview promotion result fields', () {
     final preview = CartPreviewModel.fromJson({
+      'branchId': 'branch-chilanzar',
+      'deliveryDistanceMeters': 2150,
+      'deliveryDistanceSource': 'STRAIGHT_LINE_FALLBACK',
       'itemsAmount': 64000,
       'modifiersAmount': 10000,
       'discountAmount': 14800,
@@ -48,6 +51,12 @@ void main() {
     );
     expect(preview.promotionDeliveryDiscountAmount, 10000);
     expect(preview.bonusItems.single['productId'], 'prod-gift');
+    expect(preview.branchId, 'branch-chilanzar');
+    expect(preview.deliveryDistanceMeters, 2150);
+    expect(
+      preview.deliveryDistanceSource,
+      CartDeliveryDistanceSource.straightLineFallback,
+    );
   });
 
   test('uses backend message as cart preview promotion error fallback', () {

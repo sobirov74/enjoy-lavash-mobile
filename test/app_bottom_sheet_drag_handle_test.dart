@@ -1,4 +1,5 @@
 import 'package:enjoy_lavash_mobile/widgets/app_bottom_sheet_drag_handle.dart';
+import 'package:enjoy_lavash_mobile/widgets/app_modal_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -13,10 +14,10 @@ void main() {
             builder: (context) {
               return FilledButton(
                 onPressed: () {
-                  showModalBottomSheet<void>(
+                  showAppModalBottomSheet<void>(
                     context: context,
                     isScrollControlled: true,
-                    enableDrag: false,
+                    enableDrag: true,
                     showDragHandle: false,
                     builder: (_) => const SizedBox(
                       height: 600,
@@ -46,7 +47,7 @@ void main() {
 
     await tester.drag(
       find.byKey(const ValueKey<String>('bottom-sheet-drag-handle')),
-      const Offset(0, 100),
+      const Offset(0, 180),
     );
     await tester.pumpAndSettle();
 
@@ -61,9 +62,9 @@ void main() {
             builder: (context) {
               return FilledButton(
                 onPressed: () {
-                  showModalBottomSheet<void>(
+                  showAppModalBottomSheet<void>(
                     context: context,
-                    enableDrag: false,
+                    enableDrag: true,
                     showDragHandle: false,
                     builder: (_) => const Column(
                       mainAxisSize: MainAxisSize.min,
@@ -91,5 +92,55 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Sheet stays open'), findsOneWidget);
+  });
+
+  testWidgets('closes when dragged downward from the sheet content', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) {
+              return FilledButton(
+                onPressed: () {
+                  showAppModalBottomSheet<void>(
+                    context: context,
+                    showDragHandle: false,
+                    builder: (_) => const SizedBox(
+                      height: 500,
+                      child: Column(
+                        children: <Widget>[
+                          AppBottomSheetDragHandle(),
+                          Expanded(
+                            child: Center(
+                              child: Text(
+                                'Drag from here',
+                                key: ValueKey<String>('sheet-content'),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+                child: const Text('Open sheet'),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open sheet'));
+    await tester.pumpAndSettle();
+    await tester.drag(
+      find.byKey(const ValueKey<String>('sheet-content')),
+      const Offset(0, 180),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Drag from here'), findsNothing);
   });
 }

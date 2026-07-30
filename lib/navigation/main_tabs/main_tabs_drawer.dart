@@ -5,12 +5,18 @@ class _MainTabsDrawer extends StatelessWidget {
     required this.isDark,
     required this.t,
     required this.onTabSelected,
+    required this.onNotificationsTap,
+    required this.onPromotionsTap,
+    required this.onOrdersTap,
     required this.onShareApp,
   });
 
   final bool isDark;
   final L t;
   final ValueChanged<int> onTabSelected;
+  final VoidCallback onNotificationsTap;
+  final VoidCallback onPromotionsTap;
+  final VoidCallback onOrdersTap;
   final VoidCallback onShareApp;
 
   @override
@@ -45,6 +51,21 @@ class _MainTabsDrawer extends StatelessWidget {
               title: t.tabProfile,
               onTap: () => _selectTab(context, 2),
             ),
+            _MainTabsDrawerItem(
+              icon: Icons.notifications_rounded,
+              title: t.notifications,
+              onTap: () => _openPage(context, onNotificationsTap),
+            ),
+            _MainTabsDrawerItem(
+              icon: Icons.local_offer_rounded,
+              title: t.myPromotions,
+              onTap: () => _openPage(context, onPromotionsTap),
+            ),
+            _MainTabsDrawerItem(
+              icon: Icons.receipt_long_rounded,
+              title: t.allOrders,
+              onTap: () => _openPage(context, onOrdersTap),
+            ),
             const Spacer(),
             Divider(
               color: isDark ? const Color(0xFF2A2522) : const Color(0xFFE0DBD5),
@@ -69,6 +90,11 @@ class _MainTabsDrawer extends StatelessWidget {
     Navigator.pop(context);
     onTabSelected(index);
   }
+
+  void _openPage(BuildContext context, VoidCallback onTap) {
+    Navigator.pop(context);
+    onTap();
+  }
 }
 
 class _MainTabsDrawerHeader extends StatelessWidget {
@@ -80,16 +106,13 @@ class _MainTabsDrawerHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
       child: Row(
         children: <Widget>[
-          Image.asset(
-            'web-design/Mobile app design request/src/imports/image-1.png',
-            height: 36,
-          ),
+          Image.asset('assets/images/enjoy-logo.png', height: 28),
           const SizedBox(width: 12),
           const TypographyText(
-            'EnjoyLavash',
+            'Enjoy Lavash',
             style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
               letterSpacing: -0.9,
             ),
           ),

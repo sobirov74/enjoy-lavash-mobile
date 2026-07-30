@@ -1,6 +1,10 @@
 import 'package:enjoy_lavash_mobile/core/api/api_client.dart';
 import 'package:enjoy_lavash_mobile/core/error/result.dart';
 import 'package:enjoy_lavash_mobile/core/services/mobile_push_notification_service.dart';
+import 'package:enjoy_lavash_mobile/app/locale_controller.dart';
+import 'package:enjoy_lavash_mobile/app/location_controller.dart';
+import 'package:enjoy_lavash_mobile/app/theme_controller.dart';
+import 'package:enjoy_lavash_mobile/core/services/yandex_geocoder_service.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/assigned_promotion_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/cart_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/catalog_model.dart';
@@ -10,15 +14,23 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/entities/mobi
 import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/repositories/mobile_backend_repository.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/presentation/mobile_backend_controller.dart';
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
+import 'package:enjoy_lavash_mobile/navigation/main_tabs.dart';
 import 'package:enjoy_lavash_mobile/screens/assigned_promotions_screen.dart';
 import 'package:enjoy_lavash_mobile/screens/notifications_screen.dart';
+import 'package:enjoy_lavash_mobile/screens/profile.dart';
 import 'package:enjoy_lavash_mobile/theme/light_theme.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
 
   testWidgets('notification inbox fits a compact mobile viewport', (
     tester,
@@ -60,6 +72,57 @@ void main() {
     expect(find.text('Use in order'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('all orders exposes button and pull-to-refresh controls', (
+    tester,
+  ) async {
+    final controller = await _controller();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      _host(
+        controller: controller,
+        child: Builder(
+          builder: (context) => TextButton(
+            onPressed: () => showAllOrdersScreen(context),
+            child: const Text('Open orders'),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open orders'));
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
+    expect(find.byType(RefreshIndicator), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('missing birth date is prompted once at startup and can close', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final controller = await _controller();
+    addTearDown(controller.dispose);
+
+    await tester.pumpWidget(_mainTabsHost(controller));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Your special day 🎂'), findsOneWidget);
+    expect(find.byType(CupertinoPicker), findsNWidgets(3));
+
+    await tester.tap(
+      find.byKey(const ValueKey<String>('birth-date-close-button')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Your special day 🎂'), findsNothing);
+    await tester.pump();
+    expect(find.text('Your special day 🎂'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 }
 
 Future<MobileBackendController> _controller() async {
@@ -76,14 +139,41 @@ Widget _host({
   required MobileBackendController controller,
   required Widget child,
 }) {
-  return ChangeNotifierProvider<MobileBackendController>.value(
-    value: controller,
+  return MultiProvider(
+    providers: [
+      ChangeNotifierProvider<MobileBackendController>.value(value: controller),
+      ChangeNotifierProvider<LocaleController>(
+        create: (_) => LocaleController(),
+      ),
+    ],
     child: MaterialApp(
       theme: lightTheme,
       locale: const Locale('en'),
       localizationsDelegates: L.localizationsDelegates,
       supportedLocales: L.supportedLocales,
       home: child,
+    ),
+  );
+}
+
+Widget _mainTabsHost(MobileBackendController controller) {
+  return MultiProvider(
+    providers: [
+      ChangeNotifierProvider<MobileBackendController>.value(value: controller),
+      ChangeNotifierProvider<LocaleController>(
+        create: (_) => LocaleController(),
+      ),
+      ChangeNotifierProvider<ThemeController>(create: (_) => ThemeController()),
+      ChangeNotifierProvider<LocationController>(
+        create: (_) => LocationController(YandexGeocoderService()),
+      ),
+    ],
+    child: MaterialApp(
+      theme: lightTheme,
+      locale: const Locale('en'),
+      localizationsDelegates: L.localizationsDelegates,
+      supportedLocales: L.supportedLocales,
+      home: const MainTabs(),
     ),
   );
 }

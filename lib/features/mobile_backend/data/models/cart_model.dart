@@ -189,6 +189,25 @@ class CartPreviewRequest {
   }
 }
 
+enum CartDeliveryDistanceSource {
+  road('ROAD'),
+  straightLineFallback('STRAIGHT_LINE_FALLBACK'),
+  unknown('UNKNOWN');
+
+  const CartDeliveryDistanceSource(this.value);
+
+  final String value;
+
+  static CartDeliveryDistanceSource fromJson(String? value) {
+    return switch (value?.trim().toUpperCase()) {
+      'ROAD' => CartDeliveryDistanceSource.road,
+      'STRAIGHT_LINE_FALLBACK' =>
+        CartDeliveryDistanceSource.straightLineFallback,
+      _ => CartDeliveryDistanceSource.unknown,
+    };
+  }
+}
+
 class CartPreviewModel {
   const CartPreviewModel({
     required this.itemsAmount,
@@ -206,6 +225,7 @@ class CartPreviewModel {
     this.appliedPromotion,
     this.branchId,
     this.deliveryDistanceMeters,
+    this.deliveryDistanceSource = CartDeliveryDistanceSource.unknown,
     this.loyalty,
   });
 
@@ -224,6 +244,7 @@ class CartPreviewModel {
   final AppliedPromotionModel? appliedPromotion;
   final String? branchId;
   final int? deliveryDistanceMeters;
+  final CartDeliveryDistanceSource deliveryDistanceSource;
   final CartLoyaltyPreviewModel? loyalty;
 
   factory CartPreviewModel.fromJson(Map<String, dynamic> json) {
@@ -285,6 +306,10 @@ class CartPreviewModel {
         'deliveryDistanceMeters',
         'delivery_distance_meters',
       ]),
+      deliveryDistanceSource: CartDeliveryDistanceSource.fromJson(
+        stringOrNull(json['deliveryDistanceSource']) ??
+            stringOrNull(json['delivery_distance_source']),
+      ),
       loyalty: loyaltyJson.isEmpty
           ? null
           : CartLoyaltyPreviewModel.fromJson(loyaltyJson),

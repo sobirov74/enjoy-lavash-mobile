@@ -380,6 +380,19 @@ class LRu extends L {
   String get selectBirthDate => 'Выберите дату рождения';
 
   @override
+  String get birthDateSubtitle =>
+      'Выберите дату несколькими прокрутками. Мы используем её для подарков ко дню рождения.';
+
+  @override
+  String get birthDateDay => 'День';
+
+  @override
+  String get birthDateMonth => 'Месяц';
+
+  @override
+  String get birthDateYear => 'Год';
+
+  @override
   String otpCodeExpiresIn(String time) {
     return 'Код действует ещё $time';
   }
@@ -478,6 +491,41 @@ class LRu extends L {
 
   @override
   String get orderPreview => 'Расчет заказа';
+
+  @override
+  String get orderDetails => 'Детали заказа';
+
+  @override
+  String get viewOrderDetails => 'Посмотреть детали заказа';
+
+  @override
+  String get deliveryBranch => 'Филиал доставки';
+
+  @override
+  String get deliveryDestination => 'Адрес доставки';
+
+  @override
+  String get deliveryDistance => 'Расстояние доставки';
+
+  @override
+  String distanceMeters(String distance) {
+    return '$distance м';
+  }
+
+  @override
+  String distanceKilometers(String distance) {
+    return '$distance км';
+  }
+
+  @override
+  String get roadRoute => 'Маршрут по дорогам';
+
+  @override
+  String get estimatedRoute => 'Примерный маршрут';
+
+  @override
+  String get previewEstimateNotice =>
+      'Филиал, маршрут, баллы и итоговая сумма подтверждаются при создании заказа.';
 
   @override
   String get items => 'Товары';
@@ -808,9 +856,6 @@ class LRu extends L {
 
   @override
   String get retryPaymentFailed => 'Не удалось повторить оплату.';
-
-  @override
-  String get orderDetails => 'Детали заказа';
 
   @override
   String get currentStatus => 'Текущий статус';

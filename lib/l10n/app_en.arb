@@ -148,6 +148,10 @@
   "birthDateTitle": "Your special day 🎂",
   "birthDate": "Date of birth",
   "selectBirthDate": "Select your date of birth",
+  "birthDateSubtitle": "Choose it in a few quick scrolls. We'll use it for birthday surprises.",
+  "birthDateDay": "Day",
+  "birthDateMonth": "Month",
+  "birthDateYear": "Year",
   "otpCodeExpiresIn": "Code expires in {time}",
   "@otpCodeExpiresIn": {
     "placeholders": {
@@ -200,6 +204,26 @@
   "calculatingTotal": "Calculating total",
   "recalculate": "Recalculate",
   "orderPreview": "Order preview",
+  "orderDetails": "Order details",
+  "viewOrderDetails": "View order details",
+  "deliveryBranch": "Delivery branch",
+  "deliveryDestination": "Delivery destination",
+  "deliveryDistance": "Delivery distance",
+  "distanceMeters": "{distance} m",
+  "@distanceMeters": {
+    "placeholders": {
+      "distance": { "type": "String" }
+    }
+  },
+  "distanceKilometers": "{distance} km",
+  "@distanceKilometers": {
+    "placeholders": {
+      "distance": { "type": "String" }
+    }
+  },
+  "roadRoute": "Road route",
+  "estimatedRoute": "Estimated route",
+  "previewEstimateNotice": "The branch, route, points, and final amount are confirmed when the order is created.",
   "items": "Items",
   "modifiers": "Modifiers",
   "serviceFee": "Service fee",

@@ -6,6 +6,7 @@
 // tree, read text, and verify that the values of widget properties are correct.
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -53,5 +54,19 @@ void main() {
     expect(find.text('Enjoy Lavash'), findsOneWidget);
     expect(find.text('Меню'), findsOneWidget);
     expect(find.text('Список пуст'), findsOneWidget);
+
+    final pageView = find.byKey(const ValueKey<String>('main-tabs-page-view'));
+    expect(
+      tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
+      0,
+    );
+
+    await tester.drag(pageView, const Offset(-500, 0));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
+      1,
+    );
   });
 }

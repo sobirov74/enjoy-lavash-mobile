@@ -11,6 +11,7 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/presentation/mobile_
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/screens/authorization_screen.dart';
 import 'package:enjoy_lavash_mobile/theme/light_theme.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -139,6 +140,17 @@ void main() {
 
     expect(find.text('Name (optional)'), findsNothing);
     expect(find.text('Date of birth'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey<String>('birth-date-close-button')),
+      findsOneWidget,
+    );
+
+    await tester.tap(
+      find.byKey(const ValueKey<String>('birth-date-close-button')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Your special day 🎂'), findsNothing);
   });
 
   testWidgets('returning client with a birth date completes authorization', (
@@ -163,7 +175,7 @@ void main() {
   ) async {
     Map<String, Object?>? profileUpdate;
     final now = DateTime.now();
-    final expectedDate = '${now.year - 18}-01-01';
+    final expectedDate = '${now.year - 25}-01-01';
     await _pumpAuthorizationLauncher(
       tester,
       _authAdapter(
@@ -175,18 +187,12 @@ void main() {
 
     await _completeOtp(tester);
     await _pumpUntilFound(tester, find.text('Your special day 🎂'));
-    await tester.tap(find.byKey(const ValueKey<String>('birth-date-field')));
-    await _pumpUntilFound(tester, find.text('OK'));
-    final datePicker = tester.widget<DatePickerDialog>(
-      find.byType(DatePickerDialog),
+
+    expect(
+      find.byKey(const ValueKey<String>('birth-date-close-button')),
+      findsOneWidget,
     );
-    expect(datePicker.firstDate, DateTime(1900));
-    expect(datePicker.lastDate, DateTime(now.year, now.month, now.day));
-    await tester.tap(find.text('OK'));
-    await _pumpUntilFound(
-      tester,
-      find.byKey(const ValueKey<String>('birth-date-save-button')),
-    );
+    expect(find.byType(CupertinoPicker), findsNWidgets(3));
     await tester.tap(
       find.byKey(const ValueKey<String>('birth-date-save-button')),
     );

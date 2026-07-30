@@ -807,6 +807,30 @@ abstract class L {
   /// **'Tug\'ilgan sanani tanlang'**
   String get selectBirthDate;
 
+  /// No description provided for @birthDateSubtitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bir necha aylantirishda tanlang. Tug\'ilgan kuningiz uchun maxsus sovg\'alar tayyorlaymiz.'**
+  String get birthDateSubtitle;
+
+  /// No description provided for @birthDateDay.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kun'**
+  String get birthDateDay;
+
+  /// No description provided for @birthDateMonth.
+  ///
+  /// In uz, this message translates to:
+  /// **'Oy'**
+  String get birthDateMonth;
+
+  /// No description provided for @birthDateYear.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yil'**
+  String get birthDateYear;
+
   /// No description provided for @otpCodeExpiresIn.
   ///
   /// In uz, this message translates to:
@@ -986,6 +1010,66 @@ abstract class L {
   /// In uz, this message translates to:
   /// **'Buyurtma hisobi'**
   String get orderPreview;
+
+  /// No description provided for @orderDetails.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma tafsilotlari'**
+  String get orderDetails;
+
+  /// No description provided for @viewOrderDetails.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma tafsilotlarini ko\'rish'**
+  String get viewOrderDetails;
+
+  /// No description provided for @deliveryBranch.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazib beruvchi filial'**
+  String get deliveryBranch;
+
+  /// No description provided for @deliveryDestination.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazib berish manzili'**
+  String get deliveryDestination;
+
+  /// No description provided for @deliveryDistance.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazib berish masofasi'**
+  String get deliveryDistance;
+
+  /// No description provided for @distanceMeters.
+  ///
+  /// In uz, this message translates to:
+  /// **'{distance} m'**
+  String distanceMeters(String distance);
+
+  /// No description provided for @distanceKilometers.
+  ///
+  /// In uz, this message translates to:
+  /// **'{distance} km'**
+  String distanceKilometers(String distance);
+
+  /// No description provided for @roadRoute.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yo\'l bo\'yicha marshrut'**
+  String get roadRoute;
+
+  /// No description provided for @estimatedRoute.
+  ///
+  /// In uz, this message translates to:
+  /// **'Taxminiy marshrut'**
+  String get estimatedRoute;
+
+  /// No description provided for @previewEstimateNotice.
+  ///
+  /// In uz, this message translates to:
+  /// **'Filial, marshrut, ballar va yakuniy summa buyurtma yaratilganda tasdiqlanadi.'**
+  String get previewEstimateNotice;
 
   /// No description provided for @items.
   ///
@@ -1598,12 +1682,6 @@ abstract class L {
   /// In uz, this message translates to:
   /// **'To\'lovni qayta urinish imkoni bo\'lmadi.'**
   String get retryPaymentFailed;
-
-  /// No description provided for @orderDetails.
-  ///
-  /// In uz, this message translates to:
-  /// **'Buyurtma tafsilotlari'**
-  String get orderDetails;
 
   /// No description provided for @currentStatus.
   ///

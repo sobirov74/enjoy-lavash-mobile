@@ -13,6 +13,7 @@ class _AllOrdersScreenState extends State<_AllOrdersScreen> {
   String _query = '';
   MobileOrderType? _typeFilter;
   MobileOrderStatus? _statusFilter;
+  bool _isRefreshing = false;
 
   @override
   void dispose() {
@@ -54,6 +55,36 @@ class _AllOrdersScreenState extends State<_AllOrdersScreen> {
           return haystack.contains(query);
         })
         .toList(growable: false);
+  }
+
+  Future<void> _refreshOrders() async {
+    if (_isRefreshing) return;
+
+    setState(() => _isRefreshing = true);
+    try {
+      await context.read<MobileBackendController>().refreshCustomerData();
+    } finally {
+      if (mounted) {
+        setState(() => _isRefreshing = false);
+      }
+    }
+  }
+
+  Widget _scrollableFill({
+    required Widget child,
+    EdgeInsetsGeometry padding = EdgeInsets.zero,
+  }) {
+    return CustomScrollView(
+      physics: const AlwaysScrollableScrollPhysics(
+        parent: BouncingScrollPhysics(),
+      ),
+      slivers: <Widget>[
+        SliverPadding(
+          padding: padding,
+          sliver: SliverFillRemaining(hasScrollBody: false, child: child),
+        ),
+      ],
+    );
   }
 
   @override
@@ -114,6 +145,23 @@ class _AllOrdersScreenState extends State<_AllOrdersScreen> {
                         fontSize: 12,
                       ),
                     ),
+                  ),
+                  IconButton(
+                    tooltip: MaterialLocalizations.of(
+                      context,
+                    ).refreshIndicatorSemanticLabel,
+                    onPressed: _isRefreshing
+                        ? null
+                        : () => unawaited(_refreshOrders()),
+                    icon: _isRefreshing
+                        ? const SizedBox.square(
+                            dimension: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.4,
+                              color: BaseColors.primary,
+                            ),
+                          )
+                        : const Icon(Icons.refresh_rounded),
                   ),
                 ],
               ),
@@ -188,38 +236,39 @@ class _AllOrdersScreenState extends State<_AllOrdersScreen> {
             ),
             const SizedBox(height: 8),
             Expanded(
-              child: failure != null &&
-                      failure is! AuthFailure &&
-                      orders.isEmpty
-                  ? Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
-                      child: Center(
-                        child: AnimatedErrorMessage(
-                          failure: failure,
-                          onRetry: () => unawaited(
-                            context
-                                .read<MobileBackendController>()
-                                .refreshCustomerData(),
+              child: RefreshIndicator(
+                color: BaseColors.primary,
+                onRefresh: _refreshOrders,
+                child:
+                    failure != null && failure is! AuthFailure && orders.isEmpty
+                    ? _scrollableFill(
+                        padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
+                        child: Center(
+                          child: AnimatedErrorMessage(
+                            failure: failure,
+                            onRetry: () => unawaited(_refreshOrders()),
                           ),
                         ),
+                      )
+                    : filteredOrders.isEmpty
+                    ? _scrollableFill(child: _OrdersEmptyState(isDark: isDark))
+                    : ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                        physics: const AlwaysScrollableScrollPhysics(
+                          parent: BouncingScrollPhysics(),
+                        ),
+                        itemCount: filteredOrders.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 8),
+                        itemBuilder: (context, index) {
+                          return _OrderRow(
+                            order: filteredOrders[index],
+                            locale: locale,
+                            branches: backend.branches,
+                            addresses: backend.addresses,
+                          );
+                        },
                       ),
-                    )
-                  : filteredOrders.isEmpty
-                  ? _OrdersEmptyState(isDark: isDark)
-                  : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                      physics: const BouncingScrollPhysics(),
-                      itemCount: filteredOrders.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 8),
-                      itemBuilder: (context, index) {
-                        return _OrderRow(
-                          order: filteredOrders[index],
-                          locale: locale,
-                          branches: backend.branches,
-                          addresses: backend.addresses,
-                        );
-                      },
-                    ),
+              ),
             ),
           ],
         ),

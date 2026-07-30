@@ -148,6 +148,10 @@
   "birthDateTitle": "Sizning maxsus kuningiz 🎂",
   "birthDate": "Tug'ilgan sana",
   "selectBirthDate": "Tug'ilgan sanani tanlang",
+  "birthDateSubtitle": "Bir necha aylantirishda tanlang. Tug'ilgan kuningiz uchun maxsus sovg'alar tayyorlaymiz.",
+  "birthDateDay": "Kun",
+  "birthDateMonth": "Oy",
+  "birthDateYear": "Yil",
   "otpCodeExpiresIn": "Kod {time} dan keyin tugaydi",
   "@otpCodeExpiresIn": {
     "placeholders": {
@@ -200,6 +204,26 @@
   "calculatingTotal": "Jami hisoblanmoqda",
   "recalculate": "Qayta hisoblash",
   "orderPreview": "Buyurtma hisobi",
+  "orderDetails": "Buyurtma tafsilotlari",
+  "viewOrderDetails": "Buyurtma tafsilotlarini ko'rish",
+  "deliveryBranch": "Yetkazib beruvchi filial",
+  "deliveryDestination": "Yetkazib berish manzili",
+  "deliveryDistance": "Yetkazib berish masofasi",
+  "distanceMeters": "{distance} m",
+  "@distanceMeters": {
+    "placeholders": {
+      "distance": { "type": "String" }
+    }
+  },
+  "distanceKilometers": "{distance} km",
+  "@distanceKilometers": {
+    "placeholders": {
+      "distance": { "type": "String" }
+    }
+  },
+  "roadRoute": "Yo'l bo'yicha marshrut",
+  "estimatedRoute": "Taxminiy marshrut",
+  "previewEstimateNotice": "Filial, marshrut, ballar va yakuniy summa buyurtma yaratilganda tasdiqlanadi.",
   "items": "Mahsulotlar",
   "modifiers": "Qo'shimchalar",
   "serviceFee": "Xizmat haqi",

@@ -1,6 +1,7 @@
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
 import 'package:enjoy_lavash_mobile/widgets/app_bottom_sheet_drag_handle.dart';
+import 'package:enjoy_lavash_mobile/widgets/app_modal_bottom_sheet.dart';
 import 'package:enjoy_lavash_mobile/widgets/button.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
@@ -14,17 +15,13 @@ class AppCalendarBottomSheet extends StatefulWidget {
   /// Static helper method to open the bottom sheet
   static Future<DateTime?> show(BuildContext context, {DateTime? initialDate}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return showModalBottomSheet<DateTime>(
+    return showAppModalBottomSheet<DateTime>(
       context: context,
       isScrollControlled: true,
       backgroundColor: isDark ? BaseColors.black600 : BaseColors.white,
       enableDrag: true,
       isDismissible: true,
       showDragHandle: false,
-      transitionAnimationController: AnimationController(
-        vsync: Navigator.of(context),
-        duration: const Duration(milliseconds: 450),
-      ),
       builder: (_) => AppCalendarBottomSheet(initialDate: initialDate),
     );
   }

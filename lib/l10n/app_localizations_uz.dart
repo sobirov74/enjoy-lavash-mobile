@@ -382,6 +382,19 @@ class LUz extends L {
   String get selectBirthDate => 'Tug\'ilgan sanani tanlang';
 
   @override
+  String get birthDateSubtitle =>
+      'Bir necha aylantirishda tanlang. Tug\'ilgan kuningiz uchun maxsus sovg\'alar tayyorlaymiz.';
+
+  @override
+  String get birthDateDay => 'Kun';
+
+  @override
+  String get birthDateMonth => 'Oy';
+
+  @override
+  String get birthDateYear => 'Yil';
+
+  @override
   String otpCodeExpiresIn(String time) {
     return 'Kod $time dan keyin tugaydi';
   }
@@ -480,6 +493,41 @@ class LUz extends L {
 
   @override
   String get orderPreview => 'Buyurtma hisobi';
+
+  @override
+  String get orderDetails => 'Buyurtma tafsilotlari';
+
+  @override
+  String get viewOrderDetails => 'Buyurtma tafsilotlarini ko\'rish';
+
+  @override
+  String get deliveryBranch => 'Yetkazib beruvchi filial';
+
+  @override
+  String get deliveryDestination => 'Yetkazib berish manzili';
+
+  @override
+  String get deliveryDistance => 'Yetkazib berish masofasi';
+
+  @override
+  String distanceMeters(String distance) {
+    return '$distance m';
+  }
+
+  @override
+  String distanceKilometers(String distance) {
+    return '$distance km';
+  }
+
+  @override
+  String get roadRoute => 'Yo\'l bo\'yicha marshrut';
+
+  @override
+  String get estimatedRoute => 'Taxminiy marshrut';
+
+  @override
+  String get previewEstimateNotice =>
+      'Filial, marshrut, ballar va yakuniy summa buyurtma yaratilganda tasdiqlanadi.';
 
   @override
   String get items => 'Mahsulotlar';
@@ -811,9 +859,6 @@ class LUz extends L {
 
   @override
   String get retryPaymentFailed => 'To\'lovni qayta urinish imkoni bo\'lmadi.';
-
-  @override
-  String get orderDetails => 'Buyurtma tafsilotlari';
 
   @override
   String get currentStatus => 'Joriy holat';

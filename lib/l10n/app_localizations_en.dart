@@ -383,6 +383,19 @@ class LEn extends L {
   String get selectBirthDate => 'Select your date of birth';
 
   @override
+  String get birthDateSubtitle =>
+      'Choose it in a few quick scrolls. We\'ll use it for birthday surprises.';
+
+  @override
+  String get birthDateDay => 'Day';
+
+  @override
+  String get birthDateMonth => 'Month';
+
+  @override
+  String get birthDateYear => 'Year';
+
+  @override
   String otpCodeExpiresIn(String time) {
     return 'Code expires in $time';
   }
@@ -481,6 +494,41 @@ class LEn extends L {
 
   @override
   String get orderPreview => 'Order preview';
+
+  @override
+  String get orderDetails => 'Order details';
+
+  @override
+  String get viewOrderDetails => 'View order details';
+
+  @override
+  String get deliveryBranch => 'Delivery branch';
+
+  @override
+  String get deliveryDestination => 'Delivery destination';
+
+  @override
+  String get deliveryDistance => 'Delivery distance';
+
+  @override
+  String distanceMeters(String distance) {
+    return '$distance m';
+  }
+
+  @override
+  String distanceKilometers(String distance) {
+    return '$distance km';
+  }
+
+  @override
+  String get roadRoute => 'Road route';
+
+  @override
+  String get estimatedRoute => 'Estimated route';
+
+  @override
+  String get previewEstimateNotice =>
+      'The branch, route, points, and final amount are confirmed when the order is created.';
 
   @override
   String get items => 'Items';
@@ -817,9 +865,6 @@ class LEn extends L {
 
   @override
   String get retryPaymentFailed => 'Could not retry payment.';
-
-  @override
-  String get orderDetails => 'Order details';
 
   @override
   String get currentStatus => 'Current status';

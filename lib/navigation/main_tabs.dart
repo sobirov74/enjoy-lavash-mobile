@@ -33,8 +33,8 @@ import 'package:enjoy_lavash_mobile/theme/app_motion.dart';
 import 'package:enjoy_lavash_mobile/theme/theme_extensions.dart';
 import 'package:enjoy_lavash_mobile/utils/price_formatter.dart';
 import 'package:enjoy_lavash_mobile/widgets/app_bottom_sheet_drag_handle.dart';
+import 'package:enjoy_lavash_mobile/widgets/app_modal_bottom_sheet.dart';
 import 'package:enjoy_lavash_mobile/widgets/app_snack_bar.dart';
-import 'package:enjoy_lavash_mobile/widgets/fade_slide_in.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -66,6 +66,8 @@ class MainTabs extends StatefulWidget {
 }
 
 class _MainTabsState extends State<MainTabs> {
+  static const int _tabCount = 3;
+
   int _currentIndex = 0;
   int _selectedCategoryIndex = 0;
   final Map<String, int> _cart = <String, int>{};
@@ -76,6 +78,8 @@ class _MainTabsState extends State<MainTabs> {
   bool _isCheckingOut = false;
   bool _cartEditedSinceLaunch = false;
   bool _pushNavigationScheduled = false;
+  bool _startupBirthDatePromptChecked = false;
+  final PageController _tabPageController = PageController();
 
   /// Built once so cart/category updates don't rebuild the profile subtree;
   /// it listens to its providers internally.
@@ -88,6 +92,12 @@ class _MainTabsState extends State<MainTabs> {
   void initState() {
     super.initState();
     unawaited(_restoreSavedCart());
+  }
+
+  @override
+  void dispose() {
+    _tabPageController.dispose();
+    super.dispose();
   }
 
   Future<void> _restoreSavedCart() async {
@@ -161,15 +171,35 @@ class _MainTabsState extends State<MainTabs> {
     }
   }
 
+  Future<void> _openOrders() async {
+    if (!await _ensureAuthenticated() || !mounted) return;
+    await showAllOrdersScreen(context);
+  }
+
+  void _maybeShowStartupBirthDatePrompt(MobileBackendController backend) {
+    if (_startupBirthDatePromptChecked ||
+        backend.status != MobileBackendStatus.loaded ||
+        _pushNavigationScheduled) {
+      return;
+    }
+
+    _startupBirthDatePromptChecked = true;
+    final client = backend.client;
+    if (client == null || client.birthDate != null) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(showBirthDatePromptSheet(context));
+    });
+  }
+
   void _applyAssignedPromoCode(String code) {
     final normalized = code.trim();
     if (normalized.isEmpty || !mounted) return;
     final products = context.read<MobileBackendController>().menuProducts;
     final hasCartItems = _buildCartLines(products).isNotEmpty;
-    setState(() {
-      _promoCode = normalized;
-      _currentIndex = hasCartItems ? 1 : 0;
-    });
+    setState(() => _promoCode = normalized);
+    _selectTab(hasCartItems ? 1 : 0);
     ScaffoldMessenger.of(context).showSnackBar(
       appSnackBar(L.of(context).promoReadyForCheckout(normalized)),
     );
@@ -250,8 +280,39 @@ class _MainTabsState extends State<MainTabs> {
   }
 
   void _selectTab(int index) {
+    assert(index >= 0 && index < _tabCount);
     if (_currentIndex == index) return;
     setState(() => _currentIndex = index);
+    _animateToSelectedTab(index);
+  }
+
+  void _handleTabPageChanged(int index) {
+    if (_currentIndex == index) return;
+    setState(() => _currentIndex = index);
+  }
+
+  void _animateToSelectedTab(int index) {
+    if (!_tabPageController.hasClients) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _currentIndex == index) {
+          _animateToSelectedTab(index);
+        }
+      });
+      return;
+    }
+
+    final duration = AppMotion.duration(context, AppMotion.spatial);
+    if (duration == Duration.zero) {
+      _tabPageController.jumpToPage(index);
+      return;
+    }
+    unawaited(
+      _tabPageController.animateToPage(
+        index,
+        duration: duration,
+        curve: AppMotion.enter,
+      ),
+    );
   }
 
   void _setOrderType(MobileOrderType type) {
@@ -737,6 +798,7 @@ class _MainTabsState extends State<MainTabs> {
     return {
       'branchId': preview.branchId,
       'deliveryDistanceMeters': preview.deliveryDistanceMeters,
+      'deliveryDistanceSource': preview.deliveryDistanceSource.value,
       'itemsAmount': preview.itemsAmount,
       'modifiersAmount': preview.modifiersAmount,
       'discountAmount': preview.discountAmount,
@@ -851,7 +913,7 @@ class _MainTabsState extends State<MainTabs> {
   Future<_OrderCreationResult?> _showOrderConfirmation(
     List<CartLine> cartLines,
   ) async {
-    return showModalBottomSheet<_OrderCreationResult>(
+    return showAppModalBottomSheet<_OrderCreationResult>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
@@ -984,8 +1046,8 @@ class _MainTabsState extends State<MainTabs> {
           _cartEditedSinceLaunch = true;
           _cart.clear();
           _promoCode = '';
-          _currentIndex = 2;
         });
+        _selectTab(2);
         _persistCart();
         final paymentUrl = data.totalAmount == 0
             ? null
@@ -1059,9 +1121,7 @@ class _MainTabsState extends State<MainTabs> {
   void _openCreatedOrder(CustomerOrderModel createdOrder) {
     if (!mounted) return;
 
-    if (_currentIndex != 2) {
-      setState(() => _currentIndex = 2);
-    }
+    _selectTab(2);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -1111,6 +1171,7 @@ class _MainTabsState extends State<MainTabs> {
         });
       }
     }
+    _maybeShowStartupBirthDatePrompt(backend);
     final categories = backend.menuCategories;
     final products = backend.menuProducts;
     final promotions = backend.promotions
@@ -1136,65 +1197,75 @@ class _MainTabsState extends State<MainTabs> {
           isDark: isDark,
           t: t,
           onTabSelected: _selectTab,
+          onNotificationsTap: () => unawaited(_openNotifications()),
+          onPromotionsTap: () => unawaited(_openAssignedPromotions()),
+          onOrdersTap: () => unawaited(_openOrders()),
           onShareApp: () => unawaited(_shareApp(t)),
         ),
         body: SafeArea(
-          child: FadeIndexedStack(
-            index: _currentIndex,
+          child: PageView(
+            key: const ValueKey<String>('main-tabs-page-view'),
+            controller: _tabPageController,
+            onPageChanged: _handleTabPageChanged,
+            physics: const PageScrollPhysics(),
             children: <Widget>[
-              MenuScreen(
-                isDark: isDark,
-                isMenuLoading:
-                    backend.status == MobileBackendStatus.loading &&
-                    products.isEmpty,
-                menuErrorText:
-                    backend.status == MobileBackendStatus.error &&
-                        products.isEmpty
-                    ? backend.failure?.message
-                    : null,
-                menuFailure:
-                    backend.status == MobileBackendStatus.error &&
-                        products.isEmpty
-                    ? backend.failure
-                    : null,
-                selectedCategoryIndex: selectedCategoryIndex,
-                categories: categories,
-                products: products,
-                promotions: promotions,
-                orderType: _orderType,
-                selectedBranch: _selectedBranch,
-                onCategorySelected: _setSelectedCategory,
-                onAddToCart: _addToCart,
-                onDecreaseFromCart: (product) => _updateCart(product, -1),
-                onCartTap: () => _selectTab(1),
-                onOrderTypeChanged: _setOrderType,
-                onBranchSelected: _setPickupBranch,
-                onRefresh: _refreshMenuData,
-                onRetryMenu: () =>
-                    context.read<MobileBackendController>().bootstrap(
-                      language: context
-                          .read<LocaleController>()
-                          .locale
-                          .languageCode,
-                      branchId: _selectedBranch?.id,
-                    ),
-                cartCount: totalItems,
-                cartTotal: totalAmount,
-                cartQuantities: _cart,
-                notificationUnreadCount: backend.notificationUnreadCount,
-                onNotificationsTap: () => unawaited(_openNotifications()),
+              _KeepAliveTabPage(
+                child: MenuScreen(
+                  isDark: isDark,
+                  isMenuLoading:
+                      backend.status == MobileBackendStatus.loading &&
+                      products.isEmpty,
+                  menuErrorText:
+                      backend.status == MobileBackendStatus.error &&
+                          products.isEmpty
+                      ? backend.failure?.message
+                      : null,
+                  menuFailure:
+                      backend.status == MobileBackendStatus.error &&
+                          products.isEmpty
+                      ? backend.failure
+                      : null,
+                  selectedCategoryIndex: selectedCategoryIndex,
+                  categories: categories,
+                  products: products,
+                  promotions: promotions,
+                  orderType: _orderType,
+                  selectedBranch: _selectedBranch,
+                  onCategorySelected: _setSelectedCategory,
+                  onAddToCart: _addToCart,
+                  onDecreaseFromCart: (product) => _updateCart(product, -1),
+                  onCartTap: () => _selectTab(1),
+                  onOrderTypeChanged: _setOrderType,
+                  onBranchSelected: _setPickupBranch,
+                  onRefresh: _refreshMenuData,
+                  onRetryMenu: () =>
+                      context.read<MobileBackendController>().bootstrap(
+                        language: context
+                            .read<LocaleController>()
+                            .locale
+                            .languageCode,
+                        branchId: _selectedBranch?.id,
+                      ),
+                  cartCount: totalItems,
+                  cartTotal: totalAmount,
+                  cartQuantities: _cart,
+                  notificationUnreadCount: backend.notificationUnreadCount,
+                  onNotificationsTap: () => unawaited(_openNotifications()),
+                ),
               ),
-              CartScreen(
-                isDark: isDark,
-                items: cartLines,
-                totalAmount: totalAmount,
-                isCheckingOut: _isCheckingOut,
-                onDecrease: (product) => _updateCart(product, -1),
-                onIncrease: (product) => _updateCart(product, 1),
-                onBrowseMenu: () => _selectTab(0),
-                onCheckout: () => unawaited(_handleCheckout(cartLines)),
+              _KeepAliveTabPage(
+                child: CartScreen(
+                  isDark: isDark,
+                  items: cartLines,
+                  totalAmount: totalAmount,
+                  isCheckingOut: _isCheckingOut,
+                  onDecrease: (product) => _updateCart(product, -1),
+                  onIncrease: (product) => _updateCart(product, 1),
+                  onBrowseMenu: () => _selectTab(0),
+                  onCheckout: () => unawaited(_handleCheckout(cartLines)),
+                ),
               ),
-              _profileTab,
+              _KeepAliveTabPage(child: _profileTab),
             ],
           ),
         ),
@@ -1208,5 +1279,26 @@ class _MainTabsState extends State<MainTabs> {
         ),
       ),
     );
+  }
+}
+
+class _KeepAliveTabPage extends StatefulWidget {
+  const _KeepAliveTabPage({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_KeepAliveTabPage> createState() => _KeepAliveTabPageState();
+}
+
+class _KeepAliveTabPageState extends State<_KeepAliveTabPage>
+    with AutomaticKeepAliveClientMixin<_KeepAliveTabPage> {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
   }
 }

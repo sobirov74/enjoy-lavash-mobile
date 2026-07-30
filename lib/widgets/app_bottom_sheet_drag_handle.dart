@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'app_modal_bottom_sheet.dart';
+
 /// A bottom-sheet handle with its own downward-swipe recognizer.
 ///
 /// Flutter's route-level drag gesture can lose the gesture arena when a sheet
@@ -61,6 +63,7 @@ class _AppBottomSheetDragHandleState extends State<AppBottomSheetDragHandle> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final sheetOwnsDrag = AppModalBottomSheetDragScope.maybeOf(context) != null;
     final handleColor =
         widget.color ??
         (isDark ? const Color(0xFF4A4038) : const Color(0xFFE5DAD0));
@@ -70,9 +73,13 @@ class _AppBottomSheetDragHandleState extends State<AppBottomSheetDragHandle> {
       child: GestureDetector(
         key: const ValueKey<String>('bottom-sheet-drag-handle'),
         behavior: HitTestBehavior.opaque,
-        onVerticalDragStart: widget.enabled ? _onDragStart : null,
-        onVerticalDragUpdate: widget.enabled ? _onDragUpdate : null,
-        onVerticalDragEnd: widget.enabled ? _onDragEnd : null,
+        onVerticalDragStart: widget.enabled && !sheetOwnsDrag
+            ? _onDragStart
+            : null,
+        onVerticalDragUpdate: widget.enabled && !sheetOwnsDrag
+            ? _onDragUpdate
+            : null,
+        onVerticalDragEnd: widget.enabled && !sheetOwnsDrag ? _onDragEnd : null,
         child: Container(
           width: double.infinity,
           height: 28,

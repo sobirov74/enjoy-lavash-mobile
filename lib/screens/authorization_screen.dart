@@ -10,14 +10,33 @@ import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
 import 'package:enjoy_lavash_mobile/theme/app_motion.dart';
 import 'package:enjoy_lavash_mobile/widgets/app_bottom_sheet_drag_handle.dart';
+import 'package:enjoy_lavash_mobile/widgets/app_modal_bottom_sheet.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:pinput/pinput.dart';
 import 'package:provider/provider.dart';
 import 'package:sms_autofill/sms_autofill.dart';
 
 const int _otpCodeLength = 4;
+
+Future<void> showBirthDatePromptSheet(
+  BuildContext context, {
+  DateTime? initialDate,
+}) {
+  return showAppModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    backgroundColor: Colors.transparent,
+    enableDrag: true,
+    isDismissible: true,
+    showDragHandle: false,
+    builder: (_) => _BirthDatePromptSheet(initialDate: initialDate),
+  );
+}
 
 class AuthorizationScreen extends StatefulWidget {
   const AuthorizationScreen({super.key});
@@ -284,7 +303,7 @@ class _AuthorizationScreenState extends State<AuthorizationScreen>
               currentName == response.client.phoneNumber.trim()
           ? ''
           : currentName;
-      await showModalBottomSheet<void>(
+      await showAppModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
         useSafeArea: true,
@@ -301,16 +320,7 @@ class _AuthorizationScreenState extends State<AuthorizationScreen>
         context.read<MobileBackendController>().client ?? response.client;
     if (client.birthDate != null) return;
 
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      enableDrag: true,
-      isDismissible: true,
-      showDragHandle: false,
-      builder: (_) => const _BirthDatePromptSheet(),
-    );
+    await showBirthDatePromptSheet(context);
   }
 
   @override
@@ -948,49 +958,118 @@ class _NamePromptSheetState extends State<_NamePromptSheet> {
 }
 
 class _BirthDatePromptSheet extends StatefulWidget {
-  const _BirthDatePromptSheet();
+  const _BirthDatePromptSheet({this.initialDate});
+
+  final DateTime? initialDate;
 
   @override
   State<_BirthDatePromptSheet> createState() => _BirthDatePromptSheetState();
 }
 
 class _BirthDatePromptSheetState extends State<_BirthDatePromptSheet> {
-  DateTime? _selectedDate;
+  static const int _firstYear = 1900;
+  static const double _pickerItemExtent = 44;
+
+  late final List<int> _years;
+  late final FixedExtentScrollController _dayController;
+  late final FixedExtentScrollController _monthController;
+  late final FixedExtentScrollController _yearController;
+  late final DateTime _today;
+  late DateTime _selectedDate;
   bool _isSaving = false;
   String? _errorText;
 
-  Future<void> _selectBirthDate() async {
-    if (_isSaving) return;
+  @override
+  void initState() {
+    super.initState();
 
     final now = DateTime.now();
-    final pickedDate = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate ?? DateTime(now.year - 18, 1, 1),
-      firstDate: DateTime(1900),
-      lastDate: DateTime(now.year, now.month, now.day),
-      currentDate: now,
-      helpText: L.of(context).birthDate,
+    _today = DateTime(now.year, now.month, now.day);
+    _years = List<int>.generate(
+      _today.year - _firstYear + 1,
+      (index) => _today.year - index,
     );
-    if (!mounted || pickedDate == null) return;
+    _selectedDate = _normalizedInitialDate(
+      widget.initialDate ?? DateTime(_today.year - 25),
+      _today,
+    );
+    _dayController = FixedExtentScrollController(
+      initialItem: _selectedDate.day - 1,
+    );
+    _monthController = FixedExtentScrollController(
+      initialItem: _selectedDate.month - 1,
+    );
+    _yearController = FixedExtentScrollController(
+      initialItem: _today.year - _selectedDate.year,
+    );
+  }
+
+  @override
+  void dispose() {
+    _dayController.dispose();
+    _monthController.dispose();
+    _yearController.dispose();
+    super.dispose();
+  }
+
+  DateTime _normalizedInitialDate(DateTime date, DateTime now) {
+    if (date.isAfter(now)) {
+      return DateTime(now.year, now.month, now.day);
+    }
+    if (date.year < _firstYear) {
+      return DateTime(_firstYear, 1, 1);
+    }
+    return DateTime(date.year, date.month, date.day);
+  }
+
+  int _daysInMonth(int year, int month) {
+    return DateTime(year, month + 1, 0).day;
+  }
+
+  int _availableMonths(int year) {
+    return year == _today.year ? _today.month : 12;
+  }
+
+  int _availableDays(int year, int month) {
+    final daysInMonth = _daysInMonth(year, month);
+    if (year == _today.year && month == _today.month) {
+      return _today.day;
+    }
+    return daysInMonth;
+  }
+
+  void _setSelectedDate({int? day, int? month, int? year}) {
+    if (_isSaving) return;
+
+    final nextYear = year ?? _selectedDate.year;
+    final requestedMonth = month ?? _selectedDate.month;
+    final nextMonth = requestedMonth.clamp(1, _availableMonths(nextYear));
+    final requestedDay = day ?? _selectedDate.day;
+    final nextDay = requestedDay.clamp(1, _availableDays(nextYear, nextMonth));
+    final didClampMonth = nextMonth != requestedMonth;
+    final didClampDay = nextDay != requestedDay;
 
     setState(() {
-      _selectedDate = DateTime(
-        pickedDate.year,
-        pickedDate.month,
-        pickedDate.day,
-      );
+      _selectedDate = DateTime(nextYear, nextMonth, nextDay);
       _errorText = null;
     });
+    unawaited(HapticFeedback.selectionClick());
+
+    if (didClampMonth || didClampDay) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (didClampMonth && _monthController.hasClients) {
+          _monthController.jumpToItem(nextMonth - 1);
+        }
+        if (didClampDay && _dayController.hasClients) {
+          _dayController.jumpToItem(nextDay - 1);
+        }
+      });
+    }
   }
 
   Future<void> _saveBirthDate() async {
     if (_isSaving) return;
-
-    final birthDate = _selectedDate;
-    if (birthDate == null) {
-      setState(() => _errorText = L.of(context).selectBirthDate);
-      return;
-    }
 
     setState(() {
       _isSaving = true;
@@ -998,7 +1077,7 @@ class _BirthDatePromptSheetState extends State<_BirthDatePromptSheet> {
     });
 
     final result = await context.read<MobileBackendController>().updateProfile(
-      ClientProfileUpdate(birthDate: birthDate),
+      ClientProfileUpdate(birthDate: _selectedDate),
     );
     if (!mounted) return;
 
@@ -1018,10 +1097,17 @@ class _BirthDatePromptSheetState extends State<_BirthDatePromptSheet> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final t = L.of(context);
-    final selectedDate = _selectedDate;
-    final selectedDateText = selectedDate == null
-        ? t.selectBirthDate
-        : MaterialLocalizations.of(context).formatMediumDate(selectedDate);
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final selectedDateText = DateFormat.yMMMMd(locale).format(_selectedDate);
+    final pickerTextStyle = TextStyle(
+      color: theme.colorScheme.onSurface,
+      fontSize: 19,
+      fontWeight: FontWeight.w700,
+    );
+    final pickerBackground = isDark ? const Color(0xFF1D1A18) : Colors.white;
+    final pickerSelectionColor = BaseColors.primary.withValues(
+      alpha: isDark ? 0.18 : 0.10,
+    );
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
@@ -1039,47 +1125,197 @@ class _BirthDatePromptSheetState extends State<_BirthDatePromptSheet> {
               margin: const EdgeInsets.only(bottom: 8),
               color: isDark ? const Color(0xFF3A332D) : const Color(0xFFE8DED4),
             ),
-            TypographyText(
-              t.birthDateTitle,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            const SizedBox(height: 18),
-            Semantics(
-              button: true,
-              label: t.birthDate,
-              value: selectedDate == null ? null : selectedDateText,
-              child: InkWell(
-                key: const ValueKey<String>('birth-date-field'),
-                onTap: _isSaving ? null : _selectBirthDate,
-                borderRadius: BorderRadius.circular(20),
-                child: InputDecorator(
-                  decoration: InputDecoration(
-                    labelText: t.birthDate,
-                    prefixIcon: const Icon(Icons.cake_outlined),
-                    suffixIcon: const Icon(Icons.calendar_month_outlined),
-                    filled: true,
-                    fillColor: isDark ? const Color(0xFF1D1A18) : Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide.none,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
+            Row(
+              children: <Widget>[
+                Expanded(
                   child: TypographyText(
-                    selectedDateText,
-                    style: TextStyle(
-                      color: selectedDate == null
-                          ? BaseColors.textGray
-                          : theme.colorScheme.onSurface,
-                      fontWeight: FontWeight.w700,
+                    t.birthDateTitle,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w900,
                     ),
                   ),
                 ),
+                IconButton(
+                  key: const ValueKey<String>('birth-date-close-button'),
+                  tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                  onPressed: _isSaving
+                      ? null
+                      : () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close_rounded),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            TypographyText(
+              t.birthDateSubtitle,
+              style: TextStyle(
+                color: isDark ? const Color(0xFFB7AEA6) : BaseColors.textGray,
+                fontSize: 14,
+                height: 1.35,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Semantics(
+              label: t.birthDate,
+              value: selectedDateText,
+              child: Container(
+                key: const ValueKey<String>('birth-date-field'),
+                height: 210,
+                padding: const EdgeInsets.fromLTRB(8, 10, 8, 8),
+                decoration: BoxDecoration(
+                  color: pickerBackground,
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(
+                    color: isDark
+                        ? const Color(0xFF332D29)
+                        : const Color(0xFFF0E8E1),
+                  ),
+                ),
+                child: Column(
+                  children: <Widget>[
+                    Row(
+                      children: <Widget>[
+                        _BirthDatePickerLabel(t.birthDateDay),
+                        _BirthDatePickerLabel(t.birthDateMonth, flex: 2),
+                        _BirthDatePickerLabel(t.birthDateYear),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Expanded(
+                      child: Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: CupertinoPicker.builder(
+                              key: const ValueKey<String>(
+                                'birth-date-day-picker',
+                              ),
+                              scrollController: _dayController,
+                              itemExtent: _pickerItemExtent,
+                              useMagnifier: true,
+                              magnification: 1.08,
+                              selectionOverlay:
+                                  CupertinoPickerDefaultSelectionOverlay(
+                                    background: pickerSelectionColor,
+                                  ),
+                              onSelectedItemChanged: (index) =>
+                                  _setSelectedDate(day: index + 1),
+                              childCount: _availableDays(
+                                _selectedDate.year,
+                                _selectedDate.month,
+                              ),
+                              itemBuilder: (_, index) => Center(
+                                child: Text(
+                                  '${index + 1}',
+                                  style: pickerTextStyle,
+                                ),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            flex: 2,
+                            child: CupertinoPicker.builder(
+                              key: const ValueKey<String>(
+                                'birth-date-month-picker',
+                              ),
+                              scrollController: _monthController,
+                              itemExtent: _pickerItemExtent,
+                              useMagnifier: true,
+                              magnification: 1.08,
+                              selectionOverlay:
+                                  CupertinoPickerDefaultSelectionOverlay(
+                                    background: pickerSelectionColor,
+                                  ),
+                              onSelectedItemChanged: (index) =>
+                                  _setSelectedDate(month: index + 1),
+                              childCount: _availableMonths(_selectedDate.year),
+                              itemBuilder: (_, index) => Center(
+                                child: Text(
+                                  DateFormat.MMM(
+                                    locale,
+                                  ).format(DateTime(2000, index + 1)),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: pickerTextStyle,
+                                ),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: CupertinoPicker.builder(
+                              key: const ValueKey<String>(
+                                'birth-date-year-picker',
+                              ),
+                              scrollController: _yearController,
+                              itemExtent: _pickerItemExtent,
+                              useMagnifier: true,
+                              magnification: 1.08,
+                              selectionOverlay:
+                                  CupertinoPickerDefaultSelectionOverlay(
+                                    background: pickerSelectionColor,
+                                  ),
+                              onSelectedItemChanged: (index) =>
+                                  _setSelectedDate(year: _years[index]),
+                              childCount: _years.length,
+                              itemBuilder: (_, index) => Center(
+                                child: Text(
+                                  '${_years[index]}',
+                                  style: pickerTextStyle,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: BaseColors.primary.withValues(
+                  alpha: isDark ? 0.14 : 0.08,
+                ),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                children: <Widget>[
+                  const Icon(
+                    Icons.cake_outlined,
+                    color: BaseColors.primary,
+                    size: 21,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        TypographyText(
+                          t.birthDate,
+                          style: TextStyle(
+                            color: isDark
+                                ? const Color(0xFFB7AEA6)
+                                : BaseColors.textGray,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        TypographyText(
+                          selectedDateText,
+                          style: const TextStyle(
+                            color: BaseColors.primary,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
             if (_errorText != null) ...[
@@ -1142,6 +1378,31 @@ class _BirthDatePromptSheetState extends State<_BirthDatePromptSheet> {
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BirthDatePickerLabel extends StatelessWidget {
+  const _BirthDatePickerLabel(this.text, {this.flex = 1});
+
+  final String text;
+  final int flex;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Expanded(
+      flex: flex,
+      child: TypographyText(
+        text,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: isDark ? const Color(0xFFB7AEA6) : BaseColors.textGray,
+          fontSize: 12,
+          fontWeight: FontWeight.w800,
         ),
       ),
     );

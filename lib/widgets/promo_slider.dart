@@ -2,6 +2,7 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/promotio
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
 import 'package:enjoy_lavash_mobile/widgets/app_bottom_sheet_drag_handle.dart';
+import 'package:enjoy_lavash_mobile/widgets/app_modal_bottom_sheet.dart';
 import 'package:enjoy_lavash_mobile/widgets/app_snack_bar.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
@@ -55,7 +56,7 @@ class _PromoSliderState extends State<PromoSlider> {
   }
 
   void _showPromotionDetails(PromotionModel promotion) {
-    showModalBottomSheet<void>(
+    showAppModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
       enableDrag: true,

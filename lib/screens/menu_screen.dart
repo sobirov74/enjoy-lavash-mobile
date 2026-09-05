@@ -1,6 +1,8 @@
-import 'package:enjoy_lavash_mobile/app/locale_controller.dart';
+import 'dart:async';
+
 import 'package:enjoy_lavash_mobile/app/location_controller.dart';
 import 'package:enjoy_lavash_mobile/core/error/failures.dart';
+import 'package:enjoy_lavash_mobile/features/models/cart_line.dart';
 import 'package:enjoy_lavash_mobile/features/models/menu_product.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/address_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/branch_model.dart';
@@ -8,29 +10,22 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/cart_mod
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/promotion_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/presentation/mobile_backend_controller.dart';
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
-import 'package:enjoy_lavash_mobile/screens/address_bottom_sheet.dart';
-import 'package:enjoy_lavash_mobile/screens/branch_bottom_sheet.dart';
+import 'package:enjoy_lavash_mobile/screens/order_context_sheet.dart';
+import 'package:enjoy_lavash_mobile/theme/app_design_tokens.dart';
 import 'package:enjoy_lavash_mobile/theme/app_motion.dart';
 import 'package:enjoy_lavash_mobile/utils/price_formatter.dart';
-import 'package:enjoy_lavash_mobile/widgets/action_icon_button.dart';
 import 'package:enjoy_lavash_mobile/widgets/animated_error_message.dart';
-import 'package:enjoy_lavash_mobile/widgets/delivery_chip.dart';
 import 'package:enjoy_lavash_mobile/widgets/fade_slide_in.dart';
 import 'package:enjoy_lavash_mobile/widgets/product_image.dart';
 import 'package:enjoy_lavash_mobile/widgets/product_list_item.dart';
-import 'package:enjoy_lavash_mobile/widgets/promo_slider.dart';
+import 'package:enjoy_lavash_mobile/widgets/redesign/order_context_pill.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-const String _brandMarkAsset = 'assets/images/enjoy-logo.png';
-const double _stickySearchHeaderHeight = 76;
-const double _stickyCategoryHeaderHeight = 66;
-const double _stickyProductsHeaderHeight =
-    _stickySearchHeaderHeight + _stickyCategoryHeaderHeight;
+const double _stickyCategoryHeaderHeight = 56;
 
 // ---------------------------------------------------------------------------
 // MenuScreen — main scrollable menu with sticky category tabs
@@ -59,7 +54,10 @@ class MenuScreen extends StatefulWidget {
     required this.cartTotal,
     required this.cartQuantities,
     this.notificationUnreadCount = 0,
+    this.onAddConfiguredToCart,
     this.onNotificationsTap,
+    this.onOrderContextTap,
+    this.showCartSummary = true,
     this.menuFailure,
     this.menuErrorText,
   });
@@ -74,6 +72,7 @@ class MenuScreen extends StatefulWidget {
   final BranchModel? selectedBranch;
   final ValueChanged<int> onCategorySelected;
   final ValueChanged<MenuProduct> onAddToCart;
+  final ValueChanged<CartSelection>? onAddConfiguredToCart;
   final ValueChanged<MenuProduct> onDecreaseFromCart;
   final VoidCallback onCartTap;
   final ValueChanged<MobileOrderType> onOrderTypeChanged;
@@ -85,6 +84,8 @@ class MenuScreen extends StatefulWidget {
   final Map<String, int> cartQuantities;
   final int notificationUnreadCount;
   final VoidCallback? onNotificationsTap;
+  final VoidCallback? onOrderContextTap;
+  final bool showCartSummary;
   final Failure? menuFailure;
   final String? menuErrorText;
 
@@ -95,7 +96,6 @@ class MenuScreen extends StatefulWidget {
 class _MenuScreenState extends State<MenuScreen> {
   final ScrollController _scrollController = ScrollController();
   final ScrollController _categoryScrollController = ScrollController();
-  final TextEditingController _searchController = TextEditingController();
   final GlobalKey _categoryPillTrackKey = GlobalKey(
     debugLabel: 'category-pill-track',
   );
@@ -103,24 +103,10 @@ class _MenuScreenState extends State<MenuScreen> {
     debugLabel: 'cart-flight-target',
   );
 
-  late final List<GlobalKey> _sectionKeys = _buildKeys(
-    widget.categories.length,
-  );
   late final List<GlobalKey> _categoryChipKeys = _buildKeys(
-    widget.categories.length,
+    widget.categories.length + 1,
   );
 
-  /// Cached products grouped by category — rebuilt only when products change.
-  late Map<String, List<MenuProduct>> _groupedProducts = _groupProducts();
-
-  /// Cached lowercase haystacks so search doesn't re-lowercase every product
-  /// on each keystroke.
-  late List<({MenuProduct product, String haystack})> _searchIndex =
-      _buildSearchIndex();
-
-  bool _isProgrammaticScroll = false;
-  bool _scrollSpyScheduled = false;
-  String _searchQuery = '';
   double? _categoryPillLeft;
   double? _categoryPillWidth;
   OverlayEntry? _cartFlightEntry;
@@ -134,7 +120,6 @@ class _MenuScreenState extends State<MenuScreen> {
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScrollChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollSelectedChipIntoView();
       _updateCategoryPillGeometry();
@@ -157,11 +142,6 @@ class _MenuScreenState extends State<MenuScreen> {
       _syncCategoryKeys();
     }
 
-    if (oldWidget.products != widget.products) {
-      _groupedProducts = _groupProducts();
-      _searchIndex = _buildSearchIndex();
-    }
-
     if (oldWidget.selectedCategoryIndex != widget.selectedCategoryIndex ||
         oldWidget.categories.length != widget.categories.length) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -175,10 +155,7 @@ class _MenuScreenState extends State<MenuScreen> {
   void dispose() {
     _cartFlightEntry?.remove();
     _cartFlightEntry = null;
-    _searchController.dispose();
-    _scrollController
-      ..removeListener(_onScrollChanged)
-      ..dispose();
+    _scrollController.dispose();
     _categoryScrollController.dispose();
     super.dispose();
   }
@@ -192,8 +169,7 @@ class _MenuScreenState extends State<MenuScreen> {
   }
 
   void _syncCategoryKeys() {
-    _syncKeyList(_sectionKeys, widget.categories.length);
-    _syncKeyList(_categoryChipKeys, widget.categories.length);
+    _syncKeyList(_categoryChipKeys, widget.categories.length + 1);
   }
 
   void _syncKeyList(List<GlobalKey> keys, int count) {
@@ -206,16 +182,6 @@ class _MenuScreenState extends State<MenuScreen> {
 
     keys.removeRange(count, keys.length);
   }
-
-  Map<String, List<MenuProduct>> _groupProducts() {
-    final map = <String, List<MenuProduct>>{};
-    for (final product in widget.products) {
-      (map[product.category] ??= []).add(product);
-    }
-    return map;
-  }
-
-  bool get _hasSearchQuery => _searchQuery.trim().isNotEmpty;
 
   ClientAddress? _defaultAddress(List<ClientAddress> addresses) {
     if (addresses.isEmpty) return null;
@@ -253,51 +219,14 @@ class _MenuScreenState extends State<MenuScreen> {
     return _formatSavedAddress(_defaultAddress(addresses));
   }
 
-  String? _pickupButtonSubtitle() {
-    final branchName = widget.selectedBranch?.name.trim();
-    return branchName == null || branchName.isEmpty ? null : branchName;
-  }
-
-  double get _activeStickyHeaderHeight =>
-      _hasSearchQuery ? _stickySearchHeaderHeight : _stickyProductsHeaderHeight;
-
-  List<({MenuProduct product, String haystack})> _buildSearchIndex() {
-    return widget.products
-        .map(
-          (product) => (
-            product: product,
-            haystack: '${product.title} ${product.category} ${product.price}'
-                .toLowerCase(),
-          ),
-        )
-        .toList(growable: false);
-  }
-
-  List<MenuProduct> _filteredProducts() {
-    final query = _searchQuery.trim().toLowerCase();
-    if (query.isEmpty) return widget.products;
-
-    return _searchIndex
-        .where((entry) => entry.haystack.contains(query))
-        .map((entry) => entry.product)
-        .toList(growable: false);
-  }
-
-  void _clearSearch() {
-    _searchController.clear();
-    setState(() => _searchQuery = '');
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollSelectedChipIntoView();
-      _updateCategoryPillGeometry();
-    });
-  }
+  double get _activeStickyHeaderHeight => _stickyCategoryHeaderHeight;
 
   void _updateCategoryPillGeometry() {
-    if (!mounted || widget.categories.isEmpty || _hasSearchQuery) return;
+    if (!mounted || _categoryChipKeys.isEmpty) return;
 
-    final selectedIndex = widget.selectedCategoryIndex.clamp(
+    final selectedIndex = (widget.selectedCategoryIndex + 1).clamp(
       0,
-      widget.categories.length - 1,
+      widget.categories.length,
     );
     final chipRenderObject = _categoryChipKeys[selectedIndex].currentContext
         ?.findRenderObject();
@@ -402,6 +331,16 @@ class _MenuScreenState extends State<MenuScreen> {
           product: product,
           animation: animation,
           heroTag: _productHeroTag(product),
+          onAdd: (selection) {
+            final callback = widget.onAddConfiguredToCart;
+            if (callback == null) {
+              for (var index = 0; index < selection.quantity; index++) {
+                widget.onAddToCart(product);
+              }
+              return;
+            }
+            callback(selection);
+          },
         ),
         transitionsBuilder: (_, animation, _, child) => FadeTransition(
           opacity: CurvedAnimation(parent: animation, curve: AppMotion.enter),
@@ -413,150 +352,33 @@ class _MenuScreenState extends State<MenuScreen> {
 
   String _productHeroTag(MenuProduct product) => 'menu-product-${product.id}';
 
-  // -------------------------------------------------------------------------
-  // Scroll-spy: detect which category section is in view
-  // -------------------------------------------------------------------------
-
-  void _onScrollChanged() {
-    if (!_scrollController.hasClients || _isProgrammaticScroll) return;
-    if (_scrollSpyScheduled) return;
-
-    _scrollSpyScheduled = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollSpyScheduled = false;
-      if (!mounted || _isProgrammaticScroll) return;
-      _updateSelectedCategoryFromScroll();
-    });
-  }
-
-  void _updateSelectedCategoryFromScroll() {
-    if (_hasSearchQuery) return;
-    if (!_scrollController.hasClients || widget.categories.isEmpty) return;
-    final position = _scrollController.position;
-
-    if (position.pixels >= position.maxScrollExtent - 24) {
-      widget.onCategorySelected(widget.categories.length - 1);
+  void _quickAdd(MenuProduct product) {
+    final selection = standardCartSelection(product);
+    if (selection == null) {
+      _showProductImagePreview(product);
       return;
     }
-
-    final viewportCenter =
-        _scrollController.offset +
-        _activeStickyHeaderHeight +
-        (position.viewportDimension - _activeStickyHeaderHeight) / 2;
-
-    var bestIndex = widget.selectedCategoryIndex;
-    var bestDistance = double.infinity;
-
-    for (var i = 0; i < _sectionKeys.length; i++) {
-      final context = _sectionKeys[i].currentContext;
-      if (context == null) continue;
-
-      final box = context.findRenderObject();
-      if (box == null || !box.attached) continue;
-
-      final renderBox = box as RenderBox;
-      final sectionTop =
-          _scrollController.offset +
-          renderBox.localToGlobal(Offset.zero).dy -
-          _activeStickyHeaderHeight;
-      final sectionBottom = sectionTop + renderBox.size.height;
-
-      if (viewportCenter >= sectionTop && viewportCenter < sectionBottom) {
-        bestIndex = i;
-        break;
-      }
-
-      final distance = viewportCenter < sectionTop
-          ? sectionTop - viewportCenter
-          : viewportCenter - sectionBottom;
-
-      if (distance < bestDistance) {
-        bestDistance = distance;
-        bestIndex = i;
-      }
-    }
-
-    if (bestIndex != widget.selectedCategoryIndex) {
-      widget.onCategorySelected(bestIndex);
+    final callback = widget.onAddConfiguredToCart;
+    if (callback != null) {
+      callback(selection);
+    } else {
+      widget.onAddToCart(product);
     }
   }
 
-  // -------------------------------------------------------------------------
-  // Programmatic scroll to a category section
-  // -------------------------------------------------------------------------
-
-  Future<void> _scrollToCategory(int index) async {
-    if (index < 0 || index >= _sectionKeys.length) return;
-
+  void _selectCategory(int index) {
+    if (index < -1 || index >= widget.categories.length) return;
     widget.onCategorySelected(index);
-    _isProgrammaticScroll = true;
-
-    try {
-      var sectionContext = _sectionKeys[index].currentContext;
-      if (sectionContext == null) {
-        await _scrollNearCategory(index);
-        if (!mounted) return;
-        await WidgetsBinding.instance.endOfFrame;
-        if (!mounted) return;
-        sectionContext = _sectionKeys[index].currentContext;
-      }
-
-      if (sectionContext != null && sectionContext.mounted) {
-        await _scrollToSectionContext(sectionContext);
-      }
-    } finally {
-      if (mounted) {
-        _isProgrammaticScroll = false;
-        _scrollSelectedChipIntoView();
-      }
-    }
-  }
-
-  Future<void> _scrollNearCategory(int index) async {
-    if (!_scrollController.hasClients || widget.categories.length <= 1) return;
-
-    final maxExtent = _scrollController.position.maxScrollExtent;
-    final ratio = index / (widget.categories.length - 1);
-    final targetOffset = (maxExtent * ratio).clamp(0.0, maxExtent);
-
+    if (!_scrollController.hasClients) return;
     if (AppMotion.reduced(context)) {
-      _scrollController.jumpTo(targetOffset);
+      _scrollController.jumpTo(0);
     } else {
-      await _scrollController.animateTo(
-        targetOffset,
-        duration: AppMotion.micro,
-        curve: AppMotion.enter,
-      );
-    }
-  }
-
-  Future<void> _scrollToSectionContext(BuildContext sectionContext) async {
-    final renderObject = sectionContext.findRenderObject();
-    final viewport = renderObject == null
-        ? null
-        : RenderAbstractViewport.maybeOf(renderObject);
-
-    if (renderObject == null ||
-        viewport == null ||
-        !_scrollController.hasClients) {
-      return;
-    }
-
-    final targetOffset =
-        viewport.getOffsetToReveal(renderObject, 0).offset -
-        _activeStickyHeaderHeight;
-    final clampedOffset = targetOffset.clamp(
-      0.0,
-      _scrollController.position.maxScrollExtent,
-    );
-
-    if (AppMotion.reduced(context)) {
-      _scrollController.jumpTo(clampedOffset);
-    } else {
-      await _scrollController.animateTo(
-        clampedOffset,
-        duration: AppMotion.spatial,
-        curve: AppMotion.enter,
+      unawaited(
+        _scrollController.animateTo(
+          0,
+          duration: AppMotion.state,
+          curve: AppMotion.enter,
+        ),
       );
     }
   }
@@ -566,14 +388,15 @@ class _MenuScreenState extends State<MenuScreen> {
   // -------------------------------------------------------------------------
 
   void _scrollSelectedChipIntoView() {
-    if (_hasSearchQuery ||
-        !_categoryScrollController.hasClients ||
-        widget.categories.isEmpty) {
+    if (!_categoryScrollController.hasClients || _categoryChipKeys.isEmpty) {
       return;
     }
 
-    final chipContext =
-        _categoryChipKeys[widget.selectedCategoryIndex].currentContext;
+    final displayIndex = (widget.selectedCategoryIndex + 1).clamp(
+      0,
+      widget.categories.length,
+    );
+    final chipContext = _categoryChipKeys[displayIndex].currentContext;
     if (chipContext == null) return;
 
     final chipBox = chipContext.findRenderObject();
@@ -614,9 +437,16 @@ class _MenuScreenState extends State<MenuScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final t = L.of(context);
-    final searchResults = _hasSearchQuery
-        ? _filteredProducts()
-        : const <MenuProduct>[];
+    final selectedCategory =
+        widget.selectedCategoryIndex >= 0 &&
+            widget.selectedCategoryIndex < widget.categories.length
+        ? widget.categories[widget.selectedCategoryIndex]
+        : null;
+    final visibleProducts = selectedCategory == null
+        ? widget.products
+        : widget.products
+              .where((product) => product.category == selectedCategory)
+              .toList(growable: false);
 
     return Stack(
       children: <Widget>[
@@ -630,32 +460,36 @@ class _MenuScreenState extends State<MenuScreen> {
               parent: AlwaysScrollableScrollPhysics(),
             ),
             slivers: [
-              // -- Top bar, delivery toggle, promo banner
+              // -- The redesign keeps order context visible without spending
+              //    a second row on separate delivery and pickup controls.
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 10),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      FadeSlideIn(child: _buildTopBar(t)),
-                      const SizedBox(height: 10),
+                    children: <Widget>[
                       FadeSlideIn(
-                        delay: const Duration(milliseconds: 50),
-                        child: _buildDeliveryToggle(t),
-                      ),
-                      if (widget.promotions.isNotEmpty) ...[
-                        const SizedBox(height: 16),
-                        FadeSlideIn(
-                          delay: const Duration(milliseconds: 100),
-                          child: PromoSlider(
-                            promotions: widget.promotions,
-                            locale: context
-                                .watch<LocaleController>()
-                                .locale
-                                .languageCode,
-                          ),
+                        child: OrderContextPill(
+                          compact: true,
+                          modeLabel:
+                              widget.orderType == MobileOrderType.delivery
+                              ? t.delivery
+                              : t.pickup,
+                          contextLabel: _orderContextLabel(t),
+                          onTap:
+                              widget.onOrderContextTap ??
+                              () => unawaited(_showOrderContextPicker()),
                         ),
-                      ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        t.menu,
+                        style: AppTextStyles.display(
+                          size: 26,
+                          height: 1.15,
+                          color: AppDesignTokens.primaryText(context),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -667,7 +501,7 @@ class _MenuScreenState extends State<MenuScreen> {
                   child: _buildMenuState(theme, t),
                 )
               else ...[
-                // -- Sticky product search and category tabs
+                // -- Sticky category pills from the reference prototype.
                 SliverPersistentHeader(
                   pinned: true,
                   delegate: _CategoryHeaderDelegate(
@@ -676,148 +510,71 @@ class _MenuScreenState extends State<MenuScreen> {
                   ),
                 ),
 
-                if (_hasSearchQuery)
-                  if (searchResults.isEmpty)
-                    SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: _buildSearchEmptyState(theme, t),
-                    )
-                  else
-                    _buildSearchResultsSliver(searchResults, theme, t)
+                if (visibleProducts.isEmpty)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: _buildFilteredEmptyState(t),
+                  )
                 else
-                  // -- Product sections per category
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (_, index) => _buildCategorySection(index, theme),
-                        childCount: widget.categories.length,
-                      ),
+                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+                    sliver: SliverToBoxAdapter(
+                      child: _buildProductGrid(visibleProducts),
                     ),
                   ),
               ],
-              if (widget.cartCount > 0)
+              if (widget.showCartSummary && widget.cartCount > 0)
                 const SliverToBoxAdapter(child: SizedBox(height: 90)),
             ],
           ),
         ),
-        Positioned(
-          left: 16,
-          right: 16,
-          bottom: 12,
-          child: AnimatedSlide(
-            duration: AppMotion.duration(context, AppMotion.state),
-            curve: AppMotion.enter,
-            offset: widget.cartCount > 0 ? Offset.zero : const Offset(0, 1.4),
-            child: AnimatedOpacity(
-              duration: AppMotion.duration(context, AppMotion.micro),
-              opacity: widget.cartCount > 0 ? 1 : 0,
-              child: IgnorePointer(
-                ignoring: widget.cartCount <= 0,
-                child: _buildCartSummaryBar(t),
+        if (widget.showCartSummary)
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 12,
+            child: AnimatedSlide(
+              duration: AppMotion.duration(context, AppMotion.state),
+              curve: AppMotion.enter,
+              offset: widget.cartCount > 0 ? Offset.zero : const Offset(0, 1.4),
+              child: AnimatedOpacity(
+                duration: AppMotion.duration(context, AppMotion.micro),
+                opacity: widget.cartCount > 0 ? 1 : 0,
+                child: IgnorePointer(
+                  ignoring: widget.cartCount <= 0,
+                  child: _buildCartSummaryBar(t),
+                ),
               ),
             ),
           ),
-        ),
       ],
+    );
+  }
+
+  String _orderContextLabel(L t) {
+    if (widget.orderType == MobileOrderType.pickup) {
+      final branchName = widget.selectedBranch?.name.trim();
+      return branchName?.isNotEmpty == true ? branchName! : t.pickupBranch;
+    }
+    return _deliveryButtonSubtitle(context) ?? t.tapToSelectAddress;
+  }
+
+  Future<void> _showOrderContextPicker() async {
+    final backend = context.read<MobileBackendController>();
+    await showOrderContextSheet(
+      context: context,
+      currentType: widget.orderType,
+      selectedBranch: widget.selectedBranch,
+      branches: backend.branches,
+      deliveryAddress: _deliveryButtonSubtitle(context),
+      onTypeChanged: widget.onOrderTypeChanged,
+      onBranchSelected: widget.onBranchSelected,
     );
   }
 
   // -------------------------------------------------------------------------
   // Extracted widgets
   // -------------------------------------------------------------------------
-
-  Widget _buildTopBar(L t) {
-    return Row(
-      children: [
-        ActionIconButton(
-          icon: Icons.menu_rounded,
-          isDark: widget.isDark,
-          tooltip: t.menu,
-          onTap: () => Scaffold.of(context).openDrawer(),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Container(
-            height: 58,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            decoration: BoxDecoration(
-              color: widget.isDark ? const Color(0xFF1D1A18) : Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 24,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Image.asset(_brandMarkAsset, height: 28),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: TypographyText(
-                    'Enjoy Lavash',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.9,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(width: 14),
-        _buildNotificationButton(t),
-        const SizedBox(width: 8),
-        _buildCartButton(t),
-      ],
-    );
-  }
-
-  Widget _buildNotificationButton(L t) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: <Widget>[
-        ActionIconButton(
-          icon: Icons.notifications_none_rounded,
-          isDark: widget.isDark,
-          tooltip: t.notificationInbox,
-          onTap: widget.onNotificationsTap,
-        ),
-        if (widget.notificationUnreadCount > 0)
-          Positioned(
-            top: -4,
-            right: -4,
-            child: Container(
-              constraints: const BoxConstraints(minWidth: 22),
-              height: 22,
-              alignment: Alignment.center,
-              padding: const EdgeInsets.symmetric(horizontal: 5),
-              decoration: const BoxDecoration(
-                color: BaseColors.primary,
-                borderRadius: BorderRadius.all(Radius.circular(99)),
-              ),
-              child: TypographyText(
-                widget.notificationUnreadCount > 99
-                    ? '99+'
-                    : '${widget.notificationUnreadCount}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
 
   Widget _buildMenuState(ThemeData theme, L t) {
     final errorText = widget.menuErrorText;
@@ -896,51 +653,6 @@ class _MenuScreenState extends State<MenuScreen> {
     );
   }
 
-  Widget _buildCartButton(L t) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        ActionIconButton(
-          icon: Icons.shopping_bag_outlined,
-          isDark: widget.isDark,
-          tooltip: t.cart,
-          onTap: widget.onCartTap,
-        ),
-        Positioned(
-          top: -4,
-          right: -4,
-          child: AnimatedSwitcher(
-            duration: AppMotion.duration(context, AppMotion.state),
-            switchInCurve: AppMotion.enter,
-            switchOutCurve: AppMotion.exit,
-            transitionBuilder: (child, animation) =>
-                ScaleTransition(scale: animation, child: child),
-            child: widget.cartCount > 0
-                ? Container(
-                    key: ValueKey<int>(widget.cartCount),
-                    width: 22,
-                    height: 22,
-                    alignment: Alignment.center,
-                    decoration: const BoxDecoration(
-                      color: BaseColors.primary,
-                      shape: BoxShape.circle,
-                    ),
-                    child: TypographyText(
-                      '${widget.cartCount}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  )
-                : const SizedBox.shrink(key: ValueKey<String>('empty-badge')),
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildCartSummaryBar(L t) {
     final isDark = widget.isDark;
     final surface = isDark ? const Color(0xFF29231F) : Colors.white;
@@ -966,7 +678,7 @@ class _MenuScreenState extends State<MenuScreen> {
       button: true,
       label:
           '${t.viewCart}, ${t.cartItemsCount(widget.cartCount)}, '
-          '${formatSum(widget.cartTotal)}',
+          '${formatSum(context, widget.cartTotal)}',
       child: Material(
         key: const ValueKey<String>('menu-cart-summary-bar'),
         color: surface,
@@ -1073,7 +785,7 @@ class _MenuScreenState extends State<MenuScreen> {
                         border: Border.all(color: totalBorder),
                       ),
                       child: TypographyText(
-                        formatSum(widget.cartTotal),
+                        formatSum(context, widget.cartTotal),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.end,
@@ -1109,322 +821,114 @@ class _MenuScreenState extends State<MenuScreen> {
     );
   }
 
-  Widget _buildDeliveryToggle(L t) {
-    final deliverySubtitle = _deliveryButtonSubtitle(context);
-    final pickupSubtitle = _pickupButtonSubtitle();
-
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: widget.isDark
-            ? const Color(0xFF201C19)
-            : const Color(0xFFF0ECE6),
-        borderRadius: BorderRadius.circular(28),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: GestureDetector(
-              onTap: () {
-                widget.onOrderTypeChanged(MobileOrderType.delivery);
-                showAddressBottomSheet(context);
-              },
-              child: DeliveryChip(
-                icon: Icons.location_on_rounded,
-                title: t.address,
-                subtitle: deliverySubtitle ?? t.tapToSelectAddress,
-                active: widget.orderType == MobileOrderType.delivery,
-              ),
-            ),
-          ),
-          const SizedBox(width: 6),
-          Expanded(
-            child: GestureDetector(
-              onTap: () async {
-                final branch = await showBranchBottomSheet(
-                  context,
-                  selectedBranchId: widget.selectedBranch?.id,
-                );
-                if (branch != null) {
-                  await widget.onBranchSelected(branch);
-                }
-              },
-              child: DeliveryChip(
-                icon: Icons.shopping_bag_outlined,
-                title: t.pickup,
-                subtitle: pickupSubtitle ?? t.pickupBranch,
-                active: widget.orderType == MobileOrderType.pickup,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildProductsHeader(ThemeData theme, L t) {
     return Container(
       color: theme.scaffoldBackgroundColor,
       child: FadeSlideIn(
-        child: Column(
-          children: <Widget>[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-              child: _buildSearchField(t),
-            ),
-            if (!_hasSearchQuery)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                child: SizedBox(
-                  height: 48,
-                  child: SingleChildScrollView(
-                    controller: _categoryScrollController,
-                    physics: const BouncingScrollPhysics(),
-                    scrollDirection: Axis.horizontal,
-                    child: Stack(
-                      key: _categoryPillTrackKey,
-                      alignment: Alignment.centerLeft,
-                      children: <Widget>[
-                        if (_categoryPillLeft != null &&
-                            _categoryPillWidth != null)
-                          AnimatedPositioned(
-                            duration: AppMotion.duration(
-                              context,
-                              AppMotion.state,
-                            ),
-                            curve: AppMotion.standard,
-                            left: _categoryPillLeft,
-                            top: 0,
-                            width: _categoryPillWidth,
-                            height: 48,
-                            child: const DecoratedBox(
-                              decoration: BoxDecoration(
-                                color: BaseColors.primary,
-                                borderRadius: BorderRadius.all(
-                                  Radius.circular(18),
-                                ),
-                              ),
-                            ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 14),
+          child: SizedBox(
+            height: AppDesignTokens.chipHeight,
+            child: SingleChildScrollView(
+              controller: _categoryScrollController,
+              physics: const BouncingScrollPhysics(),
+              scrollDirection: Axis.horizontal,
+              child: Stack(
+                key: _categoryPillTrackKey,
+                alignment: Alignment.centerLeft,
+                children: <Widget>[
+                  if (_categoryPillLeft != null && _categoryPillWidth != null)
+                    AnimatedPositioned(
+                      duration: AppMotion.duration(context, AppMotion.state),
+                      curve: AppMotion.standard,
+                      left: _categoryPillLeft,
+                      top: 0,
+                      width: _categoryPillWidth,
+                      height: AppDesignTokens.chipHeight,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: AppDesignTokens.inkSurface(context),
+                          borderRadius: BorderRadius.all(
+                            Radius.circular(AppDesignTokens.radiusPill),
                           ),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: <Widget>[
-                            for (
-                              var index = 0;
-                              index < widget.categories.length;
-                              index++
-                            ) ...<Widget>[
-                              _buildCategoryChip(index),
-                              if (index < widget.categories.length - 1)
-                                const SizedBox(width: 10),
-                            ],
-                          ],
                         ),
-                      ],
+                      ),
                     ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      for (
+                        var displayIndex = 0;
+                        displayIndex <= widget.categories.length;
+                        displayIndex++
+                      ) ...<Widget>[
+                        _buildCategoryChip(displayIndex),
+                        if (displayIndex < widget.categories.length)
+                          const SizedBox(width: 8),
+                      ],
+                    ],
                   ),
-                ),
+                ],
               ),
-          ],
+            ),
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildSearchField(L t) {
-    return AnimatedContainer(
-      duration: AppMotion.duration(context, AppMotion.micro),
-      curve: AppMotion.enter,
-      height: 60,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: widget.isDark ? const Color(0xFF1D1A18) : Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: _hasSearchQuery
-              ? BaseColors.primary.withValues(alpha: 0.55)
-              : Colors.transparent,
-        ),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: Colors.black.withValues(alpha: widget.isDark ? 0.14 : 0.05),
-            blurRadius: 22,
-            offset: const Offset(0, 9),
-          ),
-        ],
-      ),
-      child: Row(
-        children: <Widget>[
-          const Icon(Icons.search_rounded, color: BaseColors.primary, size: 23),
-          const SizedBox(width: 10),
-          Expanded(
-            child: TextField(
-              controller: _searchController,
-              textInputAction: TextInputAction.search,
-              cursorColor: BaseColors.primary,
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-              decoration: InputDecoration(
-                isDense: true,
-                border: InputBorder.none,
-                hintText: t.searchProducts,
-                hintStyle: TextStyle(
-                  color: widget.isDark
-                      ? const Color(0xFF9E9790)
-                      : BaseColors.textGray,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              onChanged: (value) => setState(() => _searchQuery = value),
-            ),
-          ),
-          AnimatedSwitcher(
-            duration: AppMotion.duration(context, AppMotion.micro),
-            child: _hasSearchQuery
-                ? IconButton(
-                    key: const ValueKey<String>('clear-search'),
-                    tooltip: t.clearSearch,
-                    onPressed: () {
-                      _clearSearch();
-                    },
-                    icon: const Icon(Icons.close_rounded),
-                  )
-                : const SizedBox(
-                    key: ValueKey<String>('empty-search-action'),
-                    width: 40,
-                    height: 40,
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSearchResultsSliver(
-    List<MenuProduct> products,
-    ThemeData theme,
-    L t,
-  ) {
-    return SliverPadding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
-      sliver: SliverList.builder(
-        itemCount: products.length + 1,
-        itemBuilder: (context, index) {
-          if (index == 0) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: TypographyText(
-                t.searchProductsResultCount(products.length),
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: widget.isDark
-                      ? BaseColors.lightTextGray
-                      : BaseColors.textGray,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            );
-          }
-
-          final product = products[index - 1];
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: RepaintBoundary(
-              child: ProductListItem(
-                key: ValueKey<String>('search-${product.id}'),
-                product: product,
-                isDark: widget.isDark,
-                quantity: widget.cartQuantities[product.id] ?? 0,
-                imageHeroTag: _productHeroTag(product),
-                onImageTap: () => _showProductImagePreview(product),
-                onAdd: () => widget.onAddToCart(product),
-                onAddOrigin: (origin) => _animateProductToCart(product, origin),
-                onDecrease: () => widget.onDecreaseFromCart(product),
-                onIncrease: () => widget.onAddToCart(product),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildSearchEmptyState(ThemeData theme, L t) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(32, 48, 32, 96),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          Icon(
-            Icons.search_off_rounded,
-            size: 44,
-            color: widget.isDark
-                ? BaseColors.lightTextGray
-                : BaseColors.textGray,
-          ),
-          const SizedBox(height: 16),
-          TypographyText(
-            t.noProductsFound,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: widget.isDark
-                  ? BaseColors.lightTextGray
-                  : BaseColors.textGray,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 18),
-          OutlinedButton.icon(
-            onPressed: _clearSearch,
-            icon: const Icon(Icons.close_rounded, size: 19),
-            label: TypographyText(t.searchAgain),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCategoryChip(int index) {
-    final isActive = index == widget.selectedCategoryIndex;
-    final labelColor = isActive || widget.isDark
-        ? Colors.white
-        : const Color(0xFF14110F);
+  Widget _buildCategoryChip(int displayIndex) {
+    final categoryIndex = displayIndex - 1;
+    final isActive = categoryIndex == widget.selectedCategoryIndex;
+    final labelColor = isActive
+        ? AppDesignTokens.onInk(context)
+        : AppDesignTokens.primaryText(context);
     final hasSharedPill = _categoryPillLeft != null;
 
     return KeyedSubtree(
-      key: _categoryChipKeys[index],
+      key: _categoryChipKeys[displayIndex],
       child: Semantics(
         button: true,
         selected: isActive,
         child: Material(
           color: Colors.transparent,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(AppDesignTokens.radiusPill),
           child: Ink(
             decoration: BoxDecoration(
               color: hasSharedPill
                   ? Colors.transparent
                   : isActive
-                  ? BaseColors.primary
-                  : widget.isDark
-                  ? const Color(0xFF201C19)
-                  : const Color(0xFFF1EDE7),
-              borderRadius: BorderRadius.circular(18),
+                  ? AppDesignTokens.inkSurface(context)
+                  : AppDesignTokens.surface(context),
+              borderRadius: BorderRadius.circular(AppDesignTokens.radiusPill),
             ),
             child: InkWell(
-              borderRadius: BorderRadius.circular(18),
-              onTap: () => _scrollToCategory(index),
+              borderRadius: BorderRadius.circular(AppDesignTokens.radiusPill),
+              onTap: () => _selectCategory(categoryIndex),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: 48),
+                constraints: const BoxConstraints(
+                  minHeight: AppDesignTokens.chipHeight,
+                ),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Center(
                     child: AnimatedDefaultTextStyle(
                       duration: AppMotion.duration(context, AppMotion.micro),
                       curve: AppMotion.standard,
                       style: TextStyle(
                         color: labelColor,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
+                        fontFamily: 'GolosText',
+                        fontWeight: FontWeight.w500,
+                        fontSize: 13.5,
                       ),
-                      child: TypographyText(widget.categories[index]),
+                      child: Text(
+                        key: ValueKey<String>(
+                          'menu-category-label-$categoryIndex',
+                        ),
+                        categoryIndex < 0
+                            ? L.of(context).all
+                            : widget.categories[categoryIndex],
+                      ),
                     ),
                   ),
                 ),
@@ -1436,49 +940,81 @@ class _MenuScreenState extends State<MenuScreen> {
     );
   }
 
-  Widget _buildCategorySection(int index, ThemeData theme) {
-    final category = widget.categories[index];
-    final products = _groupedProducts[category] ?? const [];
-
-    return KeyedSubtree(
-      key: _sectionKeys[index],
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 18),
-        child: FadeSlideIn(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: TypographyText(
-                  category,
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
+  Widget _buildProductGrid(List<MenuProduct> products) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = constraints.maxWidth >= 720 ? 3 : 2;
+        final itemWidth =
+            (constraints.maxWidth - (12 * (columns - 1))) / columns;
+        return Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: <Widget>[
+            for (final product in products)
+              SizedBox(
+                width: itemWidth,
+                child: RepaintBoundary(
+                  child: ProductListItem(
+                    key: ValueKey<String>('menu-${product.id}'),
+                    product: product,
+                    isDark: widget.isDark,
+                    quantity: widget.cartQuantities[product.id] ?? 0,
+                    imageHeroTag: _productHeroTag(product),
+                    onImageTap: () => _showProductImagePreview(product),
+                    onAdd: () => _quickAdd(product),
+                    onAddOrigin: (origin) {
+                      if (standardCartSelection(product) != null) {
+                        _animateProductToCart(product, origin);
+                      }
+                    },
+                    onDecrease: () => widget.onDecreaseFromCart(product),
+                    onIncrease: () => _quickAdd(product),
                   ),
                 ),
               ),
-              for (final product in products)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: RepaintBoundary(
-                    child: ProductListItem(
-                      key: ValueKey<String>('menu-${product.id}'),
-                      product: product,
-                      isDark: widget.isDark,
-                      quantity: widget.cartQuantities[product.id] ?? 0,
-                      imageHeroTag: _productHeroTag(product),
-                      onImageTap: () => _showProductImagePreview(product),
-                      onAdd: () => widget.onAddToCart(product),
-                      onAddOrigin: (origin) =>
-                          _animateProductToCart(product, origin),
-                      onDecrease: () => widget.onDecreaseFromCart(product),
-                      onIncrease: () => widget.onAddToCart(product),
-                    ),
-                  ),
-                ),
-            ],
-          ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildFilteredEmptyState(L t) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(32, 24, 32, 96),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Container(
+              width: 64,
+              height: 64,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: AppDesignTokens.surface(context),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.restaurant_menu_rounded,
+                color: AppDesignTokens.tertiaryText(context),
+                size: 30,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TypographyText(
+              t.noProductsFound,
+              textAlign: TextAlign.center,
+              style: AppTextStyles.ui(
+                size: 17,
+                weight: FontWeight.w600,
+                color: AppDesignTokens.primaryText(context),
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextButton(
+              onPressed: () => _selectCategory(-1),
+              child: Text(t.all),
+            ),
+          ],
         ),
       ),
     );
@@ -1673,24 +1209,121 @@ class _SmileTrailPainter extends CustomPainter {
   }
 }
 
-class _ProductDetailPage extends StatelessWidget {
+class _ProductDetailPage extends StatefulWidget {
   const _ProductDetailPage({
     required this.product,
     required this.animation,
     required this.heroTag,
+    required this.onAdd,
   });
 
   final MenuProduct product;
   final Animation<double> animation;
   final Object heroTag;
+  final ValueChanged<CartSelection> onAdd;
+
+  @override
+  State<_ProductDetailPage> createState() => _ProductDetailPageState();
+}
+
+class _ProductDetailPageState extends State<_ProductDetailPage> {
+  final Map<String, Set<String>> _selectedByGroup = <String, Set<String>>{};
+  int _quantity = 1;
+
+  MenuProduct get product => widget.product;
+
+  @override
+  void initState() {
+    super.initState();
+    for (final group in product.modifierGroups) {
+      final available = group.options
+          .where((option) => option.isAvailable)
+          .toList(growable: false);
+      final selected = available
+          .where((option) => option.isDefault)
+          .take(group.maxSelected < 1 ? available.length : group.maxSelected)
+          .map((option) => option.id)
+          .toSet();
+      _selectedByGroup[group.id] = selected;
+    }
+  }
+
+  List<CartModifierSelection> get _selectedModifiers {
+    final selections = <CartModifierSelection>[];
+    for (final group in product.modifierGroups) {
+      final selectedIds = _selectedByGroup[group.id] ?? const <String>{};
+      for (final option in group.options) {
+        if (!selectedIds.contains(option.id)) continue;
+        selections.add(
+          CartModifierSelection(
+            groupId: group.id,
+            modifierId: option.id,
+            name: option.name,
+            price: option.price,
+            quantity: option.defaultQuantity < 1 ? 1 : option.defaultQuantity,
+          ),
+        );
+      }
+    }
+    return selections;
+  }
+
+  bool get _isValid {
+    for (final group in product.modifierGroups) {
+      final selectedCount = _selectedByGroup[group.id]?.length ?? 0;
+      if (selectedCount < group.minSelected) return false;
+      if (group.maxSelected > 0 && selectedCount > group.maxSelected) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  int get _unitPrice =>
+      product.price +
+      _selectedModifiers.fold<int>(
+        0,
+        (sum, modifier) => sum + modifier.totalPrice,
+      );
+
+  void _toggleOption(MenuModifierGroup group, MenuModifierOption option) {
+    if (!option.isAvailable) return;
+    final selected = Set<String>.of(
+      _selectedByGroup[group.id] ?? const <String>{},
+    );
+    if (selected.remove(option.id)) {
+      setState(() => _selectedByGroup[group.id] = selected);
+      return;
+    }
+
+    if (group.maxSelected == 1) {
+      selected
+        ..clear()
+        ..add(option.id);
+    } else if (group.maxSelected <= 0 || selected.length < group.maxSelected) {
+      selected.add(option.id);
+    }
+    setState(() => _selectedByGroup[group.id] = selected);
+  }
+
+  void _addToCart() {
+    if (!_isValid) return;
+    widget.onAdd(
+      CartSelection(
+        productId: product.id,
+        quantity: _quantity,
+        modifiers: _selectedModifiers,
+      ),
+    );
+    Navigator.of(context).pop();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final sheetAnimation = animation.drive(CurveTween(curve: AppMotion.enter));
-    final detailsAnimation = animation.drive(
+    final detailsAnimation = widget.animation.drive(
       CurveTween(curve: const Interval(0.28, 1, curve: Curves.easeOutCubic)),
     );
+    final description = product.description?.trim();
 
     return Semantics(
       key: const ValueKey<String>('product-detail-page'),
@@ -1698,150 +1331,462 @@ class _ProductDetailPage extends StatelessWidget {
       namesRoute: true,
       explicitChildNodes: true,
       label: product.title,
-      child: Material(
-        color: Colors.transparent,
-        child: Stack(
+      child: Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: Column(
           children: <Widget>[
-            Positioned.fill(
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => Navigator.of(context).pop(),
-              ),
-            ),
-            SafeArea(
-              minimum: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-              child: Align(
-                alignment: Alignment.bottomCenter,
-                child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, 0.06),
-                    end: Offset.zero,
-                  ).animate(sheetAnimation),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxWidth: 520,
-                      maxHeight: MediaQuery.sizeOf(context).height * 0.9,
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.zero,
+                physics: const BouncingScrollPhysics(),
+                children: <Widget>[
+                  SizedBox(
+                    height: 300,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: <Widget>[
+                        Hero(
+                          tag: widget.heroTag,
+                          createRectTween: (begin, end) =>
+                              MaterialRectCenterArcTween(
+                                begin: begin,
+                                end: end,
+                              ),
+                          child: ProductImage(
+                            product: product,
+                            width: double.infinity,
+                            height: 300,
+                            borderRadius: 0,
+                            fallbackFontSize: 110,
+                          ),
+                        ),
+                        Positioned(
+                          top: MediaQuery.paddingOf(context).top + 10,
+                          left: 16,
+                          child: _ProductDetailCircleButton(
+                            icon: Icons.arrow_back_ios_new_rounded,
+                            tooltip: MaterialLocalizations.of(
+                              context,
+                            ).backButtonTooltip,
+                            onTap: () => Navigator.of(context).pop(),
+                          ),
+                        ),
+                        Positioned(
+                          top: MediaQuery.paddingOf(context).top + 10,
+                          right: 16,
+                          child: _ProductDetailCircleButton(
+                            icon: Icons.close_rounded,
+                            tooltip: L.of(context).close,
+                            onTap: () => Navigator.of(context).pop(),
+                          ),
+                        ),
+                      ],
                     ),
-                    child: Material(
-                      color: isDark ? const Color(0xFF1D1A18) : Colors.white,
-                      borderRadius: BorderRadius.circular(30),
-                      clipBehavior: Clip.antiAlias,
-                      elevation: 18,
-                      shadowColor: Colors.black.withValues(alpha: 0.28),
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-                        child: LayoutBuilder(
-                          builder: (context, constraints) {
-                            final previewSize = (constraints.maxWidth - 8)
-                                .clamp(180.0, 360.0)
-                                .toDouble();
-                            return Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                  ),
+                  Transform.translate(
+                    offset: const Offset(0, -28),
+                    child: Container(
+                      padding: const EdgeInsets.fromLTRB(20, 22, 20, 0),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).scaffoldBackgroundColor,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(28),
+                        ),
+                      ),
+                      child: FadeTransition(
+                        opacity: detailsAnimation,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            TypographyText(
+                              product.title,
+                              style: AppTextStyles.display(
+                                size: 27,
+                                height: 1.08,
+                                color: AppDesignTokens.primaryText(context),
+                              ),
+                            ),
+                            if (description?.isNotEmpty == true) ...<Widget>[
+                              const SizedBox(height: 8),
+                              TypographyText(
+                                description!,
+                                style: AppTextStyles.ui(
+                                  size: 14,
+                                  height: 1.45,
+                                  color: AppDesignTokens.secondaryText(context),
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: 14),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
                               children: <Widget>[
-                                Stack(
-                                  alignment: Alignment.center,
-                                  children: <Widget>[
-                                    Container(
-                                      width: 38,
-                                      height: 4,
-                                      decoration: BoxDecoration(
-                                        color: isDark
-                                            ? Colors.white.withValues(
-                                                alpha: 0.2,
-                                              )
-                                            : Colors.black.withValues(
-                                                alpha: 0.1,
-                                              ),
-                                        borderRadius: BorderRadius.circular(
-                                          999,
-                                        ),
-                                      ),
-                                    ),
-                                    Align(
-                                      alignment: Alignment.centerRight,
-                                      child: IconButton(
-                                        tooltip: MaterialLocalizations.of(
-                                          context,
-                                        ).closeButtonTooltip,
-                                        onPressed: () =>
-                                            Navigator.of(context).pop(),
-                                        icon: const Icon(Icons.close_rounded),
-                                      ),
-                                    ),
-                                  ],
+                                _ProductMetaChip(
+                                  icon: Icons.restaurant_menu_rounded,
+                                  label: product.category,
                                 ),
-                                Center(
-                                  child: Hero(
-                                    tag: heroTag,
-                                    createRectTween: (begin, end) =>
-                                        MaterialRectCenterArcTween(
-                                          begin: begin,
-                                          end: end,
-                                        ),
-                                    child: ProductImage(
-                                      product: product,
-                                      width: previewSize,
-                                      height: previewSize,
-                                      borderRadius: 26,
-                                      fallbackFontSize: 96,
-                                    ),
+                                if (product.calories != null)
+                                  _ProductMetaChip(
+                                    icon: Icons.local_fire_department_outlined,
+                                    label: L
+                                        .of(context)
+                                        .caloriesLabel(product.calories!),
                                   ),
-                                ),
-                                const SizedBox(height: 16),
-                                FadeTransition(
-                                  opacity: detailsAnimation,
-                                  child: SizeTransition(
-                                    sizeFactor: detailsAnimation,
-                                    axisAlignment: -1,
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: <Widget>[
-                                        TypographyText(
-                                          product.title,
-                                          style: const TextStyle(
-                                            fontSize: 24,
-                                            fontWeight: FontWeight.w900,
-                                            height: 1.08,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        TypographyText(
-                                          product.category,
-                                          style: TextStyle(
-                                            color: isDark
-                                                ? BaseColors.lightTextGray
-                                                : BaseColors.textGray,
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 14),
-                                        TypographyText(
-                                          formatSum(product.price),
-                                          style: const TextStyle(
-                                            color: BaseColors.primary,
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.w900,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                                if (product.weightGrams != null)
+                                  _ProductMetaChip(
+                                    icon: Icons.scale_outlined,
+                                    label: L
+                                        .of(context)
+                                        .weightGramsLabel(product.weightGrams!),
                                   ),
-                                ),
+                                if (product.cookingTimeMinutes != null)
+                                  _ProductMetaChip(
+                                    icon: Icons.schedule_rounded,
+                                    label: L
+                                        .of(context)
+                                        .cookingMinutesLabel(
+                                          product.cookingTimeMinutes!,
+                                        ),
+                                  ),
                               ],
-                            );
-                          },
+                            ),
+                            for (final group in product.modifierGroups)
+                              _buildModifierGroup(context, group),
+                            const SizedBox(height: 12),
+                          ],
                         ),
                       ),
                     ),
+                  ),
+                ],
+              ),
+            ),
+            _buildBottomBar(context),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModifierGroup(BuildContext context, MenuModifierGroup group) {
+    final t = L.of(context);
+    final available = group.options
+        .where((option) => option.isAvailable)
+        .toList(growable: false);
+    if (available.isEmpty) return const SizedBox.shrink();
+    final selected = _selectedByGroup[group.id] ?? const <String>{};
+    final valid = selected.length >= group.minSelected;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 22),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: <Widget>[
+              Expanded(
+                child: TypographyText(
+                  group.name,
+                  style: AppTextStyles.display(
+                    size: 18,
+                    height: 1.2,
+                    color: AppDesignTokens.primaryText(context),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              TypographyText(
+                group.minSelected > 0 ? t.requiredChoice : t.optionalChoice,
+                style: AppTextStyles.ui(
+                  size: 11,
+                  weight: FontWeight.w600,
+                  color: valid
+                      ? AppDesignTokens.tertiaryText(context)
+                      : AppDesignTokens.action,
+                ),
+              ),
+            ],
+          ),
+          if (!valid) ...<Widget>[
+            const SizedBox(height: 4),
+            TypographyText(
+              t.chooseAtLeastOptions(group.minSelected),
+              style: AppTextStyles.ui(size: 12, color: AppDesignTokens.action),
+            ),
+          ],
+          const SizedBox(height: 10),
+          Container(
+            decoration: BoxDecoration(
+              color: AppDesignTokens.surface(context),
+              borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+              boxShadow: AppDesignTokens.cardShadow(context),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              children: <Widget>[
+                for (
+                  var index = 0;
+                  index < available.length;
+                  index++
+                ) ...<Widget>[
+                  _ProductModifierRow(
+                    option: available[index],
+                    selected: selected.contains(available[index].id),
+                    radioStyle: group.maxSelected == 1,
+                    onTap: () => _toggleOption(group, available[index]),
+                  ),
+                  if (index < available.length - 1)
+                    Divider(
+                      height: 1,
+                      indent: 54,
+                      color: AppDesignTokens.hairline(context),
+                    ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomBar(BuildContext context) {
+    final t = L.of(context);
+    final total = _unitPrice * _quantity;
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 14),
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 22,
+              offset: const Offset(0, -8),
+            ),
+          ],
+        ),
+        child: Row(
+          children: <Widget>[
+            _ProductQuantityStepper(
+              quantity: _quantity,
+              onDecrease: _quantity <= 1
+                  ? null
+                  : () => setState(() => _quantity--),
+              onIncrease: () => setState(() => _quantity++),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(
+                    AppDesignTokens.radiusPill,
+                  ),
+                  boxShadow: _isValid
+                      ? AppDesignTokens.actionGlow
+                      : const <BoxShadow>[],
+                ),
+                child: FilledButton(
+                  onPressed: _isValid ? _addToCart : null,
+                  child: TypographyText(
+                    t.addToCartFor(formatSum(context, total)),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.white),
                   ),
                 ),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ProductDetailCircleButton extends StatelessWidget {
+  const _ProductDetailCircleButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white.withValues(alpha: 0.92),
+      shape: const CircleBorder(),
+      elevation: 4,
+      shadowColor: Colors.black.withValues(alpha: 0.18),
+      child: IconButton(
+        onPressed: onTap,
+        tooltip: tooltip,
+        icon: Icon(icon, size: 18, color: AppDesignTokens.ink),
+      ),
+    );
+  }
+}
+
+class _ProductMetaChip extends StatelessWidget {
+  const _ProductMetaChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+      decoration: BoxDecoration(
+        color: AppDesignTokens.primaryText(context).withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusPill),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(icon, size: 14, color: AppDesignTokens.secondaryText(context)),
+          const SizedBox(width: 5),
+          TypographyText(
+            label,
+            style: AppTextStyles.ui(
+              size: 12,
+              weight: FontWeight.w600,
+              color: AppDesignTokens.secondaryText(context),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProductModifierRow extends StatelessWidget {
+  const _ProductModifierRow({
+    required this.option,
+    required this.selected,
+    required this.radioStyle,
+    required this.onTap,
+  });
+
+  final MenuModifierOption option;
+  final bool selected;
+  final bool radioStyle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: selected,
+      enabled: option.isAvailable,
+      label: option.name,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: <Widget>[
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: selected ? AppDesignTokens.action : Colors.transparent,
+                  shape: radioStyle ? BoxShape.circle : BoxShape.rectangle,
+                  borderRadius: radioStyle ? null : BorderRadius.circular(8),
+                  border: Border.all(
+                    color: selected
+                        ? AppDesignTokens.action
+                        : AppDesignTokens.controlBorder(context),
+                    width: 1.5,
+                  ),
+                ),
+                child: selected
+                    ? Icon(
+                        radioStyle ? Icons.circle : Icons.check_rounded,
+                        size: radioStyle ? 8 : 14,
+                        color: Colors.white,
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TypographyText(
+                  option.name,
+                  style: AppTextStyles.ui(
+                    size: 14.5,
+                    weight: FontWeight.w600,
+                    color: AppDesignTokens.primaryText(context),
+                  ),
+                ),
+              ),
+              if (option.price > 0)
+                TypographyText(
+                  '+${formatSum(context, option.price)}',
+                  style: AppTextStyles.ui(
+                    size: 13.5,
+                    weight: FontWeight.w600,
+                    color: AppDesignTokens.secondaryText(context),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProductQuantityStepper extends StatelessWidget {
+  const _ProductQuantityStepper({
+    required this.quantity,
+    required this.onDecrease,
+    required this.onIncrease,
+  });
+
+  final int quantity;
+  final VoidCallback? onDecrease;
+  final VoidCallback onIncrease;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 46,
+      decoration: BoxDecoration(
+        color: AppDesignTokens.surface(context),
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusPill),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          IconButton(
+            onPressed: onDecrease,
+            icon: const Icon(Icons.remove_rounded, size: 18),
+          ),
+          SizedBox(
+            width: 24,
+            child: TypographyText(
+              '$quantity',
+              textAlign: TextAlign.center,
+              style: AppTextStyles.ui(
+                size: 14,
+                weight: FontWeight.w700,
+                color: AppDesignTokens.primaryText(context),
+              ),
+            ),
+          ),
+          IconButton(
+            onPressed: onIncrease,
+            icon: const Icon(Icons.add_rounded, size: 18),
+          ),
+        ],
       ),
     );
   }

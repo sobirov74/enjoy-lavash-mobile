@@ -1,0 +1,15 @@
+/* Corner radii — from the design. Buttons, chips and pills are fully rounded. */
+:root {
+  --radius-sheet: 28px;   /* bottom sheets, sheet-over-hero */
+  --radius-card-lg: 24px; /* hero product cards, seasonal banner */
+  --radius-card: 22px;    /* large cards */
+  --radius-card-sm: 20px; /* menu tiles, mode cards */
+  --radius-panel: 18px;   /* banners, pairing card */
+  --radius-tile: 16px;    /* modifier cards, segment container */
+  --radius-tile-sm: 15px;
+  --radius-input: 14px;   /* inputs, promo field, inner segments */
+  --radius-inner: 12px;   /* segment buttons, small thumbs */
+  --radius-thumb: 11px;
+  --radius-chip: 10px;
+  --radius-pill: 999px;   /* buttons, chips, pills */
+}

@@ -46,10 +46,19 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
   String? _pickupBranchId;
   String? _pickupBranchText;
   String? _previewErrorText;
+  Failure? _previewFailure;
+  String? _previewFailureBranchId;
   bool _isPreviewLoading = false;
   bool _isChangingDestination = false;
   bool _usePointsBalance = false;
   int _maximumPointsToSpend = 0;
+  OrderingStatusModel? _orderingStatus;
+  Failure? _orderingStatusFailure;
+  bool _orderingStatusLoading = false;
+  String? _orderingStatusBranchId;
+  DateTime? _orderingStatusLoadedAt;
+  int _orderingStatusRequestVersion = 0;
+  Timer? _orderingStatusRefreshTimer;
 
   @override
   void initState() {
@@ -66,6 +75,7 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       unawaited(context.read<MobileBackendController>().refreshLoyaltyWallet());
+      unawaited(_loadOrderingStatus(_pickupBranchId));
       unawaited(_loadPreview());
     });
   }
@@ -75,6 +85,7 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
     _promoCodeController.removeListener(_onPromoCodeChanged);
     _pointsController.removeListener(_onPointsChanged);
     _previewDebounce?.cancel();
+    _orderingStatusRefreshTimer?.cancel();
     _promoCodeController.dispose();
     _commentController.dispose();
     _pointsController.dispose();
@@ -98,16 +109,14 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
   }
 
   String? get _promoCodeForOrder {
-    final promoCode = _normalizedPromoCode;
-    if (promoCode == null) return null;
+    return _normalizedPromoCode;
+  }
 
+  bool get _promoCodeCanBeSubmitted {
+    if (!_hasPromoCodeInput) return true;
     final preview = _previewDetails?.preview;
-    if (preview == null) return promoCode;
-    if (!preview.hasPromotionStatus) return promoCode;
-
-    return preview.promotionStatus == CartPromotionStatus.applied
-        ? promoCode
-        : null;
+    if (preview == null || !_previewMatchesCurrentInput) return false;
+    return preview.acceptsPromoCode(_normalizedPromoCode);
   }
 
   bool get _previewMatchesCurrentInput {
@@ -126,14 +135,11 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
   MobilePaymentMethod get _currentPaymentMethod {
     final methods = _availablePaymentMethods;
     if (methods.isEmpty) {
-      if (_isUsablePaymentMethod(_paymentMethod)) {
-        return _paymentMethod;
-      }
       final previewedMethod = _lastPreviewPaymentMethod;
       if (_isUsablePaymentMethod(previewedMethod)) {
         return previewedMethod!;
       }
-      return MobilePaymentMethod.cash;
+      return MobilePaymentMethod.unknown;
     }
     final hasSelected = methods.any((method) => method.code == _paymentMethod);
     return hasSelected ? _paymentMethod : methods.first.code;
@@ -145,26 +151,7 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
 
   List<PaymentMethodModel> _paymentMethodsForDisplay(
     List<PaymentMethodModel> methods,
-    MobilePaymentMethod currentPaymentMethod,
-    L t,
-  ) {
-    if (methods.isNotEmpty) return methods;
-    if (!_isUsablePaymentMethod(currentPaymentMethod)) {
-      return const <PaymentMethodModel>[];
-    }
-
-    return <PaymentMethodModel>[
-      PaymentMethodModel(
-        id: 'preview-${currentPaymentMethod.value}',
-        code: currentPaymentMethod,
-        name: _confirmationPaymentLabel(currentPaymentMethod, t),
-        isOnline:
-            currentPaymentMethod == MobilePaymentMethod.payme ||
-            currentPaymentMethod == MobilePaymentMethod.click,
-        sortOrder: 0,
-      ),
-    ];
-  }
+  ) => methods;
 
   void _onPromoCodeChanged() {
     if (!mounted) return;
@@ -180,6 +167,8 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
     _previewInputVersion++;
     setState(() {
       _previewErrorText = null;
+      _previewFailure = null;
+      _previewFailureBranchId = null;
       _previewDetails = null;
     });
     _previewDebounce?.cancel();
@@ -195,12 +184,17 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
 
     final orderType = _orderType;
     final paymentMethod = _currentPaymentMethod;
+    if (!_isUsablePaymentMethod(paymentMethod)) {
+      return _showPreviewError(L.of(context).paymentMethodsUnavailable);
+    }
     final promoCode = _normalizedPromoCode;
     final loyaltyRedemptionAmount = _requestedPoints;
     final inputVersion = _previewInputVersion;
     setState(() {
       _isPreviewLoading = true;
       _previewErrorText = null;
+      _previewFailure = null;
+      _previewFailureBranchId = null;
       _previewDetails = null;
     });
 
@@ -238,7 +232,7 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
         loyaltyRedemptionAmount,
         inputVersion,
       ),
-      Error(:final failure) => _showPreviewError(failure.message),
+      Error(:final failure) => _showPreviewFailure(failure),
     };
   }
 
@@ -261,8 +255,15 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
       _lastPreviewLoyaltyPoints = loyaltyRedemptionAmount;
       _lastPreviewInputVersion = inputVersion;
       _previewErrorText = null;
+      _previewFailure = null;
+      _previewFailureBranchId = null;
       _isPreviewLoading = false;
     });
+    final previewBranchId = details.preview.branchId?.trim();
+    if (previewBranchId?.isNotEmpty == true &&
+        previewBranchId != _orderingStatusBranchId) {
+      unawaited(_loadOrderingStatus(previewBranchId));
+    }
     return true;
   }
 
@@ -270,9 +271,50 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
     setState(() {
       _previewDetails = null;
       _previewErrorText = message;
+      _previewFailure = null;
+      _previewFailureBranchId = null;
       _isPreviewLoading = false;
     });
     return false;
+  }
+
+  bool _showPreviewFailure(Failure failure) {
+    final metadata =
+        failure is ServerFailure && failure.errorCode == 'ORDERING_CLOSED'
+        ? OrderingClosedMetadataModel.fromJson(failure.metadata)
+        : null;
+    final branchId = _trimmedOrNull(metadata?.branchId);
+    setState(() {
+      _previewDetails = null;
+      _previewErrorText = null;
+      _previewFailure = failure;
+      _previewFailureBranchId = branchId;
+      _isPreviewLoading = false;
+    });
+    if (branchId != null) {
+      unawaited(_loadOrderingStatus(branchId, force: true));
+    }
+    return false;
+  }
+
+  String _previewFailureMessage(Failure failure) {
+    final t = L.of(context);
+    if (failure is ServerFailure && failure.errorCode == 'ORDERING_CLOSED') {
+      final metadata = OrderingClosedMetadataModel.fromJson(failure.metadata);
+      final nextOpening = metadata.nextOpeningAt;
+      if (nextOpening == null) return t.orderingClosedAction;
+      final locale = Localizations.localeOf(context).languageCode;
+      final formatted = DateFormat(
+        'd MMM, HH:mm',
+        locale,
+      ).format(nextOpening.toLocal());
+      final timezone = metadata.timezone.trim();
+      return timezone.isEmpty
+          ? t.orderingNextOpening(formatted)
+          : '${t.orderingNextOpening(formatted)} · $timezone';
+    }
+    final message = failure.message.trim();
+    return message.isEmpty ? t.couldNotCalculateTotal : message;
   }
 
   Future<void> _confirmOrder() async {
@@ -280,6 +322,18 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
       final didPreview = await _loadPreview();
       if (!didPreview || !mounted) return;
     }
+
+    final branchId = _orderingBranchIdForCurrentInput;
+    final loadedAt = _orderingStatusLoadedAt;
+    final isStale =
+        loadedAt == null ||
+        DateTime.now().toUtc().difference(loadedAt) >
+            const Duration(minutes: 2);
+    if (branchId != null && isStale) {
+      await _loadOrderingStatus(branchId, force: true);
+      if (!mounted) return;
+    }
+    if (_relevantOrderingAvailability?.isOpen == false) return;
 
     Navigator.of(context).pop(
       _OrderCreationResult(
@@ -296,7 +350,10 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
     if (_isChangingDestination) return;
 
     if (_orderType != MobileOrderType.delivery) {
-      setState(() => _orderType = MobileOrderType.delivery);
+      setState(() {
+        _orderType = MobileOrderType.delivery;
+        _clearOrderingStatusState();
+      });
     }
 
     _isChangingDestination = true;
@@ -337,7 +394,118 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
       _pickupBranchText =
           _trimmedOrNull(branch.name) ?? _trimmedOrNull(branch.address);
     });
+    unawaited(_loadOrderingStatus(branch.id, force: true));
     unawaited(_loadPreview());
+  }
+
+  String? get _orderingBranchIdForCurrentInput {
+    final branchId = _orderType == MobileOrderType.pickup
+        ? _pickupBranchId
+        : _previewDetails?.preview.branchId ?? _previewFailureBranchId;
+    final normalized = branchId?.trim();
+    return normalized?.isNotEmpty == true ? normalized : null;
+  }
+
+  OrderingAvailabilityModel? get _relevantOrderingAvailability {
+    final status = _orderingStatus;
+    final branchId = _orderingBranchIdForCurrentInput;
+    if (status == null ||
+        branchId == null ||
+        status.branchId != branchId ||
+        _orderingStatusBranchId != branchId) {
+      return null;
+    }
+    return _orderType == MobileOrderType.pickup
+        ? status.pickup
+        : status.delivery;
+  }
+
+  void _clearOrderingStatusState() {
+    _orderingStatusRefreshTimer?.cancel();
+    _orderingStatusRefreshTimer = null;
+    _orderingStatusRequestVersion++;
+    _orderingStatus = null;
+    _orderingStatusFailure = null;
+    _orderingStatusBranchId = null;
+    _orderingStatusLoadedAt = null;
+    _orderingStatusLoading = false;
+    _previewFailureBranchId = null;
+  }
+
+  Future<void> _loadOrderingStatus(
+    String? branchId, {
+    bool force = false,
+  }) async {
+    final normalized = branchId?.trim();
+    if (normalized == null || normalized.isEmpty) return;
+    if (!force &&
+        _orderingStatusBranchId == normalized &&
+        (_orderingStatus != null || _orderingStatusLoading)) {
+      return;
+    }
+
+    _orderingStatusRefreshTimer?.cancel();
+    _orderingStatusRefreshTimer = null;
+    final requestVersion = ++_orderingStatusRequestVersion;
+    setState(() {
+      _orderingStatusBranchId = normalized;
+      _orderingStatusLoading = true;
+      _orderingStatusFailure = null;
+      if (_orderingStatus?.branchId != normalized) {
+        _orderingStatus = null;
+        _orderingStatusLoadedAt = null;
+      }
+    });
+    final result = await context
+        .read<MobileBackendController>()
+        .getBranchOrderingStatus(branchId: normalized);
+    if (!mounted || requestVersion != _orderingStatusRequestVersion) return;
+    switch (result) {
+      case Success(:final data):
+        setState(() {
+          _orderingStatus = data;
+          _orderingStatusFailure = null;
+          _orderingStatusLoading = false;
+          _orderingStatusLoadedAt = DateTime.now().toUtc();
+        });
+        _scheduleOrderingStatusRefresh(data, normalized);
+      case Error(:final failure):
+        setState(() {
+          _orderingStatus = null;
+          _orderingStatusFailure = failure;
+          _orderingStatusLoading = false;
+          _orderingStatusLoadedAt = DateTime.now().toUtc();
+        });
+    }
+  }
+
+  void _scheduleOrderingStatusRefresh(
+    OrderingStatusModel status,
+    String branchId,
+  ) {
+    _orderingStatusRefreshTimer?.cancel();
+    _orderingStatusRefreshTimer = null;
+    if (_orderingBranchIdForCurrentInput != branchId) return;
+
+    final availability = _orderType == MobileOrderType.pickup
+        ? status.pickup
+        : status.delivery;
+    if (availability.isOpen) return;
+
+    const maximumDelay = Duration(minutes: 2);
+    var delay = maximumDelay;
+    final nextOpeningAt = availability.nextOpeningAt;
+    if (nextOpeningAt != null) {
+      final untilOpening = nextOpeningAt.difference(DateTime.now().toUtc());
+      if (untilOpening > Duration.zero && untilOpening < maximumDelay) {
+        delay = untilOpening + const Duration(seconds: 1);
+      }
+    }
+
+    _orderingStatusRefreshTimer = Timer(delay, () {
+      if (!mounted || _orderingBranchIdForCurrentInput != branchId) return;
+      unawaited(_loadOrderingStatus(branchId, force: true));
+    });
   }
 
   void _selectPaymentMethod(MobilePaymentMethod method) {
@@ -459,14 +627,9 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
   Widget build(BuildContext context) {
     final t = L.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     final backend = context.watch<MobileBackendController>();
     final currentPaymentMethod = _currentPaymentMethod;
-    final paymentMethods = _paymentMethodsForDisplay(
-      backend.paymentMethods,
-      currentPaymentMethod,
-      t,
-    );
+    final paymentMethods = _paymentMethodsForDisplay(backend.paymentMethods);
     final loyaltyPreview = _previewDetails?.preview.loyalty;
     final wallet = backend.loyaltyWallet;
     final debtAmount = loyaltyPreview?.debtAmount ?? wallet?.debtBalance ?? 0;
@@ -478,167 +641,584 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
         (_previewDetails?.preview.totalAmount ?? -1) == 0 &&
         (loyaltyPreview?.appliedPoints ?? 0) > 0;
 
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.sizeOf(context).height * 0.88,
-      ),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1D1A18) : Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(
-          18,
-          0,
-          18,
-          20 + MediaQuery.paddingOf(context).bottom + bottomInset,
-        ),
+    final relevantAvailability = _relevantOrderingAvailability;
+    final orderingKnownClosed = relevantAvailability?.isOpen == false;
+    final canConfirm =
+        !_isPreviewLoading &&
+        !_orderingStatusLoading &&
+        !orderingKnownClosed &&
+        _previewMatchesCurrentInput &&
+        _promoCodeCanBeSubmitted &&
+        (fullyPaidWithPoints || paymentMethods.isNotEmpty);
+    final payableAmount = _previewDetails?.preview.totalAmount;
+
+    return Scaffold(
+      backgroundColor: isDark
+          ? AppDesignTokens.darkGround
+          : AppDesignTokens.lightGround,
+      body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            const AppBottomSheetDragHandle(),
-            const SizedBox(height: 6),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Expanded(
-                  child: TypographyText(
-                    t.createOrderTitle,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close_rounded),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            TypographyText(
-              t.orderType,
-              style: const TextStyle(
-                color: BaseColors.textGray,
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 8),
-            _OrderTypeToggle(
-              orderType: _orderType,
-              deliverySubtitle: _deliveryToggleSubtitle(),
-              pickupSubtitle: _pickupToggleSubtitle(),
-              onDeliveryTap: () => unawaited(_showDeliveryAddressPicker()),
-              onPickupTap: () => unawaited(_showPickupBranchPicker()),
-            ),
-            const SizedBox(height: 14),
-            TypographyText(
-              t.promoCode,
-              style: const TextStyle(
-                color: BaseColors.textGray,
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 8),
-            _PromoCodeField(
-              controller: _promoCodeController,
-              hasPromoCodeInput: _hasPromoCodeInput,
-              isLoading: _isPreviewLoading,
-              onApply: () => unawaited(_loadPreview()),
-            ),
-            const SizedBox(height: 14),
-            _LoyaltyRedemptionControl(
-              controller: _pointsController,
-              wallet: wallet,
-              preview: loyaltyPreview,
-              debtAmount: debtAmount,
-              enabled: pointsEnabled,
-              selected: _usePointsBalance,
-              maximumPoints:
-                  loyaltyPreview?.maxPointsToSpend ?? _maximumPointsToSpend,
-              isLoading: _isPreviewLoading,
-              onSelectedChanged: _setUsePointsBalance,
-              onUseMaximum: _useMaximumPoints,
-            ),
-            const SizedBox(height: 14),
-            if (fullyPaidWithPoints)
-              const _FullyPaidWithPointsCard()
-            else
-              _PaymentMethodSelector(
-                methods: paymentMethods,
-                selectedMethod: currentPaymentMethod,
-                isLoading:
-                    backend.paymentMethodsLoading && paymentMethods.isEmpty,
-                errorText: backend.paymentMethodsFailure?.message,
-                onRetry: () => unawaited(_retryPaymentMethods()),
-                onChanged: _selectPaymentMethod,
-              ),
-            const SizedBox(height: 14),
-            TypographyText(
-              t.commentLabel,
-              style: const TextStyle(
-                color: BaseColors.textGray,
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 8),
-            _OrderCommentField(controller: _commentController),
-            const SizedBox(height: 14),
-            _OrderItemsSection(cartLines: widget.cartLines),
-            const SizedBox(height: 14),
-            _CheckoutPreviewSummary(
-              isLoading: _isPreviewLoading,
-              details: _previewDetails,
-              errorText: _previewErrorText,
-              onRetry: () => unawaited(_loadPreview()),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: BaseColors.textGray,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 8),
+              child: Row(
+                children: <Widget>[
+                  Material(
+                    color: AppDesignTokens.surface(context),
+                    shape: const CircleBorder(),
+                    elevation: 1,
+                    child: IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      tooltip: MaterialLocalizations.of(
+                        context,
+                      ).backButtonTooltip,
+                      icon: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 17,
                       ),
                     ),
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: TypographyText(t.cancel),
                   ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: BaseColors.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    onPressed:
-                        _isPreviewLoading ||
-                            !_previewMatchesCurrentInput ||
-                            (!fullyPaidWithPoints && paymentMethods.isEmpty)
-                        ? null
-                        : () => unawaited(_confirmOrder()),
+                  const SizedBox(width: 12),
+                  Expanded(
                     child: TypographyText(
-                      t.createOrderAction,
+                      t.createOrderTitle,
+                      style: AppTextStyles.display(
+                        size: 26,
+                        height: 1.15,
+                        color: AppDesignTokens.primaryText(context),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(
+                  20,
+                  8,
+                  20,
+                  24 + MediaQuery.viewInsetsOf(context).bottom,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    _CheckoutStepLabel(index: 1, label: t.orderType),
+                    const SizedBox(height: 8),
+                    _OrderTypeToggle(
+                      orderType: _orderType,
+                      deliverySubtitle: _deliveryToggleSubtitle(),
+                      pickupSubtitle: _pickupToggleSubtitle(),
+                      onDeliveryTap: () =>
+                          unawaited(_showDeliveryAddressPicker()),
+                      onPickupTap: () => unawaited(_showPickupBranchPicker()),
+                    ),
+                    const SizedBox(height: 18),
+                    _CheckoutStepLabel(
+                      index: 2,
+                      label: _orderType == MobileOrderType.delivery
+                          ? t.address
+                          : t.pickupBranch,
+                    ),
+                    const SizedBox(height: 8),
+                    _CheckoutDestinationCard(
+                      icon: _orderType == MobileOrderType.delivery
+                          ? Icons.location_on_outlined
+                          : Icons.storefront_outlined,
+                      title: _orderType == MobileOrderType.delivery
+                          ? t.delivery
+                          : t.pickup,
+                      subtitle: _orderType == MobileOrderType.delivery
+                          ? _deliveryToggleSubtitle() ?? t.tapToSelectAddress
+                          : _pickupToggleSubtitle() ?? t.pickupBranch,
+                      changeLabel: t.change,
+                      onTap: _orderType == MobileOrderType.delivery
+                          ? () => unawaited(_showDeliveryAddressPicker())
+                          : () => unawaited(_showPickupBranchPicker()),
+                    ),
+                    if (_orderingBranchIdForCurrentInput != null ||
+                        _orderingStatusFailure != null ||
+                        _orderingStatusLoading) ...<Widget>[
+                      const SizedBox(height: 10),
+                      _OrderingStatusCard(
+                        status: _orderingStatus,
+                        failure: _orderingStatusFailure,
+                        isLoading: _orderingStatusLoading,
+                        relevantType: _orderType,
+                        onRetry: () => unawaited(
+                          _loadOrderingStatus(
+                            _orderingBranchIdForCurrentInput,
+                            force: true,
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 18),
+                    _CheckoutStepLabel(index: 3, label: t.payment),
+                    const SizedBox(height: 8),
+                    if (fullyPaidWithPoints)
+                      const _FullyPaidWithPointsCard()
+                    else
+                      _PaymentMethodSelector(
+                        methods: paymentMethods,
+                        selectedMethod: currentPaymentMethod,
+                        isLoading:
+                            backend.paymentMethodsLoading &&
+                            paymentMethods.isEmpty,
+                        errorText: backend.paymentMethodsFailure?.message,
+                        onRetry: () => unawaited(_retryPaymentMethods()),
+                        onChanged: _selectPaymentMethod,
+                      ),
+                    const SizedBox(height: 18),
+                    _CheckoutStepLabel(index: 4, label: t.usePoints),
+                    const SizedBox(height: 8),
+                    _LoyaltyRedemptionControl(
+                      controller: _pointsController,
+                      wallet: wallet,
+                      preview: loyaltyPreview,
+                      debtAmount: debtAmount,
+                      enabled: pointsEnabled,
+                      selected: _usePointsBalance,
+                      maximumPoints:
+                          loyaltyPreview?.maxPointsToSpend ??
+                          _maximumPointsToSpend,
+                      isLoading: _isPreviewLoading,
+                      onSelectedChanged: _setUsePointsBalance,
+                      onUseMaximum: _useMaximumPoints,
+                    ),
+                    const SizedBox(height: 18),
+                    TypographyText(
+                      t.promoCode,
+                      style: AppTextStyles.ui(
+                        size: 12,
+                        weight: FontWeight.w600,
+                        color: AppDesignTokens.tertiaryText(context),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _PromoCodeField(
+                      controller: _promoCodeController,
+                      hasPromoCodeInput: _hasPromoCodeInput,
+                      isLoading: _isPreviewLoading,
+                      onApply: () => unawaited(_loadPreview()),
+                    ),
+                    const SizedBox(height: 14),
+                    TypographyText(
+                      t.commentLabel,
+                      style: AppTextStyles.ui(
+                        size: 12,
+                        weight: FontWeight.w600,
+                        color: AppDesignTokens.tertiaryText(context),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _OrderCommentField(controller: _commentController),
+                    const SizedBox(height: 14),
+                    _OrderItemsSection(
+                      cartLines: widget.cartLines,
+                      previewItems:
+                          _previewDetails?.preview.pricedItems ??
+                          const <PricedCartItemModel>[],
+                    ),
+                    const SizedBox(height: 14),
+                    _CheckoutPreviewSummary(
+                      isLoading: _isPreviewLoading,
+                      details: _previewDetails,
+                      errorText: _previewFailure == null
+                          ? _previewErrorText
+                          : _previewFailureMessage(_previewFailure!),
+                      onRetry: () => unawaited(_loadPreview()),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+              decoration: BoxDecoration(
+                color: AppDesignTokens.ground(context),
+                boxShadow: <BoxShadow>[
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 20,
+                    offset: const Offset(0, -8),
+                  ),
+                ],
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(
+                      AppDesignTokens.radiusPill,
+                    ),
+                    boxShadow: canConfirm
+                        ? AppDesignTokens.actionGlow
+                        : const <BoxShadow>[],
+                  ),
+                  child: FilledButton(
+                    onPressed: canConfirm
+                        ? () => unawaited(_confirmOrder())
+                        : null,
+                    child: TypographyText(
+                      payableAmount == null
+                          ? t.createOrderAction
+                          : t.createOrderFor(formatSum(context, payableAmount)),
                       style: const TextStyle(color: BaseColors.white),
                     ),
                   ),
                 ),
-              ],
+              ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _CheckoutStepLabel extends StatelessWidget {
+  const _CheckoutStepLabel({required this.index, required this.label});
+
+  final int index;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return TypographyText(
+      '$index · ${label.toUpperCase()}',
+      style: AppTextStyles.ui(
+        size: 11,
+        weight: FontWeight.w600,
+        color: AppDesignTokens.tertiaryText(context),
+      ),
+    );
+  }
+}
+
+class _CheckoutDestinationCard extends StatelessWidget {
+  const _CheckoutDestinationCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.changeLabel,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final String changeLabel;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppDesignTokens.surface(context),
+      borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: <Widget>[
+              Container(
+                width: 36,
+                height: 36,
+                alignment: Alignment.center,
+                decoration: const BoxDecoration(
+                  color: AppDesignTokens.actionSoft,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 18, color: AppDesignTokens.action),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    TypographyText(
+                      title,
+                      style: AppTextStyles.ui(
+                        size: 14,
+                        weight: FontWeight.w600,
+                        color: AppDesignTokens.primaryText(context),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    TypographyText(
+                      subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.ui(
+                        size: 12,
+                        color: AppDesignTokens.secondaryText(context),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              TypographyText(
+                changeLabel,
+                style: AppTextStyles.ui(
+                  size: 12,
+                  weight: FontWeight.w600,
+                  color: AppDesignTokens.action,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _OrderingStatusCard extends StatelessWidget {
+  const _OrderingStatusCard({
+    required this.status,
+    required this.failure,
+    required this.isLoading,
+    required this.relevantType,
+    required this.onRetry,
+  });
+
+  final OrderingStatusModel? status;
+  final Failure? failure;
+  final bool isLoading;
+  final MobileOrderType relevantType;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = L.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor = AppDesignTokens.hairline(context);
+
+    return Semantics(
+      container: true,
+      label: t.orderingAvailability,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppDesignTokens.surface(context),
+          borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+          border: Border.all(color: borderColor),
+        ),
+        child: AnimatedSwitcher(
+          duration: AppMotion.duration(context, AppMotion.micro),
+          child: status == null && (isLoading || failure == null)
+              ? Row(
+                  key: const ValueKey<String>('ordering-status-loading'),
+                  children: <Widget>[
+                    const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(child: Text(t.orderingChecking)),
+                  ],
+                )
+              : failure != null && status == null
+              ? Row(
+                  key: const ValueKey<String>('ordering-status-error'),
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Icon(
+                      Icons.info_outline_rounded,
+                      size: 20,
+                      color: AppDesignTokens.secondaryText(context),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        t.orderingStatusUnavailable,
+                        style: AppTextStyles.ui(
+                          size: 12.5,
+                          height: 1.35,
+                          color: AppDesignTokens.secondaryText(context),
+                        ),
+                      ),
+                    ),
+                    TextButton(onPressed: onRetry, child: Text(t.retry)),
+                  ],
+                )
+              : _OrderingAvailabilityContent(
+                  key: ValueKey<String>(
+                    'ordering-status-${status?.branchId ?? 'empty'}',
+                  ),
+                  status: status!,
+                  relevantType: relevantType,
+                  isDark: isDark,
+                  isRefreshing: isLoading,
+                  onRefresh: onRetry,
+                ),
+        ),
+      ),
+    );
+  }
+}
+
+class _OrderingAvailabilityContent extends StatelessWidget {
+  const _OrderingAvailabilityContent({
+    super.key,
+    required this.status,
+    required this.relevantType,
+    required this.isDark,
+    required this.isRefreshing,
+    required this.onRefresh,
+  });
+
+  final OrderingStatusModel status;
+  final MobileOrderType relevantType;
+  final bool isDark;
+  final bool isRefreshing;
+  final VoidCallback onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = L.of(context);
+    final relevant = relevantType == MobileOrderType.pickup
+        ? status.pickup
+        : status.delivery;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: TypographyText(
+                t.orderingAvailability,
+                style: AppTextStyles.ui(
+                  size: 13,
+                  weight: FontWeight.w600,
+                  color: AppDesignTokens.primaryText(context),
+                ),
+              ),
+            ),
+            TypographyText(
+              status.timezone,
+              style: AppTextStyles.ui(
+                size: 10.5,
+                color: AppDesignTokens.tertiaryText(context),
+              ),
+            ),
+            const SizedBox(width: 4),
+            if (isRefreshing)
+              const SizedBox(
+                width: 32,
+                height: 32,
+                child: Padding(
+                  padding: EdgeInsets.all(8),
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            else
+              IconButton(
+                key: const ValueKey<String>('ordering-status-refresh'),
+                onPressed: onRefresh,
+                tooltip: t.retry,
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+              ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        _OrderingAvailabilityRow(
+          label: t.pickupAvailability,
+          availability: status.pickup,
+          emphasized: relevantType == MobileOrderType.pickup,
+        ),
+        const SizedBox(height: 7),
+        _OrderingAvailabilityRow(
+          label: t.deliveryAvailability,
+          availability: status.delivery,
+          emphasized: relevantType == MobileOrderType.delivery,
+        ),
+        if (!relevant.isOpen) ...<Widget>[
+          const SizedBox(height: 10),
+          Text(
+            _closedDetail(context, relevant),
+            style: AppTextStyles.ui(
+              size: 12,
+              height: 1.35,
+              weight: FontWeight.w600,
+              color: isDark ? const Color(0xFFFFB4AB) : AppDesignTokens.danger,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  String _closedDetail(
+    BuildContext context,
+    OrderingAvailabilityModel availability,
+  ) {
+    final t = L.of(context);
+    final nextOpening = availability.nextOpeningAt;
+    if (nextOpening == null) return t.orderingClosedAction;
+    final locale = Localizations.localeOf(context).languageCode;
+    final formatted = DateFormat(
+      'd MMM, HH:mm',
+      locale,
+    ).format(nextOpening.toLocal());
+    return '${t.orderingNextOpening(formatted)} · ${availability.timezone}';
+  }
+}
+
+class _OrderingAvailabilityRow extends StatelessWidget {
+  const _OrderingAvailabilityRow({
+    required this.label,
+    required this.availability,
+    required this.emphasized,
+  });
+
+  final String label;
+  final OrderingAvailabilityModel availability;
+  final bool emphasized;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = L.of(context);
+    final color = availability.isOpen
+        ? AppDesignTokens.success
+        : AppDesignTokens.danger;
+    return Semantics(
+      selected: emphasized,
+      label:
+          '$label, ${availability.isOpen ? t.orderingOpen : t.orderingClosed}',
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              style: AppTextStyles.ui(
+                size: 12.5,
+                weight: emphasized ? FontWeight.w600 : FontWeight.w500,
+                color: AppDesignTokens.primaryText(context),
+              ),
+            ),
+          ),
+          Text(
+            availability.isOpen ? t.orderingOpen : t.orderingClosed,
+            style: AppTextStyles.ui(
+              size: 12,
+              weight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
       ),
     );
   }

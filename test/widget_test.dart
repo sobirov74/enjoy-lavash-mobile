@@ -51,9 +51,13 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Enjoy Lavash'), findsOneWidget);
-    expect(find.text('Меню'), findsOneWidget);
-    expect(find.text('Список пуст'), findsOneWidget);
+    expect(find.text('Здравствуйте, Гость.'), findsOneWidget);
+    expect(find.text('Главная'), findsOneWidget);
+    expect(find.text('Меню'), findsWidgets);
+    expect(
+      tester.widget<NavigationBar>(find.byType(NavigationBar)).destinations,
+      hasLength(4),
+    );
 
     final pageView = find.byKey(const ValueKey<String>('main-tabs-page-view'));
     expect(
@@ -66,7 +70,15 @@ void main() {
 
     expect(
       tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
+      0,
+    );
+
+    await tester.tap(find.byIcon(Icons.grid_view_rounded).first);
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
       1,
     );
+    expect(find.text('Список пуст'), findsOneWidget);
   });
 }

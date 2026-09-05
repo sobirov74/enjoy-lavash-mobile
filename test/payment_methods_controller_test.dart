@@ -58,47 +58,50 @@ void main() {
     expect(controller.paymentMethodsLoading, isFalse);
   });
 
-  test('a failed branch lookup clears methods from the previous branch',
-      () async {
-    final repository = _PaymentMethodsRepository();
-    final apiClient = ApiClient(baseUrl: 'https://example.test');
-    final controller = MobileBackendController(
-      repository,
-      MobilePushNotificationService(apiClient),
-    );
+  test(
+    'a failed branch lookup preserves the last usable methods',
+    () async {
+      final repository = _PaymentMethodsRepository();
+      final apiClient = ApiClient(baseUrl: 'https://example.test');
+      final controller = MobileBackendController(
+        repository,
+        MobilePushNotificationService(apiClient),
+      );
 
-    final firstRequest = controller.refreshPaymentMethods(
-      language: 'en',
-      branchId: 'branch-a',
-    );
-    repository.requests['branch-a']!.complete(
-      const Success(<PaymentMethodModel>[
-        PaymentMethodModel(
-          id: 'cash-a',
-          code: MobilePaymentMethod.cash,
-          name: 'Cash A',
-          isOnline: false,
-          sortOrder: 0,
-        ),
-      ]),
-    );
-    await firstRequest;
+      final firstRequest = controller.refreshPaymentMethods(
+        language: 'en',
+        branchId: 'branch-a',
+      );
+      repository.requests['branch-a']!.complete(
+        const Success(<PaymentMethodModel>[
+          PaymentMethodModel(
+            id: 'cash-a',
+            code: MobilePaymentMethod.cash,
+            name: 'Cash A',
+            isOnline: false,
+            sortOrder: 0,
+          ),
+        ]),
+      );
+      await firstRequest;
 
-    final failedRequest = controller.refreshPaymentMethods(
-      language: 'en',
-      branchId: 'branch-b',
-    );
-    expect(controller.paymentMethods, isEmpty);
-    repository.requests['branch-b']!.complete(
-      const Error<List<PaymentMethodModel>>(
-        ServiceUnavailableFailure(),
-      ),
-    );
-    await failedRequest;
+      final failedRequest = controller.refreshPaymentMethods(
+        language: 'en',
+        branchId: 'branch-b',
+      );
+      expect(controller.paymentMethods.single.id, 'cash-a');
+      repository.requests['branch-b']!.complete(
+        const Error<List<PaymentMethodModel>>(ServiceUnavailableFailure()),
+      );
+      await failedRequest;
 
-    expect(controller.paymentMethods, isEmpty);
-    expect(controller.paymentMethodsFailure, isA<ServiceUnavailableFailure>());
-  });
+      expect(controller.paymentMethods.single.id, 'cash-a');
+      expect(
+        controller.paymentMethodsFailure,
+        isA<ServiceUnavailableFailure>(),
+      );
+    },
+  );
 }
 
 class _PaymentMethodsRepository implements MobileBackendRepository {

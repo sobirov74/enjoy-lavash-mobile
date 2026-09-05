@@ -3,17 +3,32 @@ part of '../mobile_backend_controller.dart';
 extension _MobileBackendCatalogAdapter on MobileBackendController {
   void _applyCatalog(CatalogModel catalog) {
     final adaptedProducts = _adaptProducts(catalog);
+    final adaptedCategoryItems = catalog.categories
+        .map(
+          (category) => MenuCategory(
+            id: category.id,
+            name: category.name,
+            imageUrl: _resolveImageUrl(category.image),
+            description: category.description,
+          ),
+        )
+        .toList(growable: true);
 
-    final seenCategories = <String>{};
-    final adaptedCategories = <String>[];
+    final knownNames = adaptedCategoryItems
+        .map((category) => category.name)
+        .toSet();
     for (final product in adaptedProducts) {
-      if (seenCategories.add(product.category)) {
-        adaptedCategories.add(product.category);
-      }
+      if (!knownNames.add(product.category)) continue;
+      adaptedCategoryItems.add(
+        MenuCategory(id: product.category, name: product.category),
+      );
     }
 
     _menuProducts = adaptedProducts;
-    _menuCategories = adaptedCategories;
+    _menuCategoryItems = List<MenuCategory>.unmodifiable(adaptedCategoryItems);
+    _menuCategories = _menuCategoryItems
+        .map((category) => category.name)
+        .toList(growable: false);
   }
 
   List<MenuProduct> _adaptProducts(CatalogModel catalog) {
@@ -39,6 +54,33 @@ extension _MobileBackendCatalogAdapter on MobileBackendController {
             tint: visual.tint,
             highlight: visual.highlight,
             imageUrl: _resolveImageUrl(product.image),
+            description: product.description,
+            calories: product.calories,
+            weightGrams: product.weightGrams,
+            cookingTimeMinutes: product.cookingTimeMinutes,
+            modifierGroups: product.modifierGroups
+                .map(
+                  (group) => MenuModifierGroup(
+                    id: group.id,
+                    name: group.name,
+                    minSelected: group.minSelected,
+                    maxSelected: group.maxSelected,
+                    options: group.options
+                        .map(
+                          (option) => MenuModifierOption(
+                            id: option.id,
+                            name: option.name,
+                            price: option.price,
+                            defaultQuantity: option.quantity,
+                            isDefault: option.isDefault,
+                            isAvailable: option.isAvailable,
+                            imageUrl: _resolveImageUrl(option.image),
+                          ),
+                        )
+                        .toList(growable: false),
+                  ),
+                )
+                .toList(growable: false),
           );
         })
         .toList(growable: false);

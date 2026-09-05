@@ -23,6 +23,7 @@ const Map<String, Map<String, String>> _errorMessages = {
     'PRODUCT_NOT_FOUND': 'Product was not found',
     'BRANCH_NOT_FOUND': 'Branch was not found',
     'PAYMENT_METHOD_NOT_FOUND': 'Payment method was not found',
+    'ORDERING_CLOSED': 'Ordering is currently unavailable',
     'PERMISSION_DENIED': 'You do not have permission',
     'VALIDATION_FAILED': 'Validation failed',
     'BAD_REQUEST': 'Invalid request',
@@ -59,6 +60,7 @@ const Map<String, Map<String, String>> _errorMessages = {
     'PRODUCT_NOT_FOUND': 'Продукт не найден',
     'BRANCH_NOT_FOUND': 'Филиал не найден',
     'PAYMENT_METHOD_NOT_FOUND': 'Способ оплаты не найден',
+    'ORDERING_CLOSED': 'Приём заказов сейчас недоступен',
     'PERMISSION_DENIED': 'У вас нет доступа',
     'VALIDATION_FAILED': 'Ошибка валидации',
     'BAD_REQUEST': 'Некорректный запрос',
@@ -93,6 +95,7 @@ const Map<String, Map<String, String>> _errorMessages = {
     'PRODUCT_NOT_FOUND': 'Mahsulot topilmadi',
     'BRANCH_NOT_FOUND': 'Filial topilmadi',
     'PAYMENT_METHOD_NOT_FOUND': "To'lov usuli topilmadi",
+    'ORDERING_CLOSED': 'Hozir buyurtma berish imkoni yo‘q',
     'PERMISSION_DENIED': "Sizda ruxsat yo'q",
     'VALIDATION_FAILED': 'Validatsiya xatosi',
     'BAD_REQUEST': "So'rov noto'g'ri",
@@ -115,14 +118,10 @@ String resolveApiErrorMessage({
 }) {
   final language = _normalizeLanguage(languageCode);
   final body = _asMap(data);
-  final errorCode = _stringValue(body?['errorCode'] ?? body?['error_code']);
+  final errorCode = _stringValue(
+    body?['errorCode'] ?? body?['error_code'] ?? body?['code'],
+  );
   final serverMessage = _extractServerMessage(data);
-  if (_prefersServerMessage(errorCode) &&
-      serverMessage != null &&
-      serverMessage.isNotEmpty) {
-    return serverMessage;
-  }
-
   final translated = _translatedMessage(language, errorCode);
   if (translated != null) return translated;
 
@@ -131,10 +130,6 @@ String resolveApiErrorMessage({
   }
 
   return _defaultMessageForStatus(language, statusCode);
-}
-
-bool _prefersServerMessage(String? errorCode) {
-  return errorCode == 'VALIDATION_FAILED' || errorCode == 'BAD_REQUEST';
 }
 
 String _normalizeLanguage(String? languageCode) {

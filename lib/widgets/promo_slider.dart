@@ -1,6 +1,7 @@
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/promotion_model.dart';
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
+import 'package:enjoy_lavash_mobile/utils/price_formatter.dart';
 import 'package:enjoy_lavash_mobile/widgets/app_bottom_sheet_drag_handle.dart';
 import 'package:enjoy_lavash_mobile/widgets/app_modal_bottom_sheet.dart';
 import 'package:enjoy_lavash_mobile/widgets/app_snack_bar.dart';
@@ -319,9 +320,9 @@ class _PromotionDetailsSheet extends StatelessWidget {
                 _DetailRow(
                   icon: Icons.local_offer_rounded,
                   label: t.discount,
-                  value: promotion.discountType == 'PERCENTAGE'
+                  value: promotion.isPercentageDiscount
                       ? '${promotion.discountValue}%'
-                      : "${promotion.discountValue} so'm",
+                      : formatSum(context, promotion.discountValue!),
                   isDark: isDark,
                 ),
               ],

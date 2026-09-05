@@ -51,4 +51,17 @@ void main() {
       AssignedPromotionStatus.unknown,
     );
   });
+
+  test('formats the current nested PERCENT reward as a percentage', () {
+    final promotion = AssignedPromotionModel.fromJson({
+      'id': 'assignment-percent',
+      'promotion': {
+        'id': 'promotion-percent',
+        'title': {'en': 'Current reward schema'},
+        'reward': {'type': 'PERCENT', 'value': 15},
+      },
+    }, language: 'en');
+
+    expect(promotion.reward, '15%');
+  });
 }

@@ -11,8 +11,8 @@ import 'package:enjoy_lavash_mobile/screens/map_picker_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-Future<void> showAddressBottomSheet(BuildContext context) {
-  return showAppModalBottomSheet<void>(
+Future<bool?> showAddressBottomSheet(BuildContext context) {
+  return showAppModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
@@ -375,7 +375,7 @@ class _AddressSheetState extends State<_AddressSheet>
                         width: double.infinity,
                         child: ElevatedButton(
                           onPressed: loc.addressName.isNotEmpty
-                              ? () => Navigator.pop(context)
+                              ? () => Navigator.pop(context, true)
                               : null,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: BaseColors.primary,

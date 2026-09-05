@@ -1,0 +1,36 @@
+/* Motion — durations, easings and press-scales that match the prototype.
+   Two signature springs: a sheet entrance and a CTA press-release overshoot. */
+:root {
+  /* Durations */
+  --motion-fade-up: 300ms;         /* @kind other */
+  --motion-tab-fade: 220ms;        /* @kind other */
+  --motion-sheet-in: 450ms;        /* @kind other */
+  --motion-screen-sheet-in: 550ms; /* @kind other */
+  --motion-press: 150ms;           /* @kind other */
+  --motion-press-cta: 180ms;       /* @kind other */
+  --motion-segment: 180ms;         /* @kind other */
+  --motion-toast-autohide: 3400ms; /* @kind other */
+
+  /* Press scales */
+  --scale-press: 0.94;      /* @kind other */ /* generic tap */
+  --scale-press-cta: 0.95;  /* @kind other */ /* large CTA */
+
+  /* Easings */
+  --ease-sheet: cubic-bezier(0.3, 1.18, 0.35, 1);       /* @kind other */ /* springy sheet entrance */
+  --ease-cta: cubic-bezier(0.3, 1.6, 0.4, 1);           /* @kind other */ /* CTA press-release overshoot */
+  --ease-standard: cubic-bezier(0.3, 1.15, 0.35, 1);    /* @kind other */
+  --ease-out-quad: cubic-bezier(0.25, 0.46, 0.45, 0.94); /* @kind other */
+}
+
+@keyframes pace-fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes pace-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes pace-shimmer {
+  from { background-position: -200% 0; }
+  to   { background-position: 200% 0; }
+}

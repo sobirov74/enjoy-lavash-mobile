@@ -73,7 +73,7 @@ _failurePayload(Object? data) {
           Map<String, dynamic>.from(metadataValue),
         )
       : const <String, dynamic>{};
-  final rawCode = map['errorCode'] ?? map['error_code'];
+  final rawCode = map['errorCode'] ?? map['error_code'] ?? map['code'];
   final errorCode = rawCode?.toString().trim();
   return (
     errorCode: errorCode?.isEmpty == true ? null : errorCode,

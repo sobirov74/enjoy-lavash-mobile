@@ -4,6 +4,7 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/loyalty_
 import 'package:enjoy_lavash_mobile/features/mobile_backend/presentation/mobile_backend_controller.dart';
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
+import 'package:enjoy_lavash_mobile/theme/app_design_tokens.dart';
 import 'package:enjoy_lavash_mobile/widgets/animated_error_message.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
@@ -204,17 +205,18 @@ class _WalletOverview extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(22),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: <Color>[Color(0xFFFF9A68), Color(0xFFFF6843)],
+            color: isDark
+                ? AppDesignTokens.goldInk.withValues(alpha: 0.72)
+                : AppDesignTokens.goldWash,
+            borderRadius: BorderRadius.circular(AppDesignTokens.radiusHero),
+            border: Border.all(
+              color: AppDesignTokens.gold.withValues(alpha: 0.42),
             ),
-            borderRadius: BorderRadius.circular(28),
             boxShadow: <BoxShadow>[
               BoxShadow(
-                color: BaseColors.primary.withValues(alpha: 0.25),
-                blurRadius: 26,
-                offset: const Offset(0, 12),
+                color: AppDesignTokens.goldInk.withValues(alpha: 0.09),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
               ),
             ],
           ),
@@ -223,9 +225,11 @@ class _WalletOverview extends StatelessWidget {
             children: <Widget>[
               Row(
                 children: <Widget>[
-                  const Icon(
+                  Icon(
                     Icons.stars_rounded,
-                    color: Colors.white,
+                    color: isDark
+                        ? AppDesignTokens.gold
+                        : AppDesignTokens.goldInk,
                     size: 24,
                   ),
                   const SizedBox(width: 8),
@@ -233,7 +237,9 @@ class _WalletOverview extends StatelessWidget {
                     child: TypographyText(
                       t.spendablePoints,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.9),
+                        color: isDark
+                            ? const Color(0xFFFFEDB2)
+                            : AppDesignTokens.goldInk,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -250,8 +256,10 @@ class _WalletOverview extends StatelessWidget {
                   alignment: Alignment.centerLeft,
                   child: TypographyText(
                     _formatPoints(context, wallet.spendableBalance),
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: isDark
+                          ? const Color(0xFFFFF6D8)
+                          : AppDesignTokens.goldInk,
                       fontSize: 42,
                       height: 1,
                       fontWeight: FontWeight.w900,
@@ -263,7 +271,9 @@ class _WalletOverview extends StatelessWidget {
               TypographyText(
                 t.loyaltyPointValueInfo,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.86),
+                  color: isDark
+                      ? const Color(0xFFE7D48D)
+                      : AppDesignTokens.goldInk.withValues(alpha: 0.74),
                   fontSize: 13,
                 ),
               ),

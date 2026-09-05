@@ -1,0 +1,34 @@
+/* Spacing — a 2/4 grid with a 20px screen gutter. */
+:root {
+  --space-xxs: 2px;
+  --space-xs: 4px;
+  --space-s: 6px;
+  --space-sm: 8px;
+  --space-m: 10px;
+  --space-md: 12px;
+  --space-lg: 14px;
+  --space-xl: 16px;
+  --space-xxl: 20px;
+  --space-gutter: 20px;   /* screen edge padding */
+  --space-section: 22px;
+  --space-block: 24px;
+  --space-hero: 28px;
+  --space-loose: 32px;
+
+  /* Fixed sizes lifted from the design */
+  --size-cta-height: 54px;
+  --size-button-height: 52px;
+  --size-row-button-height: 40px;
+  --size-chip-height: 38px;
+  --size-filter-chip-height: 32px;
+  --size-segment-height: 46px;
+  --size-touch-min: 44px;   /* minimum hit target */
+  --size-grabber-w: 40px;
+  --size-grabber-h: 5px;
+
+  /* Icon sizes */
+  --icon-nav: 22px;
+  --icon-action: 17px;
+  --icon-chevron: 12px;
+  --icon-small: 10px;
+}

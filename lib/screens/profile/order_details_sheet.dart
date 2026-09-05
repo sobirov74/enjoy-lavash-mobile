@@ -407,7 +407,7 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet> {
             const SizedBox(height: 14),
             _OrderAmountDetailLine(
               label: t.amountToPay,
-              value: _formatOrderAmount(order.totalAmount),
+              value: _formatOrderAmount(context, order.totalAmount),
               strong: true,
             ),
           ],
@@ -452,7 +452,7 @@ class _OrderLoyaltyDetailSection extends StatelessWidget {
       children: <Widget>[
         _OrderAmountDetailLine(
           label: t.orderBeforePoints,
-          value: _formatOrderAmount(order.totalBeforePointsAmount),
+          value: _formatOrderAmount(context, order.totalBeforePointsAmount),
         ),
         if (order.loyaltyRedeemedAmount > 0) ...[
           const SizedBox(height: 9),
@@ -467,7 +467,7 @@ class _OrderLoyaltyDetailSection extends StatelessWidget {
         const SizedBox(height: 9),
         _OrderAmountDetailLine(
           label: t.amountToPay,
-          value: _formatOrderAmount(order.totalAmount),
+          value: _formatOrderAmount(context, order.totalAmount),
           strong: true,
         ),
         if (accrualLabel != null) ...[

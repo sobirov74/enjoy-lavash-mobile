@@ -11,7 +11,6 @@ extension _MobileBackendOrderController on MobileBackendController {
   }) async {
     final normalizedBranchId = _normalizedBranchId(branchId);
     final requestVersion = ++_paymentMethodsRequestVersion;
-    _paymentMethods = const <PaymentMethodModel>[];
     _paymentMethodsBranchId = normalizedBranchId;
     _paymentMethodsFailure = null;
     _paymentMethodsLoading = true;
@@ -30,7 +29,6 @@ extension _MobileBackendOrderController on MobileBackendController {
         _paymentMethodsFailure = null;
         _failure = null;
       case Error(:final failure):
-        _paymentMethods = const <PaymentMethodModel>[];
         _paymentMethodsFailure = failure;
         _applyFailure(failure, notify: false);
     }

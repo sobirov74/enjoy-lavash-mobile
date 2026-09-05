@@ -28,11 +28,13 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/loyalty_
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/order_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/presentation/mobile_backend_controller.dart';
 import 'package:enjoy_lavash_mobile/screens/authorization_screen.dart';
+import 'package:enjoy_lavash_mobile/screens/address_bottom_sheet.dart';
 import 'package:enjoy_lavash_mobile/screens/assigned_promotions_screen.dart';
-import 'package:enjoy_lavash_mobile/screens/notifications_screen.dart';
 import 'package:enjoy_lavash_mobile/screens/loyalty_wallet_screen.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
+import 'package:enjoy_lavash_mobile/theme/app_design_tokens.dart';
 import 'package:enjoy_lavash_mobile/theme/app_motion.dart';
+import 'package:enjoy_lavash_mobile/utils/price_formatter.dart';
 
 part 'profile/delete_account_sheet.dart';
 part 'profile/profile_sections.dart';
@@ -43,6 +45,9 @@ part 'profile/order_helpers.dart';
 part 'profile/order_row.dart';
 part 'profile/order_details_sheet.dart';
 part 'profile/order_detail_widgets.dart';
+part 'profile/profile_redesign.dart';
+part 'profile/profile_edit_screen.dart';
+part 'profile/saved_addresses_screen.dart';
 
 Future<void> showProfileOrderDetailsSheet({
   required BuildContext context,
@@ -88,7 +93,6 @@ class Profile extends StatefulWidget {
 
 class _ProfileState extends State<Profile> {
   late final Future<String?> _appVersionFuture;
-  bool _marketingConsentUpdating = false;
 
   @override
   void initState() {
@@ -160,8 +164,9 @@ class _ProfileState extends State<Profile> {
     );
   }
 
-  Future<void> _showAuthorizationModal(BuildContext context) {
-    return showAppModalBottomSheet<void>(
+  Future<void> _showAuthorizationModal(BuildContext context) async {
+    final backend = context.read<MobileBackendController>();
+    await showAppModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
@@ -178,6 +183,9 @@ class _ProfileState extends State<Profile> {
         );
       },
     );
+    if (context.mounted && backend.isAuthenticated) {
+      await backend.refreshCustomerData();
+    }
   }
 
   void _openAllOrders(BuildContext context) {
@@ -190,15 +198,6 @@ class _ProfileState extends State<Profile> {
     );
   }
 
-  Future<void> _openNotifications(BuildContext context) async {
-    final code = await Navigator.of(context).push<String>(
-      MaterialPageRoute<String>(builder: (_) => const NotificationsScreen()),
-    );
-    if (code != null) {
-      widget.onPromoSelected?.call(code);
-    }
-  }
-
   Future<void> _openAssignedPromotions(BuildContext context) async {
     final code = await Navigator.of(context).push<String>(
       MaterialPageRoute<String>(
@@ -208,6 +207,22 @@ class _ProfileState extends State<Profile> {
     if (code != null) {
       widget.onPromoSelected?.call(code);
     }
+  }
+
+  Future<void> _openProfileEditor(BuildContext context) {
+    return Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => _ProfileEditScreen(
+          onDeleteAccount: () => _showDeleteAccountSheet(context),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openSavedAddresses(BuildContext context) {
+    return Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(builder: (_) => const _SavedAddressesScreen()),
+    );
   }
 
   Future<void> _setPushNotifications(BuildContext context, bool enabled) async {
@@ -237,205 +252,25 @@ class _ProfileState extends State<Profile> {
     }
   }
 
-  Future<void> _setMarketingConsent(BuildContext context, bool enabled) async {
-    if (_marketingConsentUpdating) return;
-    final messenger = ScaffoldMessenger.of(context);
-    final fallbackMessage = L.of(context).marketingUpdateFailed;
-    setState(() => _marketingConsentUpdating = true);
-    final result = await context.read<MobileBackendController>().updateProfile(
-      ClientProfileUpdate(marketingConsent: enabled),
-    );
-    if (!mounted) return;
-    setState(() => _marketingConsentUpdating = false);
-    if (result case Error(:final failure)) {
-      messenger.showSnackBar(
-        appSnackBar(
-          failure.message.trim().isNotEmpty ? failure.message : fallbackMessage,
-        ),
-      );
-    }
-  }
-
-  String _formatAddress(ClientAddress address) {
-    final parts = <String>[address.street];
-    if (address.houseNumber?.isNotEmpty == true) {
-      parts.add(address.houseNumber!);
-    }
-    return parts.join(', ');
-  }
-
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final themeController = context.read<ThemeController>();
-    final localeController = context.watch<LocaleController>();
-    final mobileBackend = context.watch<MobileBackendController>();
     final t = L.of(context);
-    final client = mobileBackend.client;
-    final isAuthorized = client != null;
-    final displayName = client?.fullName.isNotEmpty == true
-        ? client!.fullName
-        : (isAuthorized ? t.guest : t.authorization);
-    final phoneNumber = client?.phoneNumber.isNotEmpty == true
-        ? client!.phoneNumber
-        : '';
-    final profileSubtitle = phoneNumber.isNotEmpty
-        ? phoneNumber
-        : t.tapToSignIn;
-    final recentOrders = mobileBackend.orders.take(2).toList(growable: false);
-    final hasMoreOrders = mobileBackend.orders.length > recentOrders.length;
-    final backendFailure = mobileBackend.failure is AuthFailure
-        ? null
-        : mobileBackend.failure;
-    final pushSettings = mobileBackend.pushNotificationSettings;
-    final notificationsLoading = mobileBackend.pushNotificationsUpdating;
-    final notificationsSupported = pushSettings?.supported ?? true;
-    final notificationsEnabled = pushSettings?.enabled ?? false;
-    final primaryAddressText = mobileBackend.addresses.isEmpty
-        ? null
-        : _formatAddress(mobileBackend.addresses.first);
-    final activePromotionCount = mobileBackend.assignedPromotions
-        .where((promotion) => promotion.canBeUsed)
-        .length;
-
-    return RefreshIndicator(
-      color: BaseColors.primary,
-      onRefresh: widget.onRefresh ?? () async {},
-      child: CustomScrollView(
-        physics: const BouncingScrollPhysics(
-          parent: AlwaysScrollableScrollPhysics(),
-        ),
-        slivers: <Widget>[
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(10, 12, 10, 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  TypographyText(
-                    t.profile,
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  _ProfileHeaderCard(
-                    isDark: isDark,
-                    isAuthorized: isAuthorized,
-                    displayName: displayName,
-                    subtitle: profileSubtitle,
-                    bonusBalance:
-                        mobileBackend.loyaltyWallet?.spendableBalance ??
-                        client?.bonusBalance,
-                    onSignIn: () => unawaited(_showAuthorizationModal(context)),
-                    onLoyaltyTap: () => unawaited(_openLoyaltyWallet(context)),
-                  ),
-                  const SizedBox(height: 16),
-                  if (backendFailure != null) ...[
-                    AnimatedErrorMessage(
-                      failure: backendFailure,
-                      compact: true,
-                      onRetry: widget.onRefresh == null
-                          ? null
-                          : () => unawaited(widget.onRefresh!()),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-
-                  if (isAuthorized) ...[
-                    _ProfileBenefitsSection(
-                      isDark: isDark,
-                      unreadCount: mobileBackend.notificationUnreadCount,
-                      activePromotionCount: activePromotionCount,
-                      onNotificationsTap: () =>
-                          unawaited(_openNotifications(context)),
-                      onPromotionsTap: () =>
-                          unawaited(_openAssignedPromotions(context)),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-
-                  _ProfileSettingsSection(
-                    isDark: isDark,
-                    locale: localeController.locale,
-                    notificationsSubtitle: _notificationSubtitle(
-                      t,
-                      isLoading: pushSettings == null,
-                      supported: notificationsSupported,
-                      enabled: notificationsEnabled,
-                      permissionPermanentlyDenied:
-                          pushSettings?.permissionPermanentlyDenied ?? false,
-                    ),
-                    notificationsEnabled: notificationsEnabled,
-                    notificationsLoading: notificationsLoading,
-                    notificationsToggleEnabled:
-                        pushSettings != null &&
-                        notificationsSupported &&
-                        !mobileBackend.pushNotificationsUpdating,
-                    onNotificationsChanged: (value) =>
-                        unawaited(_setPushNotifications(context, value)),
-                    isAuthorized: isAuthorized,
-                    marketingConsent: client?.marketingConsent ?? false,
-                    marketingConsentLoading: _marketingConsentUpdating,
-                    onMarketingConsentChanged: (value) =>
-                        unawaited(_setMarketingConsent(context, value)),
-                    onThemeChanged: (mode) =>
-                        unawaited(themeController.setTheme(mode)),
-                    onLocaleChanged: (locale) {
-                      if (localeController.locale == locale) return;
-                      HapticFeedback.selectionClick();
-                      unawaited(localeController.setLocale(locale));
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  if (isAuthorized)
-                    _ProfilePersonalInfoSection(
-                      isDark: isDark,
-                      phoneNumber: phoneNumber,
-                      addressText: primaryAddressText,
-                    ),
-                  if (isAuthorized) const SizedBox(height: 16),
-
-                  if (mobileBackend.orders.isNotEmpty) ...[
-                    _RecentOrdersSection(
-                      isDark: isDark,
-                      orders: recentOrders,
-                      locale: localeController.locale.languageCode,
-                      branches: mobileBackend.branches,
-                      addresses: mobileBackend.addresses,
-                      hasMoreOrders: hasMoreOrders,
-                      onSeeAllOrders: () => _openAllOrders(context),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-
-                  _CashbackSection(
-                    isDark: isDark,
-                    wallet: mobileBackend.loyaltyWallet,
-                    onTap: isAuthorized
-                        ? () => unawaited(_openLoyaltyWallet(context))
-                        : null,
-                  ),
-                  const SizedBox(height: 16),
-
-                  _ProfileActionsSection(
-                    isDark: isDark,
-                    isAuthorized: isAuthorized,
-                    appVersionFuture: _appVersionFuture,
-                    onShare: () => unawaited(_shareApp(t)),
-                    onLogout: () => _confirmLogout(context, t),
-                    onDeleteAccount: () =>
-                        unawaited(_showDeleteAccountSheet(context)),
-                  ),
-                  const SizedBox(height: 28),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+    return _RedesignedProfile(
+      key: const ValueKey<String>('profile-screen'),
+      appVersionFuture: _appVersionFuture,
+      onRefresh:
+          widget.onRefresh ??
+          context.read<MobileBackendController>().refreshCustomerData,
+      onSignIn: () => _showAuthorizationModal(context),
+      onEditProfile: () => _openProfileEditor(context),
+      onOpenPoints: () => _openLoyaltyWallet(context),
+      onOpenOrders: () async => _openAllOrders(context),
+      onOpenPromotions: () => _openAssignedPromotions(context),
+      onOpenAddresses: () => _openSavedAddresses(context),
+      onNotificationsChanged: (enabled) =>
+          _setPushNotifications(context, enabled),
+      onShare: () => _shareApp(t),
+      onLogout: () async => _confirmLogout(context, t),
     );
   }
 }

@@ -151,8 +151,10 @@ class _PreviewTotals extends StatelessWidget {
     final preview = details.preview;
     final appliedPromotion = preview.appliedPromotion;
     final promoCode = appliedPromotion?.code?.trim();
-    final promoTitle = appliedPromotion?.title?.trim();
-    final promotionStatusMessage = _promotionStatusMessage(preview);
+    final promoTitle = appliedPromotion?.titleFor(
+      Localizations.localeOf(context).languageCode,
+    );
+    final promotionStatusMessage = _promotionStatusMessage(t, preview);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -199,35 +201,36 @@ class _PreviewTotals extends StatelessWidget {
         ),
         _PreviewAmountRow(
           label: t.items,
-          value: formatSum(preview.itemsAmount),
+          value: formatSum(context, preview.itemsAmount),
         ),
         if (preview.modifiersAmount > 0)
           _PreviewAmountRow(
             label: t.modifiers,
-            value: formatSum(preview.modifiersAmount),
+            value: formatSum(context, preview.modifiersAmount),
           ),
         if (preview.discountAmount > 0)
           _PreviewAmountRow(
             label: t.discount,
-            value: '-${formatSum(preview.discountAmount)}',
+            value: '-${formatSum(context, preview.discountAmount)}',
             valueColor: BaseColors.primary,
           ),
         if (details.orderType == MobileOrderType.delivery ||
             preview.deliveryAmount > 0)
           _PreviewAmountRow(
             label: t.delivery,
-            value: formatSum(preview.deliveryAmount),
+            value: formatSum(context, preview.deliveryAmount),
           ),
         if (preview.promotionDeliveryDiscountAmount > 0)
           _PreviewAmountRow(
             label: '${t.delivery} ${t.discount.toLowerCase()}',
-            value: '-${formatSum(preview.promotionDeliveryDiscountAmount)}',
+            value:
+                '-${formatSum(context, preview.promotionDeliveryDiscountAmount)}',
             valueColor: BaseColors.primary,
           ),
         if (preview.serviceFeeAmount > 0)
           _PreviewAmountRow(
             label: t.serviceFee,
-            value: formatSum(preview.serviceFeeAmount),
+            value: formatSum(context, preview.serviceFeeAmount),
           ),
         if (appliedPromotion != null) ...[
           const SizedBox(height: 8),
@@ -275,7 +278,7 @@ class _PreviewTotals extends StatelessWidget {
         ),
         _PreviewAmountRow(
           label: t.orderBeforePoints,
-          value: formatSum(preview.totalBeforePointsAmount),
+          value: formatSum(context, preview.totalBeforePointsAmount),
         ),
         if ((preview.loyalty?.appliedPoints ?? 0) > 0)
           _PreviewAmountRow(
@@ -286,7 +289,7 @@ class _PreviewTotals extends StatelessWidget {
           ),
         _PreviewAmountRow(
           label: t.amountToPay,
-          value: formatSum(preview.totalAmount),
+          value: formatSum(context, preview.totalAmount),
           isTotal: true,
           valueColor: BaseColors.primary,
         ),
@@ -341,7 +344,7 @@ class _PreviewTotals extends StatelessWidget {
     );
   }
 
-  String? _promotionStatusMessage(CartPreviewModel preview) {
+  String? _promotionStatusMessage(L t, CartPreviewModel preview) {
     if (!preview.hasPromotionStatus ||
         preview.promotionStatus == CartPromotionStatus.none ||
         preview.promotionStatus == CartPromotionStatus.applied) {
@@ -351,20 +354,16 @@ class _PreviewTotals extends StatelessWidget {
     final reason = preview.promotionStatusReason?.trim();
     if (reason?.isNotEmpty == true) return reason;
     return switch (preview.promotionStatus) {
-      CartPromotionStatus.notFound => 'Promo code was not found',
-      CartPromotionStatus.inactive => 'Promo code is inactive',
-      CartPromotionStatus.notStarted => 'Promo code is not active yet',
-      CartPromotionStatus.expired => 'Promo code has expired',
-      CartPromotionStatus.globalLimitReached =>
-        'Promotion usage limit was reached',
-      CartPromotionStatus.clientLimitReached =>
-        'You have already used this promo code',
-      CartPromotionStatus.clientRequired => 'Sign in to use this promo code',
-      CartPromotionStatus.conditionsNotMet =>
-        'Promo code conditions were not met',
-      CartPromotionStatus.configurationError =>
-        'Promo code cannot be applied right now',
-      CartPromotionStatus.unknown => 'Promo code could not be applied',
+      CartPromotionStatus.notFound => t.promoCodeNotFound,
+      CartPromotionStatus.inactive => t.promoCodeInactive,
+      CartPromotionStatus.notStarted => t.promoCodeNotStarted,
+      CartPromotionStatus.expired => t.promoCodeExpired,
+      CartPromotionStatus.globalLimitReached => t.promoGlobalLimitReached,
+      CartPromotionStatus.clientLimitReached => t.promoClientLimitReached,
+      CartPromotionStatus.clientRequired => t.promoClientRequired,
+      CartPromotionStatus.conditionsNotMet => t.promoConditionsNotMet,
+      CartPromotionStatus.configurationError => t.promoConfigurationError,
+      CartPromotionStatus.unknown => t.promoCodeCouldNotBeApplied,
       CartPromotionStatus.none || CartPromotionStatus.applied => null,
     };
   }
@@ -500,40 +499,40 @@ class _CheckoutPreviewDetailsSheet extends StatelessWidget {
                 children: <Widget>[
                   _PreviewAmountRow(
                     label: t.items,
-                    value: formatSum(preview.itemsAmount),
+                    value: formatSum(context, preview.itemsAmount),
                   ),
                   if (preview.modifiersAmount > 0)
                     _PreviewAmountRow(
                       label: t.modifiers,
-                      value: formatSum(preview.modifiersAmount),
+                      value: formatSum(context, preview.modifiersAmount),
                     ),
                   if (preview.discountAmount > 0)
                     _PreviewAmountRow(
                       label: t.discount,
-                      value: '-${formatSum(preview.discountAmount)}',
+                      value: '-${formatSum(context, preview.discountAmount)}',
                       valueColor: BaseColors.primary,
                     ),
                   if (isDelivery || preview.deliveryAmount > 0)
                     _PreviewAmountRow(
                       label: t.delivery,
-                      value: formatSum(preview.deliveryAmount),
+                      value: formatSum(context, preview.deliveryAmount),
                     ),
                   if (preview.promotionDeliveryDiscountAmount > 0)
                     _PreviewAmountRow(
                       label: '${t.delivery} ${t.discount.toLowerCase()}',
                       value:
-                          '-${formatSum(preview.promotionDeliveryDiscountAmount)}',
+                          '-${formatSum(context, preview.promotionDeliveryDiscountAmount)}',
                       valueColor: BaseColors.primary,
                     ),
                   if (preview.serviceFeeAmount > 0)
                     _PreviewAmountRow(
                       label: t.serviceFee,
-                      value: formatSum(preview.serviceFeeAmount),
+                      value: formatSum(context, preview.serviceFeeAmount),
                     ),
                   const Divider(height: 18, color: Color(0x1A8C8278)),
                   _PreviewAmountRow(
                     label: t.orderBeforePoints,
-                    value: formatSum(preview.totalBeforePointsAmount),
+                    value: formatSum(context, preview.totalBeforePointsAmount),
                   ),
                   if ((preview.loyalty?.appliedPoints ?? 0) > 0)
                     _PreviewAmountRow(
@@ -544,7 +543,7 @@ class _CheckoutPreviewDetailsSheet extends StatelessWidget {
                     ),
                   _PreviewAmountRow(
                     label: t.amountToPay,
-                    value: formatSum(preview.totalAmount),
+                    value: formatSum(context, preview.totalAmount),
                     isTotal: true,
                     valueColor: BaseColors.primary,
                   ),

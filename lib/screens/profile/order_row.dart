@@ -166,7 +166,7 @@ class _OrderRow extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: <Widget>[
                           TypographyText(
-                            _formatOrderAmount(order.totalAmount),
+                            _formatOrderAmount(context, order.totalAmount),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(

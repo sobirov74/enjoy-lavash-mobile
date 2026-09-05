@@ -185,7 +185,7 @@ class LEn extends L {
   String get perOrder => 'Per order';
 
   @override
-  String get perOrderValue => '5% in points';
+  String get perOrderValue => 'Rewards follow active offers';
 
   @override
   String get onePointEquals => '1 point equals';
@@ -365,6 +365,10 @@ class LEn extends L {
   String get signInToCheckout => 'Sign in to continue checkout from your cart.';
 
   @override
+  String get authWelcomeSubtitle =>
+      'Order your favorites and earn points from active offers.';
+
+  @override
   String get phoneNumber => 'Phone number';
 
   @override
@@ -476,6 +480,14 @@ class LEn extends L {
 
   @override
   String get createOrderAction => 'Create order';
+
+  @override
+  String createOrderFor(String price) {
+    return 'Create order · $price';
+  }
+
+  @override
+  String get change => 'Change';
 
   @override
   String get payment => 'Payment';
@@ -630,6 +642,15 @@ class LEn extends L {
 
   @override
   String get notificationInboxSubtitle => 'Updates and offers in one place';
+
+  @override
+  String get filterOrders => 'Orders';
+
+  @override
+  String get filterPromotions => 'Promotions';
+
+  @override
+  String get noNotificationsForFilter => 'No notifications match this filter.';
 
   @override
   String get markAllRead => 'Mark all read';
@@ -825,6 +846,95 @@ class LEn extends L {
       'Receive order updates and special offers';
 
   @override
+  String get profilePointsLabel => 'MY POINTS';
+
+  @override
+  String get viewPoints => 'View';
+
+  @override
+  String get profileOrdersSection => 'ORDERS';
+
+  @override
+  String profileOrderCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count orders',
+      one: '1 order',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get myAddresses => 'My addresses';
+
+  @override
+  String profileAddressCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count addresses',
+      one: '1 address',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get editProfile => 'Edit profile';
+
+  @override
+  String get profileName => 'Name';
+
+  @override
+  String get profileUpdated => 'Profile updated';
+
+  @override
+  String get profileUpdateFailed => 'Could not update profile';
+
+  @override
+  String get savedAddresses => 'Saved addresses';
+
+  @override
+  String get noSavedAddresses => 'No saved addresses';
+
+  @override
+  String get noSavedAddressesSubtitle =>
+      'Add an address to make checkout faster.';
+
+  @override
+  String get addAddress => 'Add address';
+
+  @override
+  String get addressLabel => 'Address label';
+
+  @override
+  String get addressLabelHint => 'For example, Home';
+
+  @override
+  String get setAsDefault => 'Set as default';
+
+  @override
+  String get defaultAddress => 'Default';
+
+  @override
+  String get addressSaved => 'Address saved';
+
+  @override
+  String get addressSaveFailed => 'Could not save the address';
+
+  @override
+  String get addressDeleted => 'Address deleted';
+
+  @override
+  String get addressDeleteFailed => 'Could not delete the address';
+
+  @override
+  String get deleteAddress => 'Delete address';
+
+  @override
+  String get profileNotificationsSubtitle => 'Order updates and offers';
+
+  @override
   String get orderStatusCooking => 'Cooking';
 
   @override
@@ -892,6 +1002,22 @@ class LEn extends L {
 
   @override
   String get additionalInfo => 'Additional info';
+
+  @override
+  String get requiredChoice => 'Required';
+
+  @override
+  String get optionalChoice => 'Optional';
+
+  @override
+  String chooseAtLeastOptions(int count) {
+    return 'Choose at least $count';
+  }
+
+  @override
+  String addToCartFor(String price) {
+    return 'Add · $price';
+  }
 
   @override
   String get kitchenOrder => 'Kitchen order';
@@ -1040,4 +1166,132 @@ class LEn extends L {
 
   @override
   String get transactionBalanceUpdate => 'Balance update';
+
+  @override
+  String get tabHome => 'Home';
+
+  @override
+  String homeGreeting(String name) {
+    return 'Hello, $name.';
+  }
+
+  @override
+  String get loyaltyMoneyHint => '1 point = 1 sum · up to 50%';
+
+  @override
+  String get repeatOrderTitle => 'Order it again?';
+
+  @override
+  String repeatOrderAction(String amount) {
+    return 'Repeat · $amount';
+  }
+
+  @override
+  String get orderContextDelivery => 'Delivery';
+
+  @override
+  String get orderContextPickup => 'Pickup';
+
+  @override
+  String get orderContextChoose => 'Choose an address or branch';
+
+  @override
+  String get markAllReadShort => 'Read all';
+
+  @override
+  String get cartOpen => 'Open cart';
+
+  @override
+  String get changePhoneNumber => 'Change number';
+
+  @override
+  String caloriesLabel(int value) {
+    return '$value kcal';
+  }
+
+  @override
+  String weightGramsLabel(int value) {
+    return '$value g';
+  }
+
+  @override
+  String cookingMinutesLabel(int value) {
+    return '$value min';
+  }
+
+  @override
+  String loyaltyBalancePoints(String value) {
+    return '$value points';
+  }
+
+  @override
+  String get useInOrder => 'Use in order';
+
+  @override
+  String get promotionGift => 'Gift';
+
+  @override
+  String get backToHome => 'Back to home';
+
+  @override
+  String get orderingAvailability => 'Ordering availability';
+
+  @override
+  String get orderingChecking => 'Checking branch hours…';
+
+  @override
+  String get orderingOpen => 'Open now';
+
+  @override
+  String get orderingClosed => 'Unavailable now';
+
+  @override
+  String get pickupAvailability => 'Pickup';
+
+  @override
+  String get deliveryAvailability => 'Delivery';
+
+  @override
+  String orderingNextOpening(String value) {
+    return 'Next opening: $value';
+  }
+
+  @override
+  String get orderingStatusUnavailable =>
+      'Hours could not be checked. Availability will be verified when you order.';
+
+  @override
+  String get orderingClosedAction =>
+      'Choose another branch or try again later.';
+
+  @override
+  String get promoCodeNotFound => 'Promo code was not found';
+
+  @override
+  String get promoCodeInactive => 'Promo code is inactive';
+
+  @override
+  String get promoCodeNotStarted => 'Promo code is not active yet';
+
+  @override
+  String get promoCodeExpired => 'Promo code has expired';
+
+  @override
+  String get promoGlobalLimitReached => 'Promotion usage limit was reached';
+
+  @override
+  String get promoClientLimitReached => 'You have already used this promo code';
+
+  @override
+  String get promoClientRequired => 'Sign in to use this promo code';
+
+  @override
+  String get promoConditionsNotMet => 'Promo code conditions were not met';
+
+  @override
+  String get promoConfigurationError =>
+      'Promo code cannot be applied right now';
+
+  @override
+  String get promoCodeCouldNotBeApplied => 'Promo code could not be applied';
 }

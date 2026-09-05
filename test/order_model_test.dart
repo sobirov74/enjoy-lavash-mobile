@@ -78,6 +78,17 @@ void main() {
     );
   });
 
+  test('invalid promo status cannot be silently submitted', () {
+    final rejected = CartPreviewModel.fromJson({
+      'promotionStatus': 'CONDITIONS_NOT_MET',
+    });
+    final applied = CartPreviewModel.fromJson({'promotionStatus': 'APPLIED'});
+
+    expect(rejected.acceptsPromoCode('FIRST20'), isFalse);
+    expect(rejected.acceptsPromoCode(''), isTrue);
+    expect(applied.acceptsPromoCode('FIRST20'), isTrue);
+  });
+
   test('serializes coordinate delivery with branch id', () {
     final request = CreateOrderRequest(
       type: MobileOrderType.delivery,

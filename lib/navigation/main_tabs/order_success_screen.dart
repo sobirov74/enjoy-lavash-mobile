@@ -11,11 +11,13 @@ class OrderSuccessScreen extends StatefulWidget {
     required this.order,
     required this.onTrackOrder,
     this.openPaymentPage,
+    this.onBackHome,
   });
 
   final CustomerOrderModel order;
   final VoidCallback onTrackOrder;
   final Future<bool> Function()? openPaymentPage;
+  final VoidCallback? onBackHome;
 
   @override
   State<OrderSuccessScreen> createState() => _OrderSuccessScreenState();
@@ -61,6 +63,10 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
     final openPaymentPage = widget.openPaymentPage;
     if (openPaymentPage == null) return;
 
+    if (mounted && _paymentPageState != _PaymentPageLaunchState.opening) {
+      setState(() => _paymentPageState = _PaymentPageLaunchState.opening);
+    }
+
     var opened = false;
     try {
       opened = await openPaymentPage();
@@ -91,6 +97,15 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
 
     navigator.pop();
     WidgetsBinding.instance.addPostFrameCallback((_) => onTrackOrder());
+  }
+
+  void _backHome() {
+    final callback = widget.onBackHome;
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) navigator.pop();
+    if (callback != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => callback());
+    }
   }
 
   @override
@@ -127,12 +142,20 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
                             ),
                           );
                         },
-                        child: CustomPaint(
-                          size: const Size.square(150),
-                          painter: _OrderSuccessMarkPainter(isDark: isDark),
-                          foregroundPainter: _OrderSuccessStrokePainter(
-                            progress: _markController,
-                            isDark: isDark,
+                        child: Container(
+                          width: 76,
+                          height: 76,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? AppDesignTokens.success.withValues(alpha: 0.2)
+                                : AppDesignTokens.successWash,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.check_rounded,
+                            color: AppDesignTokens.success,
+                            size: 42,
                           ),
                         ),
                       ),
@@ -142,7 +165,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
                       t.orderSuccessTitle,
                       textAlign: TextAlign.center,
                       style: theme.textTheme.headlineMedium?.copyWith(
-                        fontSize: 30,
+                        fontSize: 26,
                         fontWeight: FontWeight.w900,
                         height: 1.08,
                       ),
@@ -165,18 +188,16 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
                         vertical: 11,
                       ),
                       decoration: BoxDecoration(
-                        color: BaseColors.primary.withValues(
-                          alpha: isDark ? 0.18 : 0.1,
-                        ),
+                        color: AppDesignTokens.surface(context),
                         borderRadius: BorderRadius.circular(999),
                         border: Border.all(
-                          color: BaseColors.primary.withValues(alpha: 0.3),
+                          color: AppDesignTokens.hairline(context),
                         ),
                       ),
                       child: TypographyText(
                         t.orderSuccessNumber(orderNumber),
-                        style: const TextStyle(
-                          color: BaseColors.primary,
+                        style: TextStyle(
+                          color: AppDesignTokens.primaryText(context),
                           fontSize: 16,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 0.3,
@@ -211,17 +232,57 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
                   ),
                 ),
               ),
-              child: FilledButton.icon(
-                key: const ValueKey<String>('order-success-track-button'),
-                onPressed: _trackOrder,
-                icon: const Icon(Icons.route_rounded),
-                label: TypographyText(
-                  t.trackOrder,
-                  style: const TextStyle(
-                    color: BaseColors.white,
-                    fontWeight: FontWeight.w900,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  if (_paymentPageState ==
+                      _PaymentPageLaunchState.failed) ...<Widget>[
+                    OutlinedButton.icon(
+                      key: const ValueKey<String>(
+                        'order-success-retry-payment-button',
+                      ),
+                      onPressed: _openPaymentPage,
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: Text(t.retryPayment),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                  FilledButton.icon(
+                    key: const ValueKey<String>('order-success-track-button'),
+                    onPressed: _trackOrder,
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(
+                        AppDesignTokens.primaryButtonHeight,
+                      ),
+                      backgroundColor: isDark
+                          ? const Color(0xFFF4EEE8)
+                          : AppDesignTokens.ink,
+                      foregroundColor: isDark
+                          ? AppDesignTokens.ink
+                          : Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppDesignTokens.radiusPill,
+                        ),
+                      ),
+                    ),
+                    icon: const Icon(Icons.route_rounded),
+                    label: TypographyText(
+                      t.trackOrder,
+                      style: TextStyle(
+                        color: isDark ? AppDesignTokens.ink : BaseColors.white,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 6),
+                  TextButton(
+                    key: const ValueKey<String>('order-success-home-button'),
+                    onPressed: _backHome,
+                    child: Text(t.backToHome),
+                  ),
+                ],
               ),
             ),
           ],
@@ -343,7 +404,7 @@ class _OrderSuccessLoyaltyCard extends StatelessWidget {
         children: <Widget>[
           _OrderSuccessAmountLine(
             label: t.orderBeforePoints,
-            value: formatSum(order.totalBeforePointsAmount),
+            value: formatSum(context, order.totalBeforePointsAmount),
           ),
           if (order.loyaltyRedeemedAmount > 0) ...[
             const SizedBox(height: 8),
@@ -357,7 +418,7 @@ class _OrderSuccessLoyaltyCard extends StatelessWidget {
           const SizedBox(height: 8),
           _OrderSuccessAmountLine(
             label: t.amountToPay,
-            value: formatSum(order.totalAmount),
+            value: formatSum(context, order.totalAmount),
             color: BaseColors.primary,
             strong: true,
           ),
@@ -525,125 +586,5 @@ class _OrderSuccessPaymentCard extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-class _OrderSuccessMarkPainter extends CustomPainter {
-  const _OrderSuccessMarkPainter({required this.isDark});
-
-  final bool isDark;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = size.center(Offset.zero);
-    final shadow = Paint()
-      ..color = Colors.black.withValues(alpha: isDark ? 0.2 : 0.08)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 14);
-    final ticketRect = Rect.fromCenter(
-      center: center.translate(0, 5),
-      width: 104,
-      height: 122,
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(ticketRect, const Radius.circular(24)),
-      shadow,
-    );
-
-    final ticket = Paint()
-      ..color = isDark ? const Color(0xFF342A25) : const Color(0xFFFFF4ED);
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(ticketRect, const Radius.circular(24)),
-      ticket,
-    );
-
-    final edge = Paint()
-      ..color = BaseColors.primary.withValues(alpha: isDark ? 0.5 : 0.3)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(ticketRect, const Radius.circular(24)),
-      edge,
-    );
-
-    final cutout = Paint()
-      ..color = isDark ? const Color(0xFF151312) : const Color(0xFFFAF7F2);
-    canvas.drawCircle(Offset(ticketRect.left, center.dy + 18), 7, cutout);
-    canvas.drawCircle(Offset(ticketRect.right, center.dy + 18), 7, cutout);
-
-    final line = Paint()
-      ..color = BaseColors.primary.withValues(alpha: 0.28)
-      ..strokeCap = StrokeCap.round
-      ..strokeWidth = 4;
-    canvas.drawLine(
-      Offset(center.dx - 19, center.dy - 27),
-      Offset(center.dx + 19, center.dy - 27),
-      line,
-    );
-    canvas.drawLine(
-      Offset(center.dx - 14, center.dy - 16),
-      Offset(center.dx + 14, center.dy - 16),
-      line,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _OrderSuccessMarkPainter oldDelegate) {
-    return oldDelegate.isDark != isDark;
-  }
-}
-
-class _OrderSuccessStrokePainter extends CustomPainter {
-  _OrderSuccessStrokePainter({required this.progress, required this.isDark})
-    : super(repaint: progress);
-
-  final Animation<double> progress;
-  final bool isDark;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = size.center(Offset.zero).translate(0, 11);
-    final smileCheck = Path()
-      ..moveTo(center.dx - 25, center.dy)
-      ..quadraticBezierTo(
-        center.dx - 10,
-        center.dy + 20,
-        center.dx + 3,
-        center.dy + 5,
-      )
-      ..lineTo(center.dx + 27, center.dy - 22);
-    final paint = Paint()
-      ..color = isDark ? const Color(0xFFFFA17C) : BaseColors.primaryDark
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 7
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    for (final metric in smileCheck.computeMetrics()) {
-      canvas.drawPath(
-        metric.extractPath(0, metric.length * progress.value),
-        paint,
-      );
-    }
-
-    if (progress.value > 0.74) {
-      final sparkleProgress = ((progress.value - 0.74) / 0.26).clamp(0.0, 1.0);
-      final sparkle = Paint()
-        ..color = BaseColors.primary.withValues(alpha: sparkleProgress * 0.7);
-      canvas.drawCircle(
-        Offset(center.dx + 42, center.dy - 32),
-        3.5 * sparkleProgress,
-        sparkle,
-      );
-      canvas.drawCircle(
-        Offset(center.dx - 42, center.dy - 23),
-        2.5 * sparkleProgress,
-        sparkle,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _OrderSuccessStrokePainter oldDelegate) {
-    return oldDelegate.isDark != isDark || oldDelegate.progress != progress;
   }
 }

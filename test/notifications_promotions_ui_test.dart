@@ -46,7 +46,19 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Lunch promo'), findsOneWidget);
+    expect(find.text('All'), findsOneWidget);
+    expect(find.text('Orders'), findsOneWidget);
+    expect(find.text('Promotions'), findsOneWidget);
     expect(find.byIcon(Icons.done_all_rounded), findsOneWidget);
+
+    await tester.tap(find.text('Orders'));
+    await tester.pumpAndSettle();
+    expect(find.text('Lunch promo'), findsNothing);
+    expect(find.text('No notifications match this filter.'), findsOneWidget);
+
+    await tester.tap(find.text('Promotions'));
+    await tester.pumpAndSettle();
+    expect(find.text('Lunch promo'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -123,12 +135,41 @@ void main() {
     expect(find.text('Your special day 🎂'), findsNothing);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('guest inbox navigation is gated by authorization', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final controller = await _guestController();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(_mainTabsHost(controller));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Inbox'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Enter your phone number'), findsOneWidget);
+    expect(find.byType(NotificationsScreen), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 }
 
 Future<MobileBackendController> _controller() async {
   final apiClient = ApiClient(baseUrl: 'https://example.test');
   final controller = MobileBackendController(
     _NotificationsRepository(),
+    MobilePushNotificationService(apiClient),
+  );
+  await controller.bootstrap(language: 'en');
+  return controller;
+}
+
+Future<MobileBackendController> _guestController() async {
+  final apiClient = ApiClient(baseUrl: 'https://example.test');
+  final controller = MobileBackendController(
+    _GuestNotificationsRepository(),
     MobilePushNotificationService(apiClient),
   );
   await controller.bootstrap(language: 'en');
@@ -256,6 +297,26 @@ class _NotificationsRepository implements MobileBackendRepository {
     String language = 'uz',
   }) async {
     return const Success(_promotions);
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _GuestNotificationsRepository implements MobileBackendRepository {
+  @override
+  Future<Result<MobileBootstrap>> bootstrap({
+    required String language,
+    String? branchId,
+  }) async {
+    return Success(
+      MobileBootstrap(
+        branches: const [],
+        catalog: CatalogModel.fromJson(const <String, dynamic>{}),
+        promotions: const [],
+        paymentMethods: const <PaymentMethodModel>[],
+      ),
+    );
   }
 
   @override

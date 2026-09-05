@@ -151,6 +151,31 @@ void main() {
     );
   });
 
+  testWidgets('selected menu category stays readable in light mode', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(const _MenuMotionHarness());
+    await tester.pumpAndSettle();
+
+    final selectedLabel = find.byKey(
+      const ValueKey<String>('menu-category-label-0'),
+    );
+    expect(selectedLabel, findsOneWidget);
+
+    final label = tester.widget<Text>(selectedLabel);
+    final inheritedStyle = DefaultTextStyle.of(
+      tester.element(selectedLabel),
+    ).style;
+
+    expect(label.style?.color, isNull);
+    expect(inheritedStyle.color, Colors.white);
+    expect(inheritedStyle.fontSize, 13.5);
+    expect(inheritedStyle.fontWeight, FontWeight.w500);
+  });
+
   testWidgets('menu skips cart travel when motion is disabled', (tester) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));

@@ -17,8 +17,10 @@ extension _MobileBackendBootstrapController on MobileBackendController {
     final addressesResult = await _repository.getAddresses();
     switch (addressesResult) {
       case Success(:final data):
-        _addresses = data;
+        _addresses = _sortedAddresses(data);
+        _addressesFailure = null;
       case Error(:final failure):
+        _addressesFailure = failure;
         if (failure is AuthFailure) {
           _applyFailure(failure);
           return;
@@ -99,7 +101,8 @@ extension _MobileBackendBootstrapController on MobileBackendController {
         _paymentMethodsFailure = null;
         _paymentMethodsLoading = false;
         _client = data.client;
-        _addresses = data.addresses;
+        _addresses = _sortedAddresses(data.addresses);
+        _addressesFailure = null;
         _orders = data.orders;
         _applyCatalog(data.catalog);
         final client = data.client;

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/pace-design-system-e4e3152b-be57-4dc2-917e-cb5270773a6f/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/pace-design-system-e4e3152b-be57-4dc2-917e-cb5270773a6f/tokens/colors.css">
+<link rel="stylesheet" href="_ds/pace-design-system-e4e3152b-be57-4dc2-917e-cb5270773a6f/tokens/typography.css">
+<link rel="stylesheet" href="_ds/pace-design-system-e4e3152b-be57-4dc2-917e-cb5270773a6f/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/pace-design-system-e4e3152b-be57-4dc2-917e-cb5270773a6f/tokens/radii.css">
+<link rel="stylesheet" href="_ds/pace-design-system-e4e3152b-be57-4dc2-917e-cb5270773a6f/tokens/shadows.css">
+<link rel="stylesheet" href="_ds/pace-design-system-e4e3152b-be57-4dc2-917e-cb5270773a6f/tokens/motion.css">
+<link rel="stylesheet" href="_ds/pace-design-system-e4e3152b-be57-4dc2-917e-cb5270773a6f/styles.css">
+<script src="_ds/pace-design-system-e4e3152b-be57-4dc2-917e-cb5270773a6f/_ds_bundle.js"></script>
+<style>
+body { margin: 0; background: #E8E4DA; font-family: var(--font-sans); }
+a { color: #C62828; text-decoration: none; }
+a:hover { color: #8C3A22; }
+</style>
+</helmet>
+
+<div style="padding:52px 56px 90px;display:flex;flex-direction:column;gap:44px;min-width:max-content">
+<div style="display:flex;flex-direction:column;gap:22px;max-width:1120px">
+<div style="display:flex;align-items:flex-start;gap:20px">
+<img src="assets/images/enjoy-logo-app-icon.png" alt="Enjoy Lavash" style="width:56px;height:56px;border-radius:14px;box-shadow:var(--shadow-card);flex:0 0 auto">
+<div style="display:flex;flex-direction:column;gap:8px">
+<span style="font:500 34px/36px var(--font-display);color:var(--pace-ink)">Bo&#39;sh va xato holatlar</span>
+<span style="font:var(--type-body);color:var(--pace-ink-60);max-width:740px;display:block;text-wrap:pretty">The states nobody designs until support starts asking about them. Same app, same components — the order flow itself is on <a href="Enjoy%20Lavash%20Redesign.dc.html">the main board</a>.</span>
+</div>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:22px">
+<div style="display:flex;align-items:baseline;gap:11px;flex-wrap:wrap">
+<span style="font:var(--type-sub);color:var(--pace-ink-55);max-width:860px;display:block">Every message below is the real string from <span style="font-family:ui-monospace,Menlo,monospace;font-size:12px;background:var(--pace-ink-06);border-radius:5px;padding:2px 5px">mobile_error_messages.dart</span> — but demoted to a quiet diagnostic line, with a human sentence and a next step above it. «Validatsiya xatosi» tells a customer nothing; «Filial tanlanmagan» tells them what to tap.</span>
+</div>
+
+<div style="display:flex;gap:14px;flex-wrap:wrap;max-width:1180px">
+<div style="flex:1 1 340px;min-width:320px;background:var(--pace-white);border-radius:var(--radius-card);box-shadow:var(--shadow-card);padding:20px 22px">
+<span style="display:block;font:var(--type-body-semibold);color:var(--pace-ink);margin-bottom:10px">Three tiers, and the rule for choosing</span>
+<div style="display:flex;flex-direction:column;gap:10px">
+<span style="font:var(--type-sub);color:var(--pace-ink-70);text-wrap:pretty"><b style="color:var(--pace-ink)">Nothing loaded → full screen.</b> 500, 503, offline, 401, 429, 404. The screen is blocked anyway, so use the space: one sentence, one primary action, one way out.</span>
+<span style="font:var(--type-sub);color:var(--pace-ink-70);text-wrap:pretty"><b style="color:var(--pace-ink)">Loaded but empty → in place.</b> Savat, xabarlar, menyu bo&#39;limi, ballar tarixi. The screen keeps its own chrome — tabs on Xabarlar and Menyu, the back button on Savat — and the state names the one action that fills it.</span>
+<span style="font:var(--type-sub);color:var(--pace-ink-70);text-wrap:pretty"><b style="color:var(--pace-ink)">Loaded, action failed → banner or field.</b> 422, 409, to&#39;lov xatosi. Never a full screen — the customer&#39;s work is on that screen and must not disappear.</span>
+</div>
+</div>
+<div style="flex:1 1 340px;min-width:320px;background:var(--pace-danger-wash);border-radius:var(--radius-card);padding:20px 22px">
+<span style="display:block;font:var(--type-body-semibold);color:var(--pace-danger-deep);margin-bottom:10px">One bug worth fixing in the code</span>
+<span style="font:var(--type-sub);color:var(--pace-danger-deep);display:block;text-wrap:pretty"><span style="font-family:ui-monospace,Menlo,monospace;font-size:12px">_prefersServerMessage()</span> returns true for <span style="font-family:ui-monospace,Menlo,monospace;font-size:12px">VALIDATION_FAILED</span> and <span style="font-family:ui-monospace,Menlo,monospace;font-size:12px">BAD_REQUEST</span>, so the raw backend array is shown to the customer verbatim — your own test asserts «branchId must be provided for coordinate delivery» reaches the UI. Untranslated, lowercase, and about a field name they can&#39;t see. <a href="#4i">4i</a> maps it to the control instead.</span>
+</div>
+</div>
+
+<div style="display:flex;gap:30px;align-items:flex-start">
+
+<div id="4a" style="display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px">
+<div style="display:flex;align-items:baseline;gap:9px"><a href="#4a" style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--pace-ink-08);color:var(--pace-ink);border-radius:5px">4a</a><span style="font:var(--type-body-semibold);color:var(--pace-ink)">500 · Server</span></div>
+<span style="font:var(--type-small);color:var(--pace-ink-55);max-width:412px;display:block">Blame is taken, not shifted. Retry first, home as the escape.</span>
+<dc-import name="Phone" screen="err500" cashback-percent="{{ cashbackPercent }}" show-reorder="{{ showReorder }}" points-at-checkout="{{ pointsAtCheckout }}" hint-size="412px,822px"></dc-import>
+</div>
+
+<div id="4b" style="display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px">
+<div style="display:flex;align-items:baseline;gap:9px"><a href="#4b" style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--pace-ink-08);color:var(--pace-ink);border-radius:5px">4b</a><span style="font:var(--type-body-semibold);color:var(--pace-ink)">Oflayn</span></div>
+<span style="font:var(--type-small);color:var(--pace-ink-55);max-width:412px;display:block">The one thing a customer fears offline is losing the order — so the cart is confirmed safe, on screen. You already persist it locally.</span>
+<dc-import name="Phone" screen="errNet" cashback-percent="{{ cashbackPercent }}" show-reorder="{{ showReorder }}" points-at-checkout="{{ pointsAtCheckout }}" hint-size="412px,822px"></dc-import>
+</div>
+
+<div id="4c" style="display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px">
+<div style="display:flex;align-items:baseline;gap:9px"><a href="#4c" style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--pace-ink-08);color:var(--pace-ink);border-radius:5px">4c</a><span style="font:var(--type-body-semibold);color:var(--pace-ink)">404 · Topilmadi</span></div>
+<span style="font:var(--type-small);color:var(--pace-ink-55);max-width:412px;display:block">A deleted product from a stale push or an old link. Named as a product, not as a page — customers don&#39;t think in pages.</span>
+<dc-import name="Phone" screen="err404" cashback-percent="{{ cashbackPercent }}" show-reorder="{{ showReorder }}" points-at-checkout="{{ pointsAtCheckout }}" hint-size="412px,822px"></dc-import>
+</div>
+
+<div id="4d" style="display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px">
+<div style="display:flex;align-items:baseline;gap:9px"><a href="#4d" style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--pace-ink-08);color:var(--pace-ink);border-radius:5px">4d</a><span style="font:var(--type-body-semibold);color:var(--pace-ink)">401 · Sessiya</span></div>
+<span style="font:var(--type-small);color:var(--pace-ink-55);max-width:412px;display:block">Being logged out feels like being robbed. State plainly that the cart, addresses and ball survive.</span>
+<dc-import name="Phone" screen="err401" cashback-percent="{{ cashbackPercent }}" show-reorder="{{ showReorder }}" points-at-checkout="{{ pointsAtCheckout }}" hint-size="412px,822px"></dc-import>
+</div>
+
+<div id="4e" style="display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px">
+<div style="display:flex;align-items:baseline;gap:9px"><a href="#4e" style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--pace-ink-08);color:var(--pace-ink);border-radius:5px">4e</a><span style="font:var(--type-body-semibold);color:var(--pace-ink)">429 · Limit</span></div>
+<span style="font:var(--type-small);color:var(--pace-ink-55);max-width:412px;display:block">Your mapper already reads <span style="font-family:ui-monospace,Menlo,monospace;font-size:11.5px">retry-after</span>, so show it: a countdown and a disabled button beat a message that just says «later».</span>
+<dc-import name="Phone" screen="err429" cashback-percent="{{ cashbackPercent }}" show-reorder="{{ showReorder }}" points-at-checkout="{{ pointsAtCheckout }}" hint-size="412px,822px"></dc-import>
+</div>
+
+<div id="4f" style="display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px">
+<div style="display:flex;align-items:baseline;gap:9px"><a href="#4f" style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--pace-ink-08);color:var(--pace-ink);border-radius:5px">4f</a><span style="font:var(--type-body-semibold);color:var(--pace-ink)">Savat bo&#39;sh</span></div>
+<span style="font:var(--type-small);color:var(--pace-ink-55);max-width:412px;display:block">Empty, not broken — so the screen keeps its back button and one button leads to the menu. Your own <span style="font-family:ui-monospace,Menlo,monospace;font-size:11.5px">cartEmptyDesc</span> string, unchanged.</span>
+<dc-import name="Phone" screen="cart" preset="empty" cashback-percent="{{ cashbackPercent }}" show-reorder="{{ showReorder }}" points-at-checkout="{{ pointsAtCheckout }}" hint-size="412px,822px"></dc-import>
+</div>
+
+<div id="4g" style="display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px">
+<div style="display:flex;align-items:baseline;gap:9px"><a href="#4g" style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--pace-ink-08);color:var(--pace-ink);border-radius:5px">4g</a><span style="font:var(--type-body-semibold);color:var(--pace-ink)">Xabarlar yo&#39;q</span></div>
+<span style="font:var(--type-small);color:var(--pace-ink-55);max-width:412px;display:block">Filters are hidden when there is nothing to filter — an empty inbox with three chips above it looks broken.</span>
+<dc-import name="Phone" screen="emptyNotifs" cashback-percent="{{ cashbackPercent }}" show-reorder="{{ showReorder }}" points-at-checkout="{{ pointsAtCheckout }}" hint-size="412px,822px"></dc-import>
+</div>
+
+<div id="4h" style="display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px">
+<div style="display:flex;align-items:baseline;gap:9px"><a href="#4h" style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--pace-ink-08);color:var(--pace-ink);border-radius:5px">4h</a><span style="font:var(--type-body-semibold);color:var(--pace-ink)">Mahsulot topilmadi</span></div>
+<span style="font:var(--type-small);color:var(--pace-ink-55);max-width:412px;display:block">An empty category — Souslar, not yet stocked. The chips stay put with the selected one still lit, so the way out is one tap where the customer is already looking.</span>
+<dc-import name="Phone" screen="emptyMenu" cashback-percent="{{ cashbackPercent }}" show-reorder="{{ showReorder }}" points-at-checkout="{{ pointsAtCheckout }}" hint-size="412px,822px"></dc-import>
+</div>
+
+<div id="4i" style="display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px">
+<div style="display:flex;align-items:baseline;gap:9px"><a href="#4i" style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--pace-ink-08);color:var(--pace-ink);border-radius:5px">4i</a><span style="font:var(--type-body-semibold);color:var(--pace-ink)">422 · Validatsiya</span></div>
+<span style="font:var(--type-small);color:var(--pace-ink-55);max-width:412px;display:block">A banner that says nothing was charged, plus the message on the control that caused it. Scroll the frame to see the field error.</span>
+<dc-import name="Phone" screen="check422" cashback-percent="{{ cashbackPercent }}" show-reorder="{{ showReorder }}" points-at-checkout="{{ pointsAtCheckout }}" hint-size="412px,822px"></dc-import>
+</div>
+
+</div>
+</div>
+
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;cashbackPercent&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:5,&quot;min&quot;:1,&quot;max&quot;:15,&quot;unit&quot;:&quot;%&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Bonus tizimi&quot;},&quot;pointsAtCheckout&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Bonus tizimi&quot;},&quot;showReorder&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Bosh sahifa&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      cashbackPercent: this.props.cashbackPercent != null ? this.props.cashbackPercent : 5,
+      showReorder: this.props.showReorder !== false,
+      pointsAtCheckout: this.props.pointsAtCheckout !== false
+    };
+  }
+}
+</script>
+</body>
+</html>

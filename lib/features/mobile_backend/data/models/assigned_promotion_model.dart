@@ -278,7 +278,7 @@ String? _discountReward(
       _optionalInt(assignment, const ['discountValue', 'discount_value']) ??
       _optionalInt(promotion, const ['discountValue', 'discount_value']);
   if (value == null) return null;
-  return type?.toUpperCase() == 'PERCENTAGE' ? '$value%' : value.toString();
+  return _isPercentageRewardType(type) ? '$value%' : value.toString();
 }
 
 String? _rewardText(Object? value, String language) {
@@ -298,7 +298,12 @@ String? _rewardText(Object? value, String language) {
     'discount_value',
   ]);
   if (amount == null) return null;
-  return type?.toUpperCase() == 'PERCENTAGE' ? '$amount%' : amount.toString();
+  return _isPercentageRewardType(type) ? '$amount%' : amount.toString();
+}
+
+bool _isPercentageRewardType(String? type) {
+  final normalized = type?.trim().toUpperCase();
+  return normalized == 'PERCENT' || normalized == 'PERCENTAGE';
 }
 
 int? _optionalInt(Map<String, dynamic> json, List<String> keys) {

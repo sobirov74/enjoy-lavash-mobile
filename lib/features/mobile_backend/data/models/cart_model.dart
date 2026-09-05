@@ -222,6 +222,8 @@ class CartPreviewModel {
     this.promotionStatusReason,
     this.promotionDeliveryDiscountAmount = 0,
     this.bonusItems = const <Map<String, dynamic>>[],
+    this.pricedItems = const <PricedCartItemModel>[],
+    this.pricedBonusItems = const <PricedCartItemModel>[],
     this.appliedPromotion,
     this.branchId,
     this.deliveryDistanceMeters,
@@ -241,6 +243,15 @@ class CartPreviewModel {
   final String? promotionStatusReason;
   final int promotionDeliveryDiscountAmount;
   final List<Map<String, dynamic>> bonusItems;
+  final List<PricedCartItemModel> pricedItems;
+  final List<PricedCartItemModel> pricedBonusItems;
+
+  bool acceptsPromoCode(String? promoCode) {
+    if (promoCode == null || promoCode.trim().isEmpty) return true;
+    if (!hasPromotionStatus) return true;
+    return promotionStatus == CartPromotionStatus.applied;
+  }
+
   final AppliedPromotionModel? appliedPromotion;
   final String? branchId;
   final int? deliveryDistanceMeters;
@@ -294,6 +305,12 @@ class CartPreviewModel {
         'promotion_delivery_discount_amount',
       ]),
       bonusItems: asJsonMapList(json['bonusItems'] ?? json['bonus_items']),
+      pricedItems: asJsonMapList(
+        json['items'],
+      ).map(PricedCartItemModel.fromJson).toList(growable: false),
+      pricedBonusItems: asJsonMapList(
+        json['bonusItems'] ?? json['bonus_items'],
+      ).map(PricedCartItemModel.fromJson).toList(growable: false),
       appliedPromotion:
           json['appliedPromotion'] == null && json['applied_promotion'] == null
           ? null
@@ -317,24 +334,146 @@ class CartPreviewModel {
   }
 }
 
+class PricedCartModifierModel {
+  const PricedCartModifierModel({
+    required this.modifierId,
+    required this.nameSnapshot,
+    required this.quantity,
+    required this.unitPrice,
+    required this.totalPrice,
+  });
+
+  final String modifierId;
+  final Object? nameSnapshot;
+  final int quantity;
+  final int unitPrice;
+  final int totalPrice;
+
+  String nameFor(String language) =>
+      localizedText(nameSnapshot, language, fallback: modifierId);
+
+  factory PricedCartModifierModel.fromJson(Map<String, dynamic> json) {
+    return PricedCartModifierModel(
+      modifierId: readString(json, const ['modifierId', 'modifier_id']),
+      nameSnapshot:
+          json['modifierNameSnapshotI18n'] ??
+          json['modifier_name_snapshot_i18n'] ??
+          json['name'],
+      quantity: readInt(json, const ['quantity'], fallback: 1),
+      unitPrice: readInt(json, const ['unitPrice', 'unit_price']),
+      totalPrice: readInt(json, const ['totalPrice', 'total_price']),
+    );
+  }
+}
+
+class PricedCartItemModel {
+  const PricedCartItemModel({
+    required this.productId,
+    required this.nameSnapshot,
+    required this.categoryId,
+    required this.quantity,
+    required this.unitPrice,
+    required this.modifiersAmount,
+    required this.totalPrice,
+    required this.modifiers,
+    required this.isBonus,
+    this.comment,
+    this.originalUnitPrice,
+    this.promotionId,
+    this.promotionCode,
+  });
+
+  final String productId;
+  final Object? nameSnapshot;
+  final String categoryId;
+  final int quantity;
+  final int unitPrice;
+  final int modifiersAmount;
+  final int totalPrice;
+  final List<PricedCartModifierModel> modifiers;
+  final bool isBonus;
+  final String? comment;
+  final int? originalUnitPrice;
+  final String? promotionId;
+  final String? promotionCode;
+
+  String nameFor(String language) =>
+      localizedText(nameSnapshot, language, fallback: productId);
+
+  factory PricedCartItemModel.fromJson(Map<String, dynamic> json) {
+    return PricedCartItemModel(
+      productId: readString(json, const ['productId', 'product_id']),
+      nameSnapshot:
+          json['productNameSnapshotI18n'] ??
+          json['product_name_snapshot_i18n'] ??
+          json['name'],
+      categoryId: readString(json, const ['categoryId', 'category_id']),
+      quantity: readInt(json, const ['quantity'], fallback: 1),
+      unitPrice: readInt(json, const ['unitPrice', 'unit_price']),
+      modifiersAmount: readInt(json, const [
+        'modifiersAmount',
+        'modifiers_amount',
+      ]),
+      totalPrice: readInt(json, const ['totalPrice', 'total_price']),
+      modifiers: asJsonMapList(
+        json['modifiers'],
+      ).map(PricedCartModifierModel.fromJson).toList(growable: false),
+      isBonus: readBool(json, const ['isBonus', 'is_bonus']),
+      comment: stringOrNull(json['comment']),
+      originalUnitPrice: _optionalInt(json, const [
+        'originalUnitPrice',
+        'original_unit_price',
+      ]),
+      promotionId:
+          stringOrNull(json['promotionId']) ??
+          stringOrNull(json['promotion_id']),
+      promotionCode:
+          stringOrNull(json['promotionCode']) ??
+          stringOrNull(json['promotion_code']),
+    );
+  }
+}
+
 class AppliedPromotionModel {
   const AppliedPromotionModel({
     required this.id,
     this.code,
     this.title,
+    this.titleSnapshot,
     this.discountAmount,
   });
 
   final String id;
   final String? code;
   final String? title;
+  final Object? titleSnapshot;
   final int? discountAmount;
 
+  String? titleFor(String language) {
+    final localized = localizedText(
+      titleSnapshot,
+      language,
+      fallback: title ?? '',
+    ).trim();
+    return localized.isEmpty ? null : localized;
+  }
+
   factory AppliedPromotionModel.fromJson(Map<String, dynamic> json) {
+    final titleSnapshot =
+        json['titleI18n'] ??
+        json['title_i18n'] ??
+        json['title'] ??
+        json['name'];
+    final defaultTitle = localizedText(
+      titleSnapshot,
+      'ru',
+      fallback: stringOrNull(json['title']) ?? stringOrNull(json['name']) ?? '',
+    ).trim();
     return AppliedPromotionModel(
       id: readString(json, const ['id']),
       code: stringOrNull(json['code']) ?? stringOrNull(json['promoCode']),
-      title: stringOrNull(json['title']) ?? stringOrNull(json['name']),
+      title: defaultTitle.isEmpty ? null : defaultTitle,
+      titleSnapshot: titleSnapshot,
       discountAmount: _optionalInt(json, const [
         'discountAmount',
         'discount_amount',

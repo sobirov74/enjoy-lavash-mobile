@@ -28,7 +28,7 @@ void main() {
     expect(message, 'Backend fallback');
   });
 
-  test('preserves detailed backend validation messages', () {
+  test('does not expose raw backend validation details to customers', () {
     final message = resolveApiErrorMessage(
       data: {
         'errorCode': 'VALIDATION_FAILED',
@@ -41,11 +41,20 @@ void main() {
       languageCode: 'en',
     );
 
-    expect(
-      message,
-      'branchId must be provided for coordinate delivery\n'
-      'paymentMethod is not available',
+    expect(message, 'Validation failed');
+  });
+
+  test('supports the backend code alias when resolving messages', () {
+    final message = resolveApiErrorMessage(
+      data: {
+        'code': 'ORDERING_CLOSED',
+        'message': 'Technical schedule diagnostic',
+      },
+      statusCode: 409,
+      languageCode: 'ru',
     );
+
+    expect(message, 'Приём заказов сейчас недоступен');
   });
 
   test('maps Dio bad response with local error code message', () {

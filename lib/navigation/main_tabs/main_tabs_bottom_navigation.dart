@@ -2,121 +2,149 @@ part of 'package:enjoy_lavash_mobile/navigation/main_tabs.dart';
 
 class _MainTabsBottomNavigation extends StatelessWidget {
   const _MainTabsBottomNavigation({
-    required this.theme,
     required this.isDark,
     required this.currentIndex,
     required this.totalItems,
+    required this.totalAmount,
+    required this.notificationUnreadCount,
+    required this.showCartPill,
     required this.t,
+    required this.onCartTap,
     required this.onDestinationSelected,
   });
 
-  final ThemeData theme;
   final bool isDark;
   final int currentIndex;
   final int totalItems;
+  final int totalAmount;
+  final int notificationUnreadCount;
+  final bool showCartPill;
   final L t;
+  final VoidCallback onCartTap;
   final ValueChanged<int> onDestinationSelected;
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1D1A18) : Colors.white,
-        border: Border(
-          top: BorderSide(
-            color: isDark ? const Color(0xFF2A2521) : BaseColors.borderLight,
-          ),
+    final theme = Theme.of(context);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        AnimatedSize(
+          duration: AppMotion.duration(context, AppMotion.state),
+          curve: AppMotion.enter,
+          child: showCartPill
+              ? Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                  child: CartPill(
+                    itemCount: totalItems,
+                    totalLabel: formatSum(context, totalAmount),
+                    label: t.cartOpen,
+                    onTap: onCartTap,
+                  ),
+                )
+              : const SizedBox.shrink(),
         ),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.16 : 0.06),
-            blurRadius: 24,
-            offset: const Offset(0, -10),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Theme(
-          data: theme.copyWith(
-            navigationBarTheme: NavigationBarThemeData(
-              labelTextStyle: WidgetStateProperty.resolveWith((states) {
-                final isSelected = states.contains(WidgetState.selected);
-                return TextStyle(
-                  fontSize: 12,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: _destinationColor(isSelected),
-                );
-              }),
-              iconTheme: WidgetStateProperty.resolveWith((states) {
-                final isSelected = states.contains(WidgetState.selected);
-                return IconThemeData(color: _destinationColor(isSelected));
-              }),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xF01D1A18) : const Color(0xF0F6F3EC),
+            border: Border(
+              top: BorderSide(color: AppDesignTokens.hairline(context)),
             ),
           ),
-          child: NavigationBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            selectedIndex: currentIndex,
-            indicatorColor: isDark
-                ? BaseColors.primary.withValues(alpha: 0.16)
-                : BaseColors.primary.withValues(alpha: 0.12),
-            onDestinationSelected: onDestinationSelected,
-            destinations: <NavigationDestination>[
-              NavigationDestination(
-                icon: const Icon(Icons.restaurant_menu_outlined),
-                selectedIcon: const Icon(Icons.restaurant_menu),
-                label: t.tabMenu,
-              ),
-              NavigationDestination(
-                icon: _CartNavigationIcon(
-                  totalItems: totalItems,
-                  selected: false,
+          child: SafeArea(
+            top: false,
+            child: Theme(
+              data: theme.copyWith(
+                navigationBarTheme: NavigationBarThemeData(
+                  height: AppDesignTokens.tabBarHeight,
+                  labelTextStyle: WidgetStateProperty.resolveWith((states) {
+                    final selected = states.contains(WidgetState.selected);
+                    return AppTextStyles.ui(
+                      size: 10.5,
+                      weight: FontWeight.w600,
+                      color: _destinationColor(context, selected),
+                    );
+                  }),
+                  iconTheme: WidgetStateProperty.resolveWith((states) {
+                    final selected = states.contains(WidgetState.selected);
+                    return IconThemeData(
+                      color: _destinationColor(context, selected),
+                      size: 22,
+                    );
+                  }),
                 ),
-                selectedIcon: _CartNavigationIcon(
-                  totalItems: totalItems,
-                  selected: true,
-                ),
-                label: t.tabCart,
               ),
-              NavigationDestination(
-                icon: const Icon(Icons.person_outline_rounded),
-                selectedIcon: const Icon(Icons.person_rounded),
-                label: t.tabProfile,
+              child: NavigationBar(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                selectedIndex: currentIndex.clamp(0, 3),
+                indicatorColor: Colors.transparent,
+                labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+                onDestinationSelected: onDestinationSelected,
+                destinations: <NavigationDestination>[
+                  NavigationDestination(
+                    icon: const Icon(Icons.home_outlined),
+                    selectedIcon: const Icon(Icons.home_rounded),
+                    label: t.tabHome,
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.grid_view_rounded),
+                    selectedIcon: const Icon(Icons.grid_view_rounded),
+                    label: t.tabMenu,
+                  ),
+                  NavigationDestination(
+                    icon: _NotificationNavigationIcon(
+                      unreadCount: notificationUnreadCount,
+                      selected: false,
+                    ),
+                    selectedIcon: _NotificationNavigationIcon(
+                      unreadCount: notificationUnreadCount,
+                      selected: true,
+                    ),
+                    label: t.notificationInbox,
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.person_outline_rounded),
+                    selectedIcon: const Icon(Icons.person_rounded),
+                    label: t.tabProfile,
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
 
-  Color _destinationColor(bool isSelected) {
-    if (isSelected) return BaseColors.primary;
+  Color _destinationColor(BuildContext context, bool isSelected) {
+    if (isSelected) return AppDesignTokens.inkSurface(context);
     return isDark ? const Color(0xFF9E9790) : BaseColors.textGray;
   }
 }
 
-class _CartNavigationIcon extends StatelessWidget {
-  const _CartNavigationIcon({
-    required this.totalItems,
+class _NotificationNavigationIcon extends StatelessWidget {
+  const _NotificationNavigationIcon({
+    required this.unreadCount,
     required this.selected,
   });
 
-  final int totalItems;
+  final int unreadCount;
   final bool selected;
 
   @override
   Widget build(BuildContext context) {
     return Badge(
-      backgroundColor: selected ? null : context.colors.danger,
-      isLabelVisible: totalItems > 0,
+      backgroundColor: AppDesignTokens.action,
+      isLabelVisible: unreadCount > 0,
       label: TypographyText(
-        '$totalItems',
-        style: const TextStyle(color: BaseColors.white, fontSize: 12),
+        unreadCount > 9 ? '9+' : '$unreadCount',
+        style: const TextStyle(color: BaseColors.white, fontSize: 10),
       ),
       child: Icon(
-        selected ? Icons.shopping_cart : Icons.shopping_cart_outlined,
+        selected
+            ? Icons.notifications_rounded
+            : Icons.notifications_none_rounded,
       ),
     );
   }

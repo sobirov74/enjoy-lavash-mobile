@@ -82,6 +82,7 @@ class CatalogCategoryModel {
     required this.name,
     this.slug,
     this.description,
+    this.image,
     this.sortOrder = 0,
     this.isActive = true,
   });
@@ -90,6 +91,7 @@ class CatalogCategoryModel {
   final String name;
   final String? slug;
   final String? description;
+  final String? image;
   final int sortOrder;
   final bool isActive;
 
@@ -116,6 +118,7 @@ class CatalogCategoryModel {
         language,
         fallback: readString(json, const ['description']),
       ),
+      image: _readImageUrl(json),
       sortOrder: readInt(json, const ['sortOrder', 'sort_order', 'position']),
       isActive: readBool(json, const [
         'isActive',
@@ -136,6 +139,9 @@ class CatalogProductModel {
     this.slug,
     this.description,
     this.image,
+    this.calories,
+    this.weightGrams,
+    this.cookingTimeMinutes,
     this.categoryId,
     this.categoryName,
     this.isAvailable = true,
@@ -152,6 +158,9 @@ class CatalogProductModel {
   final String? slug;
   final String? description;
   final String? image;
+  final int? calories;
+  final int? weightGrams;
+  final int? cookingTimeMinutes;
   final String? categoryId;
   final String? categoryName;
   final bool isAvailable;
@@ -202,6 +211,19 @@ class CatalogProductModel {
         readInt(json, const ['price', 'amount', 'basePrice', 'base_price']),
       ),
       image: _readImageUrl(json),
+      calories: _optionalPositiveInt(json, const [
+        'calories',
+        'caloriesKcal',
+        'calories_kcal',
+      ]),
+      weightGrams: _optionalPositiveInt(json, const [
+        'weightGrams',
+        'weight_grams',
+      ]),
+      cookingTimeMinutes: _optionalPositiveInt(json, const [
+        'cookingTimeMinutes',
+        'cooking_time_minutes',
+      ]),
       categoryId: categoryId,
       categoryName: categoryName.isEmpty ? fallbackCategoryName : categoryName,
       isAvailable: readBool(json, const [
@@ -429,6 +451,20 @@ Map<String, List<CatalogProductModel>> _groupProductsByCategory(
 int _normalizePrice(int value) {
   if (value >= 100000 && value % 100 == 0) return value ~/ 100;
   return value;
+}
+
+int? _optionalPositiveInt(Map<String, dynamic> json, List<String> keys) {
+  for (final key in keys) {
+    final value = json[key];
+    final parsed = switch (value) {
+      int() => value,
+      num() => value.toInt(),
+      String() => int.tryParse(value),
+      _ => null,
+    };
+    if (parsed != null && parsed > 0) return parsed;
+  }
+  return null;
 }
 
 String? _readImageUrl(JsonMap json) {

@@ -1,0 +1,55 @@
+/* Typography — Clash Display (display voice) + Instrument Sans (UI voice).
+   Named text styles carry font-family / size / line-height / weight verbatim
+   from the design. Apply a role with `font: var(--type-<name>)`-style tokens,
+   or use the individual family/size vars. */
+:root {
+  /* Families */
+  --font-display: "Clash Display", "Times New Roman", serif;
+  --font-sans: "Instrument Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  /* Display weights */
+  --weight-display-medium: 500;
+  --weight-display-semibold: 600;
+  --weight-display-bold: 700;
+  /* UI weights */
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* --- Display scale (Clash Display) --- */
+  --type-display-shelf: 500 64px/64px var(--font-display);   /* pickup shelf letter */
+  --type-display-product: 500 36px/37px var(--font-display); /* product detail title */
+  --type-display-hero: 500 34px/36px var(--font-display);    /* "Morning, Ana." */
+  --type-display-title: 500 26px/30px var(--font-display);   /* screen titles */
+  --type-display-status: 500 24px/28px var(--font-display);  /* order status headline */
+  --type-display-section: 500 22px/26px var(--font-display); /* sheet titles / cart */
+  --type-display-sheet: 500 21px/25px var(--font-display);
+  --type-display-total: 500 21px/24px var(--font-display);
+  --type-display-card: 500 20px/22px var(--font-display);    /* hero card product name */
+  --type-display-empty: 500 18px/22px var(--font-display);
+
+  /* --- UI scale (Instrument Sans) --- */
+  --type-section-title: 600 17px/22px var(--font-sans);
+  --type-button-large: 600 16px/20px var(--font-sans);
+  --type-button-medium: 600 15.5px/20px var(--font-sans);
+  --type-item-title: 600 15px/20px var(--font-sans);
+  --type-body-semibold: 600 14.5px/19px var(--font-sans);
+  --type-body: 400 14px/20px var(--font-sans);
+  --type-body-medium: 500 14px/20px var(--font-sans);
+  --type-sub: 400 13.5px/19px var(--font-sans);
+  --type-button-small: 600 13.5px/17px var(--font-sans);
+  --type-chip: 500 13.5px/17px var(--font-sans);
+  --type-sub-medium: 500 13px/18px var(--font-sans);
+  --type-small: 400 12.5px/17px var(--font-sans);
+  --type-small-medium: 500 12.5px/17px var(--font-sans);
+  --type-small-semibold: 600 12.5px/16px var(--font-sans);
+  --type-chip-small: 500 12.5px/16px var(--font-sans);
+  --type-caption: 400 12px/16px var(--font-sans);
+  --type-caption-semibold: 600 12px/16px var(--font-sans);
+  --type-micro: 400 11.5px/15px var(--font-sans);
+  --type-micro-semibold: 600 11.5px/15px var(--font-sans);
+  --type-badge: 600 11px/14px var(--font-sans);
+  --type-badge-small: 600 10.5px/13px var(--font-sans);
+  --type-nav-label: 600 10.5px/13px var(--font-sans);
+}

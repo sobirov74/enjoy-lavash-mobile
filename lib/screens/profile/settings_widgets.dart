@@ -1,3 +1,5 @@
+// ignore_for_file: unused_element, unused_element_parameter
+
 part of 'package:enjoy_lavash_mobile/screens/profile.dart';
 
 // ---------------------------------------------------------------------------

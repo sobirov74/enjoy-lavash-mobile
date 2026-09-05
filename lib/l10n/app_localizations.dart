@@ -420,7 +420,7 @@ abstract class L {
   /// No description provided for @perOrderValue.
   ///
   /// In uz, this message translates to:
-  /// **'5% ball'**
+  /// **'Ballar amaldagi aksiyalarga bog‘liq'**
   String get perOrderValue;
 
   /// No description provided for @onePointEquals.
@@ -771,6 +771,12 @@ abstract class L {
   /// **'Savatdan buyurtma berish uchun tizimga kiring.'**
   String get signInToCheckout;
 
+  /// No description provided for @authWelcomeSubtitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sevimli taomlaringizni buyurtma qiling va amaldagi aksiyalardan ball oling.'**
+  String get authWelcomeSubtitle;
+
   /// No description provided for @phoneNumber.
   ///
   /// In uz, this message translates to:
@@ -974,6 +980,18 @@ abstract class L {
   /// In uz, this message translates to:
   /// **'Buyurtma berish'**
   String get createOrderAction;
+
+  /// No description provided for @createOrderFor.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma berish · {price}'**
+  String createOrderFor(String price);
+
+  /// No description provided for @change.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'zgartirish'**
+  String get change;
 
   /// No description provided for @payment.
   ///
@@ -1250,6 +1268,24 @@ abstract class L {
   /// In uz, this message translates to:
   /// **'Yangiliklar va takliflar bir joyda'**
   String get notificationInboxSubtitle;
+
+  /// No description provided for @filterOrders.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmalar'**
+  String get filterOrders;
+
+  /// No description provided for @filterPromotions.
+  ///
+  /// In uz, this message translates to:
+  /// **'Aksiyalar'**
+  String get filterPromotions;
+
+  /// No description provided for @noNotificationsForFilter.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu filtrga mos bildirishnoma yo\'q.'**
+  String get noNotificationsForFilter;
 
   /// No description provided for @markAllRead.
   ///
@@ -1599,6 +1635,150 @@ abstract class L {
   /// **'Buyurtma holati va maxsus takliflarni oling'**
   String get notificationsSubtitleDefault;
 
+  /// No description provided for @profilePointsLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'BALLARIM'**
+  String get profilePointsLabel;
+
+  /// No description provided for @viewPoints.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ko\'rish'**
+  String get viewPoints;
+
+  /// No description provided for @profileOrdersSection.
+  ///
+  /// In uz, this message translates to:
+  /// **'BUYURTMALAR'**
+  String get profileOrdersSection;
+
+  /// No description provided for @profileOrderCount.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count} ta'**
+  String profileOrderCount(int count);
+
+  /// No description provided for @myAddresses.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mening manzillarim'**
+  String get myAddresses;
+
+  /// No description provided for @profileAddressCount.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count} ta'**
+  String profileAddressCount(int count);
+
+  /// No description provided for @editProfile.
+  ///
+  /// In uz, this message translates to:
+  /// **'Profilni tahrirlash'**
+  String get editProfile;
+
+  /// No description provided for @profileName.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ism'**
+  String get profileName;
+
+  /// No description provided for @profileUpdated.
+  ///
+  /// In uz, this message translates to:
+  /// **'Profil yangilandi'**
+  String get profileUpdated;
+
+  /// No description provided for @profileUpdateFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Profilni yangilab bo\'lmadi'**
+  String get profileUpdateFailed;
+
+  /// No description provided for @savedAddresses.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saqlangan manzillar'**
+  String get savedAddresses;
+
+  /// No description provided for @noSavedAddresses.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saqlangan manzil yo\'q'**
+  String get noSavedAddresses;
+
+  /// No description provided for @noSavedAddressesSubtitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmani tezroq rasmiylashtirish uchun manzil qo\'shing.'**
+  String get noSavedAddressesSubtitle;
+
+  /// No description provided for @addAddress.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzil qo\'shish'**
+  String get addAddress;
+
+  /// No description provided for @addressLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzil nomi'**
+  String get addressLabel;
+
+  /// No description provided for @addressLabelHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Masalan, Uy'**
+  String get addressLabelHint;
+
+  /// No description provided for @setAsDefault.
+  ///
+  /// In uz, this message translates to:
+  /// **'Asosiy qilish'**
+  String get setAsDefault;
+
+  /// No description provided for @defaultAddress.
+  ///
+  /// In uz, this message translates to:
+  /// **'Asosiy'**
+  String get defaultAddress;
+
+  /// No description provided for @addressSaved.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzil saqlandi'**
+  String get addressSaved;
+
+  /// No description provided for @addressSaveFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzilni saqlab bo\'lmadi'**
+  String get addressSaveFailed;
+
+  /// No description provided for @addressDeleted.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzil o\'chirildi'**
+  String get addressDeleted;
+
+  /// No description provided for @addressDeleteFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzilni o\'chirib bo\'lmadi'**
+  String get addressDeleteFailed;
+
+  /// No description provided for @deleteAddress.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzilni o\'chirish'**
+  String get deleteAddress;
+
+  /// No description provided for @profileNotificationsSubtitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma holati va takliflar'**
+  String get profileNotificationsSubtitle;
+
   /// No description provided for @orderStatusCooking.
   ///
   /// In uz, this message translates to:
@@ -1736,6 +1916,30 @@ abstract class L {
   /// In uz, this message translates to:
   /// **'Qo\'shimcha ma\'lumot'**
   String get additionalInfo;
+
+  /// No description provided for @requiredChoice.
+  ///
+  /// In uz, this message translates to:
+  /// **'Majburiy'**
+  String get requiredChoice;
+
+  /// No description provided for @optionalChoice.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ixtiyoriy'**
+  String get optionalChoice;
+
+  /// No description provided for @chooseAtLeastOptions.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kamida {count} ta tanlang'**
+  String chooseAtLeastOptions(int count);
+
+  /// No description provided for @addToCartFor.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qo\'shish · {price}'**
+  String addToCartFor(String price);
 
   /// No description provided for @kitchenOrder.
   ///
@@ -2018,6 +2222,228 @@ abstract class L {
   /// In uz, this message translates to:
   /// **'Balans yangilandi'**
   String get transactionBalanceUpdate;
+
+  /// No description provided for @tabHome.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bosh sahifa'**
+  String get tabHome;
+
+  /// No description provided for @homeGreeting.
+  ///
+  /// In uz, this message translates to:
+  /// **'Assalomu alaykum, {name}.'**
+  String homeGreeting(String name);
+
+  /// No description provided for @loyaltyMoneyHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'1 ball 1 so\'mga teng · 50% gacha'**
+  String get loyaltyMoneyHint;
+
+  /// No description provided for @repeatOrderTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yana takrorlaymizmi?'**
+  String get repeatOrderTitle;
+
+  /// No description provided for @repeatOrderAction.
+  ///
+  /// In uz, this message translates to:
+  /// **'Takrorlash · {amount}'**
+  String repeatOrderAction(String amount);
+
+  /// No description provided for @orderContextDelivery.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazib berish'**
+  String get orderContextDelivery;
+
+  /// No description provided for @orderContextPickup.
+  ///
+  /// In uz, this message translates to:
+  /// **'Olib ketish'**
+  String get orderContextPickup;
+
+  /// No description provided for @orderContextChoose.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzil yoki filialni tanlang'**
+  String get orderContextChoose;
+
+  /// No description provided for @markAllReadShort.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barchasini o\'qish'**
+  String get markAllReadShort;
+
+  /// No description provided for @cartOpen.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savatni ochish'**
+  String get cartOpen;
+
+  /// No description provided for @changePhoneNumber.
+  ///
+  /// In uz, this message translates to:
+  /// **'Raqamni o‘zgartirish'**
+  String get changePhoneNumber;
+
+  /// No description provided for @caloriesLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'{value} kkal'**
+  String caloriesLabel(int value);
+
+  /// No description provided for @weightGramsLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'{value} g'**
+  String weightGramsLabel(int value);
+
+  /// No description provided for @cookingMinutesLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'{value} daq'**
+  String cookingMinutesLabel(int value);
+
+  /// No description provided for @loyaltyBalancePoints.
+  ///
+  /// In uz, this message translates to:
+  /// **'{value} ball'**
+  String loyaltyBalancePoints(String value);
+
+  /// No description provided for @useInOrder.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmada ishlatish'**
+  String get useInOrder;
+
+  /// No description provided for @promotionGift.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sovg‘a'**
+  String get promotionGift;
+
+  /// No description provided for @backToHome.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bosh sahifaga'**
+  String get backToHome;
+
+  /// No description provided for @orderingAvailability.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma mavjudligi'**
+  String get orderingAvailability;
+
+  /// No description provided for @orderingChecking.
+  ///
+  /// In uz, this message translates to:
+  /// **'Filial ish vaqti tekshirilmoqda…'**
+  String get orderingChecking;
+
+  /// No description provided for @orderingOpen.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozir ochiq'**
+  String get orderingOpen;
+
+  /// No description provided for @orderingClosed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozir mavjud emas'**
+  String get orderingClosed;
+
+  /// No description provided for @pickupAvailability.
+  ///
+  /// In uz, this message translates to:
+  /// **'Olib ketish'**
+  String get pickupAvailability;
+
+  /// No description provided for @deliveryAvailability.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazib berish'**
+  String get deliveryAvailability;
+
+  /// No description provided for @orderingNextOpening.
+  ///
+  /// In uz, this message translates to:
+  /// **'Keyingi ochilish: {value}'**
+  String orderingNextOpening(String value);
+
+  /// No description provided for @orderingStatusUnavailable.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ish vaqtini tekshirib bo‘lmadi. Mavjudlik buyurtma paytida tekshiriladi.'**
+  String get orderingStatusUnavailable;
+
+  /// No description provided for @orderingClosedAction.
+  ///
+  /// In uz, this message translates to:
+  /// **'Boshqa filialni tanlang yoki keyinroq urinib ko‘ring.'**
+  String get orderingClosedAction;
+
+  /// No description provided for @promoCodeNotFound.
+  ///
+  /// In uz, this message translates to:
+  /// **'Promokod topilmadi'**
+  String get promoCodeNotFound;
+
+  /// No description provided for @promoCodeInactive.
+  ///
+  /// In uz, this message translates to:
+  /// **'Promokod faol emas'**
+  String get promoCodeInactive;
+
+  /// No description provided for @promoCodeNotStarted.
+  ///
+  /// In uz, this message translates to:
+  /// **'Promokod hali amal qilmaydi'**
+  String get promoCodeNotStarted;
+
+  /// No description provided for @promoCodeExpired.
+  ///
+  /// In uz, this message translates to:
+  /// **'Promokod muddati tugagan'**
+  String get promoCodeExpired;
+
+  /// No description provided for @promoGlobalLimitReached.
+  ///
+  /// In uz, this message translates to:
+  /// **'Aksiya limiti tugagan'**
+  String get promoGlobalLimitReached;
+
+  /// No description provided for @promoClientLimitReached.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu promokoddan allaqachon foydalangansiz'**
+  String get promoClientLimitReached;
+
+  /// No description provided for @promoClientRequired.
+  ///
+  /// In uz, this message translates to:
+  /// **'Promokoddan foydalanish uchun tizimga kiring'**
+  String get promoClientRequired;
+
+  /// No description provided for @promoConditionsNotMet.
+  ///
+  /// In uz, this message translates to:
+  /// **'Promokod shartlari bajarilmadi'**
+  String get promoConditionsNotMet;
+
+  /// No description provided for @promoConfigurationError.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozir promokodni qo‘llab bo‘lmaydi'**
+  String get promoConfigurationError;
+
+  /// No description provided for @promoCodeCouldNotBeApplied.
+  ///
+  /// In uz, this message translates to:
+  /// **'Promokodni qo‘llab bo‘lmadi'**
+  String get promoCodeCouldNotBeApplied;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

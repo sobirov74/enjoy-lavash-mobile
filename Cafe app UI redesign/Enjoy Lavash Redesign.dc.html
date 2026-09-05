@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/pace-design-system-e4e3152b-be57-4dc2-917e-cb5270773a6f/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/pace-design-system-e4e3152b-be57-4dc2-917e-cb5270773a6f/tokens/colors.css">
+<link rel="stylesheet" href="_ds/pace-design-system-e4e3152b-be57-4dc2-917e-cb5270773a6f/tokens/typography.css">
+<link rel="stylesheet" href="_ds/pace-design-system-e4e3152b-be57-4dc2-917e-cb5270773a6f/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/pace-design-system-e4e3152b-be57-4dc2-917e-cb5270773a6f/tokens/radii.css">
+<link rel="stylesheet" href="_ds/pace-design-system-e4e3152b-be57-4dc2-917e-cb5270773a6f/tokens/shadows.css">
+<link rel="stylesheet" href="_ds/pace-design-system-e4e3152b-be57-4dc2-917e-cb5270773a6f/tokens/motion.css">
+<link rel="stylesheet" href="_ds/pace-design-system-e4e3152b-be57-4dc2-917e-cb5270773a6f/styles.css">
+<script src="_ds/pace-design-system-e4e3152b-be57-4dc2-917e-cb5270773a6f/_ds_bundle.js"></script>
+<style>
+body { margin: 0; background: #E8E4DA; font-family: var(--font-sans); }
+a { color: #C62828; text-decoration: none; }
+a:hover { color: #8C3A22; }
+</style>
+</helmet>
+
+<div style="padding:52px 56px 90px;display:flex;flex-direction:column;gap:44px;min-width:max-content">
+
+<div style="display:flex;flex-direction:column;gap:26px;max-width:1180px">
+<div style="display:flex;align-items:flex-start;gap:20px">
+<img src="assets/images/enjoy-logo-app-icon.png" alt="Enjoy Lavash" style="width:64px;height:64px;border-radius:16px;box-shadow:var(--shadow-card);flex:0 0 auto">
+<div style="display:flex;flex-direction:column;gap:8px">
+<span style="font:500 40px/42px var(--font-display);color:var(--pace-ink)">Enjoy Lavash — buyurtma oqimi</span>
+<span style="font:var(--type-body);color:var(--pace-ink-60);max-width:760px;display:block;text-wrap:pretty">Nine screens, tap-through. The UI copy is lifted from your own <span style="font-family:ui-monospace,Menlo,monospace;font-size:12.5px;background:var(--pace-ink-06);border-radius:5px;padding:2px 5px">app_localizations_uz.dart</span>, so nothing here is invented marketing language. Structure, type and spacing come from the Pace design system; the single action colour is your brand red <span style="font-family:ui-monospace,Menlo,monospace;font-size:12.5px;background:var(--pace-ink-06);border-radius:5px;padding:2px 5px">#E53935</span> from <span style="font-family:ui-monospace,Menlo,monospace;font-size:12.5px;background:var(--pace-ink-06);border-radius:5px;padding:2px 5px">AppThemeColors.light</span>, with the logo yellow reserved for anything to do with ball.</span>
+</div>
+</div>
+
+<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start">
+
+<div style="flex:1 1 420px;min-width:380px;background:var(--pace-white);border-radius:var(--radius-card);box-shadow:var(--shadow-card);padding:22px 24px">
+<span style="display:block;font:var(--type-section-title);color:var(--pace-ink);margin-bottom:14px">Six decisions that do the work</span>
+<div style="display:flex;flex-direction:column;gap:13px">
+<div style="display:flex;gap:11px"><span style="flex:0 0 auto;width:20px;height:20px;border-radius:99px;background:#E53935;color:#fff;font:var(--type-badge-small);display:grid;place-items:center;margin-top:1px">1</span><span style="font:var(--type-sub);color:var(--pace-ink-70);text-wrap:pretty"><b style="color:var(--pace-ink)">A home screen exists.</b> The app opened straight into Menyu, so a first-time user had to work out where they were. Home answers three things: what am I ordering (delivery or pickup, which branch), what do I have (ball balance), what did I order last.</span></div>
+<div style="display:flex;gap:11px"><span style="flex:0 0 auto;width:20px;height:20px;border-radius:99px;background:#E53935;color:#fff;font:var(--type-badge-small);display:grid;place-items:center;margin-top:1px">2</span><span style="font:var(--type-sub);color:var(--pace-ink-70);text-wrap:pretty"><b style="color:var(--pace-ink)">Order type is always on screen.</b> One pill at the top of Home and Menyu: mode, branch, ETA. Tap it and a sheet changes both. Nobody reaches checkout unsure whether they picked yetkazib berish or olib ketish.</span></div>
+<div style="display:flex;gap:11px"><span style="flex:0 0 auto;width:20px;height:20px;border-radius:99px;background:#E53935;color:#fff;font:var(--type-badge-small);display:grid;place-items:center;margin-top:1px">3</span><span style="font:var(--type-sub);color:var(--pace-ink-70);text-wrap:pretty"><b style="color:var(--pace-ink)">Cart left the tab bar.</b> An empty cart tab is dead weight. Instead a dark pill appears above the tabs the moment something is added, carrying the count and the running total.</span></div>
+<div style="display:flex;gap:11px"><span style="flex:0 0 auto;width:20px;height:20px;border-radius:99px;background:#E53935;color:#fff;font:var(--type-badge-small);display:grid;place-items:center;margin-top:1px">4</span><span style="font:var(--type-sub);color:var(--pace-ink-70);text-wrap:pretty"><b style="color:var(--pace-ink)">Two ways to add, both short.</b> The + on a tile adds the standard version in one tap; the photo opens the options screen for people who want katta, sous and qo'shimchalar. Repeat orders skip the menu entirely.</span></div>
+<div style="display:flex;gap:11px"><span style="flex:0 0 auto;width:20px;height:20px;border-radius:99px;background:#E53935;color:#fff;font:var(--type-badge-small);display:grid;place-items:center;margin-top:1px">5</span><span style="font:var(--type-sub);color:var(--pace-ink-70);text-wrap:pretty"><b style="color:var(--pace-ink)">Ball is expressed in so'm.</b> Your strings already say it — 5% ball, 1 ball = 1 so'm, buyurtmaning 50% gacha — so the design repeats that at every point money is mentioned: item CTA, cart, checkout toggle, success screen.</span></div>
+<div style="display:flex;gap:11px"><span style="flex:0 0 auto;width:20px;height:20px;border-radius:99px;background:#E53935;color:#fff;font:var(--type-badge-small);display:grid;place-items:center;margin-top:1px">6</span><span style="font:var(--type-sub);color:var(--pace-ink-70);text-wrap:pretty"><b style="color:var(--pace-ink)">Checkout is one numbered screen.</b> Turi → manzil → to'lov → ballar, then the amount. No wizard, no hidden step, and the caveat about the final sum is stated instead of hidden.</span></div>
+</div>
+</div>
+
+<div style="flex:0 1 330px;min-width:300px;display:flex;flex-direction:column;gap:20px">
+<div style="background:var(--pace-white);border-radius:var(--radius-card);box-shadow:var(--shadow-card);padding:22px 24px">
+<span style="display:block;font:var(--type-section-title);color:var(--pace-ink);margin-bottom:12px">Palette and type</span>
+<div style="display:flex;gap:8px;margin-bottom:12px">
+<span style="flex:1;height:44px;border-radius:12px;background:#F6F3EC;border:1px solid rgba(29,27,44,.08);display:block"></span>
+<span style="flex:1;height:44px;border-radius:12px;background:#151312;display:block"></span>
+<span style="flex:1;height:44px;border-radius:12px;background:#E53935;display:block"></span>
+<span style="flex:1;height:44px;border-radius:12px;background:#F5C84C;display:block"></span>
+<span style="flex:1;height:44px;border-radius:12px;background:#1D1B2C;display:block"></span>
+</div>
+<div style="display:flex;flex-direction:column;gap:9px">
+<span style="font:var(--type-sub);color:var(--pace-ink-70)">Warm cream and a warm near-black, one red, gold for ball. Five colours total — the restraint is what reads as premium, not more hues.</span>
+<span style="font:var(--type-sub);color:var(--pace-ink-70)"><b style="color:var(--pace-ink)">Manrope</b> for anything expressive — greetings, prices, product names — over <b style="color:var(--pace-ink)">Golos Text</b> for UI. Both carry Cyrillic, both are free for commercial use. Your Flutter build ships no custom font at all, so it currently renders in Roboto. Three pairings compared in <a href="#3a">3a</a>–<a href="#3d">3d</a>.</span>
+<span style="font:var(--type-sub);color:var(--pace-ink-70)">Dark values are your own <span style="font-family:ui-monospace,Menlo,monospace;font-size:12px;background:var(--pace-ink-06);border-radius:5px;padding:2px 5px">AppThemeColors.dark</span> — ground #151312, surface #1D1A18, borders #35302C. Gold drops to a 13% wash so it glows instead of glaring.</span>
+</div>
+</div>
+<div style="background:var(--pace-white);border-radius:var(--radius-card);box-shadow:var(--shadow-card);padding:22px 24px">
+<span style="display:block;font:var(--type-section-title);color:var(--pace-ink);margin-bottom:12px">Assumptions</span>
+<div style="display:flex;flex-direction:column;gap:9px">
+<span style="font:var(--type-sub);color:var(--pace-ink-70)">Uzbek (lotin), your default locale. Ru and En strings exist in the repo — say the word and I'll switch the mocks.</span>
+<span style="font:var(--type-sub);color:var(--pace-ink-70)">Cashback only: no tiers, no stamps. 5% is a tweakable number.</span>
+<span style="font:var(--type-sub);color:var(--pace-ink-70)">Payme, Click and ball. Naqd is not shown.</span>
+<span style="font:var(--type-sub);color:var(--pace-ink-70)">Product names, prices and branches are stand-ins. Photos are real drop targets — drag an image onto any tile and it stays.</span>
+</div>
+</div>
+<div style="background:var(--pace-warning-wash);border-radius:var(--radius-card);padding:22px 24px">
+<span style="display:block;font:var(--type-section-title);color:var(--pace-warning);margin-bottom:12px">Left out on purpose</span>
+<span style="font:var(--type-sub);color:var(--pace-warning);display:block;text-wrap:pretty">Order tracking, branch map, search and the order-history detail weren't in scope for this round. Search is the one I'd argue back in — a menu this size is fine, a full one isn't.</span>
+</div>
+</div>
+
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:22px">
+<div style="display:flex;align-items:baseline;gap:11px;flex-wrap:wrap">
+<span style="font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1D1B2C;color:#fff;border-radius:4px">3</span>
+<span style="font:var(--type-section-title);color:var(--pace-ink)">Shrift — three pairings that carry Cyrillic</span>
+<span style="font:var(--type-sub);color:var(--pace-ink-55);max-width:720px;display:block">Clash Display has no Cyrillic, so it can't serve a Ru/Uz app. All three below cover Latin, Latin-ext and Cyrillic, are free for commercial use, and load in Flutter through <span style="font-family:ui-monospace,Menlo,monospace;font-size:12px;background:var(--pace-ink-06);border-radius:5px;padding:2px 5px">google_fonts</span>. The rest of the board is set in <a href="#3a">3a</a>.</span>
+</div>
+<div style="display:flex;gap:30px;align-items:flex-start">
+
+<div id="3a" style="display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px">
+<div style="display:flex;align-items:baseline;gap:9px"><a href="#3a" style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--pace-ink-08);color:var(--pace-ink);border-radius:5px">3a</a><span style="font:var(--type-body-semibold);color:var(--pace-ink)">Manrope + Golos Text</span></div>
+<span style="font:var(--type-small);color:var(--pace-ink-55);max-width:412px;display:block">My pick, and the current default. Manrope 700 does the expressive work; Golos Text was designed for Cyrillic interfaces and holds up at 11px. Closest in proportion to what the layouts were built on.</span>
+<dc-import name="Phone" screen="home" font-pair="manrope" cashback-percent="{{ cashbackPercent }}" show-reorder="{{ showReorder }}" points-at-checkout="{{ pointsAtCheckout }}" hint-size="412px,822px"></dc-import>
+</div>
+
+<div id="3b" style="display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px">
+<div style="display:flex;align-items:baseline;gap:9px"><a href="#3b" style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--pace-ink-08);color:var(--pace-ink);border-radius:5px">3b</a><span style="font:var(--type-body-semibold);color:var(--pace-ink)">Onest, one family</span></div>
+<span style="font:var(--type-small);color:var(--pace-ink-55);max-width:412px;display:block">Weight alone separates display from UI. Tighter and more contemporary; the trade is less contrast between a product name and the line under it.</span>
+<dc-import name="Phone" screen="home" font-pair="onest" cashback-percent="{{ cashbackPercent }}" show-reorder="{{ showReorder }}" points-at-checkout="{{ pointsAtCheckout }}" hint-size="412px,822px"></dc-import>
+</div>
+
+<div id="3c" style="display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px">
+<div style="display:flex;align-items:baseline;gap:9px"><a href="#3c" style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--pace-ink-08);color:var(--pace-ink);border-radius:5px">3c</a><span style="font:var(--type-body-semibold);color:var(--pace-ink)">Literata + Golos Text</span></div>
+<span style="font:var(--type-small);color:var(--pace-ink-55);max-width:412px;display:block">A serif on the greeting, product names and prices. Reads as restaurant rather than fast food — the most premium of the three, and the furthest from the current logo.</span>
+<dc-import name="Phone" screen="home" font-pair="literata" cashback-percent="{{ cashbackPercent }}" show-reorder="{{ showReorder }}" points-at-checkout="{{ pointsAtCheckout }}" hint-size="412px,822px"></dc-import>
+</div>
+
+<div id="3d" style="display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px">
+<div style="display:flex;align-items:baseline;gap:9px"><a href="#3d" style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--pace-ink-08);color:var(--pace-ink);border-radius:5px">3d</a><span style="font:var(--type-body-semibold);color:var(--pace-ink)">Clash Display + Instrument Sans</span></div>
+<span style="font:var(--type-small);color:var(--pace-ink-55);max-width:412px;display:block">The previous setting, kept for reference. Latin only — Uzbek lotin is fine, Russian is not.</span>
+<dc-import name="Phone" screen="home" font-pair="clash" cashback-percent="{{ cashbackPercent }}" show-reorder="{{ showReorder }}" points-at-checkout="{{ pointsAtCheckout }}" hint-size="412px,822px"></dc-import>
+</div>
+
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:22px">
+<div style="display:flex;align-items:baseline;gap:11px">
+<span style="font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1D1B2C;color:#fff;border-radius:4px">2</span>
+<span style="font:var(--type-section-title);color:var(--pace-ink)">Qorong&#39;i rejim</span>
+<span style="font:var(--type-sub);color:var(--pace-ink-55)">Same screens, your dark theme values. The switch lives on Profil → Ko&#39;rinish and flips the whole app.</span>
+</div>
+<div style="display:flex;gap:30px;align-items:flex-start">
+
+<div id="2a" style="display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px">
+<div style="display:flex;align-items:baseline;gap:9px"><a href="#2a" style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--pace-ink-08);color:var(--pace-ink);border-radius:5px">2a</a><span style="font:var(--type-body-semibold);color:var(--pace-ink)">Bosh sahifa</span></div>
+<span style="font:var(--type-small);color:var(--pace-ink-55);max-width:412px;display:block">Gold reads as a 13% wash on near-black rather than a bright block.</span>
+<dc-import name="Phone" screen="home" theme="dark" cashback-percent="{{ cashbackPercent }}" show-reorder="{{ showReorder }}" points-at-checkout="{{ pointsAtCheckout }}" hint-size="412px,822px"></dc-import>
+</div>
+
+<div id="2b" style="display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px">
+<div style="display:flex;align-items:baseline;gap:9px"><a href="#2b" style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--pace-ink-08);color:var(--pace-ink);border-radius:5px">2b</a><span style="font:var(--type-body-semibold);color:var(--pace-ink)">Menyu</span></div>
+<span style="font:var(--type-small);color:var(--pace-ink-55);max-width:412px;display:block">Photo fields keep their colour in both themes — food photography is the bright element, the chrome recedes.</span>
+<dc-import name="Phone" screen="menu" theme="dark" cashback-percent="{{ cashbackPercent }}" show-reorder="{{ showReorder }}" points-at-checkout="{{ pointsAtCheckout }}" hint-size="412px,822px"></dc-import>
+</div>
+
+<div id="2c" style="display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px">
+<div style="display:flex;align-items:baseline;gap:9px"><a href="#2c" style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--pace-ink-08);color:var(--pace-ink);border-radius:5px">2c</a><span style="font:var(--type-body-semibold);color:var(--pace-ink)">Savat</span></div>
+<span style="font:var(--type-small);color:var(--pace-ink-55);max-width:412px;display:block">The cart pill inverts to cream on dark, the same way your snackbar already does.</span>
+<dc-import name="Phone" screen="cart" theme="dark" cashback-percent="{{ cashbackPercent }}" show-reorder="{{ showReorder }}" points-at-checkout="{{ pointsAtCheckout }}" hint-size="412px,822px"></dc-import>
+</div>
+
+<div id="2d" style="display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px">
+<div style="display:flex;align-items:baseline;gap:9px"><a href="#2d" style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--pace-ink-08);color:var(--pace-ink);border-radius:5px">2d</a><span style="font:var(--type-body-semibold);color:var(--pace-ink)">Mening ballarim</span></div>
+<span style="font:var(--type-small);color:var(--pace-ink-55);max-width:412px;display:block">Where dark mode earns its keep: gold numerals on near-black.</span>
+<dc-import name="Phone" screen="bonus" theme="dark" cashback-percent="{{ cashbackPercent }}" show-reorder="{{ showReorder }}" points-at-checkout="{{ pointsAtCheckout }}" hint-size="412px,822px"></dc-import>
+</div>
+
+<div id="2e" style="display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px">
+<div style="display:flex;align-items:baseline;gap:9px"><a href="#2e" style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--pace-ink-08);color:var(--pace-ink);border-radius:5px">2e</a><span style="font:var(--type-body-semibold);color:var(--pace-ink)">Profil</span></div>
+<span style="font:var(--type-small);color:var(--pace-ink-55);max-width:412px;display:block">Tap Ko&#39;rinish to switch back to Yorug&#39;.</span>
+<dc-import name="Phone" screen="profile" theme="dark" cashback-percent="{{ cashbackPercent }}" show-reorder="{{ showReorder }}" points-at-checkout="{{ pointsAtCheckout }}" hint-size="412px,822px"></dc-import>
+</div>
+
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:22px">
+<div style="display:flex;align-items:baseline;gap:11px">
+<span style="font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1D1B2C;color:#fff;border-radius:4px">1</span>
+<span style="font:var(--type-section-title);color:var(--pace-ink)">Yorug&#39; rejim — to&#39;liq oqim</span>
+<span style="font:var(--type-sub);color:var(--pace-ink-55)">Nine screens in order. Every frame navigates on its own.</span>
+</div>
+<div style="display:flex;gap:30px;align-items:flex-start">
+
+<div id="1a" style="display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px">
+<div style="display:flex;align-items:baseline;gap:9px"><a href="#1a" style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--pace-ink-08);color:var(--pace-ink);border-radius:5px">1a</a><span style="font:var(--type-body-semibold);color:var(--pace-ink)">Kirish</span></div>
+<span style="font:var(--type-small);color:var(--pace-ink-55);max-width:412px;display:block">Phone, SMS, name — three steps, skippable. Ball is the reason to sign in, so it's the first thing said.</span>
+<dc-import name="Phone" screen="auth" cashback-percent="{{ cashbackPercent }}" show-reorder="{{ showReorder }}" points-at-checkout="{{ pointsAtCheckout }}" hint-size="412px,822px"></dc-import>
+</div>
+
+<div id="1b" style="display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px">
+<div style="display:flex;align-items:baseline;gap:9px"><a href="#1b" style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--pace-ink-08);color:var(--pace-ink);border-radius:5px">1b</a><span style="font:var(--type-body-semibold);color:var(--pace-ink)">Bosh sahifa</span></div>
+<span style="font:var(--type-small);color:var(--pace-ink-55);max-width:412px;display:block">Context pill, balance, last order, one promo. Tap the pill to switch delivery / pickup.</span>
+<dc-import name="Phone" screen="home" cashback-percent="{{ cashbackPercent }}" show-reorder="{{ showReorder }}" points-at-checkout="{{ pointsAtCheckout }}" hint-size="412px,822px"></dc-import>
+</div>
+
+<div id="1c" style="display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px">
+<div style="display:flex;align-items:baseline;gap:9px"><a href="#1c" style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--pace-ink-08);color:var(--pace-ink);border-radius:5px">1c</a><span style="font:var(--type-body-semibold);color:var(--pace-ink)">Menyu</span></div>
+<span style="font:var(--type-small);color:var(--pace-ink-55);max-width:412px;display:block">Sticky category pills, two-column grid. + adds instantly and becomes a stepper.</span>
+<dc-import name="Phone" screen="menu" cashback-percent="{{ cashbackPercent }}" show-reorder="{{ showReorder }}" points-at-checkout="{{ pointsAtCheckout }}" hint-size="412px,822px"></dc-import>
+</div>
+
+<div id="1d" style="display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px">
+<div style="display:flex;align-items:baseline;gap:9px"><a href="#1d" style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--pace-ink-08);color:var(--pace-ink);border-radius:5px">1d</a><span style="font:var(--type-body-semibold);color:var(--pace-ink)">Mahsulot</span></div>
+<span style="font:var(--type-small);color:var(--pace-ink-55);max-width:412px;display:block">O'lcham, sous, qo'shimchalar. The price in the button updates as you choose, and the ball line sits under it.</span>
+<dc-import name="Phone" screen="item" cashback-percent="{{ cashbackPercent }}" show-reorder="{{ showReorder }}" points-at-checkout="{{ pointsAtCheckout }}" hint-size="412px,822px"></dc-import>
+</div>
+
+<div id="1e" style="display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px">
+<div style="display:flex;align-items:baseline;gap:9px"><a href="#1e" style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--pace-ink-08);color:var(--pace-ink);border-radius:5px">1e</a><span style="font:var(--type-body-semibold);color:var(--pace-ink)">Savat</span></div>
+<span style="font:var(--type-small);color:var(--pace-ink-55);max-width:412px;display:block">Chosen options spelled out per line. Step a row to zero to see the empty state.</span>
+<dc-import name="Phone" screen="cart" cashback-percent="{{ cashbackPercent }}" show-reorder="{{ showReorder }}" points-at-checkout="{{ pointsAtCheckout }}" hint-size="412px,822px"></dc-import>
+</div>
+
+<div id="1f" style="display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px">
+<div style="display:flex;align-items:baseline;gap:9px"><a href="#1f" style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--pace-ink-08);color:var(--pace-ink);border-radius:5px">1f</a><span style="font:var(--type-body-semibold);color:var(--pace-ink)">Buyurtma berish</span></div>
+<span style="font:var(--type-small);color:var(--pace-ink-55);max-width:412px;display:block">Four numbered steps on one screen. Pay to see the confirmation.</span>
+<dc-import name="Phone" screen="checkout" cashback-percent="{{ cashbackPercent }}" show-reorder="{{ showReorder }}" points-at-checkout="{{ pointsAtCheckout }}" hint-size="412px,822px"></dc-import>
+</div>
+
+<div id="1g" style="display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px">
+<div style="display:flex;align-items:baseline;gap:9px"><a href="#1g" style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--pace-ink-08);color:var(--pace-ink);border-radius:5px">1g</a><span style="font:var(--type-body-semibold);color:var(--pace-ink)">Mening ballarim</span></div>
+<span style="font:var(--type-small);color:var(--pace-ink-55);max-width:412px;display:block">Balance, what's reserved, what expires, the three rules, then history. Your loyalty API already returns all of it.</span>
+<dc-import name="Phone" screen="bonus" cashback-percent="{{ cashbackPercent }}" show-reorder="{{ showReorder }}" points-at-checkout="{{ pointsAtCheckout }}" hint-size="412px,822px"></dc-import>
+</div>
+
+<div id="1h" style="display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px">
+<div style="display:flex;align-items:baseline;gap:9px"><a href="#1h" style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--pace-ink-08);color:var(--pace-ink);border-radius:5px">1h</a><span style="font:var(--type-body-semibold);color:var(--pace-ink)">Xabarlar</span></div>
+<span style="font:var(--type-small);color:var(--pace-ink-55);max-width:412px;display:block">One inbox, three filters. Order news in red, promos in yellow with the code and a use-it button.</span>
+<dc-import name="Phone" screen="notifs" cashback-percent="{{ cashbackPercent }}" show-reorder="{{ showReorder }}" points-at-checkout="{{ pointsAtCheckout }}" hint-size="412px,822px"></dc-import>
+</div>
+
+<div id="1i" style="display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px">
+<div style="display:flex;align-items:baseline;gap:9px"><a href="#1i" style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--pace-ink-08);color:var(--pace-ink);border-radius:5px">1i</a><span style="font:var(--type-body-semibold);color:var(--pace-ink)">Profil</span></div>
+<span style="font:var(--type-small);color:var(--pace-ink-55);max-width:412px;display:block">Three labelled blocks instead of one long list: buyurtmalar, sozlamalar, amallar.</span>
+<dc-import name="Phone" screen="profile" cashback-percent="{{ cashbackPercent }}" show-reorder="{{ showReorder }}" points-at-checkout="{{ pointsAtCheckout }}" hint-size="412px,822px"></dc-import>
+</div>
+
+</div>
+</div>
+
+<div style="max-width:900px;background:var(--pace-white);border-radius:var(--radius-card);box-shadow:var(--shadow-card);padding:22px 24px">
+<span style="display:block;font:var(--type-section-title);color:var(--pace-ink);margin-bottom:10px">Where I'd go next</span>
+<span style="font:var(--type-sub);color:var(--pace-ink-70);display:block;text-wrap:pretty">Order tracking is the obvious gap — the statuses are already in <span style="font-family:ui-monospace,Menlo,monospace;font-size:12.5px;background:var(--pace-ink-06);border-radius:5px;padding:2px 5px">order_status.dart</span> and the copy is in the uz file, so a live status screen would slot straight in after <a href="#1f">1f</a>. After that: search on <a href="#1c">1c</a>, and the promokod list that <a href="#1h">1h</a> and <a href="#1i">1i</a> both point at. Tell me which screens to push further, or which ones to try differently.</span>
+<span style="font:var(--type-sub);color:var(--pace-ink-70);display:block;margin-top:10px">Empty states and the error screens — 500, 404, 401, 429, offline, 422 — live on their own board: <a href="Enjoy%20Lavash%20Holatlar.dc.html">Bo&#39;sh va xato holatlar</a>.</span>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;cashbackPercent&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:5,&quot;min&quot;:1,&quot;max&quot;:15,&quot;unit&quot;:&quot;%&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Bonus tizimi&quot;},&quot;pointsAtCheckout&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Bonus tizimi&quot;},&quot;showReorder&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Bosh sahifa&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      cashbackPercent: this.props.cashbackPercent != null ? this.props.cashbackPercent : 5,
+      showReorder: this.props.showReorder !== false,
+      pointsAtCheckout: this.props.pointsAtCheckout !== false
+    };
+  }
+}
+</script>
+</body>
+</html>

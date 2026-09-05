@@ -184,7 +184,7 @@ class LUz extends L {
   String get perOrder => 'Har bir buyurtma uchun';
 
   @override
-  String get perOrderValue => '5% ball';
+  String get perOrderValue => 'Ballar amaldagi aksiyalarga bog‘liq';
 
   @override
   String get onePointEquals => '1 ball teng';
@@ -364,6 +364,10 @@ class LUz extends L {
       'Savatdan buyurtma berish uchun tizimga kiring.';
 
   @override
+  String get authWelcomeSubtitle =>
+      'Sevimli taomlaringizni buyurtma qiling va amaldagi aksiyalardan ball oling.';
+
+  @override
   String get phoneNumber => 'Telefon raqami';
 
   @override
@@ -475,6 +479,14 @@ class LUz extends L {
 
   @override
   String get createOrderAction => 'Buyurtma berish';
+
+  @override
+  String createOrderFor(String price) {
+    return 'Buyurtma berish · $price';
+  }
+
+  @override
+  String get change => 'O\'zgartirish';
 
   @override
   String get payment => 'To\'lov';
@@ -623,6 +635,15 @@ class LUz extends L {
 
   @override
   String get notificationInboxSubtitle => 'Yangiliklar va takliflar bir joyda';
+
+  @override
+  String get filterOrders => 'Buyurtmalar';
+
+  @override
+  String get filterPromotions => 'Aksiyalar';
+
+  @override
+  String get noNotificationsForFilter => 'Bu filtrga mos bildirishnoma yo\'q.';
 
   @override
   String get markAllRead => 'Barchasini o\'qilgan qilish';
@@ -819,6 +840,83 @@ class LUz extends L {
       'Buyurtma holati va maxsus takliflarni oling';
 
   @override
+  String get profilePointsLabel => 'BALLARIM';
+
+  @override
+  String get viewPoints => 'Ko\'rish';
+
+  @override
+  String get profileOrdersSection => 'BUYURTMALAR';
+
+  @override
+  String profileOrderCount(int count) {
+    return '$count ta';
+  }
+
+  @override
+  String get myAddresses => 'Mening manzillarim';
+
+  @override
+  String profileAddressCount(int count) {
+    return '$count ta';
+  }
+
+  @override
+  String get editProfile => 'Profilni tahrirlash';
+
+  @override
+  String get profileName => 'Ism';
+
+  @override
+  String get profileUpdated => 'Profil yangilandi';
+
+  @override
+  String get profileUpdateFailed => 'Profilni yangilab bo\'lmadi';
+
+  @override
+  String get savedAddresses => 'Saqlangan manzillar';
+
+  @override
+  String get noSavedAddresses => 'Saqlangan manzil yo\'q';
+
+  @override
+  String get noSavedAddressesSubtitle =>
+      'Buyurtmani tezroq rasmiylashtirish uchun manzil qo\'shing.';
+
+  @override
+  String get addAddress => 'Manzil qo\'shish';
+
+  @override
+  String get addressLabel => 'Manzil nomi';
+
+  @override
+  String get addressLabelHint => 'Masalan, Uy';
+
+  @override
+  String get setAsDefault => 'Asosiy qilish';
+
+  @override
+  String get defaultAddress => 'Asosiy';
+
+  @override
+  String get addressSaved => 'Manzil saqlandi';
+
+  @override
+  String get addressSaveFailed => 'Manzilni saqlab bo\'lmadi';
+
+  @override
+  String get addressDeleted => 'Manzil o\'chirildi';
+
+  @override
+  String get addressDeleteFailed => 'Manzilni o\'chirib bo\'lmadi';
+
+  @override
+  String get deleteAddress => 'Manzilni o\'chirish';
+
+  @override
+  String get profileNotificationsSubtitle => 'Buyurtma holati va takliflar';
+
+  @override
   String get orderStatusCooking => 'Tayyorlanmoqda';
 
   @override
@@ -886,6 +984,22 @@ class LUz extends L {
 
   @override
   String get additionalInfo => 'Qo\'shimcha ma\'lumot';
+
+  @override
+  String get requiredChoice => 'Majburiy';
+
+  @override
+  String get optionalChoice => 'Ixtiyoriy';
+
+  @override
+  String chooseAtLeastOptions(int count) {
+    return 'Kamida $count ta tanlang';
+  }
+
+  @override
+  String addToCartFor(String price) {
+    return 'Qo\'shish · $price';
+  }
 
   @override
   String get kitchenOrder => 'Oshxona buyurtmasi';
@@ -1038,4 +1152,133 @@ class LUz extends L {
 
   @override
   String get transactionBalanceUpdate => 'Balans yangilandi';
+
+  @override
+  String get tabHome => 'Bosh sahifa';
+
+  @override
+  String homeGreeting(String name) {
+    return 'Assalomu alaykum, $name.';
+  }
+
+  @override
+  String get loyaltyMoneyHint => '1 ball 1 so\'mga teng · 50% gacha';
+
+  @override
+  String get repeatOrderTitle => 'Yana takrorlaymizmi?';
+
+  @override
+  String repeatOrderAction(String amount) {
+    return 'Takrorlash · $amount';
+  }
+
+  @override
+  String get orderContextDelivery => 'Yetkazib berish';
+
+  @override
+  String get orderContextPickup => 'Olib ketish';
+
+  @override
+  String get orderContextChoose => 'Manzil yoki filialni tanlang';
+
+  @override
+  String get markAllReadShort => 'Barchasini o\'qish';
+
+  @override
+  String get cartOpen => 'Savatni ochish';
+
+  @override
+  String get changePhoneNumber => 'Raqamni o‘zgartirish';
+
+  @override
+  String caloriesLabel(int value) {
+    return '$value kkal';
+  }
+
+  @override
+  String weightGramsLabel(int value) {
+    return '$value g';
+  }
+
+  @override
+  String cookingMinutesLabel(int value) {
+    return '$value daq';
+  }
+
+  @override
+  String loyaltyBalancePoints(String value) {
+    return '$value ball';
+  }
+
+  @override
+  String get useInOrder => 'Buyurtmada ishlatish';
+
+  @override
+  String get promotionGift => 'Sovg‘a';
+
+  @override
+  String get backToHome => 'Bosh sahifaga';
+
+  @override
+  String get orderingAvailability => 'Buyurtma mavjudligi';
+
+  @override
+  String get orderingChecking => 'Filial ish vaqti tekshirilmoqda…';
+
+  @override
+  String get orderingOpen => 'Hozir ochiq';
+
+  @override
+  String get orderingClosed => 'Hozir mavjud emas';
+
+  @override
+  String get pickupAvailability => 'Olib ketish';
+
+  @override
+  String get deliveryAvailability => 'Yetkazib berish';
+
+  @override
+  String orderingNextOpening(String value) {
+    return 'Keyingi ochilish: $value';
+  }
+
+  @override
+  String get orderingStatusUnavailable =>
+      'Ish vaqtini tekshirib bo‘lmadi. Mavjudlik buyurtma paytida tekshiriladi.';
+
+  @override
+  String get orderingClosedAction =>
+      'Boshqa filialni tanlang yoki keyinroq urinib ko‘ring.';
+
+  @override
+  String get promoCodeNotFound => 'Promokod topilmadi';
+
+  @override
+  String get promoCodeInactive => 'Promokod faol emas';
+
+  @override
+  String get promoCodeNotStarted => 'Promokod hali amal qilmaydi';
+
+  @override
+  String get promoCodeExpired => 'Promokod muddati tugagan';
+
+  @override
+  String get promoGlobalLimitReached => 'Aksiya limiti tugagan';
+
+  @override
+  String get promoClientLimitReached =>
+      'Bu promokoddan allaqachon foydalangansiz';
+
+  @override
+  String get promoClientRequired =>
+      'Promokoddan foydalanish uchun tizimga kiring';
+
+  @override
+  String get promoConditionsNotMet => 'Promokod shartlari bajarilmadi';
+
+  @override
+  String get promoConfigurationError => 'Hozir promokodni qo‘llab bo‘lmaydi';
+
+  @override
+  String get promoCodeCouldNotBeApplied => 'Promokodni qo‘llab bo‘lmadi';
 }

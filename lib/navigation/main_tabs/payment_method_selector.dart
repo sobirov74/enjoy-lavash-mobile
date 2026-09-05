@@ -141,96 +141,101 @@ class _PaymentMethodChip extends StatelessWidget {
         : BaseColors.primary.withValues(alpha: 0.1);
     final idleColor = isDark ? const Color(0xFF201C19) : Colors.white;
 
-    return Material(
-      color: selected ? selectedColor : idleColor,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: Material(
+        color: selected ? selectedColor : idleColor,
         borderRadius: BorderRadius.circular(18),
-        onTap: selected ? null : onTap,
-        child: Container(
-          width: double.infinity,
-          constraints: const BoxConstraints(minHeight: 62),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: selected
-                  ? BaseColors.primary
-                  : isDark
-                  ? const Color(0xFF3A332D)
-                  : const Color(0xFFEDE2D7),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: selected ? null : onTap,
+          child: Container(
+            width: double.infinity,
+            constraints: const BoxConstraints(minHeight: 62),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: selected
+                    ? BaseColors.primary
+                    : isDark
+                    ? const Color(0xFF3A332D)
+                    : const Color(0xFFEDE2D7),
+              ),
             ),
-          ),
-          child: Row(
-            children: <Widget>[
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: selected
-                      ? BaseColors.primary
-                      : BaseColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(14),
+            child: Row(
+              children: <Widget>[
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? BaseColors.primary
+                        : BaseColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(
+                    _paymentMethodIcon(method.code),
+                    color: selected ? BaseColors.white : BaseColors.primary,
+                    size: 20,
+                  ),
                 ),
-                child: Icon(
-                  _paymentMethodIcon(method.code),
-                  color: selected ? BaseColors.white : BaseColors.primary,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    TypographyText(
-                      label,
-                      style: TextStyle(
-                        color: selected
-                            ? BaseColors.primary
-                            : isDark
-                            ? const Color(0xFFF6EFE7)
-                            : BaseColors.black,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w900,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: <Widget>[
-                        _PaymentMethodBadge(
-                          label: method.isOnline
-                              ? t.onlinePayment
-                              : t.payOnReceipt,
-                          selected: selected,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      TypographyText(
+                        label,
+                        style: TextStyle(
+                          color: selected
+                              ? BaseColors.primary
+                              : isDark
+                              ? const Color(0xFFF6EFE7)
+                              : BaseColors.black,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
                         ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 10),
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 160),
-                child: selected
-                    ? const Icon(
-                        Icons.check_circle_rounded,
-                        key: ValueKey<String>('selected'),
-                        color: BaseColors.primary,
-                        size: 24,
-                      )
-                    : Icon(
-                        Icons.radio_button_unchecked_rounded,
-                        key: const ValueKey<String>('idle'),
-                        color: isDark
-                            ? const Color(0xFF8F867E)
-                            : const Color(0xFFC5B8AC),
-                        size: 22,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-              ),
-            ],
+                      const SizedBox(height: 4),
+                      Row(
+                        children: <Widget>[
+                          _PaymentMethodBadge(
+                            label: method.isOnline
+                                ? t.onlinePayment
+                                : t.payOnReceipt,
+                            selected: selected,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 160),
+                  child: selected
+                      ? const Icon(
+                          Icons.check_circle_rounded,
+                          key: ValueKey<String>('selected'),
+                          color: BaseColors.primary,
+                          size: 24,
+                        )
+                      : Icon(
+                          Icons.radio_button_unchecked_rounded,
+                          key: const ValueKey<String>('idle'),
+                          color: isDark
+                              ? const Color(0xFF8F867E)
+                              : const Color(0xFFC5B8AC),
+                          size: 22,
+                        ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

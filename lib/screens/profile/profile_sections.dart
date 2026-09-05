@@ -1,3 +1,5 @@
+// ignore_for_file: unused_element, unused_element_parameter
+
 part of 'package:enjoy_lavash_mobile/screens/profile.dart';
 
 class _ProfileHeaderCard extends StatelessWidget {
@@ -30,16 +32,14 @@ class _ProfileHeaderCard extends StatelessWidget {
           child: Row(
             children: <Widget>[
               Container(
-                width: 76,
-                height: 76,
+                width: 64,
+                height: 64,
                 alignment: Alignment.center,
                 decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: <Color>[Color(0xFFFFC107), BaseColors.primary],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+                  color: AppDesignTokens.actionSoft,
+                  borderRadius: BorderRadius.all(
+                    Radius.circular(AppDesignTokens.radiusPanel),
                   ),
-                  borderRadius: BorderRadius.all(Radius.circular(24)),
                 ),
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 220),
@@ -50,8 +50,8 @@ class _ProfileHeaderCard extends StatelessWidget {
                   child: Icon(
                     isAuthorized ? Icons.person_rounded : Icons.login_rounded,
                     key: ValueKey<bool>(isAuthorized),
-                    color: Colors.white,
-                    size: 36,
+                    color: AppDesignTokens.action,
+                    size: 30,
                   ),
                 ),
               ),
@@ -60,11 +60,12 @@ class _ProfileHeaderCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    TypographyText(
+                    Text(
                       displayName,
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
+                      style: AppTextStyles.display(
+                        size: 21,
+                        height: 1.15,
+                        color: AppDesignTokens.primaryText(context),
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -83,15 +84,17 @@ class _ProfileHeaderCard extends StatelessWidget {
                           vertical: 5,
                         ),
                         decoration: BoxDecoration(
-                          color: BaseColors.primary.withValues(alpha: 0.1),
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? AppDesignTokens.gold.withValues(alpha: 0.13)
+                              : AppDesignTokens.goldWash,
                           borderRadius: BorderRadius.circular(99),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: <Widget>[
-                            const Icon(
+                            Icon(
                               Icons.stars_rounded,
-                              color: BaseColors.primary,
+                              color: AppDesignTokens.goldText(context),
                               size: 16,
                             ),
                             const SizedBox(width: 5),
@@ -101,8 +104,8 @@ class _ProfileHeaderCard extends StatelessWidget {
                                 '${NumberFormat.decimalPattern(Localizations.localeOf(context).toLanguageTag()).format(bonusBalance)}',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: BaseColors.primaryDark,
+                                style: TextStyle(
+                                  color: AppDesignTokens.goldText(context),
                                   fontSize: 12,
                                   fontWeight: FontWeight.w800,
                                 ),

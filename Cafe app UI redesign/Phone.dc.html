@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/pace-design-system-e4e3152b-be57-4dc2-917e-cb5270773a6f/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/pace-design-system-e4e3152b-be57-4dc2-917e-cb5270773a6f/tokens/colors.css">
+<link rel="stylesheet" href="_ds/pace-design-system-e4e3152b-be57-4dc2-917e-cb5270773a6f/tokens/typography.css">
+<link rel="stylesheet" href="_ds/pace-design-system-e4e3152b-be57-4dc2-917e-cb5270773a6f/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/pace-design-system-e4e3152b-be57-4dc2-917e-cb5270773a6f/tokens/radii.css">
+<link rel="stylesheet" href="_ds/pace-design-system-e4e3152b-be57-4dc2-917e-cb5270773a6f/tokens/shadows.css">
+<link rel="stylesheet" href="_ds/pace-design-system-e4e3152b-be57-4dc2-917e-cb5270773a6f/tokens/motion.css">
+<link rel="stylesheet" href="_ds/pace-design-system-e4e3152b-be57-4dc2-917e-cb5270773a6f/styles.css">
+<script src="_ds/pace-design-system-e4e3152b-be57-4dc2-917e-cb5270773a6f/_ds_bundle.js"></script>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&amp;family=Golos+Text:wght@400;500;600;700&amp;family=Onest:wght@400;500;600;700&amp;family=Literata:opsz,wght@7..72,500;7..72,600;7..72,700&amp;display=swap">
+<script src="./image-slot.js"></script>
+<style>
+body { margin: 0; background: #E8E4DA; font-family: var(--font-sans); }
+a { color: var(--text-link); text-decoration: none; }
+a:hover { color: var(--pace-action-pressed); }
+.el-scroll::-webkit-scrollbar { display: none; }
+.el-scroll { scrollbar-width: none; }
+@keyframes elUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+</style>
+</helmet>
+
+<div style="width:390px;height:800px;background:#0B0A0A;border-radius:54px;padding:11px;box-shadow:0 40px 90px rgba(29,27,44,.28), 0 0 0 1px rgba(0,0,0,.5);flex:0 0 auto;box-sizing:content-box">
+<div style="position:relative;width:100%;height:100%;border-radius:44px;overflow:hidden;background:var(--pace-ground);--pace-action:#E53935;--pace-action-pressed:#C62828;--pace-action-soft:#FCEBE9;--pace-action-soft-alt:#F9E3E0;--pace-action-muted:#F0BFB8;--pace-action-on-dark:#FF8A80;--pace-action-10:rgba(229,57,53,0.10);--pace-action-12:rgba(229,57,53,0.12);--pace-action-14:rgba(229,57,53,0.14);--pace-action-35:rgba(229,57,53,0.35);--pace-action-45:rgba(229,57,53,0.45);--pace-action-50:rgba(229,57,53,0.50);--shadow-cta:0 10px 24px rgba(229,57,53,0.40);--el-tabbar:rgba(246,243,236,.92);--el-fade:rgba(246,243,236,0);--el-on-ink:#FFFFFF;--el-pill-chip:var(--pace-white-16);--accent:#E53935;--accent-surface:#FCEBE9;--text-link:#E53935;--on-accent:#FFFFFF;--el-gold-wash:#F8ECCF;--el-gold-ink:#5C4300;--fd:'Manrope','Segoe UI',sans-serif;--fs:'Golos Text',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;--font-display:var(--fd);--font-sans:var(--fs);--type-display-shelf:700 64px/64px var(--fd);--type-display-product:700 36px/38px var(--fd);--type-display-hero:700 34px/37px var(--fd);--type-display-title:700 26px/30px var(--fd);--type-display-status:700 24px/28px var(--fd);--type-display-section:700 22px/26px var(--fd);--type-display-sheet:700 21px/25px var(--fd);--type-display-total:700 21px/24px var(--fd);--type-display-card:700 20px/23px var(--fd);--type-display-empty:700 18px/22px var(--fd);--type-section-title:600 17px/22px var(--fs);--type-button-large:600 16px/20px var(--fs);--type-button-medium:600 15.5px/20px var(--fs);--type-item-title:600 15px/20px var(--fs);--type-body-semibold:600 14.5px/19px var(--fs);--type-body:400 14px/20px var(--fs);--type-body-medium:500 14px/20px var(--fs);--type-sub:400 13.5px/19px var(--fs);--type-button-small:600 13.5px/17px var(--fs);--type-chip:500 13.5px/17px var(--fs);--type-sub-medium:500 13px/18px var(--fs);--type-small:400 12.5px/17px var(--fs);--type-small-medium:500 12.5px/17px var(--fs);--type-small-semibold:600 12.5px/16px var(--fs);--type-chip-small:500 12.5px/16px var(--fs);--type-caption:400 12px/16px var(--fs);--type-caption-semibold:600 12px/16px var(--fs);--type-micro:400 11.5px/15px var(--fs);--type-micro-semibold:600 11.5px/15px var(--fs);--type-badge:600 11px/14px var(--fs);--type-badge-small:600 10.5px/13px var(--fs);--type-nav-label:600 10.5px/13px var(--fs);{{ themeVars }}{{ fontVars }}">
+
+<div style="position:absolute;top:12px;left:50%;transform:translateX(-50%);width:118px;height:33px;background:#0B0A0A;border-radius:20px;z-index:60"></div>
+<div style="position:absolute;top:0;left:0;right:0;z-index:50;pointer-events:none;height:54px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 30px 10px">
+<span style="font:var(--type-body-semibold);color:var(--pace-ink);letter-spacing:.2px">9:41</span>
+<span style="display:flex;align-items:center;gap:6px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="var(--pace-ink)"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 12" fill="var(--pace-ink)"><path d="M8 2.6c2 0 3.9.8 5.3 2.1l1.2-1.3A9.4 9.4 0 0 0 8 .8 9.4 9.4 0 0 0 1.5 3.4l1.2 1.3A7.4 7.4 0 0 1 8 2.6Zm0 3.4c1.1 0 2.1.4 2.8 1.2l1.2-1.3A6 6 0 0 0 8 5.2a6 6 0 0 0-4 1.7l1.2 1.3A4 4 0 0 1 8 6Zm0 3.3L9.8 8A2.6 2.6 0 0 0 8 8.6 2.6 2.6 0 0 0 6.2 8L8 9.3Z"></path></svg>
+<span style="display:flex;align-items:center;gap:2px"><span style="width:22px;height:11px;border-radius:3px;border:1px solid var(--pace-ink-40);padding:1.5px;box-sizing:border-box;display:block"><span style="width:72%;height:100%;border-radius:1px;background:var(--pace-ink);display:block"></span></span><span style="width:1.5px;height:4px;border-radius:1px;background:var(--pace-ink-40);display:block"></span></span>
+</span>
+</div>
+
+<sc-if value="{{ isAuth }}">
+<div class="el-scroll" style="position:absolute;inset:0;overflow-y:auto">
+<div style="min-height:100%;box-sizing:border-box;padding:54px 24px 32px;display:flex;flex-direction:column">
+<div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:18px;padding:24px 0 32px">
+<img src="assets/images/enjoy-logo-app-icon.png" alt="Enjoy Lavash" style="width:104px;height:104px;border-radius:26px;box-shadow:var(--shadow-card)">
+<div style="text-align:center;display:flex;flex-direction:column;gap:8px">
+<span style="font:var(--type-display-hero);color:var(--text-primary)">Enjoy Lavash</span>
+<span style="font:var(--type-sub);color:var(--text-secondary);max-width:240px;display:block">Buyurtma bering, har safar 5% ball to&#39;plang.</span>
+</div>
+</div>
+
+<sc-if value="{{ auth1 }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;flex-direction:column;gap:14px;animation:elUp .3s ease both">
+<span style="font:var(--type-section-title);color:var(--text-primary)">Telefon raqamingizni kiriting</span>
+<div style="display:flex;align-items:center;gap:10px;background:var(--pace-white);border:1.5px solid var(--border-control);border-radius:var(--radius-input);padding:0 14px;height:54px">
+<span style="font:var(--type-item-title);color:var(--text-tertiary)">+998</span>
+<span style="width:1px;height:22px;background:var(--border-hairline);display:block"></span>
+<span style="font:var(--type-item-title);color:var(--text-primary);letter-spacing:.5px">90 123 45 67</span>
+</div>
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.Button" variant="primary" text-color="#FFFFFF" size="large" block="{{ true }}" glow="{{ true }}" label="Kod yuborish" onClick="{{ authNext }}" hint-size="100%,54px"></x-import>
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.Button" variant="text" size="medium" block="{{ true }}" label="O&#39;tkazib yuborish" onClick="{{ goHome }}" hint-size="100%,52px"></x-import>
+</div>
+</sc-if>
+
+<sc-if value="{{ auth2 }}">
+<div style="display:flex;flex-direction:column;gap:14px;animation:elUp .3s ease both">
+<span style="font:var(--type-section-title);color:var(--text-primary)">SMS kodni kiriting</span>
+<span style="font:var(--type-sub);color:var(--text-secondary)">Telefon raqamingizga tasdiqlash kodi yuborildi.</span>
+<div style="display:flex;gap:10px">
+<span style="flex:1;height:60px;border-radius:var(--radius-input);background:var(--pace-white);border:1.5px solid var(--border-control);display:grid;place-items:center;font:var(--type-display-section);color:var(--text-primary)">4</span>
+<span style="flex:1;height:60px;border-radius:var(--radius-input);background:var(--pace-white);border:1.5px solid var(--border-control);display:grid;place-items:center;font:var(--type-display-section);color:var(--text-primary)">7</span>
+<span style="flex:1;height:60px;border-radius:var(--radius-input);background:var(--pace-white);border:1.5px solid var(--border-control);display:grid;place-items:center;font:var(--type-display-section);color:var(--text-primary)">2</span>
+<span style="flex:1;height:60px;border-radius:var(--radius-input);background:var(--pace-white);border:2px solid var(--accent);display:grid;place-items:center;font:var(--type-display-section);color:var(--text-tertiary)">|</span>
+</div>
+<span style="font:var(--type-small);color:var(--text-tertiary)">Kod 01:42 dan keyin tugaydi</span>
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.Button" variant="primary" text-color="#FFFFFF" size="large" block="{{ true }}" glow="{{ true }}" label="Davom etish" onClick="{{ authNext }}" hint-size="100%,54px"></x-import>
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.Button" variant="text" size="medium" block="{{ true }}" label="Kodni qayta yuborish" hint-size="100%,52px"></x-import>
+</div>
+</sc-if>
+
+<sc-if value="{{ auth3 }}">
+<div style="display:flex;flex-direction:column;gap:14px;animation:elUp .3s ease both">
+<span style="font:var(--type-section-title);color:var(--text-primary)">Tanishib olamiz</span>
+<span style="font:var(--type-sub);color:var(--text-secondary)">Ism ixtiyoriy — buyurtmalarda shunday murojaat qilamiz.</span>
+<div style="display:flex;align-items:center;background:var(--pace-white);border:1.5px solid var(--border-control);border-radius:var(--radius-input);padding:0 14px;height:54px;font:var(--type-item-title);color:var(--text-primary)">Aziz</div>
+<div style="display:flex;align-items:center;justify-content:space-between;background:var(--pace-white);border:1.5px solid var(--border-control);border-radius:var(--radius-input);padding:0 14px;height:54px">
+<span style="font:var(--type-item-title);color:var(--text-tertiary)">Tug&#39;ilgan sana</span>
+<span style="display:flex;align-items:center;gap:8px;font:var(--type-item-title);color:var(--text-primary)">14.03.1996<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--pace-ink-45)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg></span>
+</div>
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.Button" variant="primary" text-color="#FFFFFF" size="large" block="{{ true }}" glow="{{ true }}" label="Davom etish" onClick="{{ goHome }}" hint-size="100%,54px"></x-import>
+</div>
+</sc-if>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+<div class="el-scroll" style="position:absolute;inset:0;overflow-y:auto">
+<div style="padding:54px 0 148px">
+
+<div style="display:flex;align-items:center;gap:10px;padding:8px 20px 4px">
+<button onClick="{{ openSheet }}" style="flex:1;min-width:0;display:flex;align-items:center;gap:10px;background:var(--pace-white);border:none;border-radius:var(--radius-pill);padding:8px 14px 8px 8px;box-shadow:var(--shadow-card);cursor:pointer;text-align:left">
+<span style="width:34px;height:34px;border-radius:var(--radius-pill);background:var(--pace-action-soft);display:grid;place-items:center;flex:0 0 auto">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 8.5h11l-1 10.5a2 2 0 0 1-2 1.8h-5a2 2 0 0 1-2-1.8L6.5 8.5Z"></path><path d="M9.4 8.5V6.9a2.6 2.6 0 0 1 5.2 0v1.6"></path></svg>
+</span>
+<span style="display:flex;flex-direction:column;min-width:0;flex:1">
+<span style="font:var(--type-micro-semibold);color:var(--text-tertiary)">{{ otypeLabel }}</span>
+<span style="font:var(--type-body-semibold);color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ ctxLine }}</span>
+</span>
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--pace-ink-45)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M6 9l6 6 6-6"></path></svg>
+</button>
+<button onClick="{{ goNotifs }}" style="position:relative;width:46px;height:46px;border-radius:var(--radius-pill);background:var(--pace-white);border:none;box-shadow:var(--shadow-card);display:grid;place-items:center;cursor:pointer;flex:0 0 auto">
+<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="var(--pace-ink)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 9.5a6 6 0 0 0-12 0c0 2.4-.5 3.7-1.2 4.7-.6.9 0 2 1 2.2a26 26 0 0 0 12.4 0c1-.2 1.6-1.3 1-2.2-.7-1-1.2-2.3-1.2-4.7Z"></path><path d="M10 20.2a2.4 2.4 0 0 0 4 0"></path></svg>
+<sc-if value="{{ hasUnread }}"><span style="position:absolute;top:9px;right:9px;width:9px;height:9px;border-radius:99px;background:var(--accent);border:1.5px solid var(--pace-white)"></span></sc-if>
+</button>
+</div>
+
+<div style="padding:16px 20px 14px">
+<span style="font:var(--type-display-hero);color:var(--text-primary);display:block">Assalomu alaykum, Aziz.</span>
+</div>
+
+<button onClick="{{ goBonus }}" style="display:flex;align-items:center;gap:12px;width:calc(100% - 40px);margin:0 20px 14px;background:var(--el-gold-wash);border:none;border-radius:var(--radius-card);padding:14px;cursor:pointer;text-align:left">
+<span style="width:40px;height:40px;border-radius:var(--radius-pill);background:var(--pace-citrus);display:grid;place-items:center;flex:0 0 auto">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--el-gold-ink)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.2"></circle><path d="M9.4 9.4h4.1a1.9 1.9 0 0 1 0 3.8H9.4V9.4Zm0 3.8v4"></path></svg>
+</span>
+<span style="flex:1;display:flex;flex-direction:column;gap:2px;min-width:0">
+<span style="font:var(--type-display-total);color:var(--el-gold-ink)">{{ balanceFmt }} ball</span>
+<span style="font:var(--type-micro);color:var(--el-gold-ink);opacity:.72">1 ball 1 so&#39;mga teng · 50% gacha</span>
+</span>
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--el-gold-ink)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;opacity:.6"><path d="M9 6l6 6-6 6"></path></svg>
+</button>
+
+<sc-if value="{{ showReorder }}" hint-placeholder-val="{{ true }}">
+<div style="margin:0 20px 18px;background:var(--surface-card);border-radius:var(--radius-card);box-shadow:var(--shadow-card);padding:16px;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+<span style="font:var(--type-section-title);color:var(--text-primary)">Yana takrorlaymizmi?</span>
+<span style="font:var(--type-micro);color:var(--text-tertiary)">28-avgust</span>
+</div>
+<div style="display:flex;align-items:center;gap:10px">
+<span style="width:44px;height:44px;border-radius:var(--radius-thumb);background:var(--pace-cream);flex:0 0 auto"></span>
+<span style="width:44px;height:44px;border-radius:var(--radius-thumb);background:var(--pace-espresso);flex:0 0 auto"></span>
+<span style="flex:1;display:flex;flex-direction:column;min-width:0">
+<span style="font:var(--type-body-semibold);color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Klassik lavash, Ayron 0.5</span>
+<span style="font:var(--type-small);color:var(--text-secondary)">42 000 so&#39;m · 2 ta mahsulot</span>
+</span>
+</div>
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.Button" variant="soft" size="medium" block="{{ true }}" label="Takrorlash · 42 000 so&#39;m" onClick="{{ reorder }}" hint-size="100%,52px"></x-import>
+</div>
+</sc-if>
+
+<div style="position:relative;margin:0 20px 22px;height:172px;border-radius:var(--radius-card-lg);overflow:hidden;background:var(--pace-coffee-wash)">
+<span style="position:absolute;inset:0;display:block"><image-slot id="el-hero" shape="rect" placeholder="Aksiya rasmi"></image-slot></span>
+<span style="position:absolute;inset:0;background:linear-gradient(0deg, rgba(11,10,10,.78) 0%, rgba(11,10,10,.10) 62%, rgba(11,10,10,0) 100%);pointer-events:none;display:block"></span>
+<span style="position:absolute;left:16px;right:16px;bottom:14px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;pointer-events:none">
+<span style="display:flex;flex-direction:column;gap:4px;min-width:0">
+<span style="font:var(--type-micro-semibold);color:rgba(255,255,255,.7);letter-spacing:.3px">MAXSUS TAKLIF</span>
+<span style="font:var(--type-display-card);color:#fff">Hafta oxirigacha lavashga 20% chegirma</span>
+</span>
+<span style="pointer-events:auto;flex:0 0 auto">
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.Button" variant="primary" text-color="#FFFFFF" size="small" label="Ko&#39;rish" onClick="{{ goMenu }}" hint-size="86px,40px"></x-import>
+</span>
+</span>
+</div>
+
+<div style="display:flex;align-items:baseline;justify-content:space-between;padding:0 20px 12px">
+<span style="font:var(--type-section-title);color:var(--text-primary)">Menyu</span>
+<button onClick="{{ goMenu }}" style="background:none;border:none;padding:0;cursor:pointer;font:var(--type-button-small);color:var(--text-link)">Barchasi</button>
+</div>
+<div class="el-scroll" style="display:flex;gap:12px;overflow-x:auto;padding:0 20px 4px">
+<button onClick="{{ catLavash }}" style="flex:0 0 auto;width:96px;background:var(--surface-card);border:none;border-radius:var(--radius-card-sm);box-shadow:var(--shadow-card);padding:0 0 10px;cursor:pointer;overflow:hidden;display:flex;flex-direction:column;gap:8px">
+<span style="height:64px;background:var(--pace-cream);display:block"></span>
+<span style="font:var(--type-small-semibold);color:var(--text-primary);padding:0 8px">Lavash</span>
+</button>
+<button onClick="{{ catShaurma }}" style="flex:0 0 auto;width:96px;background:var(--surface-card);border:none;border-radius:var(--radius-card-sm);box-shadow:var(--shadow-card);padding:0 0 10px;cursor:pointer;overflow:hidden;display:flex;flex-direction:column;gap:8px">
+<span style="height:64px;background:var(--pace-berry);display:block"></span>
+<span style="font:var(--type-small-semibold);color:var(--text-primary);padding:0 8px">Shaurma</span>
+</button>
+<button onClick="{{ catSet }}" style="flex:0 0 auto;width:96px;background:var(--surface-card);border:none;border-radius:var(--radius-card-sm);box-shadow:var(--shadow-card);padding:0 0 10px;cursor:pointer;overflow:hidden;display:flex;flex-direction:column;gap:8px">
+<span style="height:64px;background:var(--pace-citrus-deep);display:block"></span>
+<span style="font:var(--type-small-semibold);color:var(--text-primary);padding:0 8px">Setlar</span>
+</button>
+<button onClick="{{ catDrink }}" style="flex:0 0 auto;width:96px;background:var(--surface-card);border:none;border-radius:var(--radius-card-sm);box-shadow:var(--shadow-card);padding:0 0 10px;cursor:pointer;overflow:hidden;display:flex;flex-direction:column;gap:8px">
+<span style="height:64px;background:var(--pace-espresso);display:block"></span>
+<span style="font:var(--type-small-semibold);color:var(--text-primary);padding:0 8px">Ichimliklar</span>
+</button>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isMenu }}">
+<div class="el-scroll" style="position:absolute;inset:0;overflow-y:auto">
+<div style="padding:54px 0 148px">
+<div style="display:flex;align-items:center;gap:10px;padding:8px 20px 12px">
+<button onClick="{{ openSheet }}" style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;background:var(--pace-white);border:none;border-radius:var(--radius-pill);padding:10px 14px;box-shadow:var(--shadow-card);cursor:pointer;text-align:left">
+<span style="font:var(--type-micro-semibold);color:var(--text-tertiary);flex:0 0 auto">{{ otypeLabel }}</span>
+<span style="font:var(--type-body-semibold);color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">{{ ctxLine }}</span>
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--pace-ink-45)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M6 9l6 6 6-6"></path></svg>
+</button>
+</div>
+<div style="padding:0 20px 10px"><span style="font:var(--type-display-title);color:var(--text-primary)">Menyu</span></div>
+<div class="el-scroll" style="display:flex;gap:8px;overflow-x:auto;padding:4px 20px 14px;position:sticky;top:0;background:linear-gradient(180deg, var(--pace-ground) 60%, rgba(246,243,236,0));z-index:5">
+<sc-for list="{{ cats }}" as="c" hint-placeholder-count="5">
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.Chip" kind="darkSelected" label="{{ c.name }}" selected="{{ c.on }}" onClick="{{ c.pick }}" hint-size="82px,38px"></x-import>
+</sc-for>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 20px">
+
+<sc-if value="{{ tiles.p1.show }}" hint-placeholder-val="{{ true }}">
+<div style="background:var(--surface-card);border-radius:var(--radius-card-sm);box-shadow:var(--shadow-card);overflow:hidden;display:flex;flex-direction:column">
+<button onClick="{{ tiles.p1.open }}" style="position:relative;height:106px;background:var(--pace-cream);border:none;padding:0;cursor:pointer;display:block"><span style="position:absolute;inset:0;display:block"><image-slot id="el-p1" shape="rect" placeholder="Rasm"></image-slot></span></button>
+<div style="padding:10px 12px 12px;display:flex;flex-direction:column;gap:4px;flex:1">
+<span style="font:var(--type-item-title);color:var(--text-primary)">Klassik lavash</span>
+<span style="font:var(--type-micro);color:var(--text-tertiary);flex:1">Tovuq · oq sous · 520 kkal</span>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:6px">
+<span style="font:var(--type-display-total);color:var(--text-primary)">32 000</span>
+<sc-if value="{{ tiles.p1.has }}"><x-import component-from-global-scope="PaceDesignSystem_e4e315.Stepper" value="{{ tiles.p1.qty }}" min="{{ 0 }}" size="{{ 32 }}" onChange="{{ tiles.p1.set }}" hint-size="98px,32px"></x-import></sc-if>
+<sc-if value="{{ tiles.p1.none }}" hint-placeholder-val="{{ true }}"><button onClick="{{ tiles.p1.add }}" style="width:38px;height:38px;border-radius:var(--radius-pill);background:var(--pace-action-soft);border:none;display:grid;place-items:center;cursor:pointer;flex:0 0 auto"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></button></sc-if>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ tiles.p2.show }}" hint-placeholder-val="{{ true }}">
+<div style="background:var(--surface-card);border-radius:var(--radius-card-sm);box-shadow:var(--shadow-card);overflow:hidden;display:flex;flex-direction:column">
+<button onClick="{{ tiles.p2.open }}" style="position:relative;height:106px;background:#F8ECCF;border:none;padding:0;cursor:pointer;display:block"><span style="position:absolute;inset:0;display:block"><image-slot id="el-p2" shape="rect" placeholder="Rasm"></image-slot></span></button>
+<div style="padding:10px 12px 12px;display:flex;flex-direction:column;gap:4px;flex:1">
+<span style="font:var(--type-item-title);color:var(--text-primary)">Pishloqli lavash</span>
+<span style="font:var(--type-micro);color:var(--text-tertiary);flex:1">Ikki xil pishloq · 610 kkal</span>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:6px">
+<span style="font:var(--type-display-total);color:var(--text-primary)">38 000</span>
+<sc-if value="{{ tiles.p2.has }}"><x-import component-from-global-scope="PaceDesignSystem_e4e315.Stepper" value="{{ tiles.p2.qty }}" min="{{ 0 }}" size="{{ 32 }}" onChange="{{ tiles.p2.set }}" hint-size="98px,32px"></x-import></sc-if>
+<sc-if value="{{ tiles.p2.none }}" hint-placeholder-val="{{ true }}"><button onClick="{{ tiles.p2.add }}" style="width:38px;height:38px;border-radius:var(--radius-pill);background:var(--pace-action-soft);border:none;display:grid;place-items:center;cursor:pointer;flex:0 0 auto"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></button></sc-if>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ tiles.p3.show }}" hint-placeholder-val="{{ true }}">
+<div style="background:var(--surface-card);border-radius:var(--radius-card-sm);box-shadow:var(--shadow-card);overflow:hidden;display:flex;flex-direction:column">
+<button onClick="{{ tiles.p3.open }}" style="position:relative;height:106px;background:var(--pace-coffee-wash);border:none;padding:0;cursor:pointer;display:block"><span style="position:absolute;inset:0;display:block"><image-slot id="el-p3" shape="rect" placeholder="Rasm"></image-slot></span></button>
+<div style="padding:10px 12px 12px;display:flex;flex-direction:column;gap:4px;flex:1">
+<span style="font:var(--type-item-title);color:var(--text-primary)">Go&#39;shtli lavash</span>
+<span style="font:var(--type-micro);color:var(--text-tertiary);flex:1">Mol go&#39;shti · barbekyu · 680 kkal</span>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:6px">
+<span style="font:var(--type-display-total);color:var(--text-primary)">42 000</span>
+<sc-if value="{{ tiles.p3.has }}"><x-import component-from-global-scope="PaceDesignSystem_e4e315.Stepper" value="{{ tiles.p3.qty }}" min="{{ 0 }}" size="{{ 32 }}" onChange="{{ tiles.p3.set }}" hint-size="98px,32px"></x-import></sc-if>
+<sc-if value="{{ tiles.p3.none }}" hint-placeholder-val="{{ true }}"><button onClick="{{ tiles.p3.add }}" style="width:38px;height:38px;border-radius:var(--radius-pill);background:var(--pace-action-soft);border:none;display:grid;place-items:center;cursor:pointer;flex:0 0 auto"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></button></sc-if>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ tiles.p4.show }}" hint-placeholder-val="{{ true }}">
+<div style="background:var(--surface-card);border-radius:var(--radius-card-sm);box-shadow:var(--shadow-card);overflow:hidden;display:flex;flex-direction:column">
+<button onClick="{{ tiles.p4.open }}" style="position:relative;height:106px;background:var(--pace-matcha);border:none;padding:0;cursor:pointer;display:block"><span style="position:absolute;inset:0;display:block"><image-slot id="el-p4" shape="rect" placeholder="Rasm"></image-slot></span></button>
+<div style="padding:10px 12px 12px;display:flex;flex-direction:column;gap:4px;flex:1">
+<span style="font:var(--type-item-title);color:var(--text-primary)">Sabzavotli lavash</span>
+<span style="font:var(--type-micro);color:var(--text-tertiary);flex:1">Go&#39;shtsiz · 390 kkal</span>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:6px">
+<span style="font:var(--type-display-total);color:var(--text-primary)">28 000</span>
+<sc-if value="{{ tiles.p4.has }}"><x-import component-from-global-scope="PaceDesignSystem_e4e315.Stepper" value="{{ tiles.p4.qty }}" min="{{ 0 }}" size="{{ 32 }}" onChange="{{ tiles.p4.set }}" hint-size="98px,32px"></x-import></sc-if>
+<sc-if value="{{ tiles.p4.none }}" hint-placeholder-val="{{ true }}"><button onClick="{{ tiles.p4.add }}" style="width:38px;height:38px;border-radius:var(--radius-pill);background:var(--pace-action-soft);border:none;display:grid;place-items:center;cursor:pointer;flex:0 0 auto"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></button></sc-if>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ tiles.p5.show }}" hint-placeholder-val="{{ true }}">
+<div style="background:var(--surface-card);border-radius:var(--radius-card-sm);box-shadow:var(--shadow-card);overflow:hidden;display:flex;flex-direction:column">
+<button onClick="{{ tiles.p5.open }}" style="position:relative;height:106px;background:var(--pace-berry);border:none;padding:0;cursor:pointer;display:block"><span style="position:absolute;inset:0;display:block"><image-slot id="el-p5" shape="rect" placeholder="Rasm"></image-slot></span></button>
+<div style="padding:10px 12px 12px;display:flex;flex-direction:column;gap:4px;flex:1">
+<span style="font:var(--type-item-title);color:var(--text-primary)">Tovuqli shaurma</span>
+<span style="font:var(--type-micro);color:var(--text-tertiary);flex:1">Lavash nonida · 540 kkal</span>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:6px">
+<span style="font:var(--type-display-total);color:var(--text-primary)">30 000</span>
+<sc-if value="{{ tiles.p5.has }}"><x-import component-from-global-scope="PaceDesignSystem_e4e315.Stepper" value="{{ tiles.p5.qty }}" min="{{ 0 }}" size="{{ 32 }}" onChange="{{ tiles.p5.set }}" hint-size="98px,32px"></x-import></sc-if>
+<sc-if value="{{ tiles.p5.none }}" hint-placeholder-val="{{ true }}"><button onClick="{{ tiles.p5.add }}" style="width:38px;height:38px;border-radius:var(--radius-pill);background:var(--pace-action-soft);border:none;display:grid;place-items:center;cursor:pointer;flex:0 0 auto"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></button></sc-if>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ tiles.p6.show }}" hint-placeholder-val="{{ true }}">
+<div style="background:var(--surface-card);border-radius:var(--radius-card-sm);box-shadow:var(--shadow-card);overflow:hidden;display:flex;flex-direction:column">
+<button onClick="{{ tiles.p6.open }}" style="position:relative;height:106px;background:var(--pace-coffee-card-wash);border:none;padding:0;cursor:pointer;display:block"><span style="position:absolute;inset:0;display:block"><image-slot id="el-p6" shape="rect" placeholder="Rasm"></image-slot></span></button>
+<div style="padding:10px 12px 12px;display:flex;flex-direction:column;gap:4px;flex:1">
+<span style="font:var(--type-item-title);color:var(--text-primary)">Go&#39;shtli shaurma</span>
+<span style="font:var(--type-micro);color:var(--text-tertiary);flex:1">Mol go&#39;shti · 620 kkal</span>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:6px">
+<span style="font:var(--type-display-total);color:var(--text-primary)">34 000</span>
+<sc-if value="{{ tiles.p6.has }}"><x-import component-from-global-scope="PaceDesignSystem_e4e315.Stepper" value="{{ tiles.p6.qty }}" min="{{ 0 }}" size="{{ 32 }}" onChange="{{ tiles.p6.set }}" hint-size="98px,32px"></x-import></sc-if>
+<sc-if value="{{ tiles.p6.none }}" hint-placeholder-val="{{ true }}"><button onClick="{{ tiles.p6.add }}" style="width:38px;height:38px;border-radius:var(--radius-pill);background:var(--pace-action-soft);border:none;display:grid;place-items:center;cursor:pointer;flex:0 0 auto"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></button></sc-if>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ tiles.p7.show }}" hint-placeholder-val="{{ true }}">
+<div style="background:var(--surface-card);border-radius:var(--radius-card-sm);box-shadow:var(--shadow-card);overflow:hidden;display:flex;flex-direction:column">
+<button onClick="{{ tiles.p7.open }}" style="position:relative;height:106px;background:var(--pace-citrus-deep);border:none;padding:0;cursor:pointer;display:block"><span style="position:absolute;inset:0;display:block"><image-slot id="el-p7" shape="rect" placeholder="Rasm"></image-slot></span></button>
+<div style="padding:10px 12px 12px;display:flex;flex-direction:column;gap:4px;flex:1">
+<span style="font:var(--type-item-title);color:var(--text-primary)">Set «Ikkiga»</span>
+<span style="font:var(--type-micro);color:var(--text-tertiary);flex:1">2 lavash · 2 ichimlik · fri</span>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:6px">
+<span style="font:var(--type-display-total);color:var(--text-primary)">78 000</span>
+<sc-if value="{{ tiles.p7.has }}"><x-import component-from-global-scope="PaceDesignSystem_e4e315.Stepper" value="{{ tiles.p7.qty }}" min="{{ 0 }}" size="{{ 32 }}" onChange="{{ tiles.p7.set }}" hint-size="98px,32px"></x-import></sc-if>
+<sc-if value="{{ tiles.p7.none }}" hint-placeholder-val="{{ true }}"><button onClick="{{ tiles.p7.add }}" style="width:38px;height:38px;border-radius:var(--radius-pill);background:var(--pace-action-soft);border:none;display:grid;place-items:center;cursor:pointer;flex:0 0 auto"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></button></sc-if>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ tiles.p8.show }}" hint-placeholder-val="{{ true }}">
+<div style="background:var(--surface-card);border-radius:var(--radius-card-sm);box-shadow:var(--shadow-card);overflow:hidden;display:flex;flex-direction:column">
+<button onClick="{{ tiles.p8.open }}" style="position:relative;height:106px;background:var(--pace-espresso);border:none;padding:0;cursor:pointer;display:block"><span style="position:absolute;inset:0;display:block"><image-slot id="el-p8" shape="rect" placeholder="Rasm"></image-slot></span></button>
+<div style="padding:10px 12px 12px;display:flex;flex-direction:column;gap:4px;flex:1">
+<span style="font:var(--type-item-title);color:var(--text-primary)">Ayron 0.5</span>
+<span style="font:var(--type-micro);color:var(--text-tertiary);flex:1">Sovuq · 120 kkal</span>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:6px">
+<span style="font:var(--type-display-total);color:var(--text-primary)">10 000</span>
+<sc-if value="{{ tiles.p8.has }}"><x-import component-from-global-scope="PaceDesignSystem_e4e315.Stepper" value="{{ tiles.p8.qty }}" min="{{ 0 }}" size="{{ 32 }}" onChange="{{ tiles.p8.set }}" hint-size="98px,32px"></x-import></sc-if>
+<sc-if value="{{ tiles.p8.none }}" hint-placeholder-val="{{ true }}"><button onClick="{{ tiles.p8.add }}" style="width:38px;height:38px;border-radius:var(--radius-pill);background:var(--pace-action-soft);border:none;display:grid;place-items:center;cursor:pointer;flex:0 0 auto"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></button></sc-if>
+</div>
+</div>
+</div>
+</sc-if>
+
+</div>
+
+<sc-if value="{{ menuEmpty }}">
+<div style="padding:56px 32px 0;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;animation:elUp .3s ease both">
+<span style="width:64px;height:64px;border-radius:var(--radius-pill);background:var(--pace-ink-06);display:grid;place-items:center">
+<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--pace-ink-38)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.8" cy="10.8" r="6.6"></circle><path d="M15.8 15.8 20.4 20.4"></path></svg>
+</span>
+<span style="font:var(--type-display-empty);color:var(--text-primary)">Mahsulot topilmadi</span>
+<span style="font:var(--type-sub);color:var(--text-secondary);max-width:262px;display:block;text-wrap:pretty">{{ emptyCatLine }}</span>
+<span style="margin-top:6px"><x-import component-from-global-scope="PaceDesignSystem_e4e315.Button" variant="dark" text-color="var(--el-on-ink)" size="medium" label="Barcha menyu" onClick="{{ clearCat }}" hint-size="140px,52px"></x-import></span>
+</div>
+</sc-if>
+
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isItem }}">
+<div class="el-scroll" style="position:absolute;inset:0;overflow-y:auto">
+<div style="padding-bottom:118px">
+<div style="position:relative;height:300px;background:var(--pace-cream)">
+<span style="position:absolute;inset:0;display:block"><image-slot id="el-item" shape="rect" placeholder="Mahsulot rasmi"></image-slot></span>
+<button onClick="{{ goMenu }}" style="position:absolute;top:60px;left:16px;width:40px;height:40px;border-radius:var(--radius-pill);background:var(--pace-white-90);border:none;box-shadow:var(--shadow-floating);display:grid;place-items:center;cursor:pointer;z-index:10">
+<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--pace-ink)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg>
+</button>
+<button onClick="{{ toggleFav }}" style="position:absolute;top:60px;right:16px;width:40px;height:40px;border-radius:var(--radius-pill);background:var(--pace-white-90);border:none;box-shadow:var(--shadow-floating);display:grid;place-items:center;cursor:pointer;z-index:10">
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.Icon" name="heart" size="{{ 18 }}" color="{{ favColor }}" fill="{{ favFill }}" hint-size="18px,18px"></x-import>
+</button>
+</div>
+
+<div style="position:relative;margin-top:-28px;background:var(--pace-ground);border-radius:28px 28px 0 0;padding:22px 20px 0">
+<span style="font:var(--type-display-product);color:var(--text-primary);display:block">{{ itemName }}</span>
+<span style="font:var(--type-body);color:var(--text-secondary);display:block;margin:8px 0 0;text-wrap:pretty">{{ itemDesc }}</span>
+<div style="display:flex;gap:8px;margin:14px 0 0">
+<span style="font:var(--type-badge);color:var(--text-secondary);background:var(--pace-ink-06);border-radius:var(--radius-pill);padding:6px 11px">{{ itemKcal }} kkal</span>
+<span style="font:var(--type-badge);color:var(--pace-success);background:var(--pace-success-wash);border-radius:var(--radius-pill);padding:6px 11px">15–20 daqiqada tayyor</span>
+</div>
+
+<div style="margin:22px 0 0">
+<span style="font:var(--type-section-title);color:var(--text-primary);display:block;margin-bottom:10px">O&#39;lcham</span>
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.SegmentedControl" options="{{ sizeOptions }}" value="{{ isize }}" onChange="{{ setSize }}" hint-size="100%,46px"></x-import>
+</div>
+
+<div style="margin:20px 0 0">
+<span style="font:var(--type-section-title);color:var(--text-primary);display:block;margin-bottom:10px">Sous</span>
+<div style="display:flex;flex-wrap:wrap;gap:8px">
+<sc-for list="{{ sauces }}" as="s" hint-placeholder-count="4">
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.Chip" kind="solid" label="{{ s.name }}" selected="{{ s.on }}" onClick="{{ s.pick }}" hint-size="92px,38px"></x-import>
+</sc-for>
+</div>
+</div>
+
+<div style="margin:20px 0 0">
+<span style="font:var(--type-section-title);color:var(--text-primary);display:block;margin-bottom:10px">Qo&#39;shimchalar</span>
+<div style="background:var(--surface-card);border-radius:var(--radius-card);box-shadow:var(--shadow-card);overflow:hidden">
+<button onClick="{{ toggleEx1 }}" style="width:100%;display:flex;align-items:center;gap:12px;background:none;border:none;padding:14px 16px;cursor:pointer;text-align:left">
+<sc-if value="{{ ex1 }}"><span style="width:24px;height:24px;border-radius:8px;background:var(--accent);display:grid;place-items:center;flex:0 0 auto"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4.5 4.5L19 7"></path></svg></span></sc-if>
+<sc-if value="{{ ex1off }}" hint-placeholder-val="{{ true }}"><span style="width:24px;height:24px;border-radius:8px;border:1.5px solid var(--border-control-strong);flex:0 0 auto;display:block"></span></sc-if>
+<span style="flex:1;font:var(--type-item-title);color:var(--text-primary)">Qo&#39;shimcha pishloq</span>
+<span style="font:var(--type-body-semibold);color:var(--text-secondary)">+6 000</span>
+</button>
+<span style="display:block;height:1px;background:var(--border-hairline);margin-left:52px"></span>
+<button onClick="{{ toggleEx2 }}" style="width:100%;display:flex;align-items:center;gap:12px;background:none;border:none;padding:14px 16px;cursor:pointer;text-align:left">
+<sc-if value="{{ ex2 }}"><span style="width:24px;height:24px;border-radius:8px;background:var(--accent);display:grid;place-items:center;flex:0 0 auto"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4.5 4.5L19 7"></path></svg></span></sc-if>
+<sc-if value="{{ ex2off }}" hint-placeholder-val="{{ true }}"><span style="width:24px;height:24px;border-radius:8px;border:1.5px solid var(--border-control-strong);flex:0 0 auto;display:block"></span></sc-if>
+<span style="flex:1;font:var(--type-item-title);color:var(--text-primary)">Qo&#39;shimcha go&#39;sht</span>
+<span style="font:var(--type-body-semibold);color:var(--text-secondary)">+12 000</span>
+</button>
+<span style="display:block;height:1px;background:var(--border-hairline);margin-left:52px"></span>
+<button onClick="{{ toggleEx3 }}" style="width:100%;display:flex;align-items:center;gap:12px;background:none;border:none;padding:14px 16px;cursor:pointer;text-align:left">
+<sc-if value="{{ ex3 }}"><span style="width:24px;height:24px;border-radius:8px;background:var(--accent);display:grid;place-items:center;flex:0 0 auto"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4.5 4.5L19 7"></path></svg></span></sc-if>
+<sc-if value="{{ ex3off }}" hint-placeholder-val="{{ true }}"><span style="width:24px;height:24px;border-radius:8px;border:1.5px solid var(--border-control-strong);flex:0 0 auto;display:block"></span></sc-if>
+<span style="flex:1;font:var(--type-item-title);color:var(--text-primary)">Fri kartoshka qo&#39;shish</span>
+<span style="font:var(--type-body-semibold);color:var(--text-secondary)">+15 000</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div style="position:absolute;left:0;right:0;bottom:0;padding:18px 20px 24px;background:linear-gradient(180deg, var(--el-fade) 0%, var(--pace-ground) 38%)">
+<div style="display:flex;align-items:center;gap:12px">
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.Stepper" value="{{ iqty }}" min="{{ 1 }}" size="{{ 40 }}" onChange="{{ setIqty }}" hint-size="120px,40px"></x-import>
+<span style="flex:1;min-width:0">
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.Button" variant="primary" text-color="#FFFFFF" size="large" block="{{ true }}" glow="{{ true }}" label="{{ addLabel }}" onClick="{{ addItem }}" hint-size="100%,54px"></x-import>
+</span>
+</div>
+<span style="display:block;text-align:center;font:var(--type-micro);color:var(--text-tertiary);margin-top:8px">{{ itemEarnLine }}</span>
+</div>
+</sc-if>
+
+<sc-if value="{{ isCart }}">
+<div class="el-scroll" style="position:absolute;inset:0;overflow-y:auto">
+<div style="padding:54px 0 130px">
+<div style="display:flex;align-items:center;gap:12px;padding:10px 20px 6px">
+<button onClick="{{ goMenu }}" style="width:40px;height:40px;border-radius:var(--radius-pill);background:var(--pace-white);border:none;box-shadow:var(--shadow-card);display:grid;place-items:center;cursor:pointer;flex:0 0 auto">
+<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--pace-ink)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg>
+</button>
+<span style="font:var(--type-display-title);color:var(--text-primary)">Savat</span>
+</div>
+
+<sc-if value="{{ cartEmpty }}">
+<div style="padding:60px 32px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px">
+<span style="width:64px;height:64px;border-radius:var(--radius-pill);background:var(--pace-ink-06);display:grid;place-items:center">
+<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--pace-ink-38)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 8.5h11l-1 10.5a2 2 0 0 1-2 1.8h-5a2 2 0 0 1-2-1.8L6.5 8.5Z"></path><path d="M9.4 8.5V6.9a2.6 2.6 0 0 1 5.2 0v1.6"></path></svg>
+</span>
+<span style="font:var(--type-display-empty);color:var(--text-primary)">Savat bo&#39;sh</span>
+<span style="font:var(--type-sub);color:var(--text-secondary);max-width:250px;display:block;text-wrap:pretty">Menyudan taom qo&#39;shing va bir necha bosishda buyurtma bering.</span>
+<span style="margin-top:6px"><x-import component-from-global-scope="PaceDesignSystem_e4e315.Button" variant="dark" text-color="var(--el-on-ink)" size="medium" label="Menyuga o&#39;tish" onClick="{{ goMenu }}" hint-size="150px,52px"></x-import></span>
+</div>
+</sc-if>
+
+<sc-if value="{{ cartHas }}" hint-placeholder-val="{{ true }}">
+<div style="padding:0 20px">
+<span style="display:block;font:var(--type-small);color:var(--text-tertiary);padding:6px 0 12px">{{ cartCountLabel }}</span>
+<div style="background:var(--surface-card);border-radius:var(--radius-card);box-shadow:var(--shadow-card);overflow:hidden">
+<sc-for list="{{ cartRows }}" as="r" hint-placeholder-count="3">
+<div style="display:flex;align-items:center;gap:12px;padding:12px 14px">
+<span style="width:52px;height:52px;border-radius:var(--radius-thumb);background:{{ r.field }};flex:0 0 auto;display:block"></span>
+<span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+<span style="font:var(--type-item-title);color:var(--text-primary)">{{ r.name }}</span>
+<span style="font:var(--type-micro);color:var(--text-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.mods }}</span>
+<span style="font:var(--type-body-semibold);color:var(--text-primary)">{{ r.lineFmt }}</span>
+</span>
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.Stepper" value="{{ r.qty }}" min="{{ 0 }}" size="{{ 30 }}" onChange="{{ r.set }}" hint-size="94px,30px"></x-import>
+</div>
+</sc-for>
+</div>
+
+<div style="display:flex;align-items:center;gap:8px;margin:14px 0 0">
+<span style="flex:1"><x-import component-from-global-scope="PaceDesignSystem_e4e315.Input" placeholder="Promokodni kiriting" hint-size="100%,50px"></x-import></span>
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.Button" variant="outline" size="medium" height="{{ 50 }}" label="Qo&#39;llash" hint-size="96px,50px"></x-import>
+</div>
+
+<div style="background:var(--surface-card);border-radius:var(--radius-card);box-shadow:var(--shadow-card);padding:16px;margin:14px 0 0;display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;justify-content:space-between;gap:12px"><span style="font:var(--type-body);color:var(--text-secondary)">Mahsulotlar</span><span style="font:var(--type-body-semibold);color:var(--text-primary)">{{ subFmt }}</span></div>
+<div style="display:flex;justify-content:space-between;gap:12px"><span style="font:var(--type-body);color:var(--text-secondary)">{{ feeLabel }}</span><span style="font:var(--type-body-semibold);color:var(--text-primary)">{{ feeFmt }}</span></div>
+<span style="display:block;height:1px;background:var(--border-hairline)"></span>
+<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px"><span style="font:var(--type-section-title);color:var(--text-primary)">Jami</span><span style="font:var(--type-display-total);color:var(--text-primary)">{{ grossFmt }}</span></div>
+</div>
+
+<div style="display:flex;align-items:center;gap:10px;background:var(--el-gold-wash);border-radius:var(--radius-panel);padding:12px 14px;margin:12px 0 0">
+<span style="width:28px;height:28px;border-radius:var(--radius-pill);background:var(--pace-citrus);display:grid;place-items:center;flex:0 0 auto">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--el-gold-ink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.2"></circle><path d="M9.4 9.4h4.1a1.9 1.9 0 0 1 0 3.8H9.4V9.4Zm0 3.8v4"></path></svg>
+</span>
+<span style="font:var(--type-sub-medium);color:var(--el-gold-ink)">{{ earnLine }}</span>
+</div>
+</div>
+</sc-if>
+</div>
+</div>
+
+<sc-if value="{{ cartHas }}" hint-placeholder-val="{{ true }}">
+<div style="position:absolute;left:0;right:0;bottom:0;padding:18px 20px 24px;background:linear-gradient(180deg, var(--el-fade) 0%, var(--pace-ground) 38%)">
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.Button" variant="primary" text-color="#FFFFFF" size="large" block="{{ true }}" glow="{{ true }}" label="{{ checkoutLabel }}" onClick="{{ goCheckout }}" hint-size="100%,54px"></x-import>
+</div>
+</sc-if>
+</sc-if>
+
+<sc-if value="{{ isCheckout }}">
+<div class="el-scroll" style="position:absolute;inset:0;overflow-y:auto">
+<div style="padding:54px 0 130px">
+<div style="display:flex;align-items:center;gap:12px;padding:10px 20px 14px">
+<button onClick="{{ goCart }}" style="width:40px;height:40px;border-radius:var(--radius-pill);background:var(--pace-white);border:none;box-shadow:var(--shadow-card);display:grid;place-items:center;cursor:pointer;flex:0 0 auto">
+<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--pace-ink)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg>
+</button>
+<span style="font:var(--type-display-title);color:var(--text-primary)">Buyurtma berish</span>
+</div>
+
+<div style="padding:0 20px;display:flex;flex-direction:column;gap:16px">
+<sc-if value="{{ v422 }}">
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.Banner" bg="var(--pace-danger-wash)" ink="var(--pace-danger-deep)" title="Buyurtma yaratilmadi" body="Bitta maydon to&#39;ldirilmagan. Hech narsa to&#39;lanmadi." hint-size="100%,84px"></x-import>
+</sc-if>
+<div>
+<span style="font:var(--type-micro-semibold);color:var(--text-tertiary);display:block;margin-bottom:8px;letter-spacing:.3px">1 · BUYURTMA TURI</span>
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.SegmentedControl" options="{{ typeOptions }}" value="{{ otype }}" onChange="{{ setOtype }}" hint-size="100%,46px"></x-import>
+</div>
+
+<div>
+<span style="font:var(--type-micro-semibold);color:var(--text-tertiary);display:block;margin-bottom:8px;letter-spacing:.3px">2 · {{ addrHeading }}</span>
+<button onClick="{{ openSheet }}" style="width:100%;display:flex;align-items:center;gap:12px;background:var(--surface-card);border:none;border-radius:var(--radius-card);box-shadow:var(--shadow-card);padding:14px 16px;cursor:pointer;text-align:left">
+<span style="width:36px;height:36px;border-radius:var(--radius-pill);background:var(--pace-action-soft);display:grid;place-items:center;flex:0 0 auto">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s6.5-5.9 6.5-10.5a6.5 6.5 0 1 0-13 0C5.5 15.1 12 21 12 21Z"></path><circle cx="12" cy="10.3" r="2.4"></circle></svg>
+</span>
+<span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+<span style="font:var(--type-item-title);color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ addrLine1 }}</span>
+<span style="font:var(--type-small);color:var(--text-secondary)">{{ addrLine2 }}</span>
+</span>
+<span style="font:var(--type-button-small);color:var(--text-link);flex:0 0 auto">O&#39;zgartirish</span>
+</button>
+<sc-if value="{{ v422 }}">
+<span style="display:flex;align-items:flex-start;gap:7px;margin:9px 2px 0">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--pace-danger-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;margin-top:1px"><circle cx="12" cy="12" r="8.4"></circle><path d="M12 8.4v4.2M12 15.8h.01"></path></svg>
+<span style="font:var(--type-small-medium);color:var(--pace-danger-deep);text-wrap:pretty">Filial tanlanmagan. Yetkazib berish uchun eng yaqin filialni tanlang.</span>
+</span>
+</sc-if>
+</div>
+
+<div>
+<span style="font:var(--type-micro-semibold);color:var(--text-tertiary);display:block;margin-bottom:8px;letter-spacing:.3px">3 · TO&#39;LOV</span>
+<div style="background:var(--surface-card);border-radius:var(--radius-card);box-shadow:var(--shadow-card);overflow:hidden">
+<button onClick="{{ payPayme }}" style="width:100%;display:flex;align-items:center;gap:12px;background:none;border:none;padding:14px 16px;cursor:pointer;text-align:left">
+<span style="width:44px;height:28px;border-radius:8px;background:#00CCCC;display:grid;place-items:center;flex:0 0 auto;font:var(--type-badge-small);color:#0B2B2B;letter-spacing:.2px">Payme</span>
+<span style="flex:1;font:var(--type-item-title);color:var(--text-primary)">Payme</span>
+<sc-if value="{{ payIsPayme }}" hint-placeholder-val="{{ true }}"><span style="width:22px;height:22px;border-radius:99px;background:var(--accent);display:grid;place-items:center;flex:0 0 auto"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4.5 4.5L19 7"></path></svg></span></sc-if>
+<sc-if value="{{ payNotPayme }}"><span style="width:22px;height:22px;border-radius:99px;border:1.5px solid var(--border-control-strong);flex:0 0 auto;display:block"></span></sc-if>
+</button>
+<span style="display:block;height:1px;background:var(--border-hairline);margin-left:72px"></span>
+<button onClick="{{ payClick }}" style="width:100%;display:flex;align-items:center;gap:12px;background:none;border:none;padding:14px 16px;cursor:pointer;text-align:left">
+<span style="width:44px;height:28px;border-radius:8px;background:#1877F2;display:grid;place-items:center;flex:0 0 auto;font:var(--type-badge-small);color:#fff;letter-spacing:.2px">Click</span>
+<span style="flex:1;font:var(--type-item-title);color:var(--text-primary)">Click</span>
+<sc-if value="{{ payIsClick }}"><span style="width:22px;height:22px;border-radius:99px;background:var(--accent);display:grid;place-items:center;flex:0 0 auto"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4.5 4.5L19 7"></path></svg></span></sc-if>
+<sc-if value="{{ payNotClick }}" hint-placeholder-val="{{ true }}"><span style="width:22px;height:22px;border-radius:99px;border:1.5px solid var(--border-control-strong);flex:0 0 auto;display:block"></span></sc-if>
+</button>
+</div>
+</div>
+
+<sc-if value="{{ pointsAtCheckout }}" hint-placeholder-val="{{ true }}">
+<div>
+<span style="font:var(--type-micro-semibold);color:var(--text-tertiary);display:block;margin-bottom:8px;letter-spacing:.3px">4 · BALLAR</span>
+<div style="background:var(--el-gold-wash);border-radius:var(--radius-card);padding:16px;display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:center;gap:12px">
+<span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+<span style="font:var(--type-item-title);color:var(--el-gold-ink)">Ballar bilan to&#39;lash</span>
+<span style="font:var(--type-small);color:var(--el-gold-ink);opacity:.75">{{ pointsHint }}</span>
+</span>
+<button onClick="{{ togglePoints }}" style="border:none;padding:0;background:none;cursor:pointer;flex:0 0 auto">
+<sc-if value="{{ usePoints }}" hint-placeholder-val="{{ true }}"><span style="width:48px;height:28px;border-radius:99px;background:var(--accent);display:flex;align-items:center;justify-content:flex-end;padding:3px;box-sizing:border-box"><span style="width:22px;height:22px;border-radius:99px;background:#fff;display:block"></span></span></sc-if>
+<sc-if value="{{ noPoints }}"><span style="width:48px;height:28px;border-radius:99px;background:var(--pace-ink-15);display:flex;align-items:center;justify-content:flex-start;padding:3px;box-sizing:border-box"><span style="width:22px;height:22px;border-radius:99px;background:#fff;display:block"></span></span></sc-if>
+</button>
+</div>
+</div>
+</div>
+</sc-if>
+
+<div style="background:var(--surface-card);border-radius:var(--radius-card);box-shadow:var(--shadow-card);padding:16px;display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;justify-content:space-between;gap:12px"><span style="font:var(--type-body);color:var(--text-secondary)">Mahsulotlar</span><span style="font:var(--type-body-semibold);color:var(--text-primary)">{{ subFmt }}</span></div>
+<div style="display:flex;justify-content:space-between;gap:12px"><span style="font:var(--type-body);color:var(--text-secondary)">{{ feeLabel }}</span><span style="font:var(--type-body-semibold);color:var(--text-primary)">{{ feeFmt }}</span></div>
+<sc-if value="{{ pointsOn }}"><div style="display:flex;justify-content:space-between;gap:12px"><span style="font:var(--type-body);color:var(--text-secondary)">Ishlatilgan ballar</span><span style="font:var(--type-body-semibold);color:var(--pace-success)">{{ ptsFmt }}</span></div></sc-if>
+<span style="display:block;height:1px;background:var(--border-hairline)"></span>
+<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px"><span style="font:var(--type-section-title);color:var(--text-primary)">To&#39;lov summasi</span><span style="font:var(--type-display-total);color:var(--text-primary)">{{ totalFmt }}</span></div>
+<span style="font:var(--type-micro);color:var(--text-tertiary);display:block;text-wrap:pretty">Filial, marshrut, ballar va yakuniy summa buyurtma yaratilganda tasdiqlanadi.</span>
+</div>
+</div>
+</div>
+</div>
+
+<div style="position:absolute;left:0;right:0;bottom:0;padding:18px 20px 24px;background:linear-gradient(180deg, var(--el-fade) 0%, var(--pace-ground) 38%)">
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.Button" variant="primary" text-color="#FFFFFF" size="large" block="{{ true }}" glow="{{ true }}" label="{{ payLabel }}" onClick="{{ pay }}" hint-size="100%,54px"></x-import>
+</div>
+</sc-if>
+
+<sc-if value="{{ isPaid }}">
+<div style="position:absolute;inset:0;background:var(--pace-ground);display:flex;flex-direction:column;padding:54px 24px 28px;animation:elUp .3s ease both">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center">
+<span style="width:76px;height:76px;border-radius:var(--radius-pill);background:var(--pace-success-wash);display:grid;place-items:center">
+<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--pace-success)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4.5 4.5L19 7"></path></svg>
+</span>
+<span style="font:var(--type-display-status);color:var(--text-primary)">Buyurtmangiz qabul qilindi!</span>
+<span style="font:var(--type-sub);color:var(--text-secondary);max-width:270px;display:block;text-wrap:pretty">Buyurtma oshxonaga yuborildi. Holatini profilingizda kuzatib boring.</span>
+<span style="font:var(--type-body-semibold);color:var(--text-primary);background:var(--pace-ink-06);border-radius:var(--radius-pill);padding:8px 14px">Buyurtma #1042 · 25–35 daqiqa</span>
+<span style="display:flex;align-items:center;gap:8px;background:var(--el-gold-wash);border-radius:var(--radius-pill);padding:8px 14px;font:var(--type-sub-medium);color:var(--el-gold-ink)">{{ earnLine }}</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.Button" variant="dark" text-color="var(--el-on-ink)" size="large" block="{{ true }}" label="Buyurtmani kuzatish" onClick="{{ goNotifs }}" hint-size="100%,54px"></x-import>
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.Button" variant="text" size="medium" block="{{ true }}" label="Bosh sahifaga" onClick="{{ goHome }}" hint-size="100%,52px"></x-import>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isBonus }}">
+<div class="el-scroll" style="position:absolute;inset:0;overflow-y:auto">
+<div style="padding:54px 0 40px">
+<div style="display:flex;align-items:center;gap:12px;padding:10px 20px 14px">
+<button onClick="{{ goHome }}" style="width:40px;height:40px;border-radius:var(--radius-pill);background:var(--pace-white);border:none;box-shadow:var(--shadow-card);display:grid;place-items:center;cursor:pointer;flex:0 0 auto">
+<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--pace-ink)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg>
+</button>
+<span style="font:var(--type-display-title);color:var(--text-primary)">Mening ballarim</span>
+</div>
+
+<div style="margin:0 20px;background:var(--el-gold-wash);border-radius:var(--radius-card);padding:20px;display:flex;flex-direction:column;gap:16px">
+<div style="display:flex;flex-direction:column;gap:4px">
+<span style="font:var(--type-micro-semibold);color:var(--el-gold-ink);opacity:.7;letter-spacing:.3px">BALANS</span>
+<span style="font:700 44px/46px var(--fd);color:var(--el-gold-ink)">{{ balanceFmt }}</span>
+<span style="font:var(--type-sub);color:var(--el-gold-ink);opacity:.75">1 ball 1 so&#39;mga teng.</span>
+</div>
+<div style="display:flex;gap:10px">
+<span style="flex:1;background:var(--pace-white-75);border-radius:var(--radius-tile);padding:12px;display:flex;flex-direction:column;gap:3px">
+<span style="font:var(--type-micro);color:var(--el-gold-ink);opacity:.7">Sarflash uchun mavjud</span>
+<span style="font:var(--type-display-card);color:var(--el-gold-ink)">38 250</span>
+</span>
+<span style="flex:1;background:var(--pace-white-75);border-radius:var(--radius-tile);padding:12px;display:flex;flex-direction:column;gap:3px">
+<span style="font:var(--type-micro);color:var(--el-gold-ink);opacity:.7">Band qilingan</span>
+<span style="font:var(--type-display-card);color:var(--el-gold-ink)">3 000</span>
+</span>
+</div>
+</div>
+
+<div style="padding:14px 20px 0">
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.Banner" bg="var(--pace-warning-wash)" ink="var(--pace-warning)" title="3 000 ball 7 kun ichida tugaydi" body="Eng yaqin tugash sanasi — 8-sentabr." hint-size="100%,86px"></x-import>
+</div>
+
+<div style="padding:18px 20px 0">
+<span style="font:var(--type-section-title);color:var(--text-primary);display:block;margin-bottom:10px">Ballar qanday ishlaydi</span>
+<div style="background:var(--surface-card);border-radius:var(--radius-card);box-shadow:var(--shadow-card);overflow:hidden">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px"><span style="font:var(--type-body);color:var(--text-secondary)">Har bir buyurtma uchun</span><span style="font:var(--type-body-semibold);color:var(--text-primary)">{{ cashLabel }}</span></div>
+<span style="display:block;height:1px;background:var(--border-hairline);margin-left:16px"></span>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px"><span style="font:var(--type-body);color:var(--text-secondary)">1 ball teng</span><span style="font:var(--type-body-semibold);color:var(--text-primary)">1 so&#39;m</span></div>
+<span style="display:block;height:1px;background:var(--border-hairline);margin-left:16px"></span>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px"><span style="font:var(--type-body);color:var(--text-secondary)">Sarflash mumkin</span><span style="font:var(--type-body-semibold);color:var(--text-primary)">Buyurtmaning 50% gacha</span></div>
+</div>
+</div>
+
+<div style="padding:18px 20px 0">
+<span style="font:var(--type-section-title);color:var(--text-primary);display:block;margin-bottom:10px">Ballar tarixi</span>
+<div style="background:var(--surface-card);border-radius:var(--radius-card);box-shadow:var(--shadow-card);overflow:hidden">
+<sc-for list="{{ history }}" as="h" hint-placeholder-count="4">
+<div style="display:flex;align-items:center;gap:12px;padding:13px 16px">
+<span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+<span style="font:var(--type-body-semibold);color:var(--text-primary)">{{ h.t }}</span>
+<span style="font:var(--type-micro);color:var(--text-tertiary)">{{ h.d }}</span>
+</span>
+<span style="font:var(--type-item-title);color:{{ h.color }};flex:0 0 auto">{{ h.v }}</span>
+</div>
+</sc-for>
+</div>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isNotifs }}">
+<div class="el-scroll" style="position:absolute;inset:0;overflow-y:auto">
+<div style="padding:54px 0 148px">
+<div style="padding:10px 20px 4px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+<span style="display:flex;flex-direction:column;gap:4px">
+<span style="font:var(--type-display-title);color:var(--text-primary)">Xabarlar</span>
+<span style="font:var(--type-sub);color:var(--text-secondary)">Yangiliklar va takliflar bir joyda</span>
+</span>
+<sc-if value="{{ hasUnread }}" hint-placeholder-val="{{ true }}">
+<button onClick="{{ markAll }}" style="background:none;border:none;padding:4px 0;cursor:pointer;font:var(--type-button-small);color:var(--text-link);text-align:right;flex:0 0 auto;max-width:104px">Barchasini o&#39;qilgan qilish</button>
+</sc-if>
+</div>
+
+<sc-if value="{{ notifsHas }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;gap:8px;padding:14px 20px 14px">
+<sc-for list="{{ filters }}" as="f" hint-placeholder-count="3">
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.Chip" kind="dashed" height="{{ 32 }}" label="{{ f.name }}" selected="{{ f.on }}" onClick="{{ f.pick }}" hint-size="86px,32px"></x-import>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{ notifsEmpty }}">
+<div style="padding:64px 32px 0;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;animation:elUp .3s ease both">
+<span style="width:64px;height:64px;border-radius:var(--radius-pill);background:var(--pace-ink-06);display:grid;place-items:center">
+<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--pace-ink-38)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 9.5a6 6 0 0 0-12 0c0 2.4-.5 3.7-1.2 4.7-.6.9 0 2 1 2.2a26 26 0 0 0 12.4 0c1-.2 1.6-1.3 1-2.2-.7-1-1.2-2.3-1.2-4.7Z"></path><path d="M10 20.2a2.4 2.4 0 0 0 4 0"></path></svg>
+</span>
+<span style="font:var(--type-display-empty);color:var(--text-primary)">Hozircha xabarlar yo&#39;q</span>
+<span style="font:var(--type-sub);color:var(--text-secondary);max-width:260px;display:block;text-wrap:pretty">Buyurtma yangiliklari va shaxsiy takliflar shu yerda ko&#39;rinadi.</span>
+<span style="margin-top:6px"><x-import component-from-global-scope="PaceDesignSystem_e4e315.Button" variant="dark" text-color="var(--el-on-ink)" size="medium" label="Menyuga o&#39;tish" onClick="{{ goMenu }}" hint-size="150px,52px"></x-import></span>
+</div>
+</sc-if>
+
+<sc-if value="{{ filteredEmpty }}">
+<div style="padding:32px 32px 0;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px">
+<span style="font:var(--type-item-title);color:var(--text-primary)">Bu bo&#39;limda xabar yo&#39;q</span>
+<span style="font:var(--type-sub);color:var(--text-secondary);max-width:240px;display:block">Filtrni «Barchasi» ga qaytarib ko&#39;ring.</span>
+</div>
+</sc-if>
+
+<div style="padding:0 20px;display:flex;flex-direction:column;gap:10px">
+<sc-for list="{{ notifList }}" as="n" hint-placeholder-count="4">
+<div style="background:{{ n.bg }};border-radius:var(--radius-card);box-shadow:var(--shadow-card);padding:14px 16px;display:flex;gap:12px">
+<span style="width:36px;height:36px;border-radius:var(--radius-pill);background:{{ n.iconBg }};display:grid;place-items:center;flex:0 0 auto">
+<sc-if value="{{ n.isOrder }}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{ n.iconInk }}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 8.5h11l-1 10.5a2 2 0 0 1-2 1.8h-5a2 2 0 0 1-2-1.8L6.5 8.5Z"></path><path d="M9.4 8.5V6.9a2.6 2.6 0 0 1 5.2 0v1.6"></path></svg>
+</sc-if>
+<sc-if value="{{ n.isPromo }}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{ n.iconInk }}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h16v3a2 2 0 0 0 0 4v3H4v-3a2 2 0 0 0 0-4v-3Z"></path><path d="M14 11.5v6"></path></svg>
+</sc-if>
+</span>
+<span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+<span style="display:flex;align-items:center;gap:7px">
+<sc-if value="{{ n.unread }}"><span style="width:7px;height:7px;border-radius:99px;background:var(--accent);flex:0 0 auto;display:block"></span></sc-if>
+<span style="font:{{ n.titleFont }};color:var(--text-primary)">{{ n.title }}</span>
+</span>
+<span style="font:var(--type-sub);color:var(--text-secondary);text-wrap:pretty">{{ n.body }}</span>
+<sc-if value="{{ n.hasCode }}">
+<span style="display:flex;align-items:center;gap:8px;margin:4px 0 2px">
+<span style="font:var(--type-caption-semibold);color:var(--el-gold-ink);background:var(--el-gold-wash);border:1px dashed var(--pace-citrus);border-radius:var(--radius-chip);padding:6px 10px;letter-spacing:.4px;white-space:nowrap">{{ n.code }}</span>
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.Button" variant="soft" size="small" height="{{ 32 }}" label="Buyurtmada ishlatish" onClick="{{ n.use }}" hint-size="150px,32px"></x-import>
+</span>
+</sc-if>
+<span style="font:var(--type-micro);color:var(--text-tertiary)">{{ n.meta }}</span>
+</span>
+</div>
+</sc-for>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isProfile }}">
+<div class="el-scroll" style="position:absolute;inset:0;overflow-y:auto">
+<div style="padding:54px 0 148px">
+<div style="padding:10px 20px 16px"><span style="font:var(--type-display-title);color:var(--text-primary)">Profil</span></div>
+
+<div style="margin:0 20px 14px;display:flex;align-items:center;gap:14px;background:var(--surface-card);border-radius:var(--radius-card);box-shadow:var(--shadow-card);padding:16px">
+<span style="width:52px;height:52px;border-radius:var(--radius-pill);background:var(--pace-action-soft);display:grid;place-items:center;flex:0 0 auto;font:var(--type-display-card);color:var(--accent)">A</span>
+<span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+<span style="font:var(--type-section-title);color:var(--text-primary)">Aziz Toshmatov</span>
+<span style="font:var(--type-sub);color:var(--text-secondary)">+998 90 123 45 67</span>
+</span>
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--pace-ink-45)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M9 6l6 6-6 6"></path></svg>
+</div>
+
+<button onClick="{{ goBonus }}" style="width:calc(100% - 40px);margin:0 20px 20px;display:flex;align-items:center;gap:12px;background:var(--el-gold-wash);border:none;border-radius:var(--radius-card);padding:14px 16px;cursor:pointer;text-align:left">
+<span style="flex:1;display:flex;flex-direction:column;gap:2px">
+<span style="font:var(--type-micro-semibold);color:var(--el-gold-ink);opacity:.7;letter-spacing:.3px">BALLARIM</span>
+<span style="font:var(--type-display-total);color:var(--el-gold-ink)">{{ balanceFmt }} ball</span>
+</span>
+<span style="font:var(--type-button-small);color:var(--el-gold-ink)">Ko&#39;rish</span>
+</button>
+
+<span style="display:block;font:var(--type-micro-semibold);color:var(--text-tertiary);padding:0 20px 8px;letter-spacing:.3px">BUYURTMALAR</span>
+<div style="margin:0 20px 20px;background:var(--surface-card);border-radius:var(--radius-card);box-shadow:var(--shadow-card);overflow:hidden">
+<div style="display:flex;align-items:center;gap:12px;padding:15px 16px">
+<span style="flex:1;font:var(--type-item-title);color:var(--text-primary)">Buyurtmalar tarixi</span>
+<span style="font:var(--type-sub);color:var(--text-tertiary)">12 ta</span>
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--pace-ink-45)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+</div>
+<span style="display:block;height:1px;background:var(--border-hairline);margin-left:16px"></span>
+<div style="display:flex;align-items:center;gap:12px;padding:15px 16px">
+<span style="flex:1;font:var(--type-item-title);color:var(--text-primary)">Mening promokodlarim</span>
+<span style="font:var(--type-badge);color:#fff;background:var(--accent);border-radius:99px;padding:3px 8px">2</span>
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--pace-ink-45)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+</div>
+<span style="display:block;height:1px;background:var(--border-hairline);margin-left:16px"></span>
+<div style="display:flex;align-items:center;gap:12px;padding:15px 16px">
+<span style="flex:1;font:var(--type-item-title);color:var(--text-primary)">Manzillarim</span>
+<span style="font:var(--type-sub);color:var(--text-tertiary)">2 ta</span>
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--pace-ink-45)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+</div>
+</div>
+
+<span style="display:block;font:var(--type-micro-semibold);color:var(--text-tertiary);padding:0 20px 8px;letter-spacing:.3px">SOZLAMALAR</span>
+<div style="margin:0 20px 20px;background:var(--surface-card);border-radius:var(--radius-card);box-shadow:var(--shadow-card);overflow:hidden">
+<div style="display:flex;align-items:center;gap:12px;padding:15px 16px">
+<span style="flex:1;font:var(--type-item-title);color:var(--text-primary)">Til</span>
+<span style="font:var(--type-body-semibold);color:var(--text-secondary)">O&#39;zbekcha</span>
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--pace-ink-45)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+</div>
+<span style="display:block;height:1px;background:var(--border-hairline);margin-left:16px"></span>
+<button onClick="{{ toggleTheme }}" style="width:100%;display:flex;align-items:center;gap:12px;padding:13px 16px;background:none;border:none;cursor:pointer;text-align:left">
+<span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+<span style="font:var(--type-item-title);color:var(--text-primary)">Ko&#39;rinish</span>
+<span style="font:var(--type-micro);color:var(--text-tertiary)">Ilova rang rejimini tanlang</span>
+</span>
+<sc-if value="{{ isLight }}" hint-placeholder-val="{{ true }}">
+<span style="display:flex;align-items:center;gap:7px;background:var(--pace-ink-06);border-radius:var(--radius-pill);padding:7px 13px;flex:0 0 auto">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--el-gold-ink)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"></circle><path d="M12 3.2v2M12 18.8v2M3.2 12h2M18.8 12h2M5.9 5.9l1.4 1.4M16.7 16.7l1.4 1.4M18.1 5.9l-1.4 1.4M7.3 16.7l-1.4 1.4"></path></svg>
+<span style="font:var(--type-body-semibold);color:var(--text-primary)">Yorug&#39;</span>
+</span>
+</sc-if>
+<sc-if value="{{ isDark }}">
+<span style="display:flex;align-items:center;gap:7px;background:var(--pace-ink-06);border-radius:var(--radius-pill);padding:7px 13px;flex:0 0 auto">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--el-gold-ink)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.4A8.6 8.6 0 1 1 9.6 4a6.9 6.9 0 0 0 10.4 10.4Z"></path></svg>
+<span style="font:var(--type-body-semibold);color:var(--text-primary)">Qorong&#39;i</span>
+</span>
+</sc-if>
+</button>
+<span style="display:block;height:1px;background:var(--border-hairline);margin-left:16px"></span>
+<div style="display:flex;align-items:center;gap:12px;padding:13px 16px">
+<span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+<span style="font:var(--type-item-title);color:var(--text-primary)">Bildirishnomalar</span>
+<span style="font:var(--type-micro);color:var(--text-tertiary)">Buyurtma holati va aksiyalar</span>
+</span>
+<button onClick="{{ toggleNotifOn }}" style="border:none;padding:0;background:none;cursor:pointer;flex:0 0 auto">
+<sc-if value="{{ notifOn }}" hint-placeholder-val="{{ true }}"><span style="width:48px;height:28px;border-radius:99px;background:var(--accent);display:flex;align-items:center;justify-content:flex-end;padding:3px;box-sizing:border-box"><span style="width:22px;height:22px;border-radius:99px;background:#fff;display:block"></span></span></sc-if>
+<sc-if value="{{ notifOff }}"><span style="width:48px;height:28px;border-radius:99px;background:var(--pace-ink-15);display:flex;align-items:center;justify-content:flex-start;padding:3px;box-sizing:border-box"><span style="width:22px;height:22px;border-radius:99px;background:#fff;display:block"></span></span></sc-if>
+</button>
+</div>
+</div>
+
+<span style="display:block;font:var(--type-micro-semibold);color:var(--text-tertiary);padding:0 20px 8px;letter-spacing:.3px">AMALLAR</span>
+<div style="margin:0 20px 14px;background:var(--surface-card);border-radius:var(--radius-card);box-shadow:var(--shadow-card);overflow:hidden">
+<div style="display:flex;align-items:center;gap:12px;padding:15px 16px">
+<span style="flex:1;font:var(--type-item-title);color:var(--text-primary)">Ilovani ulashish</span>
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--pace-ink-45)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+</div>
+<span style="display:block;height:1px;background:var(--border-hairline);margin-left:16px"></span>
+<button onClick="{{ goAuth }}" style="width:100%;display:flex;align-items:center;gap:12px;padding:15px 16px;background:none;border:none;cursor:pointer;text-align:left">
+<span style="flex:1;font:var(--type-item-title);color:var(--pace-danger)">Chiqish</span>
+</button>
+</div>
+<span style="display:block;text-align:center;font:var(--type-micro);color:var(--text-tertiary)">Ilova versiyasi 1.4.0</span>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isErr500 }}">
+<div style="position:absolute;inset:0;display:flex;flex-direction:column;padding:54px 24px 28px;animation:elUp .3s ease both">
+<div style="padding:10px 0 0"><span style="font:var(--type-badge);color:var(--pace-danger-deep);background:var(--pace-danger-wash);border-radius:var(--radius-pill);padding:5px 11px;letter-spacing:.4px">500 · SERVER</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center">
+<span style="width:76px;height:76px;border-radius:var(--radius-pill);background:var(--pace-danger-wash);display:grid;place-items:center">
+<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--pace-danger-deep)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 4.2 2.6 17.5A1.9 1.9 0 0 0 4.3 20.4h15.4a1.9 1.9 0 0 0 1.7-2.9L13.7 4.2a1.9 1.9 0 0 0-3.4 0Z"></path><path d="M12 9.6v4.2M12 17h.01"></path></svg>
+</span>
+<span style="font:var(--type-display-status);color:var(--text-primary)">Nimadir noto&#39;g&#39;ri ketdi</span>
+<span style="font:var(--type-sub);color:var(--text-secondary);max-width:280px;display:block;text-wrap:pretty">Menyuni yuklab bo&#39;lmadi. Bu bizning tarafdagi muammo — birozdan keyin qayta urinib ko&#39;ring.</span>
+<span style="font:var(--type-micro);color:var(--text-tertiary);background:var(--pace-ink-04);border-radius:var(--radius-chip);padding:6px 10px">Server ichki xatosi · INTERNAL_SERVER_ERROR</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:6px">
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.Button" variant="primary" text-color="#FFFFFF" size="large" block="{{ true }}" glow="{{ true }}" label="Qayta urinish" onClick="{{ goMenu }}" hint-size="100%,54px"></x-import>
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.Button" variant="text" size="medium" block="{{ true }}" label="Bosh sahifaga" onClick="{{ goHome }}" hint-size="100%,52px"></x-import>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isErrNet }}">
+<div style="position:absolute;inset:0;display:flex;flex-direction:column;padding:54px 24px 28px;animation:elUp .3s ease both">
+<div style="padding:10px 0 0"><span style="font:var(--type-badge);color:var(--pace-info-ink);background:var(--pace-info-wash);border-radius:var(--radius-pill);padding:5px 11px;letter-spacing:.4px">OFLAYN</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center">
+<span style="width:76px;height:76px;border-radius:var(--radius-pill);background:var(--pace-info-wash);display:grid;place-items:center">
+<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--pace-info-ink)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4.2 8.4a11 11 0 0 1 4-2.4M15.8 6a11 11 0 0 1 4 2.4"></path><path d="M7.4 11.9A7 7 0 0 1 10 10.3m4 0a7 7 0 0 1 2.6 1.6"></path><path d="M10.4 15.4a3.2 3.2 0 0 1 3.2 0"></path><path d="M12 19h.01"></path><path d="M3.4 3.4 20.6 20.6"></path></svg>
+</span>
+<span style="font:var(--type-display-status);color:var(--text-primary)">Ulanishda muammo</span>
+<span style="font:var(--type-sub);color:var(--text-secondary);max-width:280px;display:block;text-wrap:pretty">Internet sekin yoki ulanish yo&#39;q. Wi-Fi yoki mobil internetni tekshirib, qayta urinib ko&#39;ring.</span>
+<span style="display:flex;align-items:center;gap:7px;font:var(--type-sub-medium);color:var(--el-gold-ink);background:var(--el-gold-wash);border-radius:var(--radius-pill);padding:8px 13px">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--el-gold-ink)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4.5 4.5L19 7"></path></svg>
+Savatingiz saqlanib qoldi
+</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:6px">
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.Button" variant="primary" text-color="#FFFFFF" size="large" block="{{ true }}" glow="{{ true }}" label="Qayta urinish" onClick="{{ goHome }}" hint-size="100%,54px"></x-import>
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.Button" variant="text" size="medium" block="{{ true }}" label="Savatni ochish" onClick="{{ goCart }}" hint-size="100%,52px"></x-import>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isErr404 }}">
+<div style="position:absolute;inset:0;display:flex;flex-direction:column;padding:54px 24px 28px;animation:elUp .3s ease both">
+<div style="padding:10px 0 0"><span style="font:var(--type-badge);color:var(--text-secondary);background:var(--pace-ink-06);border-radius:var(--radius-pill);padding:5px 11px;letter-spacing:.4px">404</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center">
+<span style="width:76px;height:76px;border-radius:var(--radius-pill);background:var(--pace-ink-06);display:grid;place-items:center">
+<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--pace-ink-45)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.8" cy="10.8" r="6.6"></circle><path d="M15.8 15.8 20.4 20.4"></path><path d="M8.6 10.8h4.4"></path></svg>
+</span>
+<span style="font:var(--type-display-status);color:var(--text-primary)">Mahsulot topilmadi</span>
+<span style="font:var(--type-sub);color:var(--text-secondary);max-width:280px;display:block;text-wrap:pretty">Bu mahsulot menyudan olib tashlangan yoki hozircha mavjud emas. Boshqasini tanlab ko&#39;ring.</span>
+<span style="font:var(--type-micro);color:var(--text-tertiary);background:var(--pace-ink-04);border-radius:var(--radius-chip);padding:6px 10px">Topilmadi · PRODUCT_NOT_FOUND</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:6px">
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.Button" variant="primary" text-color="#FFFFFF" size="large" block="{{ true }}" glow="{{ true }}" label="Menyuga o&#39;tish" onClick="{{ goMenu }}" hint-size="100%,54px"></x-import>
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.Button" variant="text" size="medium" block="{{ true }}" label="Bosh sahifaga" onClick="{{ goHome }}" hint-size="100%,52px"></x-import>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isErr401 }}">
+<div style="position:absolute;inset:0;display:flex;flex-direction:column;padding:54px 24px 28px;animation:elUp .3s ease both">
+<div style="padding:10px 0 0"><span style="font:var(--type-badge);color:var(--pace-warning);background:var(--pace-warning-wash);border-radius:var(--radius-pill);padding:5px 11px;letter-spacing:.4px">401</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center">
+<span style="width:76px;height:76px;border-radius:var(--radius-pill);background:var(--pace-warning-wash);display:grid;place-items:center">
+<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--pace-warning)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4.6" y="10.4" width="14.8" height="9.6" rx="2.6"></rect><path d="M8.2 10.4V7.8a3.8 3.8 0 0 1 7.6 0v2.6"></path><path d="M12 14.4v1.8"></path></svg>
+</span>
+<span style="font:var(--type-display-status);color:var(--text-primary)">Sessiya muddati tugadi</span>
+<span style="font:var(--type-sub);color:var(--text-secondary);max-width:280px;display:block;text-wrap:pretty">Xavfsizlik uchun qaytadan kiring. Savatingiz, manzillaringiz va ballaringiz joyida qoladi.</span>
+<span style="font:var(--type-micro);color:var(--text-tertiary);background:var(--pace-ink-04);border-radius:var(--radius-chip);padding:6px 10px">Sessiya muddati tugadi · ACCESS_TOKEN_EXPIRED</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:6px">
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.Button" variant="primary" text-color="#FFFFFF" size="large" block="{{ true }}" glow="{{ true }}" label="Kirish" onClick="{{ goAuth }}" hint-size="100%,54px"></x-import>
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.Button" variant="text" size="medium" block="{{ true }}" label="Mehmon sifatida ko&#39;rish" onClick="{{ goMenu }}" hint-size="100%,52px"></x-import>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isErr429 }}">
+<div style="position:absolute;inset:0;display:flex;flex-direction:column;padding:54px 24px 28px;animation:elUp .3s ease both">
+<div style="padding:10px 0 0"><span style="font:var(--type-badge);color:var(--pace-warning);background:var(--pace-warning-wash);border-radius:var(--radius-pill);padding:5px 11px;letter-spacing:.4px">429</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center">
+<span style="width:76px;height:76px;border-radius:var(--radius-pill);background:var(--pace-warning-wash);display:grid;place-items:center">
+<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--pace-warning)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12.6" r="7.8"></circle><path d="M12 8.8v4l2.6 1.8"></path><path d="M9.4 3.2h5.2"></path></svg>
+</span>
+<span style="font:var(--type-display-status);color:var(--text-primary)">So&#39;rovlar juda ko&#39;p</span>
+<span style="font:var(--type-sub);color:var(--text-secondary);max-width:280px;display:block;text-wrap:pretty">SMS kod bir necha marta so&#39;raldi. Bir daqiqadan keyin qayta urinib ko&#39;ring.</span>
+<span style="font:700 34px/36px var(--fd);color:var(--text-primary)">00:45</span>
+<span style="font:var(--type-micro);color:var(--text-tertiary);background:var(--pace-ink-04);border-radius:var(--radius-chip);padding:6px 10px">So&#39;rovlar juda ko&#39;p · RATE_LIMITED · retry-after 45</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:6px">
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.Button" variant="primary" text-color="#FFFFFF" size="large" block="{{ true }}" disabled="{{ true }}" label="45 soniyadan keyin qayta urinish" hint-size="100%,54px"></x-import>
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.Button" variant="text" size="medium" block="{{ true }}" label="Yordam kerak" hint-size="100%,52px"></x-import>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ showTabs }}" hint-placeholder-val="{{ true }}">
+<div style="position:absolute;left:0;right:0;bottom:0;z-index:40">
+<sc-if value="{{ showCartPill }}">
+<div style="padding:0 16px 10px">
+<button onClick="{{ goCart }}" style="width:100%;display:flex;align-items:center;gap:12px;background:var(--pace-ink);border:none;border-radius:var(--radius-pill);padding:12px 16px;box-shadow:var(--shadow-pill-dark);cursor:pointer;text-align:left">
+<span style="width:26px;height:26px;border-radius:99px;background:var(--el-pill-chip);display:grid;place-items:center;font:var(--type-badge);color:var(--el-on-ink);flex:0 0 auto">{{ cartCount }}</span>
+<span style="flex:1;font:var(--type-button-medium);color:var(--el-on-ink)">Savatni ochish</span>
+<span style="font:var(--type-button-medium);color:var(--el-on-ink)">{{ grossFmt }}</span>
+</button>
+</div>
+</sc-if>
+<div style="background:var(--el-tabbar);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-top:1px solid var(--pace-ink-07);padding:8px 10px 20px;display:flex">
+<button onClick="{{ goHome }}" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;background:none;border:none;cursor:pointer">
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.Icon" name="home" size="{{ 22 }}" color="{{ cHome }}" hint-size="22px,22px"></x-import>
+<span style="font:var(--type-nav-label);color:{{ cHome }}">Bosh sahifa</span>
+</button>
+<button onClick="{{ goMenu }}" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;background:none;border:none;cursor:pointer">
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.Icon" name="menu" size="{{ 22 }}" color="{{ cMenu }}" hint-size="22px,22px"></x-import>
+<span style="font:var(--type-nav-label);color:{{ cMenu }}">Menyu</span>
+</button>
+<button onClick="{{ goNotifs }}" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;background:none;border:none;cursor:pointer;position:relative">
+<span style="position:relative;display:block">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{ cNotifs }}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 9.5a6 6 0 0 0-12 0c0 2.4-.5 3.7-1.2 4.7-.6.9 0 2 1 2.2a26 26 0 0 0 12.4 0c1-.2 1.6-1.3 1-2.2-.7-1-1.2-2.3-1.2-4.7Z"></path><path d="M10 20.2a2.4 2.4 0 0 0 4 0"></path></svg>
+<sc-if value="{{ hasUnread }}"><span style="position:absolute;top:-1px;right:-2px;min-width:16px;height:16px;border-radius:99px;background:var(--accent);border:1.5px solid var(--pace-ground);display:grid;place-items:center;font:var(--type-badge-small);color:#fff;padding:0 3px;box-sizing:border-box">{{ unread }}</span></sc-if>
+</span>
+<span style="font:var(--type-nav-label);color:{{ cNotifs }}">Xabarlar</span>
+</button>
+<button onClick="{{ goProfile }}" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;background:none;border:none;cursor:pointer">
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.Icon" name="profile" size="{{ 22 }}" color="{{ cProfile }}" hint-size="22px,22px"></x-import>
+<span style="font:var(--type-nav-label);color:{{ cProfile }}">Profil</span>
+</button>
+</div>
+</div>
+</sc-if>
+
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.Sheet" open="{{ sheet }}" onDismiss="{{ closeSheet }}" hint-size="100%,auto">
+<span style="display:block;font:var(--type-display-sheet);color:var(--text-primary);margin-bottom:14px">Buyurtma turi</span>
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.SegmentedControl" options="{{ typeOptions }}" value="{{ otype }}" onChange="{{ setOtype }}" hint-size="100%,46px"></x-import>
+<span style="display:block;font:var(--type-section-title);color:var(--text-primary);margin:20px 0 10px">{{ branchHeading }}</span>
+<div style="background:var(--surface-card);border-radius:var(--radius-card);box-shadow:var(--shadow-card);overflow:hidden;margin-bottom:16px">
+<sc-for list="{{ branches }}" as="b" hint-placeholder-count="3">
+<button onClick="{{ b.pick }}" style="width:100%;display:flex;align-items:center;gap:12px;background:none;border:none;padding:14px 16px;cursor:pointer;text-align:left">
+<span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+<span style="font:var(--type-item-title);color:var(--text-primary)">{{ b.name }}</span>
+<span style="font:var(--type-micro);color:var(--text-tertiary)">{{ b.meta }}</span>
+</span>
+<sc-if value="{{ b.on }}"><span style="width:22px;height:22px;border-radius:99px;background:var(--accent);display:grid;place-items:center;flex:0 0 auto"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4.5 4.5L19 7"></path></svg></span></sc-if>
+<sc-if value="{{ b.off }}"><span style="width:22px;height:22px;border-radius:99px;border:1.5px solid var(--border-control-strong);flex:0 0 auto;display:block"></span></sc-if>
+</button>
+</sc-for>
+</div>
+<x-import component-from-global-scope="PaceDesignSystem_e4e315.Button" variant="primary" text-color="#FFFFFF" size="large" block="{{ true }}" glow="{{ true }}" label="Saqlash" onClick="{{ closeSheet }}" hint-size="100%,54px"></x-import>
+</x-import>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:412,&quot;height&quot;:822},&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;auth&quot;,&quot;home&quot;,&quot;menu&quot;,&quot;item&quot;,&quot;cart&quot;,&quot;checkout&quot;,&quot;bonus&quot;,&quot;notifs&quot;,&quot;profile&quot;,&quot;err500&quot;,&quot;errNet&quot;,&quot;err404&quot;,&quot;err401&quot;,&quot;err429&quot;,&quot;emptyMenu&quot;,&quot;emptyNotifs&quot;,&quot;check422&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Ko'rinish&quot;},&quot;fontPair&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;manrope&quot;,&quot;onest&quot;,&quot;literata&quot;,&quot;clash&quot;],&quot;default&quot;:&quot;manrope&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Shrift&quot;},&quot;preset&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;seeded&quot;,&quot;empty&quot;],&quot;default&quot;:&quot;seeded&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;cashbackPercent&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:5,&quot;min&quot;:1,&quot;max&quot;:15,&quot;unit&quot;:&quot;%&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Bonus tizimi&quot;},&quot;showReorder&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Bosh sahifa&quot;},&quot;pointsAtCheckout&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Bonus tizimi&quot;}}">
+class Component extends DCLogic {
+  P = {
+    p1: { cat: "lavash", name: "Klassik lavash", price: 32000, kcal: 520, desc: "Tovuq filesi, pomidor, bodring, karam va uy oq sousi — issiq lavash nonida.", field: "var(--pace-cream)" },
+    p2: { cat: "lavash", name: "Pishloqli lavash", price: 38000, kcal: 610, desc: "Mozzarella va suluguni, tovuq filesi, achchiq sous.", field: "var(--pace-citrus-wash)" },
+    p3: { cat: "lavash", name: "Go'shtli lavash", price: 42000, kcal: 680, desc: "Mol go'shti, karam, pomidor va barbekyu sousi.", field: "var(--pace-coffee-wash)" },
+    p4: { cat: "lavash", name: "Sabzavotli lavash", price: 28000, kcal: 390, desc: "Go'shtsiz: karam, pomidor, bodring, oq sous.", field: "var(--pace-matcha)" },
+    p5: { cat: "shaurma", name: "Tovuqli shaurma", price: 30000, kcal: 540, desc: "Tovuq filesi, fri kartoshka va oq sous lavash nonida.", field: "var(--pace-berry)" },
+    p6: { cat: "shaurma", name: "Go'shtli shaurma", price: 34000, kcal: 620, desc: "Mol go'shti, fri kartoshka, achchiq sous.", field: "var(--pace-coffee-card-wash)" },
+    p7: { cat: "set", name: "Set «Ikkiga»", price: 78000, kcal: 1240, desc: "Ikki klassik lavash, ikki ichimlik va katta fri kartoshka.", field: "var(--pace-citrus-deep)" },
+    p8: { cat: "drink", name: "Ayron 0.5", price: 10000, kcal: 120, desc: "Sovuq ayron, 0.5 litr.", field: "var(--pace-espresso)" }
+  };
+
+  PAIRS = {
+    onest: "--fd:'Onest',sans-serif;--fs:'Onest',-apple-system,sans-serif;",
+    literata: "--fd:'Literata',Georgia,serif;--fs:'Golos Text',-apple-system,sans-serif;",
+    clash: "--fd:'Clash Display',serif;--fs:'Instrument Sans',-apple-system,sans-serif;"
+  };
+
+  DARK = "--pace-ground:#151312;--pace-ground-deep:#1D1A18;--pace-white:#1D1A18;--pace-ink:#F4F0EB;--surface-card:#1D1A18;--surface-app:#151312;--surface-sheet:#1D1A18;--text-primary:#F7F4F1;--text-secondary:#AAA39A;--text-tertiary:#8A837B;--el-tabbar:rgba(21,19,18,.94);--el-fade:rgba(21,19,18,0);--el-on-ink:#1D1A18;--el-pill-chip:rgba(29,26,24,0.10);--pace-ink-04:rgba(255,255,255,0.04);--pace-ink-05:rgba(255,255,255,0.05);--pace-ink-06:rgba(255,255,255,0.06);--pace-ink-07:rgba(255,255,255,0.08);--pace-ink-08:rgba(255,255,255,0.08);--pace-ink-10:rgba(255,255,255,0.10);--pace-ink-12:rgba(255,255,255,0.12);--pace-ink-14:rgba(255,255,255,0.14);--pace-ink-15:rgba(255,255,255,0.16);--pace-ink-18:rgba(255,255,255,0.18);--pace-ink-20:rgba(255,255,255,0.20);--pace-ink-25:rgba(255,255,255,0.25);--pace-ink-38:rgba(255,255,255,0.38);--pace-ink-40:rgba(255,255,255,0.42);--pace-ink-45:rgba(255,255,255,0.45);--pace-ink-50:rgba(255,255,255,0.52);--pace-ink-55:rgba(255,255,255,0.58);--pace-ink-60:rgba(255,255,255,0.62);--pace-ink-65:rgba(255,255,255,0.66);--pace-ink-70:rgba(255,255,255,0.72);--pace-ink-75:rgba(255,255,255,0.78);--pace-ink-88:rgba(255,255,255,0.88);--pace-white-75:rgba(255,255,255,0.07);--border-hairline:rgba(255,255,255,0.09);--border-control:#35302C;--border-control-strong:#453E38;--pace-action-soft:rgba(229,57,53,0.18);--pace-action-soft-alt:rgba(229,57,53,0.14);--pace-action-muted:rgba(229,57,53,0.28);--el-gold-wash:rgba(245,200,76,0.13);--el-gold-ink:#F0C763;--text-link:#FF8A80;--accent-surface:rgba(229,57,53,0.18);--pace-success-wash:rgba(126,208,154,0.13);--pace-success:#7ED09A;--pace-warning-wash:rgba(245,200,76,0.11);--pace-warning:#E8C572;--pace-danger-wash:rgba(255,138,128,0.13);--pace-danger:#FF8A80;--pace-danger-deep:#FF8A80;--shadow-card:0 1px 2px rgba(0,0,0,0.45);--shadow-floating:0 2px 8px rgba(0,0,0,0.5);--shadow-sheet:0 -8px 30px rgba(0,0,0,0.5);--shadow-segment:0 1px 3px rgba(0,0,0,0.45)";
+
+  ALIAS = { emptyMenu: "menu", emptyNotifs: "notifs", check422: "checkout" };
+
+  state = {
+    dark: this.props.theme === "dark",
+    screen: this.ALIAS[this.props.screen] || this.props.screen || "home",
+    v422: this.props.screen === "check422",
+    authStep: 1,
+    cat: this.props.screen === "emptyMenu" ? "sous" : "all",
+    itemId: "p1",
+    isize: "m", sauce: "oq", ex1: false, ex2: false, ex3: false, iqty: 1, fav: false,
+    cart: this.props.preset === "empty" ? [] : [
+      { k: "k1", tile: "p1", name: "Klassik lavash", mods: "Katta · Achchiq sous · Qo'shimcha pishloq", unit: 46000, qty: 1, field: "var(--pace-cream)" },
+      { k: "k2", tile: "p5", name: "Tovuqli shaurma", mods: "O'rta · Oq sous", unit: 30000, qty: 2, field: "var(--pace-berry)" },
+      { k: "k3", tile: "p8", name: "Ayron 0.5", mods: "", unit: 10000, qty: 1, field: "var(--pace-espresso)" }
+    ],
+    otype: "delivery", branch: "b1", sheet: false, pay: "payme",
+    usePoints: true, notifFilter: "all", notifOn: true,
+    notifs: this.props.screen === "emptyNotifs" ? [] : [
+      { id: "n1", kind: "order", title: "Buyurtmangiz yo'lda", body: "Kuryer 10–15 daqiqada yetib boradi.", meta: "Buyurtma #1042 · 12:40", read: false },
+      { id: "n2", kind: "promo", title: "Sizga promokod berildi", body: "Lavashga 20% chegirma. 8-sentabrgacha amal qiladi.", code: "PRIVATE20-ABC", meta: "Kecha · 18:02", read: false },
+      { id: "n3", kind: "order", title: "Buyurtma yetkazildi", body: "5 800 ball hisobingizga qo'shildi.", meta: "Buyurtma #1039 · 28-avgust", read: true },
+      { id: "n4", kind: "promo", title: "Maxsus taklif", body: "Hafta oxirigacha lavashga 20% chegirma.", meta: "27-avgust", read: true }
+    ]
+  };
+
+  BRANCHES = [
+    { id: "b1", name: "Chilonzor 12", meta: "0.8 km · 09:00–23:00" },
+    { id: "b2", name: "Yunusobod, Amir Temur 108", meta: "2.4 km · 10:00–23:00" },
+    { id: "b3", name: "Sergeli, Yangi Sergeli 4", meta: "5.1 km · 09:00–22:00" }
+  ];
+
+  fmt(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, " "); }
+  go(s) { this.setState({ screen: s }); }
+
+  addTile(k) {
+    const p = this.P[k];
+    this.setState((s) => {
+      const cart = s.cart.slice();
+      const i = cart.findIndex((c) => c.tile === k && !c.mods);
+      if (i >= 0) cart[i] = Object.assign({}, cart[i], { qty: cart[i].qty + 1 });
+      else cart.push({ k: "k" + Date.now(), tile: k, name: p.name, mods: "", unit: p.price, qty: 1, field: p.field });
+      return { cart: cart };
+    });
+  }
+
+  setTileQty(k, v) {
+    this.setState((s) => ({ cart: s.cart.map((c) => (c.tile === k ? Object.assign({}, c, { qty: v }) : c)).filter((c) => c.qty > 0) }));
+  }
+
+  setRowQty(key, v) {
+    this.setState((s) => ({ cart: s.cart.map((c) => (c.k === key ? Object.assign({}, c, { qty: v }) : c)).filter((c) => c.qty > 0) }));
+  }
+
+  renderVals() {
+    const s = this.state, P = this.P;
+    const cash = Number(this.props.cashbackPercent != null ? this.props.cashbackPercent : 5);
+    const showReorder = this.props.showReorder !== false;
+    const pointsAtCheckout = this.props.pointsAtCheckout !== false;
+    const balance = 41250, spendable = 38250;
+
+    const sub = s.cart.reduce((a, c) => a + c.unit * c.qty, 0);
+    const fee = s.otype === "delivery" ? 12000 : 0;
+    const maxPts = Math.min(spendable, Math.floor((sub + fee) / 2));
+    const pointsOn = pointsAtCheckout && s.usePoints && maxPts > 0;
+    const pts = pointsOn ? maxPts : 0;
+    const total = sub + fee - pts;
+    const earn = Math.round((sub * cash) / 100 / 50) * 50;
+    const count = s.cart.reduce((a, c) => a + c.qty, 0);
+
+    const it = P[s.itemId] || P.p1;
+    const iExtra = (s.isize === "l" ? 8000 : 0) + (s.ex1 ? 6000 : 0) + (s.ex2 ? 12000 : 0) + (s.ex3 ? 15000 : 0);
+    const iTotal = (it.price + iExtra) * s.iqty;
+
+    const SAUCES = [["oq", "Oq sous"], ["achchiq", "Achchiq"], ["bbq", "Barbekyu"], ["yoq", "Soussiz"]];
+    const CATS = [["all", "Barchasi"], ["sous", "Souslar"], ["lavash", "Lavash"], ["shaurma", "Shaurma"], ["set", "Setlar"], ["drink", "Ichimliklar"]];
+    const FILTERS = [["all", "Barchasi"], ["order", "Buyurtmalar"], ["promo", "Takliflar"]];
+
+    const tiles = {};
+    Object.keys(P).forEach((k) => {
+      const row = s.cart.find((c) => c.tile === k && !c.mods);
+      tiles[k] = {
+        show: s.cat === "all" || P[k].cat === s.cat,
+        has: !!row, none: !row, qty: row ? row.qty : 0,
+        add: () => this.addTile(k),
+        set: (v) => this.setTileQty(k, v),
+        open: () => this.setState({ screen: "item", itemId: k, isize: "m", sauce: "oq", ex1: false, ex2: false, ex3: false, iqty: 1 })
+      };
+    });
+
+    const unread = s.notifs.filter((n) => !n.read).length;
+    const notifList = s.notifs
+      .filter((n) => s.notifFilter === "all" || n.kind === s.notifFilter)
+      .map((n) => ({
+        title: n.title, body: n.body, meta: n.meta, code: n.code || "",
+        unread: !n.read, hasCode: !!n.code,
+        isOrder: n.kind === "order", isPromo: n.kind === "promo",
+        titleFont: n.read ? "var(--type-item-title)" : "var(--type-section-title)",
+        bg: n.read ? "var(--surface-card)" : "var(--pace-white)",
+        iconBg: n.kind === "promo" ? "var(--el-gold-wash)" : "var(--pace-action-soft)",
+        iconInk: n.kind === "promo" ? "var(--el-gold-ink)" : "var(--accent)",
+        use: () => this.setState({ screen: "cart", notifs: s.notifs.map((x) => (x.id === n.id ? Object.assign({}, x, { read: true }) : x)) })
+      }));
+
+    const branch = this.BRANCHES.find((b) => b.id === s.branch) || this.BRANCHES[0];
+    const on = "var(--pace-ink)", off = "var(--pace-ink-38)";
+
+    return {
+      themeVars: s.dark ? this.DARK : "",
+      fontVars: this.PAIRS[this.props.fontPair] || "",
+      isLight: !s.dark, isDark: s.dark,
+      toggleTheme: () => this.setState((p) => ({ dark: !p.dark })),
+
+      isAuth: s.screen === "auth", isHome: s.screen === "home", isMenu: s.screen === "menu",
+      isItem: s.screen === "item", isCart: s.screen === "cart", isCheckout: s.screen === "checkout",
+      isPaid: s.screen === "paid", isBonus: s.screen === "bonus", isNotifs: s.screen === "notifs",
+      isProfile: s.screen === "profile",
+      isErr500: s.screen === "err500", isErrNet: s.screen === "errNet",
+      isErr404: s.screen === "err404", isErr401: s.screen === "err401",
+      isErr429: s.screen === "err429",
+      menuEmpty: Object.keys(P).every((k) => !tiles[k].show),
+      menuHas: Object.keys(P).some((k) => tiles[k].show),
+      notifsEmpty: s.notifs.length === 0, notifsHas: s.notifs.length > 0,
+      filteredEmpty: s.notifs.length > 0 && notifList.length === 0,
+      clearCat: () => this.setState({ cat: "all" }),
+      emptyCatLine: "«" + ((CATS.find((c) => c[0] === s.cat) || [, ""])[1]) + "» bo'limida hozircha mahsulot yo'q. Boshqa bo'limni ko'rib chiqing.",
+      v422: s.v422,
+      auth1: s.screen === "auth" && s.authStep === 1,
+      auth2: s.screen === "auth" && s.authStep === 2,
+      auth3: s.screen === "auth" && s.authStep === 3,
+      authNext: () => this.setState((p) => ({ authStep: p.authStep + 1 })),
+
+      showTabs: ["home", "menu", "notifs", "profile"].indexOf(s.screen) >= 0,
+      showCartPill: count > 0 && (s.screen === "home" || s.screen === "menu"),
+      cHome: s.screen === "home" ? on : off, cMenu: s.screen === "menu" ? on : off,
+      cNotifs: s.screen === "notifs" ? on : off, cProfile: s.screen === "profile" ? on : off,
+
+      goHome: () => this.go("home"), goMenu: () => this.go("menu"), goCart: () => this.go("cart"),
+      goCheckout: () => this.go("checkout"), goBonus: () => this.go("bonus"),
+      goNotifs: () => this.go("notifs"), goProfile: () => this.go("profile"),
+      goAuth: () => this.setState({ screen: "auth", authStep: 1 }),
+      pay: () => this.go("paid"),
+      reorder: () => this.setState({ screen: "cart", cart: [
+        { k: "r1", tile: "p1", name: "Klassik lavash", mods: "O'rta · Oq sous", unit: 32000, qty: 1, field: "var(--pace-cream)" },
+        { k: "r2", tile: "p8", name: "Ayron 0.5", mods: "", unit: 10000, qty: 1, field: "var(--pace-espresso)" }
+      ] }),
+
+      otype: s.otype,
+      otypeLabel: s.otype === "delivery" ? "Yetkazib berish" : "Olib ketish",
+      ctxLine: s.otype === "delivery" ? "Chilonzor 12 · 25–35 daq" : branch.name + " · 15 daq",
+      typeOptions: [{ id: "delivery", label: "Yetkazib berish" }, { id: "pickup", label: "Olib ketish" }],
+      setOtype: (v) => this.setState({ otype: v }),
+      addrHeading: s.otype === "delivery" ? "YETKAZIB BERISH MANZILI" : "OLIB KETISH FILIALI",
+      addrLine1: s.otype === "delivery" ? "Chilonzor 12, uy 25A" : branch.name,
+      addrLine2: s.otype === "delivery" ? "3-qavat, 14-xona · 25–35 daqiqa" : branch.meta,
+      branchHeading: s.otype === "delivery" ? "Yetkazib beruvchi filial" : "Filialni tanlang",
+      branches: this.BRANCHES.map((b) => ({ name: b.name, meta: b.meta, on: b.id === s.branch, off: b.id !== s.branch, pick: () => this.setState({ branch: b.id }) })),
+      sheet: s.sheet, openSheet: () => this.setState({ sheet: true }), closeSheet: () => this.setState({ sheet: false }),
+
+      cats: CATS.map(([id, name]) => ({ name: name, on: s.cat === id, pick: () => this.setState({ cat: id }) })),
+      catLavash: () => this.setState({ screen: "menu", cat: "lavash" }),
+      catShaurma: () => this.setState({ screen: "menu", cat: "shaurma" }),
+      catSet: () => this.setState({ screen: "menu", cat: "set" }),
+      catDrink: () => this.setState({ screen: "menu", cat: "drink" }),
+      tiles: tiles,
+
+      itemName: it.name, itemDesc: it.desc, itemKcal: this.fmt(it.kcal),
+      isize: s.isize, setSize: (v) => this.setState({ isize: v }),
+      sizeOptions: [{ id: "m", label: "O'rta", sub: "asosiy" }, { id: "l", label: "Katta", sub: "+8 000" }],
+      sauces: SAUCES.map(([id, name]) => ({ name: name, on: s.sauce === id, pick: () => this.setState({ sauce: id }) })),
+      ex1: s.ex1, ex1off: !s.ex1, ex2: s.ex2, ex2off: !s.ex2, ex3: s.ex3, ex3off: !s.ex3,
+      toggleEx1: () => this.setState((p) => ({ ex1: !p.ex1 })),
+      toggleEx2: () => this.setState((p) => ({ ex2: !p.ex2 })),
+      toggleEx3: () => this.setState((p) => ({ ex3: !p.ex3 })),
+      iqty: s.iqty, setIqty: (v) => this.setState({ iqty: v }),
+      fav: s.fav, toggleFav: () => this.setState((p) => ({ fav: !p.fav })),
+      favColor: s.fav ? "var(--pace-danger)" : "var(--pace-ink)",
+      favFill: s.fav ? "var(--pace-danger)" : "transparent",
+      addLabel: "Savatga · " + this.fmt(iTotal) + " so'm",
+      itemEarnLine: "+" + this.fmt(Math.round((iTotal * cash) / 100 / 50) * 50) + " ball qo'shiladi",
+      addItem: () => {
+        const mods = [s.isize === "l" ? "Katta" : "O'rta", (SAUCES.find((x) => x[0] === s.sauce) || [])[1], s.ex1 ? "Qo'shimcha pishloq" : null, s.ex2 ? "Qo'shimcha go'sht" : null, s.ex3 ? "Fri qo'shildi" : null].filter(Boolean).join(" · ");
+        this.setState((p) => ({ screen: "cart", cart: p.cart.concat([{ k: "k" + Date.now(), tile: s.itemId, name: it.name, mods: mods, unit: it.price + iExtra, qty: s.iqty, field: it.field }]) }));
+      },
+
+      cartEmpty: count === 0, cartHas: count > 0, cartCount: count,
+      cartCountLabel: count + " ta mahsulot",
+      cartRows: s.cart.map((c) => ({ name: c.name, mods: c.mods, qty: c.qty, field: c.field, lineFmt: this.fmt(c.unit * c.qty) + " so'm", set: (v) => this.setRowQty(c.k, v) })),
+      subFmt: this.fmt(sub) + " so'm",
+      feeLabel: s.otype === "delivery" ? "Yetkazib berish" : "Olib ketish",
+      feeFmt: fee === 0 ? "Bepul" : this.fmt(fee) + " so'm",
+      grossFmt: this.fmt(sub + fee) + " so'm",
+      checkoutLabel: "Buyurtma berish · " + this.fmt(sub + fee) + " so'm",
+      payLabel: "To'lash · " + this.fmt(total) + " so'm",
+      totalFmt: this.fmt(total) + " so'm",
+      ptsFmt: "−" + this.fmt(pts) + " so'm",
+      pointsOn: pointsOn, pointsAtCheckout: pointsAtCheckout,
+      usePoints: s.usePoints, noPoints: !s.usePoints,
+      togglePoints: () => this.setState((p) => ({ usePoints: !p.usePoints })),
+      pointsHint: maxPts > 0 ? this.fmt(maxPts) + " ball ishlatiladi · 38 250 dan" : "Ballar bu buyurtmada mavjud emas",
+      earnLine: "Bu buyurtmadan +" + this.fmt(earn) + " ball",
+      balanceFmt: this.fmt(balance),
+      cashLabel: cash + "% ball",
+      showReorder: showReorder,
+
+      history: [
+        { t: "Ballar olindi", d: "28-avgust · Buyurtma #1039", v: "+5 800", color: "var(--pace-success)" },
+        { t: "Ballar ishlatildi", d: "21-avgust · Buyurtma #1031", v: "−12 000", color: "var(--text-primary)" },
+        { t: "Ballar olindi", d: "21-avgust · Buyurtma #1031", v: "+4 100", color: "var(--pace-success)" },
+        { t: "Ballar muddati tugadi", d: "1-avgust", v: "−1 500", color: "var(--text-tertiary)" }
+      ],
+
+      filters: FILTERS.map(([id, name]) => ({ name: name, on: s.notifFilter === id, pick: () => this.setState({ notifFilter: id }) })),
+      notifList: notifList, unread: unread, hasUnread: unread > 0,
+      markAll: () => this.setState({ notifs: s.notifs.map((n) => Object.assign({}, n, { read: true })) }),
+      notifOn: s.notifOn, notifOff: !s.notifOn,
+      toggleNotifOn: () => this.setState((p) => ({ notifOn: !p.notifOn })),
+
+      payIsPayme: s.pay === "payme", payNotPayme: s.pay !== "payme",
+      payIsClick: s.pay === "click", payNotClick: s.pay !== "click",
+      payPayme: () => this.setState({ pay: "payme" }), payClick: () => this.setState({ pay: "click" })
+    };
+  }
+}
+</script>
+</body>
+</html>

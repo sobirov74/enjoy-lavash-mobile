@@ -97,7 +97,9 @@ class _OrderProductDetailLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = L.of(context);
-    final amount = item.amount > 0 ? _formatOrderAmount(item.amount) : null;
+    final amount = item.amount > 0
+        ? _formatOrderAmount(context, item.amount)
+        : null;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,

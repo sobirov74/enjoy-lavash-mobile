@@ -183,7 +183,7 @@ class LRu extends L {
   String get perOrder => 'За каждый заказ';
 
   @override
-  String get perOrderValue => '5% баллами';
+  String get perOrderValue => 'Начисление зависит от активных акций';
 
   @override
   String get onePointEquals => '1 балл равен';
@@ -362,6 +362,10 @@ class LRu extends L {
   String get signInToCheckout => 'Войдите, чтобы оформить заказ из корзины.';
 
   @override
+  String get authWelcomeSubtitle =>
+      'Заказывайте любимые блюда и получайте баллы по активным акциям.';
+
+  @override
   String get phoneNumber => 'Номер телефона';
 
   @override
@@ -473,6 +477,14 @@ class LRu extends L {
 
   @override
   String get createOrderAction => 'Создать заказ';
+
+  @override
+  String createOrderFor(String price) {
+    return 'Оформить · $price';
+  }
+
+  @override
+  String get change => 'Изменить';
 
   @override
   String get payment => 'Оплата';
@@ -621,6 +633,15 @@ class LRu extends L {
 
   @override
   String get notificationInboxSubtitle => 'Новости и предложения в одном месте';
+
+  @override
+  String get filterOrders => 'Заказы';
+
+  @override
+  String get filterPromotions => 'Акции';
+
+  @override
+  String get noNotificationsForFilter => 'По этому фильтру уведомлений нет.';
 
   @override
   String get markAllRead => 'Прочитать все';
@@ -816,6 +837,99 @@ class LRu extends L {
       'Получайте статусы заказов и специальные предложения';
 
   @override
+  String get profilePointsLabel => 'МОИ БАЛЛЫ';
+
+  @override
+  String get viewPoints => 'Смотреть';
+
+  @override
+  String get profileOrdersSection => 'ЗАКАЗЫ';
+
+  @override
+  String profileOrderCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count заказа',
+      many: '$count заказов',
+      few: '$count заказа',
+      one: '$count заказ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get myAddresses => 'Мои адреса';
+
+  @override
+  String profileAddressCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count адреса',
+      many: '$count адресов',
+      few: '$count адреса',
+      one: '$count адрес',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get editProfile => 'Редактировать профиль';
+
+  @override
+  String get profileName => 'Имя';
+
+  @override
+  String get profileUpdated => 'Профиль обновлён';
+
+  @override
+  String get profileUpdateFailed => 'Не удалось обновить профиль';
+
+  @override
+  String get savedAddresses => 'Сохранённые адреса';
+
+  @override
+  String get noSavedAddresses => 'Нет сохранённых адресов';
+
+  @override
+  String get noSavedAddressesSubtitle =>
+      'Добавьте адрес, чтобы оформлять заказы быстрее.';
+
+  @override
+  String get addAddress => 'Добавить адрес';
+
+  @override
+  String get addressLabel => 'Название адреса';
+
+  @override
+  String get addressLabelHint => 'Например, Дом';
+
+  @override
+  String get setAsDefault => 'Сделать основным';
+
+  @override
+  String get defaultAddress => 'Основной';
+
+  @override
+  String get addressSaved => 'Адрес сохранён';
+
+  @override
+  String get addressSaveFailed => 'Не удалось сохранить адрес';
+
+  @override
+  String get addressDeleted => 'Адрес удалён';
+
+  @override
+  String get addressDeleteFailed => 'Не удалось удалить адрес';
+
+  @override
+  String get deleteAddress => 'Удалить адрес';
+
+  @override
+  String get profileNotificationsSubtitle => 'Статусы заказов и предложения';
+
+  @override
   String get orderStatusCooking => 'Готовится';
 
   @override
@@ -883,6 +997,22 @@ class LRu extends L {
 
   @override
   String get additionalInfo => 'Дополнительно';
+
+  @override
+  String get requiredChoice => 'Обязательно';
+
+  @override
+  String get optionalChoice => 'По желанию';
+
+  @override
+  String chooseAtLeastOptions(int count) {
+    return 'Выберите минимум: $count';
+  }
+
+  @override
+  String addToCartFor(String price) {
+    return 'Добавить · $price';
+  }
 
   @override
   String get kitchenOrder => 'Заказ кухни';
@@ -1031,4 +1161,131 @@ class LRu extends L {
 
   @override
   String get transactionBalanceUpdate => 'Изменение баланса';
+
+  @override
+  String get tabHome => 'Главная';
+
+  @override
+  String homeGreeting(String name) {
+    return 'Здравствуйте, $name.';
+  }
+
+  @override
+  String get loyaltyMoneyHint => '1 балл = 1 сум · до 50%';
+
+  @override
+  String get repeatOrderTitle => 'Повторим заказ?';
+
+  @override
+  String repeatOrderAction(String amount) {
+    return 'Повторить · $amount';
+  }
+
+  @override
+  String get orderContextDelivery => 'Доставка';
+
+  @override
+  String get orderContextPickup => 'Самовывоз';
+
+  @override
+  String get orderContextChoose => 'Выберите адрес или филиал';
+
+  @override
+  String get markAllReadShort => 'Прочитать все';
+
+  @override
+  String get cartOpen => 'Открыть корзину';
+
+  @override
+  String get changePhoneNumber => 'Изменить номер';
+
+  @override
+  String caloriesLabel(int value) {
+    return '$value ккал';
+  }
+
+  @override
+  String weightGramsLabel(int value) {
+    return '$value г';
+  }
+
+  @override
+  String cookingMinutesLabel(int value) {
+    return '$value мин';
+  }
+
+  @override
+  String loyaltyBalancePoints(String value) {
+    return '$value баллов';
+  }
+
+  @override
+  String get useInOrder => 'Использовать в заказе';
+
+  @override
+  String get promotionGift => 'Подарок';
+
+  @override
+  String get backToHome => 'На главную';
+
+  @override
+  String get orderingAvailability => 'Доступность заказов';
+
+  @override
+  String get orderingChecking => 'Проверяем часы филиала…';
+
+  @override
+  String get orderingOpen => 'Сейчас открыто';
+
+  @override
+  String get orderingClosed => 'Сейчас недоступно';
+
+  @override
+  String get pickupAvailability => 'Самовывоз';
+
+  @override
+  String get deliveryAvailability => 'Доставка';
+
+  @override
+  String orderingNextOpening(String value) {
+    return 'Следующее открытие: $value';
+  }
+
+  @override
+  String get orderingStatusUnavailable =>
+      'Не удалось проверить часы. Доступность будет проверена при оформлении.';
+
+  @override
+  String get orderingClosedAction =>
+      'Выберите другой филиал или попробуйте позже.';
+
+  @override
+  String get promoCodeNotFound => 'Промокод не найден';
+
+  @override
+  String get promoCodeInactive => 'Промокод неактивен';
+
+  @override
+  String get promoCodeNotStarted => 'Промокод ещё не действует';
+
+  @override
+  String get promoCodeExpired => 'Срок действия промокода истёк';
+
+  @override
+  String get promoGlobalLimitReached => 'Лимит использования акции исчерпан';
+
+  @override
+  String get promoClientLimitReached => 'Вы уже использовали этот промокод';
+
+  @override
+  String get promoClientRequired => 'Войдите, чтобы использовать промокод';
+
+  @override
+  String get promoConditionsNotMet => 'Условия промокода не выполнены';
+
+  @override
+  String get promoConfigurationError => 'Сейчас промокод применить нельзя';
+
+  @override
+  String get promoCodeCouldNotBeApplied => 'Не удалось применить промокод';
 }

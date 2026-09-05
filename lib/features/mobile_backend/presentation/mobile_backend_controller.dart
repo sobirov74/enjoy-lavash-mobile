@@ -14,12 +14,15 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/client_n
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/client_profile_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/loyalty_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/order_model.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/ordering_status_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/promotion_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/repositories/mobile_backend_repository.dart';
 import 'package:enjoy_lavash_mobile/features/models/menu_product.dart';
+import 'package:enjoy_lavash_mobile/features/models/menu_category.dart';
 import 'package:flutter/material.dart';
 
 part 'mobile_backend_controller/mobile_backend_auth_controller.dart';
+part 'mobile_backend_controller/mobile_backend_address_controller.dart';
 part 'mobile_backend_controller/mobile_backend_bootstrap_controller.dart';
 part 'mobile_backend_controller/mobile_backend_catalog_adapter.dart';
 part 'mobile_backend_controller/mobile_backend_notifications_controller.dart';
@@ -44,6 +47,7 @@ class MobileBackendController extends ChangeNotifier {
   MobileBackendStatus _status = MobileBackendStatus.initial;
   Failure? _failure;
   List<String> _menuCategories = const <String>[];
+  List<MenuCategory> _menuCategoryItems = const <MenuCategory>[];
   List<MenuProduct> _menuProducts = const <MenuProduct>[];
   List<BranchModel> _branches = const <BranchModel>[];
   List<PromotionModel> _promotions = const <PromotionModel>[];
@@ -53,6 +57,8 @@ class MobileBackendController extends ChangeNotifier {
   bool _paymentMethodsLoading = false;
   int _paymentMethodsRequestVersion = 0;
   List<ClientAddress> _addresses = const <ClientAddress>[];
+  bool _addressesUpdating = false;
+  Failure? _addressesFailure;
   List<CustomerOrderModel> _orders = const <CustomerOrderModel>[];
   List<ClientNotificationItemModel> _notifications =
       const <ClientNotificationItemModel>[];
@@ -88,6 +94,7 @@ class MobileBackendController extends ChangeNotifier {
   MobileBackendStatus get status => _status;
   Failure? get failure => _failure;
   List<String> get menuCategories => _menuCategories;
+  List<MenuCategory> get menuCategoryItems => _menuCategoryItems;
   List<MenuProduct> get menuProducts => _menuProducts;
   List<BranchModel> get branches => _branches;
   List<PromotionModel> get promotions => _promotions;
@@ -96,6 +103,8 @@ class MobileBackendController extends ChangeNotifier {
   Failure? get paymentMethodsFailure => _paymentMethodsFailure;
   bool get paymentMethodsLoading => _paymentMethodsLoading;
   List<ClientAddress> get addresses => _addresses;
+  bool get addressesUpdating => _addressesUpdating;
+  Failure? get addressesFailure => _addressesFailure;
   List<CustomerOrderModel> get orders => _orders;
   List<ClientNotificationItemModel> get notifications => _notifications;
   List<AssignedPromotionModel> get assignedPromotions => _assignedPromotions;
@@ -204,6 +213,25 @@ class MobileBackendController extends ChangeNotifier {
     return _refreshCustomerData();
   }
 
+  Future<Result<List<ClientAddress>>> refreshAddresses() {
+    return _refreshAddresses();
+  }
+
+  Future<Result<ClientAddress>> createAddress(ClientAddressInput request) {
+    return _createAddress(request);
+  }
+
+  Future<Result<ClientAddress>> updateAddress({
+    required String id,
+    required ClientAddressInput request,
+  }) {
+    return _updateAddress(id: id, request: request);
+  }
+
+  Future<Result<void>> deleteAddress({required String id}) {
+    return _deleteAddress(id: id);
+  }
+
   Future<Result<ClientNotificationInboxModel>> refreshNotifications({
     int limit = 50,
     int offset = 0,
@@ -252,6 +280,12 @@ class MobileBackendController extends ChangeNotifier {
 
   Future<Result<CartPreviewModel>> previewCart(CartPreviewRequest request) {
     return _previewCart(request);
+  }
+
+  Future<Result<OrderingStatusModel>> getBranchOrderingStatus({
+    required String branchId,
+  }) {
+    return _repository.getBranchOrderingStatus(branchId: branchId);
   }
 
   Future<Result<List<PaymentMethodModel>>> refreshPaymentMethods({

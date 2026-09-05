@@ -1,0 +1,16 @@
+/* Shadows — soft, diffuse, low-opacity. Translated from the RN elevation set.
+   The CTA and dark-pill shadows are colored glows, not neutral drops. */
+:root {
+  /* resting card lift */
+  --shadow-card: 0 1px 2px rgba(29,27,44,0.06);
+  /* floating controls (close buttons, back buttons over imagery) */
+  --shadow-floating: 0 1px 3px rgba(29,27,44,0.12);
+  /* indigo CTA glow — the signature "add / pay" button halo */
+  --shadow-cta: 0 10px 24px rgba(61,63,224,0.50);
+  /* dark pill glow — active-order pill, toast */
+  --shadow-pill-dark: 0 10px 26px rgba(29,27,44,0.50);
+  /* bottom sheet — upward-cast soft shadow */
+  --shadow-sheet: 0 -8px 30px rgba(29,27,44,0.08);
+  /* selected segment pill */
+  --shadow-segment: 0 1px 3px rgba(29,27,44,0.12);
+}

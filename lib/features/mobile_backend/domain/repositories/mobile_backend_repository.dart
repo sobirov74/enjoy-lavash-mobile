@@ -11,6 +11,7 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/client_p
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/file_upload_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/loyalty_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/order_model.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/ordering_status_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/promotion_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/entities/mobile_bootstrap.dart';
 
@@ -35,6 +36,10 @@ abstract class MobileBackendRepository {
   });
 
   Future<Result<List<BranchModel>>> getBranches({String language = 'ru'});
+
+  Future<Result<OrderingStatusModel>> getBranchOrderingStatus({
+    required String branchId,
+  });
 
   Future<Result<CatalogModel>> getCatalog({
     String language = 'ru',

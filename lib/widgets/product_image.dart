@@ -22,8 +22,12 @@ class ProductImage extends StatelessWidget {
   Widget build(BuildContext context) {
     final imageUrl = product.imageUrl?.trim();
     final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
-    final cacheWidth = (width * devicePixelRatio).round();
-    final cacheHeight = (height * devicePixelRatio).round();
+    final cacheWidth = width.isFinite
+        ? (width * devicePixelRatio).round()
+        : null;
+    final cacheHeight = height.isFinite
+        ? (height * devicePixelRatio).round()
+        : null;
     final placeholder = Center(
       child: TypographyText(
         product.emoji,

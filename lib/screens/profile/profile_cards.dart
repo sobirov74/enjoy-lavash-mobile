@@ -1,3 +1,5 @@
+// ignore_for_file: unused_element, unused_element_parameter
+
 part of 'package:enjoy_lavash_mobile/screens/profile.dart';
 
 // ---------------------------------------------------------------------------
@@ -20,15 +22,9 @@ class _SurfaceCard extends StatelessWidget {
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1D1A18) : Colors.white,
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
-          ),
-        ],
+        color: AppDesignTokens.surface(context),
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+        boxShadow: AppDesignTokens.cardShadow(context),
       ),
       child: child,
     );
@@ -58,9 +54,13 @@ class _SectionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          TypographyText(
+          Text(
             title,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+            style: AppTextStyles.ui(
+              size: 17,
+              weight: FontWeight.w600,
+              color: AppDesignTokens.primaryText(context),
+            ),
           ),
           SizedBox(height: titleBottomSpacing),
           child,

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -53,6 +54,38 @@ void main() {
     },
   );
 
+  testWidgets('OTP step can return to phone entry to correct the number', (
+    tester,
+  ) async {
+    await _pumpAuthorization(
+      tester,
+      _Adapter((options) async {
+        expect(options.uri.path, ApiEndpoints.requestOtp);
+        return _jsonResponse({
+          'phoneNumber': '+998',
+          'codeExpiresAt': DateTime.now()
+              .toUtc()
+              .add(const Duration(minutes: 2))
+              .toIso8601String(),
+        });
+      }),
+    );
+
+    await tester.tap(find.text('Send code'));
+    await _pumpUntilFound(
+      tester,
+      find.byKey(const ValueKey<String>('change-phone-button')),
+    );
+
+    expect(find.byType(Pinput), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey<String>('change-phone-button')));
+    await tester.pump();
+
+    expect(find.byType(Pinput), findsNothing);
+    expect(find.byType(TextField), findsOneWidget);
+    expect(find.text('Send code'), findsOneWidget);
+  });
+
   testWidgets('OTP 429 applies the Retry-After cooldown', (tester) async {
     await _pumpAuthorization(
       tester,
@@ -104,6 +137,48 @@ void main() {
       tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
       isNotNull,
     );
+  });
+
+  testWidgets('incoming SMS code fills Pinput and is submitted', (
+    tester,
+  ) async {
+    final smsCode = Completer<String?>();
+    var smsListenerStarted = false;
+    String? submittedCode;
+    await _pumpAuthorization(
+      tester,
+      _Adapter((options) async {
+        switch (options.uri.path) {
+          case ApiEndpoints.requestOtp:
+            expect(smsListenerStarted, isTrue);
+            return _jsonResponse({
+              'phoneNumber': '+998',
+              'codeExpiresAt': DateTime.now()
+                  .toUtc()
+                  .add(const Duration(minutes: 2))
+                  .toIso8601String(),
+            });
+          case ApiEndpoints.verifyOtp:
+            submittedCode = (options.data as Map)['code'] as String?;
+            return _jsonResponse(const <String, Object?>{}, statusCode: 400);
+          default:
+            throw StateError('Unexpected request: ${options.path}');
+        }
+      }),
+      smsCodeReader: () {
+        smsListenerStarted = true;
+        return smsCode.future;
+      },
+    );
+
+    await tester.tap(find.text('Send code'));
+    await _pumpUntilFound(tester, find.byType(Pinput));
+    smsCode.complete('2468');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
+
+    expect(tester.widget<Pinput>(find.byType(Pinput)).controller?.text, '2468');
+    expect(submittedCode, '2468');
   });
 
   testWidgets('new client sees the birth date step after the name step', (
@@ -343,8 +418,9 @@ Future<void> _pumpUntilFound(
 
 Future<void> _pumpAuthorization(
   WidgetTester tester,
-  HttpClientAdapter adapter,
-) async {
+  HttpClientAdapter adapter, {
+  Future<String?> Function()? smsCodeReader,
+}) async {
   final apiClient = ApiClient(
     baseUrl: 'https://example.test',
     httpClientAdapter: adapter,
@@ -370,7 +446,7 @@ Future<void> _pumpAuthorization(
         locale: const Locale('en'),
         localizationsDelegates: L.localizationsDelegates,
         supportedLocales: L.supportedLocales,
-        home: const AuthorizationScreen(),
+        home: AuthorizationScreen(smsCodeReader: smsCodeReader),
       ),
     ),
   );

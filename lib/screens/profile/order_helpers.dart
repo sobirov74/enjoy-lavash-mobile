@@ -1,37 +1,7 @@
 part of 'package:enjoy_lavash_mobile/screens/profile.dart';
 
-String _notificationSubtitle(
-  L t, {
-  required bool isLoading,
-  required bool supported,
-  required bool enabled,
-  required bool permissionPermanentlyDenied,
-}) {
-  if (isLoading) {
-    return t.notificationCheckingPermission;
-  }
-  if (!supported) {
-    return t.notificationsUnavailable;
-  }
-  if (enabled) {
-    return t.notificationsEnabled;
-  }
-  if (permissionPermanentlyDenied) {
-    return t.allowNotificationsInSettings;
-  }
-  return t.notificationsSubtitleDefault;
-}
-
-String _formatOrderAmount(int amount) {
-  final text = amount.toString();
-  final buffer = StringBuffer();
-  for (var i = 0; i < text.length; i++) {
-    if (i > 0 && (text.length - i) % 3 == 0) buffer.write(' ');
-    buffer.write(text[i]);
-  }
-  buffer.write(" so'm");
-  return buffer.toString();
-}
+String _formatOrderAmount(BuildContext context, int amount) =>
+    formatSum(context, amount);
 
 String _formatOrderDate(DateTime? date, String locale) {
   if (date == null) return '';

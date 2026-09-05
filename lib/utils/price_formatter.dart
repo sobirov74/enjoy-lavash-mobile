@@ -1,14 +1,13 @@
-String formatSum(int value) {
-  final digits = value.toString();
-  final buffer = StringBuffer();
+import 'package:flutter/widgets.dart';
+import 'package:intl/intl.dart';
 
-  for (var i = 0; i < digits.length; i++) {
-    final reversedIndex = digits.length - i;
-    buffer.write(digits[i]);
-    if (reversedIndex > 1 && reversedIndex % 3 == 1) {
-      buffer.write(' ');
-    }
-  }
-
-  return '${buffer.toString()} so\'m';
+String formatSum(BuildContext context, int value) {
+  final language = Localizations.localeOf(context).languageCode;
+  final amount = NumberFormat.decimalPattern(language).format(value);
+  final currency = switch (language) {
+    'ru' => 'сум',
+    'en' => 'UZS',
+    _ => "so'm",
+  };
+  return '$amount $currency';
 }

@@ -25,33 +25,54 @@ class PromotionModel {
   final DateTime? endsAt;
   final Map<String, dynamic> raw;
 
+  bool get isPercentageDiscount {
+    final normalized = discountType?.trim().toUpperCase();
+    return normalized == 'PERCENT' || normalized == 'PERCENTAGE';
+  }
+
   factory PromotionModel.fromJson(
     Map<String, dynamic> json, {
     String language = 'ru',
   }) {
+    final reward = asJsonMap(json['reward']);
     return PromotionModel(
       id: readString(json, const ['id']),
       title: localizedText(
-        json['title'] ?? json['name'],
+        json['titleI18n'] ??
+            json['title_i18n'] ??
+            json['title'] ??
+            json['name'],
         language,
         fallback: readString(json, const ['title', 'name']),
       ),
       isActive: readBool(json, const ['isActive', 'is_active'], fallback: true),
       code: stringOrNull(json['code']) ?? stringOrNull(json['promoCode']),
       description: localizedText(
-        json['description'],
+        json['descriptionI18n'] ??
+            json['description_i18n'] ??
+            json['description'],
         language,
         fallback: readString(json, const ['description']),
       ),
       discountType:
           stringOrNull(json['discountType']) ??
-          stringOrNull(json['discount_type']),
-      discountValue: _optionalInt(json, const [
-        'discountValue',
-        'discount_value',
+          stringOrNull(json['discount_type']) ??
+          stringOrNull(reward['type']),
+      discountValue:
+          _optionalInt(json, const ['discountValue', 'discount_value']) ??
+          _optionalInt(reward, const ['value', 'discountValue']),
+      startsAt: readDateTime(json, const [
+        'startsAt',
+        'starts_at',
+        'startDate',
+        'start_date',
       ]),
-      startsAt: readDateTime(json, const ['startsAt', 'starts_at']),
-      endsAt: readDateTime(json, const ['endsAt', 'ends_at']),
+      endsAt: readDateTime(json, const [
+        'endsAt',
+        'ends_at',
+        'endDate',
+        'end_date',
+      ]),
       raw: Map<String, dynamic>.unmodifiable(json),
     );
   }

@@ -69,8 +69,8 @@ class QuantityButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
             onTap: onTap,
             child: SizedBox(
-              width: 40,
-              height: 40,
+              width: 48,
+              height: 48,
               child: Icon(
                 icon,
                 size: 19,

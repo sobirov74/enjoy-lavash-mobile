@@ -1,11 +1,42 @@
 import 'package:enjoy_lavash_mobile/features/data/menu_catalog.dart';
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
+import 'package:enjoy_lavash_mobile/theme/app_design_tokens.dart';
+import 'package:enjoy_lavash_mobile/widgets/product_image.dart';
 import 'package:enjoy_lavash_mobile/widgets/product_list_item.dart';
 import 'package:enjoy_lavash_mobile/widgets/quantity_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  testWidgets('product card image uses the shared thumbnail radius', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: L.localizationsDelegates,
+        supportedLocales: L.supportedLocales,
+        home: Scaffold(
+          body: SizedBox(
+            width: 180,
+            child: ProductListItem(
+              product: menuProducts.first,
+              isDark: false,
+              quantity: 0,
+              onAdd: () {},
+              onDecrease: () {},
+              onIncrease: () {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final image = tester.widget<ProductImage>(find.byType(ProductImage));
+    expect(image.borderRadius, AppDesignTokens.radiusThumb);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('quantity stepper does not overflow on a compact screen', (
     tester,
   ) async {

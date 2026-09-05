@@ -2,7 +2,7 @@ import 'package:enjoy_lavash_mobile/features/models/cart_line.dart';
 import 'package:enjoy_lavash_mobile/utils/price_formatter.dart';
 import 'package:enjoy_lavash_mobile/widgets/product_image.dart';
 import 'package:enjoy_lavash_mobile/widgets/quantity_button.dart';
-import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
+import 'package:enjoy_lavash_mobile/theme/app_design_tokens.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
 
@@ -25,17 +25,18 @@ class CartItemCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1D1A18) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        color: AppDesignTokens.surface(context),
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+        boxShadow: AppDesignTokens.cardShadow(context),
       ),
       child: Row(
         children: <Widget>[
           ProductImage(
             product: item.product,
-            width: 76,
-            height: 76,
-            borderRadius: 18,
-            fallbackFontSize: 36,
+            width: 52,
+            height: 52,
+            borderRadius: AppDesignTokens.radiusThumb,
+            fallbackFontSize: 26,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -46,21 +47,41 @@ class CartItemCard extends StatelessWidget {
                   item.product.title,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.5,
+                  style: AppTextStyles.ui(
+                    size: 15,
+                    weight: FontWeight.w600,
+                    color: AppDesignTokens.primaryText(context),
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 TypographyText(
-                  formatSum(item.product.price),
-                  style: const TextStyle(
-                    color: BaseColors.primary,
-                    fontWeight: FontWeight.w800,
+                  item.modifierSummary.isEmpty
+                      ? formatSum(context, item.unitPrice)
+                      : item.modifierSummary,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.ui(
+                    size: item.modifierSummary.isEmpty ? 14.5 : 11.5,
+                    color: item.modifierSummary.isEmpty
+                        ? AppDesignTokens.primaryText(context)
+                        : AppDesignTokens.tertiaryText(context),
+                    weight: item.modifierSummary.isEmpty
+                        ? FontWeight.w600
+                        : FontWeight.w400,
                   ),
                 ),
-                const SizedBox(height: 10),
+                if (item.modifierSummary.isNotEmpty) ...<Widget>[
+                  const SizedBox(height: 3),
+                  TypographyText(
+                    formatSum(context, item.unitPrice),
+                    style: AppTextStyles.ui(
+                      size: 14.5,
+                      color: AppDesignTokens.primaryText(context),
+                      weight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 8),
                 Row(
                   children: <Widget>[
                     QuantityButton(

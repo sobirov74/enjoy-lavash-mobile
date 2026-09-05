@@ -8,17 +8,19 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/client_p
 import 'package:enjoy_lavash_mobile/features/mobile_backend/presentation/mobile_backend_controller.dart';
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
+import 'package:enjoy_lavash_mobile/theme/app_design_tokens.dart';
 import 'package:enjoy_lavash_mobile/theme/app_motion.dart';
 import 'package:enjoy_lavash_mobile/widgets/app_bottom_sheet_drag_handle.dart';
 import 'package:enjoy_lavash_mobile/widgets/app_modal_bottom_sheet.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:pinput/pinput.dart';
 import 'package:provider/provider.dart';
-import 'package:sms_autofill/sms_autofill.dart';
+import 'package:smart_auth/smart_auth.dart';
 
 const int _otpCodeLength = 4;
 
@@ -39,14 +41,16 @@ Future<void> showBirthDatePromptSheet(
 }
 
 class AuthorizationScreen extends StatefulWidget {
-  const AuthorizationScreen({super.key});
+  const AuthorizationScreen({super.key, this.smsCodeReader});
+
+  @visibleForTesting
+  final Future<String?> Function()? smsCodeReader;
 
   @override
   State<AuthorizationScreen> createState() => _AuthorizationScreenState();
 }
 
-class _AuthorizationScreenState extends State<AuthorizationScreen>
-    with CodeAutoFill {
+class _AuthorizationScreenState extends State<AuthorizationScreen> {
   final TextEditingController _phoneController = TextEditingController(
     text: '+998',
   );
@@ -63,6 +67,9 @@ class _AuthorizationScreenState extends State<AuthorizationScreen>
   DateTime? _verificationAvailableAt;
   Duration _codeLifetime = Duration.zero;
   Timer? _countdownTimer;
+  bool _smsListenerActive = false;
+  int _smsListenerGeneration = 0;
+  String? _pendingSmsCode;
 
   @override
   void initState() {
@@ -79,8 +86,8 @@ class _AuthorizationScreenState extends State<AuthorizationScreen>
   @override
   void dispose() {
     _countdownTimer?.cancel();
-    unawaited(cancel());
-    unawaited(unregisterListener());
+    _smsListenerGeneration++;
+    unawaited(SmartAuth.instance.removeUserConsentApiListener());
     _phoneController.dispose();
     _codeController.dispose();
     _phoneFocusNode.dispose();
@@ -88,13 +95,17 @@ class _AuthorizationScreenState extends State<AuthorizationScreen>
     super.dispose();
   }
 
-  @override
-  void codeUpdated() {
-    final receivedCode = _onlyDigits(code ?? '');
+  void _applySmsCode(String code) {
+    final receivedCode = _onlyDigits(code);
     if (!mounted || receivedCode.isEmpty) return;
     final normalizedCode = receivedCode.length > _otpCodeLength
         ? receivedCode.substring(0, _otpCodeLength)
         : receivedCode;
+
+    if (!_otpRequested || _isSubmitting) {
+      _pendingSmsCode = normalizedCode;
+      return;
+    }
 
     _codeController.value = TextEditingValue(
       text: normalizedCode,
@@ -107,12 +118,35 @@ class _AuthorizationScreenState extends State<AuthorizationScreen>
   }
 
   Future<void> _startSmsCodeListener() async {
+    if (_smsListenerActive ||
+        (widget.smsCodeReader == null &&
+            (kIsWeb || defaultTargetPlatform != TargetPlatform.android))) {
+      return;
+    }
+
+    _smsListenerActive = true;
+    final generation = ++_smsListenerGeneration;
+
     try {
-      await cancel();
-      await unregisterListener();
-      listenForCode(smsCodeRegexPattern: r'\d{4}');
+      final String? receivedCode;
+      final reader = widget.smsCodeReader;
+      if (reader != null) {
+        receivedCode = await reader();
+      } else {
+        final result = await SmartAuth.instance.getSmsWithUserConsentApi(
+          matcher: r'(?<!\d)\d{4}(?!\d)',
+        );
+        receivedCode = result.data?.code;
+      }
+
+      if (!mounted || generation != _smsListenerGeneration) return;
+      _smsListenerActive = false;
+      if (receivedCode != null) _applySmsCode(receivedCode);
     } catch (_) {
-      // Native OTP suggestions still work through AutofillHints.oneTimeCode.
+      if (mounted && generation == _smsListenerGeneration) {
+        _smsListenerActive = false;
+      }
+      // Manual entry and native iOS OTP suggestions remain available.
     }
   }
 
@@ -187,7 +221,10 @@ class _AuthorizationScreenState extends State<AuthorizationScreen>
     setState(() {
       _isSubmitting = true;
       _errorText = null;
+      _codeHasError = false;
     });
+    _pendingSmsCode = null;
+    _codeController.clear();
 
     final controller = context.read<MobileBackendController>();
     unawaited(_startSmsCodeListener());
@@ -209,14 +246,17 @@ class _AuthorizationScreenState extends State<AuthorizationScreen>
               : codeLifetime;
           _isSubmitting = false;
           _errorText = null;
-          _codeHasError = false;
         });
         _restartCountdownTimer();
-        _codeController.clear();
-        _focusCodeField();
+        final pendingSmsCode = _pendingSmsCode;
+        _pendingSmsCode = null;
+        if (pendingSmsCode == null) {
+          _focusCodeField();
+        } else {
+          _applySmsCode(pendingSmsCode);
+        }
       case Error(:final failure):
-        unawaited(cancel());
-        unawaited(unregisterListener());
+        _pendingSmsCode = null;
         if (failure is RateLimitFailure) {
           _requestAvailableAt = _retryAvailableAt(failure);
         }
@@ -268,6 +308,9 @@ class _AuthorizationScreenState extends State<AuthorizationScreen>
 
     switch (result) {
       case Success(:final data):
+        _smsListenerGeneration++;
+        _smsListenerActive = false;
+        unawaited(SmartAuth.instance.removeUserConsentApiListener());
         TextInput.finishAutofillContext();
         FocusScope.of(context).unfocus();
         await _showProfilePromptsIfNeeded(data);
@@ -291,6 +334,31 @@ class _AuthorizationScreenState extends State<AuthorizationScreen>
     setState(() {
       _codeHasError = false;
       _errorText = null;
+    });
+  }
+
+  void _changePhoneNumber() {
+    if (_isSubmitting) return;
+    _countdownTimer?.cancel();
+    _smsListenerGeneration++;
+    _smsListenerActive = false;
+    unawaited(SmartAuth.instance.removeUserConsentApiListener());
+    setState(() {
+      _otpRequested = false;
+      _codeHasError = false;
+      _errorText = null;
+      _codeExpiresAt = null;
+      _requestAvailableAt = null;
+      _verificationAvailableAt = null;
+      _codeLifetime = Duration.zero;
+      _codeController.clear();
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _phoneFocusNode.requestFocus();
+      _phoneController.selection = TextSelection.collapsed(
+        offset: _phoneController.text.length,
+      );
     });
   }
 
@@ -331,105 +399,198 @@ class _AuthorizationScreenState extends State<AuthorizationScreen>
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: TypographyText(t.authorization),
-        backgroundColor: theme.scaffoldBackgroundColor,
-        elevation: 0,
-      ),
       body: SafeArea(
-        child: AutofillGroup(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
-            children: <Widget>[
-              TypographyText(
-                _otpRequested ? t.enterSmsCode : t.enterPhoneNumber,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 8),
-              TypographyText(
-                _otpRequested ? t.otpSentMessage : t.signInToCheckout,
-                style: const TextStyle(
-                  color: BaseColors.textGray,
-                  fontSize: 15,
-                ),
-              ),
-              const SizedBox(height: 24),
-              TextField(
-                controller: _phoneController,
-                focusNode: _phoneFocusNode,
-                autofocus: true,
-                keyboardType: TextInputType.phone,
-                enabled: !_otpRequested && !_isSubmitting,
-                decoration: _inputDecoration(
-                  label: t.phoneNumber,
-                  icon: Icons.phone_outlined,
-                  isDark: isDark,
-                ),
-              ),
-              if (_otpRequested) ...[
-                const SizedBox(height: 14),
-                _buildOtpInput(isDark),
-                const SizedBox(height: 14),
-                _buildOtpTimingCard(t, isDark),
-              ],
-              if (_errorText != null) ...[
-                const SizedBox(height: 14),
-                TypographyText(
-                  _errorText!,
-                  style: const TextStyle(
-                    color: BaseColors.danger,
-                    fontWeight: FontWeight.w600,
+        child: LayoutBuilder(
+          builder: (context, constraints) => AutofillGroup(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: (constraints.maxHeight - 40).clamp(
+                    0,
+                    double.infinity,
                   ),
                 ),
-              ],
-              const SizedBox(height: 24),
-              FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: BaseColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 18),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-                onPressed:
-                    _isSubmitting ||
-                        (!_otpRequested && _isRequestCoolingDown) ||
-                        (_otpRequested &&
-                            (_isCodeExpired || _isVerificationCoolingDown))
-                    ? null
-                    : (_otpRequested ? _verifyOtp : _requestOtp),
-                child: _isSubmitting
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    Row(
+                      children: <Widget>[
+                        IconButton(
+                          key: const ValueKey<String>('auth-back-button'),
+                          onPressed: _isSubmitting
+                              ? null
+                              : () => Navigator.of(context).pop(false),
+                          tooltip: MaterialLocalizations.of(
+                            context,
+                          ).backButtonTooltip,
+                          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                        ),
+                        const Spacer(),
+                        if (_otpRequested)
+                          TextButton(
+                            key: const ValueKey<String>('change-phone-button'),
+                            onPressed: _isSubmitting
+                                ? null
+                                : _changePhoneNumber,
+                            child: Text(t.changePhoneNumber),
+                          ),
+                      ],
+                    ),
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        vertical: _otpRequested ? 8 : 28,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: <Widget>[
+                          Container(
+                            width: 104,
+                            height: 104,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(26),
+                              boxShadow: AppDesignTokens.cardShadow(context),
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: Image.asset(
+                              'assets/images/enjoy-logo-app-icon.png',
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          TypographyText(
+                            t.appTitle,
+                            textAlign: TextAlign.center,
+                            style: AppTextStyles.display(
+                              size: 34,
+                              height: 1.1,
+                              color: AppDesignTokens.primaryText(context),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          TypographyText(
+                            t.authWelcomeSubtitle,
+                            textAlign: TextAlign.center,
+                            style: AppTextStyles.ui(
+                              size: 13.5,
+                              height: 1.4,
+                              color: AppDesignTokens.secondaryText(context),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    TypographyText(
+                      _otpRequested ? t.enterSmsCode : t.enterPhoneNumber,
+                      style: AppTextStyles.ui(
+                        size: 17,
+                        height: 1.3,
+                        weight: FontWeight.w600,
+                        color: AppDesignTokens.primaryText(context),
+                      ),
+                    ),
+                    if (_otpRequested) ...<Widget>[
+                      const SizedBox(height: 6),
+                      TypographyText(
+                        t.otpSentMessage,
+                        style: AppTextStyles.ui(
+                          size: 13.5,
+                          height: 1.4,
+                          color: AppDesignTokens.secondaryText(context),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 14),
+                    if (!_otpRequested)
+                      TextField(
+                        controller: _phoneController,
+                        focusNode: _phoneFocusNode,
+                        autofocus: true,
+                        keyboardType: TextInputType.phone,
+                        enabled: !_isSubmitting,
+                        decoration: _inputDecoration(
+                          label: t.phoneNumber,
+                          icon: Icons.phone_outlined,
+                          isDark: isDark,
                         ),
                       )
-                    : TypographyText(
-                        _isVerificationCoolingDown
-                            ? t.tryAgainIn(
-                                _formatCountdown(
-                                  _remainingUntil(_verificationAvailableAt),
-                                ),
-                              )
-                            : !_otpRequested && _isRequestCoolingDown
-                            ? t.tryAgainIn(
-                                _formatCountdown(
-                                  _remainingUntil(_requestAvailableAt),
-                                ),
-                              )
-                            : _otpRequested
-                            ? t.continueButton
-                            : t.sendCode,
-                        style: const TextStyle(color: BaseColors.white),
+                    else ...<Widget>[
+                      _buildOtpInput(isDark),
+                      const SizedBox(height: 14),
+                      _buildOtpTimingCard(t, isDark),
+                    ],
+                    if (_errorText != null) ...<Widget>[
+                      const SizedBox(height: 14),
+                      TypographyText(
+                        _errorText!,
+                        style: AppTextStyles.ui(
+                          size: 13,
+                          weight: FontWeight.w600,
+                          color: BaseColors.danger,
+                        ),
                       ),
+                    ],
+                    const SizedBox(height: 14),
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(
+                          AppDesignTokens.radiusPill,
+                        ),
+                        boxShadow: AppDesignTokens.actionGlow,
+                      ),
+                      child: FilledButton(
+                        onPressed:
+                            _isSubmitting ||
+                                (!_otpRequested && _isRequestCoolingDown) ||
+                                (_otpRequested &&
+                                    (_isCodeExpired ||
+                                        _isVerificationCoolingDown))
+                            ? null
+                            : (_otpRequested ? _verifyOtp : _requestOtp),
+                        child: _isSubmitting
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : TypographyText(
+                                _isVerificationCoolingDown
+                                    ? t.tryAgainIn(
+                                        _formatCountdown(
+                                          _remainingUntil(
+                                            _verificationAvailableAt,
+                                          ),
+                                        ),
+                                      )
+                                    : !_otpRequested && _isRequestCoolingDown
+                                    ? t.tryAgainIn(
+                                        _formatCountdown(
+                                          _remainingUntil(_requestAvailableAt),
+                                        ),
+                                      )
+                                    : _otpRequested
+                                    ? t.continueButton
+                                    : t.sendCode,
+                                style: const TextStyle(color: BaseColors.white),
+                              ),
+                      ),
+                    ),
+                    if (!_otpRequested) ...<Widget>[
+                      const SizedBox(height: 4),
+                      TextButton(
+                        onPressed: _isSubmitting
+                            ? null
+                            : () => Navigator.of(context).pop(false),
+                        child: TypographyText(t.skip),
+                      ),
+                    ],
+                  ],
+                ),
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -567,15 +728,21 @@ class _AuthorizationScreenState extends State<AuthorizationScreen>
       filled: true,
       fillColor: isDark ? const Color(0xFF1D1A18) : Colors.white,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(20),
-        borderSide: BorderSide.none,
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusInput),
+        borderSide: BorderSide(
+          color: AppDesignTokens.controlBorder(context),
+          width: 1.5,
+        ),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(20),
-        borderSide: BorderSide.none,
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusInput),
+        borderSide: BorderSide(
+          color: AppDesignTokens.controlBorder(context),
+          width: 1.5,
+        ),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusInput),
         borderSide: const BorderSide(color: BaseColors.primary),
       ),
     );

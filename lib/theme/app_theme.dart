@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
+import 'app_design_tokens.dart';
 import 'app_theme_colors.dart';
 
 class AppTheme {
@@ -14,7 +15,7 @@ class AppTheme {
         ? AppThemeColors.dark.background
         : AppThemeColors.light.background;
     final surface = isDark ? const Color(0xFF1D1A18) : BaseColors.white;
-    final onSurface = isDark ? Colors.white : const Color(0xFF14110F);
+    final onSurface = isDark ? const Color(0xFFF7F4F1) : BaseColors.black800;
     final muted = isDark ? const Color(0xFFAAA39A) : BaseColors.textGray;
     final border = isDark ? const Color(0xFF35302C) : BaseColors.borderLight;
 
@@ -26,18 +27,23 @@ class AppTheme {
       error: isDark ? BaseColors.dangerDark : BaseColors.danger,
     );
 
-    final baseTextTheme = ThemeData(brightness: brightness).textTheme;
+    final baseTextTheme = ThemeData(
+      brightness: brightness,
+      fontFamily: 'GolosText',
+    ).textTheme;
     final textTheme = baseTextTheme.copyWith(
       headlineMedium: baseTextTheme.headlineMedium?.copyWith(
-        fontSize: 30,
-        fontWeight: FontWeight.w800,
-        letterSpacing: -0.8,
+        fontFamily: 'Manrope',
+        fontSize: 26,
+        fontWeight: FontWeight.w700,
+        letterSpacing: -0.45,
         color: onSurface,
       ),
       titleLarge: baseTextTheme.titleLarge?.copyWith(
-        fontSize: 20,
-        fontWeight: FontWeight.w800,
-        letterSpacing: -0.3,
+        fontFamily: 'Manrope',
+        fontSize: 21,
+        fontWeight: FontWeight.w700,
+        letterSpacing: -0.2,
         color: onSurface,
       ),
       titleMedium: baseTextTheme.titleMedium?.copyWith(
@@ -46,19 +52,19 @@ class AppTheme {
       ),
       bodyLarge: baseTextTheme.bodyLarge?.copyWith(
         fontSize: 16,
-        height: 1.35,
+        height: 1.25,
         color: onSurface,
       ),
       bodyMedium: baseTextTheme.bodyMedium?.copyWith(
-        fontSize: 15,
-        height: 1.35,
+        fontSize: 14,
+        height: 1.43,
         color: onSurface,
       ),
       bodySmall: baseTextTheme.bodySmall?.copyWith(color: muted),
     );
 
     final roundedRectangle = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(999),
     );
 
     return ThemeData(
@@ -70,6 +76,7 @@ class AppTheme {
       cardColor: surface,
       canvasColor: surface,
       textTheme: textTheme,
+      fontFamily: 'GolosText',
       visualDensity: VisualDensity.standard,
       splashFactory: InkSparkle.splashFactory,
       appBarTheme: AppBarTheme(
@@ -90,12 +97,15 @@ class AppTheme {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: BaseColors.primary,
+          backgroundColor: AppDesignTokens.actionPressed,
           foregroundColor: Colors.white,
           disabledBackgroundColor: BaseColors.primary.withValues(alpha: 0.45),
           minimumSize: const Size(48, 52),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+          textStyle: const TextStyle(
+            fontSize: 15.5,
+            fontWeight: FontWeight.w600,
+          ),
           shape: roundedRectangle,
         ),
       ),
@@ -104,7 +114,7 @@ class AppTheme {
           foregroundColor: BaseColors.primary,
           minimumSize: const Size(48, 48),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
-          textStyle: const TextStyle(fontWeight: FontWeight.w700),
+          textStyle: const TextStyle(fontWeight: FontWeight.w600),
           side: BorderSide(color: border),
           shape: roundedRectangle,
         ),
@@ -119,19 +129,19 @@ class AppTheme {
         hintStyle: TextStyle(color: muted),
         labelStyle: TextStyle(color: muted),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: border),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: border),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: BaseColors.primary, width: 1.6),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: scheme.error),
         ),
       ),

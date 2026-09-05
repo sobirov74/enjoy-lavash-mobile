@@ -1,0 +1,125 @@
+/* Colors — extracted verbatim from the Pace design export (PACE Prototype.dc.html).
+   Base values first, then ink/white/action opacity ramps, then semantic aliases.
+   Values are the visual source of truth; do not restyle without a design change. */
+:root {
+  /* --- Ground & ink --- */
+  --pace-ground: #F6F3EC;        /* warm cream app ground */
+  --pace-ground-deep: #EFEBE2;   /* darker cream (active-order map scene) */
+  --pace-ink: #1D1B2C;           /* near-black text & dark surfaces */
+  --pace-white: #FFFFFF;
+
+  /* --- Action (single accent — ultramarine indigo) --- */
+  --pace-action: #3D3FE0;
+  --pace-action-pressed: #2F31C9;
+  --pace-action-soft: #EBEBFA;     /* tinted action surfaces */
+  --pace-action-soft-alt: #E7E3F7;
+  --pace-action-muted: #CFC9EE;
+  --pace-action-on-dark: #A9AAF5;  /* action text on dark surfaces */
+
+  /* --- Product / accent fields --- */
+  --pace-citrus: #F5C84C;
+  --pace-citrus-deep: #F3CD62;
+  --pace-citrus-ink: #5C4300;
+  --pace-citrus-wash: #F8ECCF;
+  --pace-matcha: #C4D6A8;
+  --pace-matcha-ink: #3F5C2E;
+  --pace-cream: #E9DAC6;
+  --pace-cream-ink: #5A4128;
+  --pace-coffee: #6E4E36;
+  --pace-coffee-wash: #F1E4D6;
+  --pace-coffee-card-ink: #3E2E1D;
+  --pace-coffee-card-wash: #F4EADC;
+  --pace-lavender-ink: #453B85;
+  --pace-lavender-deep: #3A3170;
+  --pace-espresso: #D8D2E8;
+  --pace-espresso-ink: #3E3564;
+  --pace-berry: #EFC9BC;
+  --pace-berry-ink: #7A4534;
+  --pace-hero-indigo: #4B448F;
+
+  /* --- Status --- */
+  --pace-success: #3E7C4F;
+  --pace-success-wash: #E9F2EB;
+  --pace-success-dot: #7ED09A;
+  --pace-warning: #6B5200;
+  --pace-warning-wash: #FBF3DE;
+  --pace-warning-dot: #F5C84C;
+  --pace-danger: #C2452D;
+  --pace-danger-deep: #8C3A22;
+  --pace-danger-wash: #FBEDE8;
+  --pace-danger-dot: #F08B6E;
+  --pace-info-wash: #ECEAF4;
+  --pace-info-ink: #3A3557;
+  --pace-scheduled-dot: #A9AAF5;
+
+  /* --- Stylized map scene --- */
+  --pace-map-field: #EFEBE2;
+  --pace-map-road: #F9F6EF;
+  --pace-map-block: #E6E1D4;
+  --pace-map-park: #DCE4D2;
+
+  /* --- Ink opacity ramp (over cream ground) --- */
+  --pace-ink-04: rgba(29,27,44,0.04);
+  --pace-ink-05: rgba(29,27,44,0.05);
+  --pace-ink-06: rgba(29,27,44,0.06);
+  --pace-ink-07: rgba(29,27,44,0.07);
+  --pace-ink-08: rgba(29,27,44,0.08);
+  --pace-ink-10: rgba(29,27,44,0.10);
+  --pace-ink-12: rgba(29,27,44,0.12);
+  --pace-ink-14: rgba(29,27,44,0.14);
+  --pace-ink-15: rgba(29,27,44,0.15);
+  --pace-ink-18: rgba(29,27,44,0.18);
+  --pace-ink-20: rgba(29,27,44,0.20);
+  --pace-ink-25: rgba(29,27,44,0.25);
+  --pace-ink-38: rgba(29,27,44,0.38);
+  --pace-ink-40: rgba(29,27,44,0.40);
+  --pace-ink-45: rgba(29,27,44,0.45);
+  --pace-ink-50: rgba(29,27,44,0.50);
+  --pace-ink-55: rgba(29,27,44,0.55);
+  --pace-ink-60: rgba(29,27,44,0.60);
+  --pace-ink-65: rgba(29,27,44,0.65);
+  --pace-ink-70: rgba(29,27,44,0.70);
+  --pace-ink-75: rgba(29,27,44,0.75);
+  --pace-ink-88: rgba(29,27,44,0.88);
+
+  /* --- White opacity ramp (over imagery / ink) --- */
+  --pace-white-16: rgba(255,255,255,0.16);
+  --pace-white-18: rgba(255,255,255,0.18);
+  --pace-white-25: rgba(255,255,255,0.25);
+  --pace-white-55: rgba(255,255,255,0.55);
+  --pace-white-65: rgba(255,255,255,0.65);
+  --pace-white-75: rgba(255,255,255,0.75);
+  --pace-white-85: rgba(255,255,255,0.85);
+  --pace-white-90: rgba(255,255,255,0.90);
+  --pace-white-92: rgba(255,255,255,0.92);
+
+  /* --- Action opacity ramp --- */
+  --pace-action-10: rgba(61,63,224,0.10);
+  --pace-action-12: rgba(61,63,224,0.12);
+  --pace-action-14: rgba(61,63,224,0.14);
+  --pace-action-35: rgba(61,63,224,0.35);
+  --pace-action-45: rgba(61,63,224,0.45);
+  --pace-action-50: rgba(61,63,224,0.50);
+
+  /* --- Semantic aliases --- */
+  --surface-app: var(--pace-ground);
+  --surface-card: var(--pace-white);
+  --surface-sheet: var(--pace-ground);
+  --surface-dark: var(--pace-ink);
+  --surface-sunk: var(--pace-ink-06);
+
+  --text-primary: var(--pace-ink);
+  --text-secondary: var(--pace-ink-60);
+  --text-tertiary: var(--pace-ink-45);
+  --text-on-dark: var(--pace-white);
+  --text-on-dark-dim: var(--pace-white-65);
+  --text-link: var(--pace-action);
+
+  --border-hairline: var(--pace-ink-08);
+  --border-control: var(--pace-ink-12);
+  --border-control-strong: var(--pace-ink-15);
+
+  --accent: var(--pace-action);
+  --accent-surface: var(--pace-action-soft);
+  --on-accent: var(--pace-white);
+}

@@ -18,6 +18,7 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/file_upl
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/json_helpers.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/loyalty_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/order_model.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/ordering_status_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/promotion_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/entities/mobile_bootstrap.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/repositories/mobile_backend_repository.dart';
@@ -82,21 +83,34 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
       final refreshToken = await TokenStorage.getRefreshToken();
       final hasToken = accessToken != null || refreshToken != null;
 
+      Future<List<PromotionModel>> optionalPromotions() async {
+        try {
+          return await _fetchActivePromotions(language: language);
+        } catch (_) {
+          return const <PromotionModel>[];
+        }
+      }
+
+      Future<List<PaymentMethodModel>> optionalPaymentMethods() async {
+        try {
+          return await _fetchPaymentMethods(
+            language: language,
+            branchId: branchId,
+          );
+        } catch (_) {
+          return const <PaymentMethodModel>[];
+        }
+      }
+
       final publicFuture = Future.wait<Object?>([
         _fetchBranches(language: language),
         _fetchCatalog(language: language, branchId: branchId),
-        _fetchActivePromotions(language: language),
-        _fetchPaymentMethods(language: language, branchId: branchId),
+        optionalPromotions(),
+        optionalPaymentMethods(),
       ]);
 
       final authFuture = hasToken
-          ? _fetchAuthenticatedData().catchError((Object _) {
-              return <Object?>[
-                null,
-                const <ClientAddress>[],
-                const <CustomerOrderModel>[],
-              ];
-            })
+          ? _fetchAuthenticatedData()
           : Future<List<Object?>>.value(<Object?>[
               null,
               const <ClientAddress>[],
@@ -146,6 +160,18 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
   @override
   Future<Result<List<BranchModel>>> getBranches({String language = 'ru'}) {
     return _guard(() => _fetchBranches(language: language));
+  }
+
+  @override
+  Future<Result<OrderingStatusModel>> getBranchOrderingStatus({
+    required String branchId,
+  }) {
+    return _guard(() async {
+      final response = await _dio.get(
+        ApiEndpoints.branchOrderingStatus(branchId),
+      );
+      return OrderingStatusModel.fromJson(asJsonMap(response.data));
+    });
   }
 
   @override
@@ -529,12 +555,20 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
 
   Future<List<Object?>> _fetchAuthenticatedData() async {
     final profile = await _fetchProfile();
-    final authData = await Future.wait<Object?>([
-      _fetchAddresses(),
-      _fetchOrders(),
-    ]);
+    List<ClientAddress> addresses;
+    List<CustomerOrderModel> orders;
+    try {
+      addresses = await _fetchAddresses();
+    } catch (_) {
+      addresses = const <ClientAddress>[];
+    }
+    try {
+      orders = await _fetchOrders();
+    } catch (_) {
+      orders = const <CustomerOrderModel>[];
+    }
 
-    return <Object?>[profile, authData[0], authData[1]];
+    return <Object?>[profile, addresses, orders];
   }
 
   Future<List<CustomerOrderModel>> _fetchOrders() async {

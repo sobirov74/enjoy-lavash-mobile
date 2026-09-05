@@ -47,7 +47,7 @@ class _AllOrdersScreenState extends State<_AllOrdersScreen> {
             _shortOrderId(order.id),
             _statusLabel(order.status, t),
             _orderTypeLabel(order.type, t),
-            _formatOrderAmount(order.totalAmount),
+            _formatOrderAmount(context, order.totalAmount),
             destination,
             products,
           ].join(' ').toLowerCase();

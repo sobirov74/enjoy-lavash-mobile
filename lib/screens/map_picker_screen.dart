@@ -120,7 +120,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                     rotate: true,
                     child: const Icon(
                       Icons.location_pin,
-                      color: Colors.red,
+                      color: BaseColors.primary,
                       size: 40,
                     ),
                   ),

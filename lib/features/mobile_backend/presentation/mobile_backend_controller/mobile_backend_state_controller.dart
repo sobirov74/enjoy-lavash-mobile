@@ -9,6 +9,8 @@ extension _MobileBackendStateController on MobileBackendController {
     _loyaltyTransactionsRequestVersion++;
     _client = null;
     _addresses = const <ClientAddress>[];
+    _addressesUpdating = false;
+    _addressesFailure = null;
     _orders = const <CustomerOrderModel>[];
     _notifications = const <ClientNotificationItemModel>[];
     _assignedPromotions = const <AssignedPromotionModel>[];

@@ -34,6 +34,9 @@ class ApiEndpoints {
   static String catalogProduct(String idOrSlug) =>
       "/catalog/products/${Uri.encodeComponent(idOrSlug)}";
 
+  static String branchOrderingStatus(String branchId) =>
+      "$branches/${Uri.encodeComponent(branchId)}/ordering-status";
+
   static String clientAddress(String id) =>
       "$clientAddresses/${Uri.encodeComponent(id)}";
 

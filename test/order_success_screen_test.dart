@@ -80,6 +80,46 @@ void main() {
     expect(paymentOpenCalls, 1);
   });
 
+  testWidgets('failed payment launch exposes a working retry action', (
+    tester,
+  ) async {
+    var paymentOpenCalls = 0;
+    await tester.pumpWidget(
+      _testApp(
+        OrderSuccessScreen(
+          order: _order(
+            paymentMethod: MobilePaymentMethod.payme,
+            paymentStatus: MobilePaymentStatus.pending,
+          ),
+          onTrackOrder: () {},
+          openPaymentPage: () async {
+            paymentOpenCalls += 1;
+            return paymentOpenCalls > 1;
+          },
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    final retry = find.byKey(
+      const ValueKey<String>('order-success-retry-payment-button'),
+    );
+    expect(retry, findsOneWidget);
+    expect(paymentOpenCalls, 1);
+
+    await tester.tap(retry);
+    await tester.pump();
+    await tester.pump();
+
+    expect(paymentOpenCalls, 2);
+    expect(retry, findsNothing);
+    expect(
+      find.text('Complete payment in the page we opened.'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('Track order dismisses a pushed success route and calls back', (
     tester,
   ) async {

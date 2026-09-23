@@ -192,9 +192,9 @@ void main() {
     await _completeOtp(tester);
     await _pumpUntilFound(tester, find.text('Name (optional)'));
 
-    expect(find.text('Your special day 🎂'), findsNothing);
+    expect(find.text('Your birthday 🎂'), findsNothing);
     await tester.tap(find.text('Skip'));
-    await _pumpUntilFound(tester, find.text('Your special day 🎂'));
+    await _pumpUntilFound(tester, find.text('Your birthday 🎂'));
 
     expect(
       find.byKey(const ValueKey<String>('birth-date-field')),
@@ -211,7 +211,7 @@ void main() {
     );
 
     await _completeOtp(tester);
-    await _pumpUntilFound(tester, find.text('Your special day 🎂'));
+    await _pumpUntilFound(tester, find.text('Your birthday 🎂'));
 
     expect(find.text('Name (optional)'), findsNothing);
     expect(find.text('Date of birth'), findsOneWidget);
@@ -225,7 +225,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Your special day 🎂'), findsNothing);
+    expect(find.text('Your birthday 🎂'), findsNothing);
   });
 
   testWidgets('returning client with a birth date completes authorization', (
@@ -242,7 +242,7 @@ void main() {
       find.byKey(const ValueKey<String>('authorization-launcher')),
     );
 
-    expect(find.text('Your special day 🎂'), findsNothing);
+    expect(find.text('Your birthday 🎂'), findsNothing);
   });
 
   testWidgets('birth date save sends a date-only profile update', (
@@ -261,7 +261,7 @@ void main() {
     );
 
     await _completeOtp(tester);
-    await _pumpUntilFound(tester, find.text('Your special day 🎂'));
+    await _pumpUntilFound(tester, find.text('Your birthday 🎂'));
 
     expect(
       find.byKey(const ValueKey<String>('birth-date-close-button')),

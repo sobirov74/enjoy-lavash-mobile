@@ -6,6 +6,7 @@ import 'package:enjoy_lavash_mobile/app/locale_controller.dart';
 import 'package:enjoy_lavash_mobile/app/location_controller.dart';
 import 'package:enjoy_lavash_mobile/core/error/failures.dart';
 import 'package:enjoy_lavash_mobile/core/error/result.dart';
+import 'package:enjoy_lavash_mobile/core/navigation/app_deep_link.dart';
 import 'package:enjoy_lavash_mobile/core/services/app_share_service.dart';
 import 'package:enjoy_lavash_mobile/core/services/external_url_launcher.dart';
 import 'package:enjoy_lavash_mobile/core/services/mobile_push_notification_service.dart';
@@ -42,6 +43,7 @@ import 'package:enjoy_lavash_mobile/widgets/redesign/cart_pill.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -72,9 +74,9 @@ class MainTabs extends StatefulWidget {
 class _MainTabsState extends State<MainTabs> {
   static const int _homeTabIndex = 0;
   static const int _menuTabIndex = 1;
-  static const int _notificationsTabIndex = 2;
-  static const int _profileTabIndex = 3;
-  static const int _cartPageIndex = 4;
+  static const int _promotionsTabIndex = 2;
+  static const int _cartPageIndex = 3;
+  static const int _profileTabIndex = 4;
   static const int _tabCount = 5;
 
   int _currentIndex = 0;
@@ -99,10 +101,9 @@ class _MainTabsState extends State<MainTabs> {
     onRefresh: _refreshProfileData,
     onPromoSelected: _applyAssignedPromoCode,
   );
-  late final Widget _notificationsTab = NotificationsScreen(
+  late final Widget _promotionsTab = AssignedPromotionsScreen(
     embedded: true,
     onPromoSelected: _applyAssignedPromoCode,
-    onBrowseMenu: () => _selectTab(_menuTabIndex),
   );
 
   @override
@@ -242,6 +243,33 @@ class _MainTabsState extends State<MainTabs> {
     return mounted && context.read<MobileBackendController>().isAuthenticated;
   }
 
+  Future<void> _openBannerLink(Uri uri) async {
+    if (uri.scheme == 'http' || uri.scheme == 'https') {
+      await ExternalUrlLauncher.open(uri.toString());
+      return;
+    }
+    switch (AppDeepLink.fromUri(uri)) {
+      case AppDeepLink.home:
+        _selectTab(_homeTabIndex);
+      case AppDeepLink.menu:
+        _selectTab(_menuTabIndex);
+      case AppDeepLink.cart:
+        _selectTab(_cartPageIndex);
+      case AppDeepLink.profile:
+        _selectTab(_profileTabIndex);
+      case AppDeepLink.promotions:
+        await _selectPromotionsTab();
+      case AppDeepLink.orders:
+        await _openOrders();
+      case AppDeepLink.notifications:
+        await _openNotifications();
+      case AppDeepLink.loyalty:
+        await _openLoyaltyWallet();
+      case null:
+        break;
+    }
+  }
+
   Future<void> _openNotifications() async {
     if (!await _ensureAuthenticated() || !mounted) return;
     final code = await Navigator.of(context).push<String>(
@@ -252,9 +280,9 @@ class _MainTabsState extends State<MainTabs> {
     }
   }
 
-  Future<void> _selectNotificationsTab() async {
+  Future<void> _selectPromotionsTab() async {
     if (!await _ensureAuthenticated() || !mounted) return;
-    _selectTab(_notificationsTabIndex);
+    _selectTab(_promotionsTabIndex);
   }
 
   Future<void> _openLoyaltyWallet() async {
@@ -442,7 +470,10 @@ class _MainTabsState extends State<MainTabs> {
     setState(() => _currentIndex = index);
     _animateToSelectedTab(
       index,
-      jump: previousIndex == _cartPageIndex || index == _cartPageIndex,
+      jump:
+          (previousIndex - index).abs() > 1 ||
+          previousIndex == _cartPageIndex ||
+          index == _cartPageIndex,
     );
   }
 
@@ -1447,7 +1478,7 @@ class _MainTabsState extends State<MainTabs> {
           t: t,
           onTabSelected: _selectTab,
           onNotificationsTap: () => unawaited(_openNotifications()),
-          onPromotionsTap: () => unawaited(_openAssignedPromotions()),
+          onPromotionsTap: () => unawaited(_selectPromotionsTab()),
           onOrdersTap: () => unawaited(_openOrders()),
           onShareApp: () => unawaited(_shareApp(t)),
         ),
@@ -1471,7 +1502,8 @@ class _MainTabsState extends State<MainTabs> {
                   orderContextLabel: _orderContextLabel(t),
                   categories: backend.menuCategoryItems,
                   products: products,
-                  promotions: promotions,
+                  banners: backend.banners,
+                  onBannerLinkTap: (uri) => unawaited(_openBannerLink(uri)),
                   locale: context.watch<LocaleController>().locale.languageCode,
                   notificationUnreadCount: backend.notificationUnreadCount,
                   lastOrder: backend.orders.isEmpty
@@ -1486,8 +1518,7 @@ class _MainTabsState extends State<MainTabs> {
                       ? backend.failure
                       : null,
                   onOrderContextTap: () => unawaited(_openOrderContextPicker()),
-                  onNotificationsTap: () =>
-                      unawaited(_selectNotificationsTab()),
+                  onNotificationsTap: () => unawaited(_openNotifications()),
                   onLoyaltyTap: () => unawaited(_openLoyaltyWallet()),
                   onMenuTap: () => _selectTab(_menuTabIndex),
                   onCategoryTap: (index) {
@@ -1549,10 +1580,9 @@ class _MainTabsState extends State<MainTabs> {
               ),
               _KeepAliveTabPage(
                 child: backend.isAuthenticated
-                    ? _notificationsTab
+                    ? _promotionsTab
                     : const SizedBox.shrink(),
               ),
-              _KeepAliveTabPage(child: _profileTab),
               _KeepAliveTabPage(
                 child: CartScreen(
                   isDark: isDark,
@@ -1565,31 +1595,29 @@ class _MainTabsState extends State<MainTabs> {
                   onCheckout: () => unawaited(_handleCheckout(cartLines)),
                 ),
               ),
+              _KeepAliveTabPage(child: _profileTab),
             ],
           ),
         ),
-        bottomNavigationBar: _currentIndex == _cartPageIndex
-            ? null
-            : _MainTabsBottomNavigation(
-                isDark: isDark,
-                currentIndex: _currentIndex,
-                totalItems: totalItems,
-                totalAmount: totalAmount,
-                notificationUnreadCount: backend.notificationUnreadCount,
-                showCartPill:
-                    totalItems > 0 &&
-                    (_currentIndex == _homeTabIndex ||
-                        _currentIndex == _menuTabIndex),
-                t: t,
-                onCartTap: () => _selectTab(_cartPageIndex),
-                onDestinationSelected: (index) {
-                  if (index == _notificationsTabIndex) {
-                    unawaited(_selectNotificationsTab());
-                  } else {
-                    _selectTab(index);
-                  }
-                },
-              ),
+        bottomNavigationBar: _MainTabsBottomNavigation(
+          isDark: isDark,
+          currentIndex: _currentIndex,
+          totalItems: totalItems,
+          totalAmount: totalAmount,
+          showCartPill:
+              totalItems > 0 &&
+              (_currentIndex == _homeTabIndex ||
+                  _currentIndex == _menuTabIndex),
+          t: t,
+          onCartTap: () => _selectTab(_cartPageIndex),
+          onDestinationSelected: (index) {
+            if (index == _promotionsTabIndex) {
+              unawaited(_selectPromotionsTab());
+            } else {
+              _selectTab(index);
+            }
+          },
+        ),
       ),
     );
   }

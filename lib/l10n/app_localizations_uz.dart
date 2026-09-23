@@ -377,7 +377,7 @@ class LUz extends L {
   String get nameOptional => 'Ism (ixtiyoriy)';
 
   @override
-  String get birthDateTitle => 'Sizning maxsus kuningiz 🎂';
+  String get birthDateTitle => 'Sizning tug\'ilgan kuningiz 🎂';
 
   @override
   String get birthDate => 'Tug\'ilgan sana';

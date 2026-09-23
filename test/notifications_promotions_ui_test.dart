@@ -16,9 +16,11 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/presentation/mobile_
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/navigation/main_tabs.dart';
 import 'package:enjoy_lavash_mobile/screens/assigned_promotions_screen.dart';
+import 'package:enjoy_lavash_mobile/screens/cart_screen.dart';
 import 'package:enjoy_lavash_mobile/screens/notifications_screen.dart';
 import 'package:enjoy_lavash_mobile/screens/profile.dart';
 import 'package:enjoy_lavash_mobile/theme/light_theme.dart';
+import 'package:enjoy_lavash_mobile/theme/dark_theme.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -122,7 +124,7 @@ void main() {
     await tester.pumpWidget(_mainTabsHost(controller));
     await tester.pumpAndSettle();
 
-    expect(find.text('Your special day 🎂'), findsOneWidget);
+    expect(find.text('Your birthday 🎂'), findsOneWidget);
     expect(find.byType(CupertinoPicker), findsNWidgets(3));
 
     await tester.tap(
@@ -130,9 +132,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Your special day 🎂'), findsNothing);
+    expect(find.text('Your birthday 🎂'), findsNothing);
     await tester.pump();
-    expect(find.text('Your special day 🎂'), findsNothing);
+    expect(find.text('Your birthday 🎂'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -147,11 +149,135 @@ void main() {
     await tester.pumpWidget(_mainTabsHost(controller));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Inbox'));
+    await tester.tap(find.byTooltip('Inbox'));
     await tester.pumpAndSettle();
 
     expect(find.text('Enter your phone number'), findsOneWidget);
     expect(find.byType(NotificationsScreen), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final isDark in [false, true]) {
+    testWidgets('five tabs stay usable on compact screens (dark: $isDark)', (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(320, 640));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final controller = await _guestController();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(
+        _mainTabsHost(
+          controller,
+          theme: isDark ? darkTheme : lightTheme,
+          locale: isDark ? const Locale('ru') : const Locale('uz'),
+          bottomInset: 34,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final navigation = find.byKey(
+        const ValueKey<String>('main-bottom-navigation'),
+      );
+      final pageView = find.byKey(
+        const ValueKey<String>('main-tabs-page-view'),
+      );
+      for (final index in [3, 4, 1, 0]) {
+        final tab = find.byKey(ValueKey<String>('main-tab-$index'));
+        expect(tester.getSize(tab).height, greaterThanOrEqualTo(48));
+        expect(tester.getRect(tab).bottom, lessThanOrEqualTo(640 - 34));
+        await tester.tap(tab);
+        await tester.pumpAndSettle();
+
+        expect(tester.widget<PageView>(pageView).controller!.page, index);
+        expect(navigation, findsOneWidget);
+        final semantics = tester.widget<Semantics>(
+          find.descendant(of: tab, matching: find.byType(Semantics)).first,
+        );
+        expect(semantics.properties.selected, isTrue);
+        if (index == 3) expect(find.byType(CartScreen), findsOneWidget);
+        expect(tester.takeException(), isNull, reason: 'Tab $index');
+      }
+
+      // Exercise large navigation labels independently of screen typography.
+      final bottomNavigation = tester
+          .widget<Scaffold>(find.byType(Scaffold).first)
+          .bottomNavigationBar!;
+      await tester.pumpWidget(
+        _host(
+          controller: controller,
+          child: MediaQuery(
+            data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+            child: Scaffold(bottomNavigationBar: bottomNavigation),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(navigation, findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('guest promotions tab asks for authorization', (tester) async {
+    final controller = await _guestController();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(_mainTabsHost(controller));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey<String>('main-tab-2')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Enter your phone number'), findsOneWidget);
+    expect(find.byType(AssignedPromotionsScreen), findsNothing);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<PageView>(find.byType(PageView).first).controller!.page,
+      0,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('using a promotion from its tab keeps the tab shell open', (
+    tester,
+  ) async {
+    final controller = await _controller();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(_mainTabsHost(controller));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey<String>('birth-date-close-button')),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey<String>('main-tab-2')));
+    await tester.pumpAndSettle();
+    expect(find.text('PRIVATE20-ABC'), findsOneWidget);
+    expect(
+      tester
+          .widget<AssignedPromotionsScreen>(
+            find.byType(AssignedPromotionsScreen),
+          )
+          .embedded,
+      isTrue,
+    );
+    await Scrollable.ensureVisible(
+      tester.element(find.text('Use in order')),
+      alignment: 0.5,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Use in order'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(MainTabs), findsOneWidget);
+    expect(
+      tester
+          .widget<PageView>(
+            find.byKey(const ValueKey<String>('main-tabs-page-view')),
+          )
+          .controller!
+          .page,
+      1,
+    );
     expect(tester.takeException(), isNull);
   });
 }
@@ -197,7 +323,13 @@ Widget _host({
   );
 }
 
-Widget _mainTabsHost(MobileBackendController controller) {
+Widget _mainTabsHost(
+  MobileBackendController controller, {
+  ThemeData? theme,
+  Locale locale = const Locale('en'),
+  double textScale = 1,
+  double bottomInset = 0,
+}) {
   return MultiProvider(
     providers: [
       ChangeNotifierProvider<MobileBackendController>.value(value: controller),
@@ -210,10 +342,17 @@ Widget _mainTabsHost(MobileBackendController controller) {
       ),
     ],
     child: MaterialApp(
-      theme: lightTheme,
-      locale: const Locale('en'),
+      theme: theme ?? lightTheme,
+      locale: locale,
       localizationsDelegates: L.localizationsDelegates,
       supportedLocales: L.supportedLocales,
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(
+          textScaler: TextScaler.linear(textScale),
+          padding: EdgeInsets.only(bottom: bottomInset),
+        ),
+        child: child!,
+      ),
       home: const MainTabs(),
     ),
   );

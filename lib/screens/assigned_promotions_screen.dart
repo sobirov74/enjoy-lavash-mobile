@@ -17,10 +17,14 @@ class AssignedPromotionsScreen extends StatefulWidget {
     super.key,
     this.initialShowAll = false,
     this.highlightedCode,
+    this.embedded = false,
+    this.onPromoSelected,
   });
 
   final bool initialShowAll;
   final String? highlightedCode;
+  final bool embedded;
+  final ValueChanged<String>? onPromoSelected;
 
   @override
   State<AssignedPromotionsScreen> createState() =>
@@ -65,7 +69,11 @@ class _AssignedPromotionsScreenState extends State<AssignedPromotionsScreen> {
 
   void _usePromotion(String code) {
     HapticFeedback.selectionClick();
-    Navigator.of(context).pop(code);
+    if (widget.embedded) {
+      widget.onPromoSelected?.call(code);
+    } else {
+      Navigator.of(context).pop(code);
+    }
   }
 
   @override
@@ -77,8 +85,9 @@ class _AssignedPromotionsScreenState extends State<AssignedPromotionsScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: !widget.embedded,
         title: TypographyText(
-          t.myPromotions,
+          widget.embedded ? t.filterPromotions : t.myPromotions,
           style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
         ),
       ),

@@ -378,7 +378,7 @@ class LEn extends L {
   String get nameOptional => 'Name (optional)';
 
   @override
-  String get birthDateTitle => 'Your special day 🎂';
+  String get birthDateTitle => 'Your birthday 🎂';
 
   @override
   String get birthDate => 'Date of birth';

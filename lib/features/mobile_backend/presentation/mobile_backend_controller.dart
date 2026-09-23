@@ -1,3 +1,4 @@
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/banner_model.dart';
 import 'dart:async';
 
 import 'package:enjoy_lavash_mobile/core/api/base_url.dart';
@@ -50,6 +51,7 @@ class MobileBackendController extends ChangeNotifier {
   List<MenuCategory> _menuCategoryItems = const <MenuCategory>[];
   List<MenuProduct> _menuProducts = const <MenuProduct>[];
   List<BranchModel> _branches = const <BranchModel>[];
+  List<BannerModel> _banners = const <BannerModel>[];
   List<PromotionModel> _promotions = const <PromotionModel>[];
   List<PaymentMethodModel> _paymentMethods = const <PaymentMethodModel>[];
   String? _paymentMethodsBranchId;
@@ -97,6 +99,7 @@ class MobileBackendController extends ChangeNotifier {
   List<MenuCategory> get menuCategoryItems => _menuCategoryItems;
   List<MenuProduct> get menuProducts => _menuProducts;
   List<BranchModel> get branches => _branches;
+  List<BannerModel> get banners => _banners;
   List<PromotionModel> get promotions => _promotions;
   List<PaymentMethodModel> get paymentMethods => _paymentMethods;
   String? get paymentMethodsBranchId => _paymentMethodsBranchId;

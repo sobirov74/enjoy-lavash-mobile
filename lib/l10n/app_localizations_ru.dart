@@ -375,7 +375,7 @@ class LRu extends L {
   String get nameOptional => 'Имя (необязательно)';
 
   @override
-  String get birthDateTitle => 'Ваш особенный день 🎂';
+  String get birthDateTitle => 'Ваш день рождения 🎂';
 
   @override
   String get birthDate => 'Дата рождения';

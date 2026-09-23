@@ -1,3 +1,4 @@
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/banner_model.dart';
 import 'package:dio/dio.dart';
 import 'package:enjoy_lavash_mobile/core/api/api_client.dart';
 import 'package:enjoy_lavash_mobile/core/api/api_endpoints.dart';
@@ -24,9 +25,13 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/entities/mobi
 import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/repositories/mobile_backend_repository.dart';
 
 class MobileBackendRepositoryImpl implements MobileBackendRepository {
-  const MobileBackendRepositoryImpl(this._apiClient);
+  const MobileBackendRepositoryImpl(
+    this._apiClient, {
+    this.organisationId = const String.fromEnvironment('ORGANISATION_ID'),
+  });
 
   final ApiClient _apiClient;
+  final String organisationId;
 
   Dio get _dio => _apiClient.dio;
 
@@ -91,6 +96,15 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
         }
       }
 
+      Future<List<BannerModel>> optionalBanners() async {
+        try {
+          return await _fetchActiveBanners(language: language);
+        } catch (_) {
+          // A banner outage must not prevent browsing or ordering.
+          return const <BannerModel>[];
+        }
+      }
+
       Future<List<PaymentMethodModel>> optionalPaymentMethods() async {
         try {
           return await _fetchPaymentMethods(
@@ -107,6 +121,7 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
         _fetchCatalog(language: language, branchId: branchId),
         optionalPromotions(),
         optionalPaymentMethods(),
+        optionalBanners(),
       ]);
 
       final authFuture = hasToken
@@ -124,6 +139,7 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
         branches: publicData[0] as List<BranchModel>,
         catalog: publicData[1] as CatalogModel,
         promotions: publicData[2] as List<PromotionModel>,
+        banners: publicData[4] as List<BannerModel>,
         paymentMethods: publicData[3] as List<PaymentMethodModel>,
         client: authData[0] as ClientProfile?,
         addresses: authData[1] as List<ClientAddress>,
@@ -509,12 +525,60 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
     return CatalogModel.fromJson(response.data, language: language);
   }
 
+  @override
+  Future<Result<List<BannerModel>>> getActiveBanners({String language = 'uz'}) {
+    return _guard(() => _fetchActiveBanners(language: language));
+  }
+
+  @override
+  Future<Result<BannerModel>> getBanner({
+    required String id,
+    String language = 'uz',
+  }) {
+    return _guard(() async {
+      final response = await _dio.get(ApiEndpoints.banner(id));
+      return BannerModel.fromJson(
+        asJsonMap(response.data),
+        language: language,
+        backendBaseUrl: _dio.options.baseUrl,
+      );
+    });
+  }
+
+  Future<List<BannerModel>> _fetchActiveBanners({
+    required String language,
+  }) async {
+    // Global public content: no organisation or client token is required.
+    final response = await _dio.get(ApiEndpoints.activeBanners);
+    return asJsonMapList(response.data)
+        .map(
+          (json) => BannerModel.fromJson(
+            json,
+            language: language,
+            backendBaseUrl: _dio.options.baseUrl,
+          ),
+        )
+        .toList(growable: false);
+  }
+
   Future<List<PromotionModel>> _fetchActivePromotions({
     required String language,
   }) async {
-    final response = await _dio.get(ApiEndpoints.activePromotions);
+    final response = await _dio.get(
+      ApiEndpoints.activePromotions,
+      queryParameters: {
+        if (organisationId.trim().isNotEmpty)
+          'organisationId': organisationId.trim(),
+      },
+    );
     return asJsonMapList(_listPayload(response.data, key: 'promotions'))
-        .map((json) => PromotionModel.fromJson(json, language: language))
+        .map(
+          (json) => PromotionModel.fromJson(
+            json,
+            language: language,
+            backendBaseUrl: _dio.options.baseUrl,
+          ),
+        )
         .toList(growable: false);
   }
 

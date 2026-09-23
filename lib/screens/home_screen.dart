@@ -4,11 +4,12 @@ import 'package:enjoy_lavash_mobile/features/models/menu_product.dart';
 import 'package:enjoy_lavash_mobile/features/models/menu_category.dart';
 import 'package:enjoy_lavash_mobile/core/error/failures.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/order_model.dart';
-import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/promotion_model.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/banner_model.dart';
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/theme/app_design_tokens.dart';
 import 'package:enjoy_lavash_mobile/utils/price_formatter.dart';
 import 'package:enjoy_lavash_mobile/widgets/product_image.dart';
+import 'package:enjoy_lavash_mobile/widgets/home_banner_slider.dart';
 import 'package:enjoy_lavash_mobile/widgets/redesign/app_surface_card.dart';
 import 'package:enjoy_lavash_mobile/widgets/redesign/order_context_pill.dart';
 import 'package:enjoy_lavash_mobile/widgets/animated_error_message.dart';
@@ -23,7 +24,8 @@ class HomeScreen extends StatelessWidget {
     required this.orderContextLabel,
     required this.categories,
     required this.products,
-    required this.promotions,
+    required this.banners,
+    required this.onBannerLinkTap,
     required this.locale,
     required this.onOrderContextTap,
     required this.onNotificationsTap,
@@ -45,7 +47,8 @@ class HomeScreen extends StatelessWidget {
   final String orderContextLabel;
   final List<MenuCategory> categories;
   final List<MenuProduct> products;
-  final List<PromotionModel> promotions;
+  final List<BannerModel> banners;
+  final ValueChanged<Uri> onBannerLinkTap;
   final String locale;
   final int notificationUnreadCount;
   final CustomerOrderModel? lastOrder;
@@ -62,6 +65,9 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = L.of(context);
+    final visibleBanners = banners
+        .where((banner) => banner.imageUrl?.trim().isNotEmpty == true)
+        .toList(growable: false);
     if (isLoading && products.isEmpty) {
       return _HomeLoadingState(onRefresh: onRefresh);
     }
@@ -132,14 +138,12 @@ class HomeScreen extends StatelessWidget {
                       onTap: onRepeatOrder!,
                     ),
                   ],
-                  if (promotions.isNotEmpty) ...<Widget>[
+                  if (visibleBanners.isNotEmpty) ...<Widget>[
                     const SizedBox(height: 18),
-                    _PromotionHero(
-                      promotion: promotions.first,
-                      fallbackTitle: t.specialOffer,
-                      fallbackDescription: t.specialOfferDesc,
-                      actionLabel: t.specialOfferCta,
-                      onTap: onMenuTap,
+                    HomeBannerSlider(
+                      banners: visibleBanners,
+                      locale: locale,
+                      onLinkTap: onBannerLinkTap,
                     ),
                   ],
                   const SizedBox(height: 22),
@@ -556,121 +560,6 @@ class _RepeatOrderCard extends StatelessWidget {
                 shadowColor: Colors.transparent,
               ),
               child: Text(actionLabel),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PromotionHero extends StatelessWidget {
-  const _PromotionHero({
-    required this.promotion,
-    required this.fallbackTitle,
-    required this.fallbackDescription,
-    required this.actionLabel,
-    required this.onTap,
-  });
-
-  final PromotionModel promotion;
-  final String fallbackTitle;
-  final String fallbackDescription;
-  final String actionLabel;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final title = promotion.title.trim().isEmpty
-        ? fallbackTitle
-        : promotion.title.trim();
-    final description = promotion.description?.trim();
-    return Container(
-      height: 172,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: const Color(0xFF6E4E36),
-        borderRadius: BorderRadius.circular(AppDesignTokens.radiusHero),
-      ),
-      child: Stack(
-        fit: StackFit.expand,
-        children: <Widget>[
-          Positioned(
-            right: -32,
-            top: -32,
-            child: Opacity(
-              opacity: 0.32,
-              child: Image.asset(
-                'assets/images/enjoy-logo-app-icon.png',
-                width: 210,
-                height: 210,
-              ),
-            ),
-          ),
-          const DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: <Color>[Color(0x08000000), Color(0xD9000000)],
-                stops: <double>[0.15, 1],
-              ),
-            ),
-          ),
-          Positioned(
-            left: 16,
-            right: 14,
-            bottom: 14,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: <Widget>[
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      Text(
-                        fallbackTitle.toUpperCase(),
-                        style: AppTextStyles.ui(
-                          size: 11.5,
-                          weight: FontWeight.w600,
-                          color: Colors.white.withValues(alpha: 0.70),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        description?.isNotEmpty == true ? description! : title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTextStyles.display(
-                          size: 20,
-                          height: 1.15,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                SizedBox(
-                  height: 40,
-                  child: FilledButton(
-                    onPressed: onTap,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppDesignTokens.action,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                    ),
-                    child: Text(
-                      actionLabel.replaceAll('🔥 ', ''),
-                      style: AppTextStyles.ui(
-                        size: 13.5,
-                        weight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
             ),
           ),
         ],

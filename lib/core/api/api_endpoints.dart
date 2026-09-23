@@ -14,6 +14,7 @@ class ApiEndpoints {
   static const appVersion = "/app-version";
   static const catalog = "/catalog";
   static const activePromotions = "/promotions/active";
+  static const activeBanners = "/banners/active";
   static const paymentMethods = "/payment-methods";
   static const cartPreview = "/clients/me/cart/preview";
   static const clientMe = "/clients/me";
@@ -33,6 +34,8 @@ class ApiEndpoints {
 
   static String catalogProduct(String idOrSlug) =>
       "/catalog/products/${Uri.encodeComponent(idOrSlug)}";
+
+  static String banner(String id) => "/banners/${Uri.encodeComponent(id)}";
 
   static String branchOrderingStatus(String branchId) =>
       "$branches/${Uri.encodeComponent(branchId)}/ordering-status";

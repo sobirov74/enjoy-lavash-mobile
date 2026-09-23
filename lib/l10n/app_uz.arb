@@ -146,7 +146,7 @@
   "phoneNumber": "Telefon raqami",
   "smsCode": "SMS kod",
   "nameOptional": "Ism (ixtiyoriy)",
-  "birthDateTitle": "Sizning maxsus kuningiz 🎂",
+  "birthDateTitle": "Sizning tug'ilgan kuningiz 🎂",
   "birthDate": "Tug'ilgan sana",
   "selectBirthDate": "Tug'ilgan sanani tanlang",
   "birthDateSubtitle": "Bir necha aylantirishda tanlang. Tug'ilgan kuningiz uchun maxsus sovg'alar tayyorlaymiz.",

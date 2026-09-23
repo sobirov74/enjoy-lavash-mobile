@@ -1266,15 +1266,21 @@ class _BirthDatePromptSheetState extends State<_BirthDatePromptSheet> {
     final t = L.of(context);
     final locale = Localizations.localeOf(context).toLanguageTag();
     final selectedDateText = DateFormat.yMMMMd(locale).format(_selectedDate);
+    final primaryText = AppDesignTokens.primaryText(context);
+    final secondaryText = AppDesignTokens.tertiaryText(context);
+    final accentColor = isDark
+        ? BaseColors.primaryOnDark
+        : BaseColors.primaryDark;
     final pickerTextStyle = TextStyle(
-      color: theme.colorScheme.onSurface,
+      color: primaryText,
       fontSize: 19,
       fontWeight: FontWeight.w700,
     );
-    final pickerBackground = isDark ? const Color(0xFF1D1A18) : Colors.white;
-    final pickerSelectionColor = BaseColors.primary.withValues(
-      alpha: isDark ? 0.18 : 0.10,
-    );
+    final pickerBackground = AppDesignTokens.surface(context);
+    final pickerSelectionColor =
+        (isDark ? BaseColors.primaryOnDark : BaseColors.primary).withValues(
+          alpha: isDark ? 0.20 : 0.12,
+        );
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
@@ -1290,7 +1296,7 @@ class _BirthDatePromptSheetState extends State<_BirthDatePromptSheet> {
           children: <Widget>[
             AppBottomSheetDragHandle(
               margin: const EdgeInsets.only(bottom: 8),
-              color: isDark ? const Color(0xFF3A332D) : const Color(0xFFE8DED4),
+              color: secondaryText,
             ),
             Row(
               children: <Widget>[
@@ -1298,6 +1304,7 @@ class _BirthDatePromptSheetState extends State<_BirthDatePromptSheet> {
                   child: TypographyText(
                     t.birthDateTitle,
                     style: theme.textTheme.titleLarge?.copyWith(
+                      color: primaryText,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -1305,6 +1312,7 @@ class _BirthDatePromptSheetState extends State<_BirthDatePromptSheet> {
                 IconButton(
                   key: const ValueKey<String>('birth-date-close-button'),
                   tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                  color: primaryText,
                   onPressed: _isSaving
                       ? null
                       : () => Navigator.of(context).pop(),
@@ -1316,7 +1324,7 @@ class _BirthDatePromptSheetState extends State<_BirthDatePromptSheet> {
             TypographyText(
               t.birthDateSubtitle,
               style: TextStyle(
-                color: isDark ? const Color(0xFFB7AEA6) : BaseColors.textGray,
+                color: secondaryText,
                 fontSize: 14,
                 height: 1.35,
                 fontWeight: FontWeight.w600,
@@ -1334,9 +1342,7 @@ class _BirthDatePromptSheetState extends State<_BirthDatePromptSheet> {
                   color: pickerBackground,
                   borderRadius: BorderRadius.circular(22),
                   border: Border.all(
-                    color: isDark
-                        ? const Color(0xFF332D29)
-                        : const Color(0xFFF0E8E1),
+                    color: AppDesignTokens.controlBorder(context),
                   ),
                 ),
                 child: Column(
@@ -1444,18 +1450,14 @@ class _BirthDatePromptSheetState extends State<_BirthDatePromptSheet> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
-                color: BaseColors.primary.withValues(
-                  alpha: isDark ? 0.14 : 0.08,
-                ),
+                color: isDark
+                    ? BaseColors.primaryOnDark.withValues(alpha: 0.12)
+                    : BaseColors.surfaceTint,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
                 children: <Widget>[
-                  const Icon(
-                    Icons.cake_outlined,
-                    color: BaseColors.primary,
-                    size: 21,
-                  ),
+                  Icon(Icons.cake_outlined, color: accentColor, size: 21),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
@@ -1464,9 +1466,7 @@ class _BirthDatePromptSheetState extends State<_BirthDatePromptSheet> {
                         TypographyText(
                           t.birthDate,
                           style: TextStyle(
-                            color: isDark
-                                ? const Color(0xFFB7AEA6)
-                                : BaseColors.textGray,
+                            color: secondaryText,
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                           ),
@@ -1474,8 +1474,8 @@ class _BirthDatePromptSheetState extends State<_BirthDatePromptSheet> {
                         const SizedBox(height: 2),
                         TypographyText(
                           selectedDateText,
-                          style: const TextStyle(
-                            color: BaseColors.primary,
+                          style: TextStyle(
+                            color: accentColor,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
@@ -1489,8 +1489,8 @@ class _BirthDatePromptSheetState extends State<_BirthDatePromptSheet> {
               const SizedBox(height: 12),
               TypographyText(
                 _errorText!,
-                style: const TextStyle(
-                  color: BaseColors.danger,
+                style: TextStyle(
+                  color: AppDesignTokens.dangerText(context),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -1502,7 +1502,7 @@ class _BirthDatePromptSheetState extends State<_BirthDatePromptSheet> {
                   child: TextButton(
                     key: const ValueKey<String>('birth-date-skip-button'),
                     style: TextButton.styleFrom(
-                      foregroundColor: BaseColors.textGray,
+                      foregroundColor: secondaryText,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -1511,7 +1511,7 @@ class _BirthDatePromptSheetState extends State<_BirthDatePromptSheet> {
                     onPressed: _isSaving
                         ? null
                         : () => Navigator.of(context).pop(),
-                    child: TypographyText(t.skip),
+                    child: Text(t.skip),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -1519,7 +1519,8 @@ class _BirthDatePromptSheetState extends State<_BirthDatePromptSheet> {
                   child: FilledButton(
                     key: const ValueKey<String>('birth-date-save-button'),
                     style: FilledButton.styleFrom(
-                      backgroundColor: BaseColors.primary,
+                      backgroundColor: BaseColors.primaryDark,
+                      disabledBackgroundColor: BaseColors.primaryDark,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
@@ -1559,15 +1560,13 @@ class _BirthDatePickerLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Expanded(
       flex: flex,
       child: TypographyText(
         text,
         textAlign: TextAlign.center,
         style: TextStyle(
-          color: isDark ? const Color(0xFFB7AEA6) : BaseColors.textGray,
+          color: AppDesignTokens.tertiaryText(context),
           fontSize: 12,
           fontWeight: FontWeight.w800,
         ),

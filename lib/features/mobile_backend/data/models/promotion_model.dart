@@ -1,3 +1,5 @@
+import 'package:enjoy_lavash_mobile/core/api/backend_image_url.dart';
+
 import 'json_helpers.dart';
 
 class PromotionModel {
@@ -7,6 +9,7 @@ class PromotionModel {
     required this.isActive,
     this.code,
     this.description,
+    this.imageUrl,
     this.discountType,
     this.discountValue,
     this.startsAt,
@@ -19,6 +22,7 @@ class PromotionModel {
   final bool isActive;
   final String? code;
   final String? description;
+  final String? imageUrl;
   final String? discountType;
   final int? discountValue;
   final DateTime? startsAt;
@@ -33,6 +37,7 @@ class PromotionModel {
   factory PromotionModel.fromJson(
     Map<String, dynamic> json, {
     String language = 'ru',
+    String? backendBaseUrl,
   }) {
     final reward = asJsonMap(json['reward']);
     return PromotionModel(
@@ -47,6 +52,10 @@ class PromotionModel {
       ),
       isActive: readBool(json, const ['isActive', 'is_active'], fallback: true),
       code: stringOrNull(json['code']) ?? stringOrNull(json['promoCode']),
+      imageUrl: resolveBackendImageUrl(
+        json['imageUrl'],
+        backendBaseUrl: backendBaseUrl,
+      ),
       description: localizedText(
         json['descriptionI18n'] ??
             json['description_i18n'] ??

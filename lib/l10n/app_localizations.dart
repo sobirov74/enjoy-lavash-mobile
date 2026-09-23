@@ -798,7 +798,7 @@ abstract class L {
   /// No description provided for @birthDateTitle.
   ///
   /// In uz, this message translates to:
-  /// **'Sizning maxsus kuningiz 🎂'**
+  /// **'Sizning tug\'ilgan kuningiz 🎂'**
   String get birthDateTitle;
 
   /// No description provided for @birthDate.

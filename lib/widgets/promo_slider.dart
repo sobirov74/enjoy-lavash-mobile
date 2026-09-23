@@ -1,6 +1,7 @@
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/promotion_model.dart';
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
+import 'package:enjoy_lavash_mobile/widgets/banner_image_card.dart';
 import 'package:enjoy_lavash_mobile/utils/price_formatter.dart';
 import 'package:enjoy_lavash_mobile/widgets/app_bottom_sheet_drag_handle.dart';
 import 'package:enjoy_lavash_mobile/widgets/app_modal_bottom_sheet.dart';
@@ -9,6 +10,33 @@ import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+
+Future<void> showPromotionDetails(
+  BuildContext context, {
+  required PromotionModel promotion,
+  required String locale,
+}) async {
+  final code = promotion.code?.trim();
+  await showAppModalBottomSheet<void>(
+    context: context,
+    backgroundColor: Colors.transparent,
+    enableDrag: true,
+    isDismissible: true,
+    showDragHandle: false,
+    builder: (sheetContext) => _PromotionDetailsSheet(
+      promotion: promotion,
+      locale: locale,
+      onCopyCode: code?.isNotEmpty == true
+          ? () {
+              Clipboard.setData(ClipboardData(text: code!));
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(appSnackBar(L.of(context).promoCodeCopied));
+            }
+          : null,
+    ),
+  );
+}
 
 class PromoSlider extends StatefulWidget {
   const PromoSlider({
@@ -56,23 +84,6 @@ class _PromoSliderState extends State<PromoSlider> {
     );
   }
 
-  void _showPromotionDetails(PromotionModel promotion) {
-    showAppModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      enableDrag: true,
-      isDismissible: true,
-      showDragHandle: false,
-      builder: (context) => _PromotionDetailsSheet(
-        promotion: promotion,
-        locale: widget.locale,
-        onCopyCode: promotion.code?.trim().isNotEmpty == true
-            ? () => _copyPromoCode(promotion.code!.trim())
-            : null,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final promotions = widget.promotions;
@@ -81,7 +92,7 @@ class _PromoSliderState extends State<PromoSlider> {
     return Column(
       children: [
         SizedBox(
-          height: 152,
+          height: 172,
           child: PageView.builder(
             controller: _pageController,
             itemCount: promotions.length,
@@ -98,7 +109,11 @@ class _PromoSliderState extends State<PromoSlider> {
                   fallbackTitle: t.specialOffer,
                   fallbackDescription: t.specialOfferDesc,
                   fallbackCta: t.specialOfferCta,
-                  onTap: () => _showPromotionDetails(promotions[index]),
+                  onTap: () => showPromotionDetails(
+                    context,
+                    promotion: promotions[index],
+                    locale: widget.locale,
+                  ),
                   onCodeTap: promotions[index].code?.trim().isNotEmpty == true
                       ? () => _copyPromoCode(promotions[index].code!.trim())
                       : null,
@@ -161,6 +176,19 @@ class _PromoBanner extends StatelessWidget {
     final description = promotion.description?.trim();
     final promoCode = promotion.code?.trim();
     final hasCode = promoCode?.isNotEmpty == true;
+    final imageUrl = promotion.imageUrl?.trim();
+
+    if (imageUrl?.isNotEmpty == true) {
+      final title = promotion.title.trim().isEmpty
+          ? fallbackTitle
+          : promotion.title.trim();
+      return BannerImageCard(
+        key: ValueKey<String>('promotion-banner-${promotion.id}'),
+        title: title,
+        imageUrl: imageUrl!,
+        onTap: onTap,
+      );
+    }
 
     return GestureDetector(
       onTap: onTap,

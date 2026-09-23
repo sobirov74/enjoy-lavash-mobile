@@ -1,3 +1,4 @@
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/banner_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/address_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/branch_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/cart_model.dart';
@@ -12,11 +13,13 @@ class MobileBootstrap {
     required this.catalog,
     required this.promotions,
     required this.paymentMethods,
+    this.banners = const <BannerModel>[],
     this.client,
     this.addresses = const <ClientAddress>[],
     this.orders = const <CustomerOrderModel>[],
   });
 
+  final List<BannerModel> banners;
   final List<BranchModel> branches;
   final CatalogModel catalog;
   final List<PromotionModel> promotions;

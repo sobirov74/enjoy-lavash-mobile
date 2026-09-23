@@ -39,22 +39,22 @@ class _MainTabsDrawer extends StatelessWidget {
             _MainTabsDrawerItem(
               icon: Icons.home_rounded,
               title: t.tabHome,
-              onTap: () => _selectTab(context, 0),
+              onTap: () => _selectTab(context, _MainTabsState._homeTabIndex),
             ),
             _MainTabsDrawerItem(
               icon: Icons.restaurant_menu_rounded,
               title: t.tabMenu,
-              onTap: () => _selectTab(context, 1),
+              onTap: () => _selectTab(context, _MainTabsState._menuTabIndex),
             ),
             _MainTabsDrawerItem(
               icon: Icons.shopping_cart_rounded,
               title: t.tabCart,
-              onTap: () => _selectTab(context, 4),
+              onTap: () => _selectTab(context, _MainTabsState._cartPageIndex),
             ),
             _MainTabsDrawerItem(
               icon: Icons.person_rounded,
               title: t.tabProfile,
-              onTap: () => _selectTab(context, 3),
+              onTap: () => _selectTab(context, _MainTabsState._profileTabIndex),
             ),
             _MainTabsDrawerItem(
               icon: Icons.notifications_rounded,

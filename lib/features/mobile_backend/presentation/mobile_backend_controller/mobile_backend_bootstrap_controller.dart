@@ -94,6 +94,7 @@ extension _MobileBackendBootstrapController on MobileBackendController {
       case Success(:final data):
         _branches = data.branches;
         _promotions = data.promotions;
+        _banners = data.banners;
         _paymentMethods = data.paymentMethods;
         _paymentMethodsBranchId = branchId?.trim().isEmpty == true
             ? null

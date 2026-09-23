@@ -1,3 +1,4 @@
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/banner_model.dart';
 import 'package:enjoy_lavash_mobile/core/error/result.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/address_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/assigned_promotion_model.dart';
@@ -49,6 +50,13 @@ abstract class MobileBackendRepository {
   Future<Result<CatalogProductModel>> getCatalogProduct({
     required String idOrSlug,
     String language = 'ru',
+  });
+
+  Future<Result<List<BannerModel>>> getActiveBanners({String language = 'uz'});
+
+  Future<Result<BannerModel>> getBanner({
+    required String id,
+    String language = 'uz',
   });
 
   Future<Result<List<PromotionModel>>> getActivePromotions({

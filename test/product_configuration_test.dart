@@ -22,6 +22,7 @@ void main() {
       ..setFromMap(latitude: 41.31, longitude: 69.28, address: 'Test address');
     addTearDown(location.dispose);
     CartSelection? configured;
+    final additions = <CartSelection>[];
 
     await tester.pumpWidget(
       ChangeNotifierProvider<LocationController>.value(
@@ -43,7 +44,10 @@ void main() {
               selectedBranch: null,
               onCategorySelected: (_) {},
               onAddToCart: (_) {},
-              onAddConfiguredToCart: (selection) => configured = selection,
+              onAddConfiguredToCart: (selection) {
+                configured = selection;
+                additions.add(selection);
+              },
               onDecreaseFromCart: (_) {},
               onCartTap: () {},
               onOrderTypeChanged: (_) {},
@@ -65,10 +69,30 @@ void main() {
     expect(find.text('Choose sauce'), findsOneWidget);
     expect(find.text('Cheese'), findsOneWidget);
 
+    await tester.ensureVisible(find.text('Cheese'));
     await tester.tap(find.text('Cheese'));
+    final detailScroll = tester.state<ScrollableState>(
+      find
+          .descendant(
+            of: find.byKey(const ValueKey<String>('product-detail-page')),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    final scrollOffset = detailScroll.position.pixels;
     await tester.tap(find.textContaining('Add ·'));
     await tester.pumpAndSettle();
 
+    expect(
+      find.byKey(const ValueKey<String>('product-detail-page')),
+      findsOneWidget,
+    );
+    expect(detailScroll.position.pixels, scrollOffset);
+    // A second add uses the same selected options without navigating or resetting.
+    await tester.tap(find.textContaining('Add ·'));
+    await tester.pumpAndSettle();
+    expect(additions, hasLength(2));
+    expect(additions.first.key, additions.last.key);
     expect(configured, isNotNull);
     expect(configured!.productId, 'configured-lavash');
     expect(

@@ -63,6 +63,11 @@ class LRu extends L {
   }
 
   @override
+  String itemAddedToCart(String product) {
+    return '$product добавлен в корзину';
+  }
+
+  @override
   String itemRemovedFromCart(String product) {
     return '$product удалён из корзины';
   }

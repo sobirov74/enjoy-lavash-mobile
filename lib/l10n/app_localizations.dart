@@ -201,6 +201,12 @@ abstract class L {
   /// **'{count} ta mahsulot'**
   String cartItemsCount(int count);
 
+  /// No description provided for @itemAddedToCart.
+  ///
+  /// In uz, this message translates to:
+  /// **'{product} savatga qo‘shildi'**
+  String itemAddedToCart(String product);
+
   /// No description provided for @itemRemovedFromCart.
   ///
   /// In uz, this message translates to:

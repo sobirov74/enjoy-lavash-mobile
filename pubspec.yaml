@@ -105,7 +105,6 @@ flutter:
 
   assets:
     - assets/images/
-    - web-design/Mobile app design request/src/imports/
 
   fonts:
     - family: Manrope

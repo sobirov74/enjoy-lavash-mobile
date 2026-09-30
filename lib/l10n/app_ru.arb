@@ -27,6 +27,10 @@
       "count": { "type": "int" }
     }
   },
+  "itemAddedToCart": "{product} добавлен в корзину",
+  "@itemAddedToCart": {
+    "placeholders": {"product": {"type": "String"}}
+  },
   "itemRemovedFromCart": "{product} удалён из корзины",
   "@itemRemovedFromCart": {
     "placeholders": {

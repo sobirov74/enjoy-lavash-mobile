@@ -41,6 +41,7 @@ import 'package:enjoy_lavash_mobile/widgets/app_modal_bottom_sheet.dart';
 import 'package:enjoy_lavash_mobile/widgets/app_snack_bar.dart';
 import 'package:enjoy_lavash_mobile/widgets/redesign/cart_pill.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
+import 'package:enjoy_lavash_mobile/widgets/cart_animation/cart_arrival_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -80,6 +81,8 @@ class _MainTabsState extends State<MainTabs> {
   static const int _tabCount = 5;
 
   int _currentIndex = 0;
+  int _cartArrival = 0;
+  final _cartIconKey = GlobalKey(debugLabel: 'main-cart-icon');
   // -1 is the reference design's "All" filter.
   int _selectedCategoryIndex = -1;
   final Map<String, CartSelection> _cart = <String, CartSelection>{};
@@ -527,6 +530,18 @@ class _MainTabsState extends State<MainTabs> {
 
   void _handleTabPageChanged(int index) {
     if (_currentIndex == index) return;
+    if (index == _promotionsTabIndex &&
+        !context.read<MobileBackendController>().isAuthenticated) {
+      final previousIndex = _currentIndex;
+      // A swipe must use the same sign-in flow as tapping Promotions. Restore
+      // the previous page so dismissing sign-in cannot leave an empty tab.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _currentIndex != previousIndex) return;
+        _animateToSelectedTab(previousIndex, jump: true);
+        unawaited(_selectPromotionsTab());
+      });
+      return;
+    }
     setState(() => _currentIndex = index);
   }
 
@@ -1487,7 +1502,7 @@ class _MainTabsState extends State<MainTabs> {
             key: const ValueKey<String>('main-tabs-page-view'),
             controller: _tabPageController,
             onPageChanged: _handleTabPageChanged,
-            physics: const NeverScrollableScrollPhysics(),
+            physics: const PageScrollPhysics(),
             children: <Widget>[
               _KeepAliveTabPage(
                 child: HomeScreen(
@@ -1560,6 +1575,11 @@ class _MainTabsState extends State<MainTabs> {
                   onCartTap: () => _selectTab(_cartPageIndex),
                   onOrderContextTap: () => unawaited(_openOrderContextPicker()),
                   showCartSummary: false,
+                  isActive: _currentIndex == _menuTabIndex,
+                  cartTargetKey: _cartIconKey,
+                  onCartArrival: () {
+                    if (mounted) setState(() => _cartArrival++);
+                  },
                   onOrderTypeChanged: _setOrderType,
                   onBranchSelected: _setPickupBranch,
                   onRefresh: _refreshMenuData,
@@ -1600,6 +1620,8 @@ class _MainTabsState extends State<MainTabs> {
           ),
         ),
         bottomNavigationBar: _MainTabsBottomNavigation(
+          cartIconKey: _cartIconKey,
+          cartArrival: _cartArrival,
           isDark: isDark,
           currentIndex: _currentIndex,
           totalItems: totalItems,

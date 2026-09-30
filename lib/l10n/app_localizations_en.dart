@@ -69,6 +69,11 @@ class LEn extends L {
   }
 
   @override
+  String itemAddedToCart(String product) {
+    return '$product added to cart';
+  }
+
+  @override
   String itemRemovedFromCart(String product) {
     return '$product removed from cart';
   }

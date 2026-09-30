@@ -217,6 +217,71 @@ void main() {
     });
   }
 
+  testWidgets('horizontal swipes select all five tabs in both directions', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final controller = await _controller();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(_mainTabsHost(controller));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey<String>('birth-date-close-button')),
+    );
+    await tester.pumpAndSettle();
+
+    final pageView = find.byKey(const ValueKey<String>('main-tabs-page-view'));
+    var previousIndex = 0;
+    for (final index in [1, 2, 3, 4, 3, 2, 1, 0]) {
+      await tester.drag(
+        pageView,
+        Offset(index > previousIndex ? -300 : 300, 0),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.widget<PageView>(pageView).controller!.page, index);
+      final semantics = tester.widget<Semantics>(
+        find
+            .descendant(
+              of: find.byKey(ValueKey<String>('main-tab-$index')),
+              matching: find.byType(Semantics),
+            )
+            .first,
+      );
+      expect(semantics.properties.selected, isTrue);
+      expect(tester.takeException(), isNull, reason: 'Swipe to tab $index');
+      previousIndex = index;
+    }
+  });
+
+  for (final startingTab in [1, 3]) {
+    testWidgets(
+      'guest swipe from tab $startingTab to promotions asks for authorization',
+      (tester) async {
+        final controller = await _guestController();
+        addTearDown(controller.dispose);
+        await tester.pumpWidget(_mainTabsHost(controller));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(ValueKey<String>('main-tab-$startingTab')));
+        await tester.pumpAndSettle();
+
+        final pageView = find.byKey(
+          const ValueKey<String>('main-tabs-page-view'),
+        );
+        await tester.drag(pageView, Offset(startingTab == 1 ? -500 : 500, 0));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Enter your phone number'), findsOneWidget);
+        expect(find.byType(AssignedPromotionsScreen), findsNothing);
+        await tester.pageBack();
+        await tester.pumpAndSettle();
+        expect(tester.widget<PageView>(pageView).controller!.page, startingTab);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
   testWidgets('guest promotions tab asks for authorization', (tester) async {
     final controller = await _guestController();
     addTearDown(controller.dispose);

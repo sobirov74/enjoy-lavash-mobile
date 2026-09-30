@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:enjoy_lavash_mobile/app/location_controller.dart';
 import 'package:enjoy_lavash_mobile/core/error/failures.dart';
@@ -22,7 +23,11 @@ import 'package:enjoy_lavash_mobile/widgets/redesign/order_context_pill.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:enjoy_lavash_mobile/widgets/app_snack_bar.dart';
+import 'package:enjoy_lavash_mobile/widgets/cart_animation/cart_animation_controller.dart';
+import 'package:enjoy_lavash_mobile/widgets/cart_animation/cart_animation_source.dart';
+import 'package:enjoy_lavash_mobile/widgets/cart_animation/cart_arrival_feedback.dart';
+import 'package:enjoy_lavash_mobile/widgets/cart_animation/packaging_visual.dart';
 import 'package:provider/provider.dart';
 
 const double _stickyCategoryHeaderHeight = 56;
@@ -58,6 +63,10 @@ class MenuScreen extends StatefulWidget {
     this.onNotificationsTap,
     this.onOrderContextTap,
     this.showCartSummary = true,
+    this.isActive = true,
+    this.cartTargetKey,
+    this.onCartArrival,
+    this.packagingAssets = const {},
     this.menuFailure,
     this.menuErrorText,
   });
@@ -71,8 +80,8 @@ class MenuScreen extends StatefulWidget {
   final MobileOrderType orderType;
   final BranchModel? selectedBranch;
   final ValueChanged<int> onCategorySelected;
-  final ValueChanged<MenuProduct> onAddToCart;
-  final ValueChanged<CartSelection>? onAddConfiguredToCart;
+  final FutureOr<void> Function(MenuProduct) onAddToCart;
+  final FutureOr<void> Function(CartSelection)? onAddConfiguredToCart;
   final ValueChanged<MenuProduct> onDecreaseFromCart;
   final VoidCallback onCartTap;
   final ValueChanged<MobileOrderType> onOrderTypeChanged;
@@ -86,6 +95,13 @@ class MenuScreen extends StatefulWidget {
   final VoidCallback? onNotificationsTap;
   final VoidCallback? onOrderContextTap;
   final bool showCartSummary;
+  final bool isActive;
+  final GlobalKey? cartTargetKey;
+  final VoidCallback? onCartArrival;
+
+  /// Optional product-specific artwork overrides. Built-in packaging presets
+  /// wrap the displayed photo when a matching, preloaded override is absent.
+  final Map<String, CartPackagingAssets> packagingAssets;
   final Failure? menuFailure;
   final String? menuErrorText;
 
@@ -109,8 +125,8 @@ class _MenuScreenState extends State<MenuScreen> {
 
   double? _categoryPillLeft;
   double? _categoryPillWidth;
-  OverlayEntry? _cartFlightEntry;
-  DateTime? _lastCartFlightAt;
+  final _cartAnimation = CartAnimationController();
+  late final ValueNotifier<int> _cartCount = ValueNotifier(widget.cartCount);
   int _cartArrivalPulse = 0;
 
   // -------------------------------------------------------------------------
@@ -129,6 +145,7 @@ class _MenuScreenState extends State<MenuScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    unawaited(_cartAnimation.preload(context, widget.packagingAssets.values));
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _updateCategoryPillGeometry();
     });
@@ -137,6 +154,15 @@ class _MenuScreenState extends State<MenuScreen> {
   @override
   void didUpdateWidget(covariant MenuScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (!widget.isActive) _cartAnimation.cancel();
+    if (oldWidget.packagingAssets != widget.packagingAssets) {
+      unawaited(_cartAnimation.preload(context, widget.packagingAssets.values));
+    }
+    if (oldWidget.cartCount != widget.cartCount) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _cartCount.value = widget.cartCount;
+      });
+    }
 
     if (oldWidget.categories.length != widget.categories.length) {
       _syncCategoryKeys();
@@ -153,8 +179,8 @@ class _MenuScreenState extends State<MenuScreen> {
 
   @override
   void dispose() {
-    _cartFlightEntry?.remove();
-    _cartFlightEntry = null;
+    _cartAnimation.dispose();
+    _cartCount.dispose();
     _scrollController.dispose();
     _categoryScrollController.dispose();
     super.dispose();
@@ -258,65 +284,112 @@ class _MenuScreenState extends State<MenuScreen> {
     });
   }
 
-  void _animateProductToCart(MenuProduct product, Rect origin) {
-    final now = DateTime.now();
-    final previousFlight = _lastCartFlightAt;
-    if (AppMotion.reduced(context) ||
-        (previousFlight != null &&
-            now.difference(previousFlight) < AppMotion.spatial)) {
-      HapticFeedback.selectionClick();
-      return;
-    }
-    _lastCartFlightAt = now;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-
-      final targetRenderObject = _cartFlightTargetKey.currentContext
-          ?.findRenderObject();
-      final overlay = Overlay.maybeOf(context, rootOverlay: true);
-      final overlayRenderObject = overlay?.context.findRenderObject();
-      if (targetRenderObject is! RenderBox ||
-          !targetRenderObject.hasSize ||
-          overlay == null ||
-          overlayRenderObject is! RenderBox ||
-          !overlayRenderObject.hasSize) {
-        HapticFeedback.selectionClick();
-        return;
+  Future<void> _commitSelection(
+    MenuProduct product,
+    CartSelection selection,
+  ) async {
+    final callback = widget.onAddConfiguredToCart;
+    if (callback != null) {
+      await callback(selection);
+    } else {
+      for (var index = 0; index < selection.quantity; index++) {
+        try {
+          await widget.onAddToCart(product);
+        } catch (error) {
+          throw _PartialCartAddition(
+            selection.copyWith(quantity: selection.quantity - index),
+          );
+        }
       }
+    }
+  }
 
-      final targetRect =
-          targetRenderObject.localToGlobal(Offset.zero) &
-          targetRenderObject.size;
-      final start = overlayRenderObject.globalToLocal(origin.center);
-      final end = overlayRenderObject.globalToLocal(targetRect.center);
-
-      final previousEntry = _cartFlightEntry;
-      if (previousEntry?.mounted == true) previousEntry!.remove();
-
-      late final OverlayEntry entry;
-      entry = OverlayEntry(
-        builder: (_) => _WrapToCartFlight(
-          product: product,
-          start: start,
-          end: end,
-          onCompleted: () {
-            if (_cartFlightEntry != entry) return;
-            if (entry.mounted) entry.remove();
-            _cartFlightEntry = null;
-            HapticFeedback.selectionClick();
-            if (mounted) {
-              setState(() => _cartArrivalPulse += 1);
-            }
-          },
-        ),
-      );
-      _cartFlightEntry = entry;
-      overlay.insert(entry);
-    });
+  Future<bool> _addSelection(
+    MenuProduct product,
+    CartSelection selection,
+    CartAnimationSource? source, {
+    BuildContext? animationContext,
+    Rect? Function()? destination,
+    VoidCallback? onArrival,
+    CartAnimationSource? Function()? fallbackSource,
+    Rect? Function()? stagingBounds,
+    double packagingSize = 360,
+  }) {
+    final host = animationContext ?? context;
+    final candidate = widget.packagingAssets[product.id];
+    final artwork =
+        selection.modifiers.isEmpty && candidate?.matches(product) == true
+        ? candidate
+        : null;
+    return _cartAnimation.add(
+      context: host,
+      source: source,
+      packaging: artwork,
+      packagingKind: classifyCartPackaging(product),
+      fallbackSource: fallbackSource,
+      stagingBounds: stagingBounds,
+      packagingSize: packagingSize,
+      operation: () => _commitSelection(product, selection),
+      destination:
+          destination ??
+          () =>
+              cartAnimationBounds(widget.cartTargetKey ?? _cartFlightTargetKey),
+      onConfirmed: () {
+        if (!mounted || !widget.isActive || !host.mounted) return;
+        if (onArrival != null) {
+          onArrival();
+        } else if (widget.onCartArrival != null) {
+          widget.onCartArrival!();
+        } else {
+          setState(() => _cartArrivalPulse++);
+        }
+        final message = L.of(host).itemAddedToCart(product.title);
+        ScaffoldMessenger.of(host)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            appSnackBar(message, duration: const Duration(milliseconds: 1100)),
+          );
+        // Flutter's SnackBar is a semantics live region. It announces the
+        // localized confirmation once, without a duplicate platform event.
+      },
+      onFailed: (error, stack) {
+        if (!mounted || !host.mounted) return;
+        final retrySelection = error is _PartialCartAddition
+            ? error.remaining
+            : selection;
+        // Mutation/reconciliation belongs to the cart owner. A rejection never
+        // increments a decorative count, and retry invokes exactly one new add.
+        ScaffoldMessenger.of(host)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            appSnackBar(
+              L.of(host).errorGenericBody,
+              actionLabel: L.of(host).retry,
+              onAction: () {
+                if (mounted && host.mounted) {
+                  unawaited(
+                    _addSelection(
+                      product,
+                      retrySelection,
+                      null,
+                      animationContext: host,
+                      destination: destination,
+                      onArrival: onArrival,
+                      fallbackSource: fallbackSource,
+                      stagingBounds: stagingBounds,
+                      packagingSize: packagingSize,
+                    ),
+                  );
+                }
+              },
+            ),
+          );
+      },
+    );
   }
 
   void _showProductImagePreview(MenuProduct product) {
+    _cartAnimation.cancel();
     Navigator.of(context).push<void>(
       PageRouteBuilder<void>(
         opaque: false,
@@ -331,16 +404,31 @@ class _MenuScreenState extends State<MenuScreen> {
           product: product,
           animation: animation,
           heroTag: _productHeroTag(product),
-          onAdd: (selection) {
-            final callback = widget.onAddConfiguredToCart;
-            if (callback == null) {
-              for (var index = 0; index < selection.quantity; index++) {
-                widget.onAddToCart(product);
-              }
-              return;
-            }
-            callback(selection);
+          cartCount: _cartCount,
+          onCancelAnimation: _cartAnimation.cancel,
+          onCartTap: () {
+            _cartAnimation.cancel();
+            Navigator.of(routeContext).pop();
+            widget.onCartTap();
           },
+          onAdd:
+              (
+                selection,
+                source,
+                destination,
+                onArrival, {
+                required fallbackSource,
+                required stagingBounds,
+              }) => _addSelection(
+                product,
+                selection,
+                source,
+                animationContext: routeContext,
+                destination: destination,
+                onArrival: onArrival,
+                fallbackSource: fallbackSource,
+                stagingBounds: stagingBounds,
+              ),
         ),
         transitionsBuilder: (_, animation, _, child) => FadeTransition(
           opacity: CurvedAnimation(parent: animation, curve: AppMotion.enter),
@@ -352,22 +440,32 @@ class _MenuScreenState extends State<MenuScreen> {
 
   String _productHeroTag(MenuProduct product) => 'menu-product-${product.id}';
 
-  void _quickAdd(MenuProduct product) {
+  void _quickAdd(MenuProduct product, [CartAnimationSource? source]) {
     final selection = standardCartSelection(product);
     if (selection == null) {
       _showProductImagePreview(product);
       return;
     }
-    final callback = widget.onAddConfiguredToCart;
-    if (callback != null) {
-      callback(selection);
-    } else {
-      widget.onAddToCart(product);
-    }
+    unawaited(_addSelection(product, selection, _visibleGridSource(source)));
+  }
+
+  CartAnimationSource? _visibleGridSource(CartAnimationSource? source) {
+    if (!mounted || source == null) return null;
+    final header = cartAnimationBounds(_categoryPillTrackKey);
+    if (header != null && source.bounds.top < header.bottom) return null;
+    return CartAnimationSource(
+      bounds: source.bounds,
+      child: source.child,
+      setHidden: source.setHidden,
+      recapture: () => _visibleGridSource(
+        source.recapture == null ? source : source.recapture!(),
+      ),
+    );
   }
 
   void _selectCategory(int index) {
     if (index < -1 || index >= widget.categories.length) return;
+    _cartAnimation.cancel();
     widget.onCategorySelected(index);
     if (!_scrollController.hasClients) return;
     if (AppMotion.reduced(context)) {
@@ -690,7 +788,10 @@ class _MenuScreenState extends State<MenuScreen> {
         shadowColor: shadow,
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: widget.onCartTap,
+          onTap: () {
+            _cartAnimation.cancel();
+            widget.onCartTap();
+          },
           splashColor: BaseColors.primary.withValues(alpha: 0.08),
           highlightColor: BaseColors.primary.withValues(alpha: 0.04),
           child: ConstrainedBox(
@@ -699,16 +800,8 @@ class _MenuScreenState extends State<MenuScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: Row(
                 children: <Widget>[
-                  TweenAnimationBuilder<double>(
-                    key: ValueKey<int>(_cartArrivalPulse),
-                    duration: AppMotion.duration(context, AppMotion.micro),
-                    curve: AppMotion.enter,
-                    tween: Tween<double>(
-                      begin: _cartArrivalPulse == 0 ? 1 : 0.86,
-                      end: 1,
-                    ),
-                    builder: (context, scale, child) =>
-                        Transform.scale(scale: scale, child: child),
+                  CartArrivalFeedback(
+                    revision: _cartArrivalPulse,
                     child: Container(
                       key: _cartFlightTargetKey,
                       width: 44,
@@ -732,12 +825,12 @@ class _MenuScreenState extends State<MenuScreen> {
                           ),
                         ],
                       ),
-                      child: TypographyText(
-                        '${widget.cartCount}',
-                        style: const TextStyle(
+                      child: Badge(
+                        label: Text('${widget.cartCount}'),
+                        child: const Icon(
+                          Icons.shopping_bag_outlined,
                           color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w900,
+                          size: 24,
                         ),
                       ),
                     ),
@@ -962,11 +1055,7 @@ class _MenuScreenState extends State<MenuScreen> {
                     imageHeroTag: _productHeroTag(product),
                     onImageTap: () => _showProductImagePreview(product),
                     onAdd: () => _quickAdd(product),
-                    onAddOrigin: (origin) {
-                      if (standardCartSelection(product) != null) {
-                        _animateProductToCart(product, origin);
-                      }
-                    },
+                    onAddRequested: (source) => _quickAdd(product, source),
                     onDecrease: () => widget.onDecreaseFromCart(product),
                     onIncrease: () => _quickAdd(product),
                   ),
@@ -1021,192 +1110,9 @@ class _MenuScreenState extends State<MenuScreen> {
   }
 }
 
-class _WrapToCartFlight extends StatefulWidget {
-  const _WrapToCartFlight({
-    required this.product,
-    required this.start,
-    required this.end,
-    required this.onCompleted,
-  });
-
-  final MenuProduct product;
-  final Offset start;
-  final Offset end;
-  final VoidCallback onCompleted;
-
-  @override
-  State<_WrapToCartFlight> createState() => _WrapToCartFlightState();
-}
-
-class _WrapToCartFlightState extends State<_WrapToCartFlight>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: AppMotion.spatial,
-  );
-  late final Animation<double> _animation = CurvedAnimation(
-    parent: _controller,
-    curve: AppMotion.enter,
-  );
-
-  @override
-  void initState() {
-    super.initState();
-    _controller.addStatusListener(_handleStatus);
-    _controller.forward();
-  }
-
-  void _handleStatus(AnimationStatus status) {
-    if (status != AnimationStatus.completed) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) widget.onCompleted();
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller
-      ..removeStatusListener(_handleStatus)
-      ..dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final viewSize = MediaQuery.sizeOf(context);
-    final lowerEndpoint = widget.start.dy > widget.end.dy
-        ? widget.start.dy
-        : widget.end.dy;
-    final controlY = (lowerEndpoint + 64)
-        .clamp(24.0, viewSize.height - 24)
-        .toDouble();
-    final control = Offset((widget.start.dx + widget.end.dx) / 2, controlY);
-
-    return Positioned.fill(
-      key: const ValueKey<String>('wrap-to-cart-flight'),
-      child: ExcludeSemantics(
-        child: IgnorePointer(
-          child: AnimatedBuilder(
-            animation: _animation,
-            builder: (context, _) {
-              final progress = _animation.value;
-              final firstLeg = Offset.lerp(widget.start, control, progress)!;
-              final secondLeg = Offset.lerp(control, widget.end, progress)!;
-              final position = Offset.lerp(firstLeg, secondLeg, progress)!;
-              final scale = Tween<double>(
-                begin: 1,
-                end: 0.42,
-              ).transform(progress);
-              final opacity =
-                  (progress < 0.82
-                          ? 1.0
-                          : ((1 - progress) / 0.18).clamp(0.0, 1.0))
-                      .toDouble();
-
-              return Stack(
-                children: <Widget>[
-                  Positioned.fill(
-                    child: CustomPaint(
-                      painter: _SmileTrailPainter(
-                        start: widget.start,
-                        control: control,
-                        end: widget.end,
-                        progress: progress,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    left: position.dx - 26,
-                    top: position.dy - 26,
-                    width: 52,
-                    height: 52,
-                    child: Opacity(
-                      opacity: opacity,
-                      child: Transform.rotate(
-                        angle: (progress - 0.5) * 0.08,
-                        child: Transform.scale(
-                          scale: scale,
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surface,
-                              borderRadius: BorderRadius.circular(18),
-                              border: Border.all(
-                                color: BaseColors.primary,
-                                width: 2,
-                              ),
-                              boxShadow: <BoxShadow>[
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.18),
-                                  blurRadius: 16,
-                                  offset: const Offset(0, 8),
-                                ),
-                              ],
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(3),
-                              child: ProductImage(
-                                product: widget.product,
-                                width: 46,
-                                height: 46,
-                                borderRadius: 14,
-                                fallbackFontSize: 26,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SmileTrailPainter extends CustomPainter {
-  const _SmileTrailPainter({
-    required this.start,
-    required this.control,
-    required this.end,
-    required this.progress,
-  });
-
-  final Offset start;
-  final Offset control;
-  final Offset end;
-  final double progress;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final path = Path()
-      ..moveTo(start.dx, start.dy)
-      ..quadraticBezierTo(control.dx, control.dy, end.dx, end.dy);
-    final metrics = path.computeMetrics().toList(growable: false);
-    if (metrics.isEmpty) return;
-
-    final metric = metrics.first;
-    final visiblePath = metric.extractPath(0, metric.length * progress);
-    canvas.drawPath(
-      visiblePath,
-      Paint()
-        ..color = BaseColors.primaryDark.withValues(alpha: 0.3 * (1 - progress))
-        ..strokeWidth = 4
-        ..strokeCap = StrokeCap.round
-        ..style = PaintingStyle.stroke,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _SmileTrailPainter oldDelegate) {
-    return oldDelegate.progress != progress ||
-        oldDelegate.start != start ||
-        oldDelegate.control != control ||
-        oldDelegate.end != end;
-  }
+class _PartialCartAddition implements Exception {
+  const _PartialCartAddition(this.remaining);
+  final CartSelection remaining;
 }
 
 class _ProductDetailPage extends StatefulWidget {
@@ -1215,12 +1121,26 @@ class _ProductDetailPage extends StatefulWidget {
     required this.animation,
     required this.heroTag,
     required this.onAdd,
+    required this.cartCount,
+    required this.onCartTap,
+    required this.onCancelAnimation,
   });
 
+  final ValueNotifier<int> cartCount;
+  final VoidCallback onCartTap;
+  final VoidCallback onCancelAnimation;
   final MenuProduct product;
   final Animation<double> animation;
   final Object heroTag;
-  final ValueChanged<CartSelection> onAdd;
+  final Future<bool> Function(
+    CartSelection,
+    CartAnimationSource?,
+    Rect? Function(),
+    VoidCallback, {
+    required CartAnimationSource? Function() fallbackSource,
+    required Rect? Function() stagingBounds,
+  })
+  onAdd;
 
   @override
   State<_ProductDetailPage> createState() => _ProductDetailPageState();
@@ -1229,6 +1149,16 @@ class _ProductDetailPage extends StatefulWidget {
 class _ProductDetailPageState extends State<_ProductDetailPage> {
   final Map<String, Set<String>> _selectedByGroup = <String, Set<String>>{};
   int _quantity = 1;
+  int _arrival = 0;
+  final _imageKey = GlobalKey<CartAnimationAnchorState>();
+  final _cartKey = GlobalKey();
+  final _bodyKey = GlobalKey();
+
+  @override
+  void dispose() {
+    widget.onCancelAnimation();
+    super.dispose();
+  }
 
   MenuProduct get product => widget.product;
 
@@ -1308,14 +1238,60 @@ class _ProductDetailPageState extends State<_ProductDetailPage> {
 
   void _addToCart() {
     if (!_isValid) return;
-    widget.onAdd(
-      CartSelection(
-        productId: product.id,
-        quantity: _quantity,
-        modifiers: _selectedModifiers,
+    unawaited(
+      widget.onAdd(
+        CartSelection(
+          productId: product.id,
+          quantity: _quantity,
+          modifiers: _selectedModifiers,
+        ),
+        _imageKey.currentState?.capture(),
+        () => cartAnimationBounds(_cartKey),
+        () {
+          if (mounted) setState(() => _arrival++);
+        },
+        fallbackSource: _stagedProductSource,
+        stagingBounds: () => cartAnimationBounds(_bodyKey),
       ),
     );
-    Navigator.of(context).pop();
+  }
+
+  Widget _productPhoto() => ProductImage(
+    product: product,
+    width: double.infinity,
+    height: 300,
+    borderRadius: 0,
+    fallbackFontSize: 110,
+  );
+
+  CartAnimationSource? _stagedProductSource() {
+    if (!mounted) return null;
+    final body = cartAnimationBounds(_bodyKey);
+    if (body == null || body.width <= 48 || body.height <= 48) return null;
+    // The lazy list may have disposed the hero. Recreate the same photo/crop
+    // inside the visible body without scrolling away from selected options.
+    final photoSize = Size(body.width, 300);
+    final scale = math.min(
+      200 / photoSize.width,
+      (body.height - 48) / photoSize.height,
+    );
+    return CartAnimationSource(
+      bounds: Rect.fromCenter(
+        center: body.center,
+        width: photoSize.width * scale,
+        height: photoSize.height * scale,
+      ),
+      fadeIn: true,
+      child: InheritedTheme.captureAll(
+        context,
+        MediaQuery(
+          data: MediaQuery.of(context),
+          child: FittedBox(
+            child: SizedBox.fromSize(size: photoSize, child: _productPhoto()),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -1325,145 +1301,166 @@ class _ProductDetailPageState extends State<_ProductDetailPage> {
     );
     final description = product.description?.trim();
 
-    return Semantics(
-      key: const ValueKey<String>('product-detail-page'),
-      scopesRoute: true,
-      namesRoute: true,
-      explicitChildNodes: true,
-      label: product.title,
-      child: Scaffold(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        body: Column(
-          children: <Widget>[
-            Expanded(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                physics: const BouncingScrollPhysics(),
-                children: <Widget>[
-                  SizedBox(
-                    height: 300,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: <Widget>[
-                        Hero(
-                          tag: widget.heroTag,
-                          createRectTween: (begin, end) =>
-                              MaterialRectCenterArcTween(
-                                begin: begin,
-                                end: end,
-                              ),
-                          child: ProductImage(
-                            product: product,
-                            width: double.infinity,
-                            height: 300,
-                            borderRadius: 0,
-                            fallbackFontSize: 110,
-                          ),
-                        ),
-                        Positioned(
-                          top: MediaQuery.paddingOf(context).top + 10,
-                          left: 16,
-                          child: _ProductDetailCircleButton(
-                            icon: Icons.arrow_back_ios_new_rounded,
-                            tooltip: MaterialLocalizations.of(
-                              context,
-                            ).backButtonTooltip,
-                            onTap: () => Navigator.of(context).pop(),
-                          ),
-                        ),
-                        Positioned(
-                          top: MediaQuery.paddingOf(context).top + 10,
-                          right: 16,
-                          child: _ProductDetailCircleButton(
-                            icon: Icons.close_rounded,
-                            tooltip: L.of(context).close,
-                            onTap: () => Navigator.of(context).pop(),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Transform.translate(
-                    offset: const Offset(0, -28),
-                    child: Container(
-                      padding: const EdgeInsets.fromLTRB(20, 22, 20, 0),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).scaffoldBackgroundColor,
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(28),
-                        ),
-                      ),
-                      child: FadeTransition(
-                        opacity: detailsAnimation,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            TypographyText(
-                              product.title,
-                              style: AppTextStyles.display(
-                                size: 27,
-                                height: 1.08,
-                                color: AppDesignTokens.primaryText(context),
-                              ),
-                            ),
-                            if (description?.isNotEmpty == true) ...<Widget>[
-                              const SizedBox(height: 8),
-                              TypographyText(
-                                description!,
-                                style: AppTextStyles.ui(
-                                  size: 14,
-                                  height: 1.45,
-                                  color: AppDesignTokens.secondaryText(context),
-                                ),
-                              ),
-                            ],
-                            const SizedBox(height: 14),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: <Widget>[
-                                _ProductMetaChip(
-                                  icon: Icons.restaurant_menu_rounded,
-                                  label: product.category,
-                                ),
-                                if (product.calories != null)
-                                  _ProductMetaChip(
-                                    icon: Icons.local_fire_department_outlined,
-                                    label: L
-                                        .of(context)
-                                        .caloriesLabel(product.calories!),
-                                  ),
-                                if (product.weightGrams != null)
-                                  _ProductMetaChip(
-                                    icon: Icons.scale_outlined,
-                                    label: L
-                                        .of(context)
-                                        .weightGramsLabel(product.weightGrams!),
-                                  ),
-                                if (product.cookingTimeMinutes != null)
-                                  _ProductMetaChip(
-                                    icon: Icons.schedule_rounded,
-                                    label: L
-                                        .of(context)
-                                        .cookingMinutesLabel(
-                                          product.cookingTimeMinutes!,
-                                        ),
-                                  ),
-                              ],
-                            ),
-                            for (final group in product.modifierGroups)
-                              _buildModifierGroup(context, group),
-                            const SizedBox(height: 12),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+    return PopScope<void>(
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) widget.onCancelAnimation();
+      },
+      child: Semantics(
+        key: const ValueKey<String>('product-detail-page'),
+        scopesRoute: true,
+        namesRoute: true,
+        explicitChildNodes: true,
+        label: product.title,
+        child: Scaffold(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          appBar: AppBar(
+            automaticallyImplyLeading: false,
+            toolbarHeight: 48,
+            leading: IconButton(
+              tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+              onPressed: () => Navigator.of(context).pop(),
+              icon: const Icon(Icons.arrow_back_ios_new_rounded),
             ),
-            _buildBottomBar(context),
-          ],
+            actions: [
+              ValueListenableBuilder<int>(
+                valueListenable: widget.cartCount,
+                builder: (context, count, _) => CartArrivalFeedback(
+                  revision: _arrival,
+                  child: IconButton(
+                    tooltip:
+                        '${L.of(context).viewCart}, ${L.of(context).cartItemsCount(count)}',
+                    onPressed: widget.onCartTap,
+                    icon: Badge(
+                      isLabelVisible: count > 0,
+                      label: Text('$count'),
+                      child: Icon(Icons.shopping_bag_outlined, key: _cartKey),
+                    ),
+                  ),
+                ),
+              ),
+              IconButton(
+                tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(Icons.close_rounded),
+              ),
+              const SizedBox(width: 8),
+            ],
+          ),
+          bottomNavigationBar: _buildBottomBar(context),
+          body: Column(
+            key: _bodyKey,
+            children: <Widget>[
+              Expanded(
+                child: ListView(
+                  padding: EdgeInsets.zero,
+                  physics: const BouncingScrollPhysics(),
+                  children: <Widget>[
+                    SizedBox(
+                      height: 300,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: <Widget>[
+                          Hero(
+                            tag: widget.heroTag,
+                            createRectTween: (begin, end) =>
+                                MaterialRectCenterArcTween(
+                                  begin: begin,
+                                  end: end,
+                                ),
+                            child: CartAnimationAnchor(
+                              key: _imageKey,
+                              child: _productPhoto(),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.zero,
+                      child: Container(
+                        padding: const EdgeInsets.fromLTRB(20, 22, 20, 0),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).scaffoldBackgroundColor,
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(28),
+                          ),
+                        ),
+                        child: FadeTransition(
+                          opacity: detailsAnimation,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              TypographyText(
+                                product.title,
+                                style: AppTextStyles.display(
+                                  size: 27,
+                                  height: 1.08,
+                                  color: AppDesignTokens.primaryText(context),
+                                ),
+                              ),
+                              if (description?.isNotEmpty == true) ...<Widget>[
+                                const SizedBox(height: 8),
+                                TypographyText(
+                                  description!,
+                                  style: AppTextStyles.ui(
+                                    size: 14,
+                                    height: 1.45,
+                                    color: AppDesignTokens.secondaryText(
+                                      context,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              const SizedBox(height: 14),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: <Widget>[
+                                  _ProductMetaChip(
+                                    icon: Icons.restaurant_menu_rounded,
+                                    label: product.category,
+                                  ),
+                                  if (product.calories != null)
+                                    _ProductMetaChip(
+                                      icon:
+                                          Icons.local_fire_department_outlined,
+                                      label: L
+                                          .of(context)
+                                          .caloriesLabel(product.calories!),
+                                    ),
+                                  if (product.weightGrams != null)
+                                    _ProductMetaChip(
+                                      icon: Icons.scale_outlined,
+                                      label: L
+                                          .of(context)
+                                          .weightGramsLabel(
+                                            product.weightGrams!,
+                                          ),
+                                    ),
+                                  if (product.cookingTimeMinutes != null)
+                                    _ProductMetaChip(
+                                      icon: Icons.schedule_rounded,
+                                      label: L
+                                          .of(context)
+                                          .cookingMinutesLabel(
+                                            product.cookingTimeMinutes!,
+                                          ),
+                                    ),
+                                ],
+                              ),
+                              for (final group in product.modifierGroups)
+                                _buildModifierGroup(context, group),
+                              const SizedBox(height: 12),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1589,46 +1586,21 @@ class _ProductDetailPageState extends State<_ProductDetailPage> {
                       ? AppDesignTokens.actionGlow
                       : const <BoxShadow>[],
                 ),
-                child: FilledButton(
-                  onPressed: _isValid ? _addToCart : null,
-                  child: TypographyText(
-                    t.addToCartFor(formatSum(context, total)),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Colors.white),
+                child: CartAddFeedback(
+                  child: FilledButton(
+                    onPressed: _isValid ? _addToCart : null,
+                    child: TypographyText(
+                      t.addToCartFor(formatSum(context, total)),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.white),
+                    ),
                   ),
                 ),
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _ProductDetailCircleButton extends StatelessWidget {
-  const _ProductDetailCircleButton({
-    required this.icon,
-    required this.tooltip,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white.withValues(alpha: 0.92),
-      shape: const CircleBorder(),
-      elevation: 4,
-      shadowColor: Colors.black.withValues(alpha: 0.18),
-      child: IconButton(
-        onPressed: onTap,
-        tooltip: tooltip,
-        icon: Icon(icon, size: 18, color: AppDesignTokens.ink),
       ),
     );
   }

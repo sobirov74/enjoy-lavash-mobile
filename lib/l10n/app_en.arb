@@ -27,6 +27,10 @@
       "count": { "type": "int" }
     }
   },
+  "itemAddedToCart": "{product} added to cart",
+  "@itemAddedToCart": {
+    "placeholders": {"product": {"type": "String"}}
+  },
   "itemRemovedFromCart": "{product} removed from cart",
   "@itemRemovedFromCart": {
     "placeholders": {

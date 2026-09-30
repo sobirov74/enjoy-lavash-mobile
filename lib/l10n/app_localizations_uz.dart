@@ -63,6 +63,11 @@ class LUz extends L {
   }
 
   @override
+  String itemAddedToCart(String product) {
+    return '$product savatga qo‘shildi';
+  }
+
+  @override
   String itemRemovedFromCart(String product) {
     return '$product savatdan olib tashlandi';
   }

@@ -3,6 +3,8 @@ part of 'package:enjoy_lavash_mobile/navigation/main_tabs.dart';
 class _MainTabsBottomNavigation extends StatelessWidget {
   const _MainTabsBottomNavigation({
     required this.isDark,
+    required this.cartIconKey,
+    required this.cartArrival,
     required this.currentIndex,
     required this.totalItems,
     required this.totalAmount,
@@ -13,6 +15,8 @@ class _MainTabsBottomNavigation extends StatelessWidget {
   });
 
   final bool isDark;
+  final GlobalKey cartIconKey;
+  final int cartArrival;
   final int currentIndex;
   final int totalItems;
   final int totalAmount;
@@ -76,6 +80,9 @@ class _MainTabsBottomNavigation extends StatelessWidget {
                         child: _MainTabDestination(
                           key: ValueKey<String>('main-tab-$index'),
                           index: index,
+                          cartIconKey: index == 3 ? cartIconKey : null,
+                          cartArrival: cartArrival,
+                          cartCount: totalItems,
                           label: labels[index],
                           selected: currentIndex == index,
                           color: currentIndex == index ? accent : muted,
@@ -96,6 +103,9 @@ class _MainTabsBottomNavigation extends StatelessWidget {
 class _MainTabDestination extends StatefulWidget {
   const _MainTabDestination({
     required this.index,
+    this.cartIconKey,
+    this.cartArrival = 0,
+    this.cartCount = 0,
     required this.label,
     required this.selected,
     required this.color,
@@ -104,6 +114,9 @@ class _MainTabDestination extends StatefulWidget {
   });
 
   final int index;
+  final GlobalKey? cartIconKey;
+  final int cartArrival;
+  final int cartCount;
   final String label;
   final bool selected;
   final Color color;
@@ -126,7 +139,9 @@ class _MainTabDestinationState extends State<_MainTabDestination> {
       container: true,
       button: true,
       selected: widget.selected,
-      label: widget.label,
+      label: widget.index == 3
+          ? '${widget.label}, ${L.of(context).cartItemsCount(widget.cartCount)}'
+          : widget.label,
       onTap: widget.onTap,
       excludeSemantics: true,
       child: Tooltip(
@@ -149,11 +164,30 @@ class _MainTabDestinationState extends State<_MainTabDestination> {
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
-                    _MainTabIcon(
-                      index: widget.index,
-                      selected: widget.selected,
-                      color: widget.color,
-                    ),
+                    if (widget.index == 3)
+                      CartArrivalFeedback(
+                        revision: widget.cartArrival,
+                        child: Badge(
+                          isLabelVisible: widget.cartCount > 0,
+                          label: Text('${widget.cartCount}'),
+                          child: SizedBox(
+                            key: widget.cartIconKey,
+                            width: 20,
+                            height: 20,
+                            child: _MainTabIcon(
+                              index: widget.index,
+                              selected: widget.selected,
+                              color: widget.color,
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      _MainTabIcon(
+                        index: widget.index,
+                        selected: widget.selected,
+                        color: widget.color,
+                      ),
                     const SizedBox(height: 5),
                     AnimatedDefaultTextStyle(
                       duration: duration,

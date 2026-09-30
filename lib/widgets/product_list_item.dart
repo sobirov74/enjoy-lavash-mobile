@@ -7,8 +7,9 @@ import 'package:enjoy_lavash_mobile/widgets/product_image.dart';
 import 'package:enjoy_lavash_mobile/widgets/quantity_button.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
+import 'package:enjoy_lavash_mobile/widgets/cart_animation/cart_animation_source.dart';
 
-class ProductListItem extends StatelessWidget {
+class ProductListItem extends StatefulWidget {
   const ProductListItem({
     super.key,
     required this.product,
@@ -19,6 +20,7 @@ class ProductListItem extends StatelessWidget {
     required this.onIncrease,
     this.onImageTap,
     this.onAddOrigin,
+    this.onAddRequested,
     this.imageHeroTag,
   });
 
@@ -31,15 +33,52 @@ class ProductListItem extends StatelessWidget {
   final VoidCallback? onImageTap;
   final ValueChanged<Rect>? onAddOrigin;
   final Object? imageHeroTag;
+  final void Function(CartAnimationSource? source)? onAddRequested;
+
+  @override
+  State<ProductListItem> createState() => _ProductListItemState();
+}
+
+class _ProductListItemState extends State<ProductListItem> {
+  final _imageKey = GlobalKey<CartAnimationAnchorState>();
+
+  void _add(VoidCallback legacy) {
+    final callback = widget.onAddRequested;
+    if (callback == null) {
+      legacy();
+    } else {
+      callback(_imageKey.currentState?.capture());
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final product = widget.product;
+    final isDark = widget.isDark;
+    final quantity = widget.quantity;
+    final onImageTap = widget.onImageTap;
+    final imageHeroTag = widget.imageHeroTag;
+    final onAddOrigin = widget.onAddOrigin;
+    final onDecrease = widget.onDecrease;
+    void onAdd() => _add(widget.onAdd);
+    void onIncrease() => _add(widget.onIncrease);
+    final image = CartAnimationAnchor(
+      key: _imageKey,
+      child: ProductImage(
+        product: product,
+        width: double.infinity,
+        height: 106,
+        borderRadius: AppDesignTokens.radiusThumb,
+        fallbackFontSize: 44,
+      ),
+    );
     final t = L.of(context);
     final description = product.description?.trim();
     final metadata = <String>[
       if (product.calories != null) t.caloriesLabel(product.calories!),
       if (product.weightGrams != null) t.weightGramsLabel(product.weightGrams!),
     ];
+    final textScaler = MediaQuery.textScalerOf(context);
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
@@ -48,40 +87,29 @@ class ProductListItem extends StatelessWidget {
         boxShadow: AppDesignTokens.cardShadow(context),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           GestureDetector(
             onTap: onImageTap,
             child: imageHeroTag == null
-                ? ProductImage(
-                    product: product,
-                    width: double.infinity,
-                    height: 106,
-                    borderRadius: AppDesignTokens.radiusThumb,
-                    fallbackFontSize: 44,
-                  )
+                ? image
                 : Hero(
-                    tag: imageHeroTag!,
+                    tag: imageHeroTag,
                     createRectTween: (begin, end) =>
                         MaterialRectCenterArcTween(begin: begin, end: end),
-                    child: ProductImage(
-                      product: product,
-                      width: double.infinity,
-                      height: 106,
-                      borderRadius: AppDesignTokens.radiusThumb,
-                      fallbackFontSize: 44,
-                    ),
+                    child: image,
                   ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                TypographyText(
-                  product.title,
+                _ProductTextSlot(
+                  text: product.title,
                   maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                   style: AppTextStyles.ui(
                     size: 15,
                     height: 1.22,
@@ -90,65 +118,89 @@ class ProductListItem extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                TypographyText(
-                  description?.isNotEmpty == true
+                _ProductTextSlot(
+                  text: description?.isNotEmpty == true
                       ? description!
                       : product.category,
                   maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                   style: AppTextStyles.ui(
                     size: 11.5,
+                    height: 1.3,
                     color: AppDesignTokens.tertiaryText(context),
                   ),
                 ),
-                if (metadata.isNotEmpty) ...<Widget>[
-                  const SizedBox(height: 4),
-                  TypographyText(
-                    metadata.join(' · '),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.ui(
-                      size: 11,
-                      weight: FontWeight.w600,
-                      color: AppDesignTokens.secondaryText(context),
-                    ),
+                const SizedBox(height: 4),
+                _ProductTextSlot(
+                  text: metadata.join(' · '),
+                  maxLines: 1,
+                  style: AppTextStyles.ui(
+                    size: 11,
+                    height: 1.3,
+                    weight: FontWeight.w600,
+                    color: AppDesignTokens.secondaryText(context),
                   ),
-                ],
+                ),
                 const SizedBox(height: 8),
-                if (quantity <= 0)
-                  Row(
-                    children: <Widget>[
-                      Expanded(child: _ProductPrice(product: product)),
-                      const SizedBox(width: 6),
-                      _ProductQuantityControl(
-                        isDark: isDark,
-                        quantity: quantity,
-                        onAdd: onAdd,
-                        onAddOrigin: onAddOrigin,
-                        onDecrease: onDecrease,
-                        onIncrease: onIncrease,
-                      ),
-                    ],
-                  )
-                else ...<Widget>[
-                  _ProductPrice(product: product),
-                  const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: _ProductQuantityControl(
-                      isDark: isDark,
-                      quantity: quantity,
-                      onAdd: onAdd,
-                      onAddOrigin: onAddOrigin,
-                      onDecrease: onDecrease,
-                      onIncrease: onIncrease,
-                    ),
+                // Both quantity states use the same footer. Adding a product
+                // must not change the card height or move neighbouring cards.
+                SizedBox(
+                  height: (textScaler.scale(18) * 1.15).ceilToDouble() + 2,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: _ProductPrice(product: product),
                   ),
-                ],
+                ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: _ProductQuantityControl(
+                    isDark: isDark,
+                    quantity: quantity,
+                    onAdd: onAdd,
+                    onAddOrigin: onAddOrigin,
+                    onDecrease: onDecrease,
+                    onIncrease: onIncrease,
+                  ),
+                ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Reserve the same number of lines for every card, including empty metadata.
+/// The slots grow together with the system text size instead of clipping text
+/// to a fixed overall card height.
+class _ProductTextSlot extends StatelessWidget {
+  const _ProductTextSlot({
+    required this.text,
+    required this.style,
+    required this.maxLines,
+  });
+
+  final String text;
+  final TextStyle style;
+  final int maxLines;
+
+  @override
+  Widget build(BuildContext context) {
+    final lineHeight =
+        MediaQuery.textScalerOf(context).scale(style.fontSize!) * style.height!;
+    return SizedBox(
+      height: (lineHeight * maxLines).ceilToDouble() + 2,
+      child: Align(
+        alignment: AlignmentDirectional.topStart,
+        child: text.isEmpty
+            ? null
+            : TypographyText(
+                text,
+                maxLines: maxLines,
+                overflow: TextOverflow.ellipsis,
+                style: style,
+              ),
       ),
     );
   }
@@ -196,71 +248,79 @@ class _ProductQuantityControl extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: quantity <= 0 ? 48 : 132,
-      height: 48,
-      child: AnimatedSwitcher(
-        duration: AppMotion.duration(context, AppMotion.micro),
-        switchInCurve: AppMotion.enter,
-        switchOutCurve: AppMotion.exit,
-        child: quantity <= 0
-            ? Align(
-                key: const ValueKey<String>('add'),
-                alignment: Alignment.centerRight,
-                child: SizedBox(
-                  width: 48,
-                  height: 48,
-                  child: Builder(
-                    builder: (buttonContext) => FilledButton(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: isDark
-                            ? AppDesignTokens.action.withValues(alpha: 0.18)
-                            : AppDesignTokens.actionSoft,
-                        foregroundColor: isDark
-                            ? const Color(0xFFFF8A80)
-                            : AppDesignTokens.action,
-                        elevation: 0,
-                        padding: EdgeInsets.zero,
-                        shape: const CircleBorder(),
-                      ),
-                      onPressed: () {
-                        final renderObject = buttonContext.findRenderObject();
-                        final origin =
-                            renderObject is RenderBox && renderObject.hasSize
-                            ? renderObject.localToGlobal(Offset.zero) &
-                                  renderObject.size
-                            : null;
+    return CartAddFeedback(
+      child: SizedBox(
+        // Keep room for the outgoing stepper while it fades back to Add.
+        width: 132,
+        height: 48,
+        child: AnimatedSwitcher(
+          duration: AppMotion.duration(context, AppMotion.micro),
+          switchInCurve: AppMotion.enter,
+          switchOutCurve: AppMotion.exit,
+          child: quantity <= 0
+              ? Align(
+                  key: const ValueKey<String>('add'),
+                  alignment: Alignment.centerRight,
+                  child: SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: Builder(
+                      builder: (buttonContext) => FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: isDark
+                              ? AppDesignTokens.action.withValues(alpha: 0.18)
+                              : AppDesignTokens.actionSoft,
+                          foregroundColor: isDark
+                              ? const Color(0xFFFF8A80)
+                              : AppDesignTokens.action,
+                          elevation: 0,
+                          padding: EdgeInsets.zero,
+                          shape: const CircleBorder(),
+                        ),
+                        onPressed: () {
+                          final renderObject = buttonContext.findRenderObject();
+                          final origin =
+                              renderObject is RenderBox && renderObject.hasSize
+                              ? renderObject.localToGlobal(Offset.zero) &
+                                    renderObject.size
+                              : null;
 
-                        // State changes immediately. The optional origin is
-                        // only decorative feedback and never gates the add.
-                        onAdd();
-                        if (origin != null) onAddOrigin?.call(origin);
-                      },
-                      child: const Icon(Icons.add_rounded, size: 20),
+                          // State changes immediately. The optional origin is
+                          // only decorative feedback and never gates the add.
+                          onAdd();
+                          if (origin != null) onAddOrigin?.call(origin);
+                        },
+                        child: const Icon(Icons.add_rounded, size: 20),
+                      ),
                     ),
                   ),
+                )
+              : SizedBox(
+                  key: const ValueKey<String>('stepper'),
+                  width: 132,
+                  height: 48,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: <Widget>[
+                      QuantityButton(
+                        icon: Icons.remove_rounded,
+                        onTap: onDecrease,
+                      ),
+                      Expanded(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: AnimatedQuantityText(quantity: quantity),
+                        ),
+                      ),
+                      QuantityButton(
+                        icon: Icons.add_rounded,
+                        onTap: onIncrease,
+                        emphasized: true,
+                      ),
+                    ],
+                  ),
                 ),
-              )
-            : SizedBox(
-                key: const ValueKey<String>('stepper'),
-                width: 132,
-                height: 48,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: <Widget>[
-                    QuantityButton(
-                      icon: Icons.remove_rounded,
-                      onTap: onDecrease,
-                    ),
-                    Expanded(child: AnimatedQuantityText(quantity: quantity)),
-                    QuantityButton(
-                      icon: Icons.add_rounded,
-                      onTap: onIncrease,
-                      emphasized: true,
-                    ),
-                  ],
-                ),
-              ),
+        ),
       ),
     );
   }

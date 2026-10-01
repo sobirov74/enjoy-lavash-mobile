@@ -7,10 +7,26 @@ finished package pauses briefly, then flies into the actual cart icon.
 
 The visual sequence follows the staging and closing motion in the supplied
 [Pizza menu app reference](https://www.pinterest.com/pin/844493676209462/).
-The packaging uses projected hinged folds, moving fold shadows, paper fibres,
-crease highlights, rounded wrap shading and cardboard edge thickness. It uses
-`assets/images/enjoy-logo.png` as a seal on the package; it is an app animation,
-not a representation of an approved physical print design.
+It uses `assets/images/enjoy-logo.png` as a seal on the package; it is an app
+animation, not a representation of an approved physical print design.
+
+## Lighting and materials
+
+Every package is lit by one key light from the upper left, slightly in front
+of the parcel. Faces are not outlined; their edges come from shading contrast,
+soft ambient occlusion and a lit paper edge on the sides facing the light, the
+way a photographed parcel reads. A folding flap darkens or brightens according
+to which way its face tilts while it stands up mid-fold (a bottom flap rising
+turns toward the light, a top flap turns away), and casts a blurred shadow that
+falls away from the light and softens with height. Kraft stock carries a
+rasterised fibre-and-fleck grain applied with overlay blending; waxed black
+paper and moulded plastic lids get a stronger sheen and no grain. Cups, sleeves,
+cartons and bag fronts receive cylindrical shading with a highlight band toward
+the light. The pizza box shows a paler unprinted inner lid face while open and
+a recessed, shadowed floor. The product photo casts a soft contact shadow onto
+the packaging once it has settled in, so it sits in the package rather than
+floating over it. The grain tile is built once, synchronously, and warmed by
+`CartAnimationController.preload`.
 
 ## Built-in presets
 
@@ -45,9 +61,20 @@ The default sequence lasts **2,200 ms** and scales with
 
 - 0–350 ms: lift the exact displayed photo into the packaging stage.
 - 176–1,232 ms: settle the product and fold the packaging around it.
-- 1,232–1,496 ms: hold the finished package with a restrained settling motion.
-- 1,496–2,068 ms: follow a curved path into the cart, shrinking on approach.
+- 1,232–1,496 ms: the sealed package sets down with a small bounce, then
+  crouches slightly before it leaves. Both are scale-only, so its center stays
+  fixed on the stage.
+- 1,496–2,068 ms: an unpowered toss. Linear time drives a gravity parabola
+  while horizontal travel eases, so the parcel rises, hangs and drops into the
+  cart, leaning into its direction of travel and shrinking fastest on approach.
 - 2,068–2,200 ms: confirm arrival and finish cleanup.
+
+The parcel's ground shadow is drawn by the flight overlay, not the package, so
+it stays on the surface: it appears as the parcel sets down on the stage and
+spreads, softens and fades as the parcel lifts off. On arrival the cart icon
+takes the weight with a damped spring (`CartArrivalFeedback`: a short dip, one
+overshoot, one undershoot, then rest) and a ring spreads from the impact.
+Reduced motion keeps only the brief tint pulse.
 
 The first two phases overlap. Packaging moves to the center of the visible view
 and uses a 360 logical pixel stage in both the menu and product details. The
@@ -115,6 +142,18 @@ restoration, exact-once confirmation, quantities, options, failures, reduced
 motion and cleanup. Raster checks cover every packaging kind and verify that
 closed paper/box/bag presets occlude the food. Detail regressions cover clipped
 and disposed hero images, repeated configured additions, the actual header cart
-destination and route cleanup. Visual contact sheets are rendered
-for fold inspection. Physical-device smoothness and haptics still require a
-phone check.
+destination and route cleanup. Physical-device smoothness and haptics still
+require a phone check.
+
+Two tests render contact sheets for visual review when given an output path:
+
+```sh
+# Every package at five preparation stages
+flutter test test/preset_packaging_visual_test.dart \
+  --dart-define=PACKAGING_PREVIEW_PATH=/tmp/packaging.png
+# The whole lift, fold, toss and arrival on a phone-sized page, one row per kind
+flutter test test/cart_flight_preview_test.dart \
+  --dart-define=CART_FLIGHT_PREVIEW_PATH=/tmp/flight.png
+```
+
+Without the define, both still run as smoke checks.

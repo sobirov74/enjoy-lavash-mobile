@@ -15,6 +15,7 @@ void main() {
     Size productSize = const Size(190, 110),
   }) async {
     final boundary = GlobalKey();
+    await tester.runAsync(PresetPackagingVisual.prepareMaterials);
     await tester.pumpWidget(
       Directionality(
         textDirection: TextDirection.ltr,

@@ -32,6 +32,8 @@ class CartAnimationController {
     Iterable<CartPackagingAssets> assets,
   ) async {
     if (_disposed || !context.mounted) return;
+    await PresetPackagingVisual.prepareMaterials();
+    if (_disposed || !context.mounted) return;
     await precacheImage(
       const ResizeImage(AssetImage('assets/images/enjoy-logo.png'), width: 144),
       context,
@@ -369,29 +371,74 @@ class _CartFlightState extends State<_CartFlight>
     final packedCenter = stage.center;
     final lift = Curves.easeInOutCubic.transform(_phase(t, 0, 0.16));
     final progress = _phase(t, 0.08, 0.56);
-    final travel = Curves.easeInOutCubic.transform(
-      _phase(t, _launchTime, _arrivalTime),
-    );
+    // The sealed parcel sets down with a small bounce, then crouches before
+    // it leaves. Both are scale-only, so the parcel never drifts off stage.
+    final landing = math.sin(_phase(t, 0.56, 0.63) * math.pi);
+    final crouch = math.sin(_phase(t, 0.63, _launchTime) * math.pi);
+    // Flight is an unpowered toss: linear time drives a gravity parabola while
+    // horizontal travel eases, so the parcel rises, hangs, then drops in.
+    final flight = _phase(t, _launchTime, _arrivalTime);
+    final shrink = Curves.easeInQuad.transform(flight);
     final target = _target;
     var center = Offset.lerp(source.center, packedCenter, lift)!;
+    var tilt = -.02 * landing;
+    var endScale = 0.1;
     if (target != null) {
-      final control = Offset(
-        (packedCenter.dx + target.center.dx) / 2,
-        math.min(packedCenter.dy, target.center.dy) - 44,
+      final travel = Curves.easeInOutSine.transform(flight);
+      final delta = target.center - packedCenter;
+      final arc = (delta.distance * .24).clamp(40.0, 120.0);
+      center = Offset(
+        packedCenter.dx + delta.dx * travel,
+        packedCenter.dy + delta.dy * flight - arc * 4 * flight * (1 - flight),
       );
-      center = Offset.lerp(
-        Offset.lerp(packedCenter, control, travel)!,
-        Offset.lerp(control, target.center, travel)!,
-        travel,
-      )!;
+      endScale = (target.shortestSide / side * 0.65).clamp(0.06, 0.3);
+      // Lean into the direction of travel, most at the top of the arc.
+      final direction = delta.dx.abs() < 1 ? 0.0 : delta.dx.sign;
+      tilt += -.16 * direction * math.sin(flight * math.pi) - .05 * flight;
     }
-    final endScale = target == null
-        ? 0.1
-        : (target.shortestSide / side * 0.65).clamp(0.06, 0.3);
-    final settle = math.sin(_phase(t, 0.56, _launchTime) * math.pi);
-    final scale = (1 + 0.025 * settle) * (1 - travel) + endScale * travel;
+    final scale = (1 + .03 * landing) * (1 - shrink) + endScale * shrink;
+    final opacity =
+        (widget.fadeIn ? _phase(t, 0, 0.1) : 1) * (1 - _phase(flight, 0.86, 1));
+    // The ground shadow stays on the surface: it spreads, softens and fades
+    // as the parcel lifts away instead of travelling with it.
+    final reveal = _phase(t, 0, 0.16);
+    // The shadow belongs to a parcel resting on the surface, so it appears as
+    // the parcel sets down rather than waiting on the stage ahead of it.
+    final setDown = _phase(t, 0.11, 0.24);
+    final liftOff = _phase(flight, 0, 0.38);
+    final footprint = PresetPackagingVisual.groundShadowRect(
+      widget.packagingKind!,
+    );
+    final unit = side / 320;
+    final stageOrigin = packedCenter - Offset(side / 2, side / 2);
+    final grounded = .76 + .24 * reveal;
+    final shadowRect = Rect.fromCenter(
+      center:
+          stageOrigin +
+          Offset(160 * unit, 175 * unit) +
+          (footprint.center - const Offset(160, 175)) * unit * grounded,
+      width: footprint.width * unit * grounded,
+      height: footprint.height * unit * grounded,
+    );
     return Stack(
       children: [
+        Positioned.fromRect(
+          rect: shadowRect.inflate(48 * unit),
+          child: CustomPaint(
+            painter: _GroundShadowPainter(
+              footprint: Rect.fromCenter(
+                center:
+                    Offset(shadowRect.width / 2, shadowRect.height / 2) +
+                    Offset(48 * unit, 48 * unit),
+                width: shadowRect.width,
+                height: shadowRect.height,
+              ),
+              opacity: setDown * (1 - liftOff),
+              spread: liftOff,
+              unit: unit,
+            ),
+          ),
+        ),
         Positioned.fromRect(
           rect: Rect.fromCenter(
             center: source.center,
@@ -401,13 +448,12 @@ class _CartFlightState extends State<_CartFlight>
           child: Transform.translate(
             offset: center - source.center,
             child: Transform.rotate(
-              angle: -0.035 * settle - 0.08 * travel,
+              angle: tilt,
               child: Transform.scale(
-                scale: scale,
+                scaleX: scale * (1 + .025 * crouch),
+                scaleY: scale * (1 - .04 * crouch),
                 child: Opacity(
-                  opacity:
-                      (widget.fadeIn ? _phase(t, 0, 0.1) : 1) *
-                      (1 - _phase(travel, 0.9, 1)),
+                  opacity: opacity,
                   child: Center(
                     child: SizedBox.square(
                       dimension: side,
@@ -416,6 +462,7 @@ class _CartFlightState extends State<_CartFlight>
                         progress: progress,
                         product: image,
                         productSize: source.size,
+                        groundShadow: false,
                         initialProductRect: Rect.fromCenter(
                           center: const Offset(160, 160),
                           width: source.width * 320 / side,
@@ -567,4 +614,66 @@ class _CartFlightState extends State<_CartFlight>
       ),
     );
   }
+}
+
+/// Contact shadow left on the surface beneath a lifting parcel.
+class _GroundShadowPainter extends CustomPainter {
+  const _GroundShadowPainter({
+    required this.footprint,
+    required this.opacity,
+    required this.spread,
+    required this.unit,
+  });
+
+  final Rect footprint;
+  final double opacity;
+  final double spread;
+  final double unit;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (opacity <= 0) return;
+    // Wider, softer and fainter the higher the parcel is above the surface.
+    final grow = 1 + .6 * spread;
+    final rect = Rect.fromCenter(
+      center: footprint.center,
+      width: footprint.width * grow,
+      height: footprint.height * (1 + .8 * spread),
+    );
+    const shadow = Color(0xff2a1a08);
+    canvas.drawOval(
+      rect.inflate(6 * unit),
+      Paint()
+        ..color = shadow.withValues(alpha: .12 * opacity)
+        ..maskFilter = MaskFilter.blur(
+          BlurStyle.normal,
+          (14 + 16 * spread) * unit,
+        ),
+    );
+    canvas.drawOval(
+      rect,
+      Paint()
+        ..color = shadow.withValues(alpha: .2 * opacity * (1 - .5 * spread))
+        ..maskFilter = MaskFilter.blur(
+          BlurStyle.normal,
+          (7 + 12 * spread) * unit,
+        ),
+    );
+    canvas.drawOval(
+      rect.deflate(5 * unit),
+      Paint()
+        ..color = shadow.withValues(alpha: .16 * opacity * (1 - spread))
+        ..maskFilter = MaskFilter.blur(
+          BlurStyle.normal,
+          (2.5 + 8 * spread) * unit,
+        ),
+    );
+  }
+
+  @override
+  bool shouldRepaint(_GroundShadowPainter oldDelegate) =>
+      oldDelegate.footprint != footprint ||
+      oldDelegate.opacity != opacity ||
+      oldDelegate.spread != spread ||
+      oldDelegate.unit != unit;
 }

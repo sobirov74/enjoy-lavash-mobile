@@ -14,14 +14,56 @@ class _AllOrdersScreenState extends State<_AllOrdersScreen> {
   MobileOrderType? _typeFilter;
   MobileOrderStatus? _statusFilter;
   bool _isRefreshing = false;
+  Timer? _searchDebounce;
+  _OrderFilterInputs? _filterInputs;
+  List<CustomerOrderModel> _filterResult = const <CustomerOrderModel>[];
+
+  static const Duration _searchDebounceDuration = Duration(milliseconds: 250);
+
+  void _setQuery(String value) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(_searchDebounceDuration, () {
+      if (!mounted || _query == value) return;
+      setState(() => _query = value);
+    });
+  }
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
 
+  /// Filtering formats every order (amount, dates, product titles), so the
+  /// result is kept until an input changes. Lists are compared by identity:
+  /// the controller replaces them on every update.
   List<CustomerOrderModel> _filteredOrders({
+    required List<CustomerOrderModel> orders,
+    required List<BranchModel> branches,
+    required List<ClientAddress> addresses,
+    required L t,
+  }) {
+    final inputs = _OrderFilterInputs(
+      orders: orders,
+      branches: branches,
+      addresses: addresses,
+      locale: Localizations.localeOf(context),
+      query: _query,
+      typeFilter: _typeFilter,
+      statusFilter: _statusFilter,
+    );
+    if (inputs == _filterInputs) return _filterResult;
+    _filterInputs = inputs;
+    return _filterResult = _computeFilteredOrders(
+      orders: orders,
+      branches: branches,
+      addresses: addresses,
+      t: t,
+    );
+  }
+
+  List<CustomerOrderModel> _computeFilteredOrders({
     required List<CustomerOrderModel> orders,
     required List<BranchModel> branches,
     required List<ClientAddress> addresses,
@@ -172,8 +214,9 @@ class _AllOrdersScreenState extends State<_AllOrdersScreen> {
                 controller: _searchController,
                 isDark: isDark,
                 hintText: t.ordersSearchHint,
-                onChanged: (value) => setState(() => _query = value),
+                onChanged: _setQuery,
                 onClear: () {
+                  _searchDebounce?.cancel();
                   _searchController.clear();
                   setState(() => _query = '');
                 },
@@ -433,4 +476,47 @@ class _OrdersEmptyState extends StatelessWidget {
       ),
     );
   }
+}
+
+class _OrderFilterInputs {
+  const _OrderFilterInputs({
+    required this.orders,
+    required this.branches,
+    required this.addresses,
+    required this.locale,
+    required this.query,
+    required this.typeFilter,
+    required this.statusFilter,
+  });
+
+  final List<CustomerOrderModel> orders;
+  final List<BranchModel> branches;
+  final List<ClientAddress> addresses;
+  final Locale locale;
+  final String query;
+  final MobileOrderType? typeFilter;
+  final MobileOrderStatus? statusFilter;
+
+  @override
+  bool operator ==(Object other) {
+    return other is _OrderFilterInputs &&
+        identical(other.orders, orders) &&
+        identical(other.branches, branches) &&
+        identical(other.addresses, addresses) &&
+        other.locale == locale &&
+        other.query == query &&
+        other.typeFilter == typeFilter &&
+        other.statusFilter == statusFilter;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    identityHashCode(orders),
+    identityHashCode(branches),
+    identityHashCode(addresses),
+    locale,
+    query,
+    typeFilter,
+    statusFilter,
+  );
 }

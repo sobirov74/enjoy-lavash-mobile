@@ -62,7 +62,13 @@ void main() {
     final image = tester.widget<Image>(
       find.descendant(of: slider, matching: find.byType(Image)).first,
     );
-    expect((image.image as NetworkImage).url, 'https://example.test/first.jpg');
+    // Banners decode at the slot width, not the source resolution.
+    final resized = image.image as ResizeImage;
+    expect(resized.width, isNotNull);
+    expect(
+      (resized.imageProvider as NetworkImage).url,
+      'https://example.test/first.jpg',
+    );
     await tester.drag(slider, const Offset(-350, 0));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('home-banner-second')));

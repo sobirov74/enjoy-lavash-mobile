@@ -1,6 +1,7 @@
 import 'package:enjoy_lavash_mobile/features/models/menu_product.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
+import 'package:enjoy_lavash_mobile/widgets/utils/cached_image_provider.dart';
 
 class ProductImage extends StatelessWidget {
   const ProductImage({
@@ -49,11 +50,13 @@ class ProductImage extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: imageUrl == null || imageUrl.isEmpty
           ? placeholder
-          : Image.network(
-              imageUrl,
+          : Image(
+              image: resizedNetworkImage(
+                imageUrl,
+                cacheWidth: cacheWidth,
+                cacheHeight: cacheHeight,
+              ),
               fit: BoxFit.cover,
-              cacheWidth: cacheWidth,
-              cacheHeight: cacheHeight,
               filterQuality: FilterQuality.medium,
               gaplessPlayback: true,
               semanticLabel: product.title,

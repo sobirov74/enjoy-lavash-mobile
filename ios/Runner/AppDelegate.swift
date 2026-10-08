@@ -6,6 +6,10 @@ import UserNotifications
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
   private var apnsToken: String?
   private var pendingApnsTokenResult: FlutterResult?
+  private var apnsChannel: FlutterMethodChannel?
+  /// A notification tap that arrived before Dart asked for it (cold start).
+  private var pendingOpenedNotification: [String: Any]?
+  private var dartListensForNotificationTaps = false
 
   override func application(
     _ application: UIApplication,
@@ -22,12 +26,18 @@ import UserNotifications
       binaryMessenger: engineBridge.applicationRegistrar.messenger()
     )
     apnsChannel.setMethodCallHandler { [weak self] call, result in
-      guard call.method == "requestToken" else {
+      switch call.method {
+      case "requestToken":
+        self?.requestApnsToken(result)
+      case "takeLaunchNotification":
+        self?.dartListensForNotificationTaps = true
+        result(self?.pendingOpenedNotification)
+        self?.pendingOpenedNotification = nil
+      default:
         result(FlutterMethodNotImplemented)
-        return
       }
-      self?.requestApnsToken(result)
     }
+    self.apnsChannel = apnsChannel
 
     let externalUrlChannel = FlutterMethodChannel(
       name: "enjoy_lavash_mobile/external_url",
@@ -38,9 +48,13 @@ import UserNotifications
         result(FlutterMethodNotImplemented)
         return
       }
+      // Only web links leave the app. Dart validates first; this is the last
+      // line of defence against custom schemes (tel:, sms:, app schemes).
       guard
         let value = call.arguments as? String,
-        let url = URL(string: value)
+        let url = URL(string: value),
+        url.scheme?.lowercased() == "https",
+        let host = url.host, !host.isEmpty
       else {
         result(false)
         return
@@ -93,6 +107,34 @@ import UserNotifications
     } else {
       completionHandler([.alert, .sound, .badge])
     }
+  }
+
+  // Firebase Messaging is not configured on iOS, so taps are forwarded to
+  // Dart here. super is intentionally not called: the completion handler is
+  // invoked exactly once below, and a plugin forwarding back to this delegate
+  // could otherwise recurse.
+  override func userNotificationCenter(
+    _ center: UNUserNotificationCenter,
+    didReceive response: UNNotificationResponse,
+    withCompletionHandler completionHandler: @escaping () -> Void
+  ) {
+    let payload = flutterPayload(response.notification.request.content.userInfo)
+    if dartListensForNotificationTaps, let apnsChannel {
+      apnsChannel.invokeMethod("notificationOpened", arguments: payload)
+    } else {
+      pendingOpenedNotification = payload
+    }
+    completionHandler()
+  }
+
+  /// Custom data keys only; `aps` is presentation metadata Dart does not use.
+  private func flutterPayload(_ userInfo: [AnyHashable: Any]) -> [String: Any] {
+    var payload: [String: Any] = [:]
+    for (key, value) in userInfo {
+      guard let key = key as? String, key != "aps" else { continue }
+      payload[key] = value
+    }
+    return payload
   }
 
   private func requestApnsToken(_ result: @escaping FlutterResult) {

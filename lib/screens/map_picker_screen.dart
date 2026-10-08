@@ -16,6 +16,18 @@ class MapPickerScreen extends StatefulWidget {
   State<MapPickerScreen> createState() => _MapPickerScreenState();
 }
 
+/// Tile server, overridable with `--dart-define=MAP_TILE_URL=…`. The public
+/// OpenStreetMap server is meant for light use and may throttle or block a
+/// shipped app; point this at a licensed provider for production traffic.
+const String _mapTileUrlTemplate = String.fromEnvironment(
+  'MAP_TILE_URL',
+  defaultValue: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+);
+
+/// Sent in the tile request User-Agent, as tile providers require. Must be
+/// the real application ID.
+const String _mapTileUserAgentPackage = 'com.aurumdev.enjoy_lavash_mobile';
+
 class _MapPickerScreenState extends State<MapPickerScreen> {
   final _mapController = MapController();
 
@@ -44,6 +56,8 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
   @override
   void dispose() {
     _reverseGeocodeDebounce?.cancel();
+    // flutter_map only disposes controllers it created itself.
+    _mapController.dispose();
     super.dispose();
   }
 
@@ -108,8 +122,8 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
             ),
             children: [
               TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.enjoylavash.mobile',
+                urlTemplate: _mapTileUrlTemplate,
+                userAgentPackageName: _mapTileUserAgentPackage,
               ),
               MarkerLayer(
                 markers: [
@@ -332,7 +346,7 @@ class _AddressLookupLoading extends StatefulWidget {
 class _AddressLookupLoadingState extends State<_AddressLookupLoading>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  late final Animation<double> _pulse;
+  late final CurvedAnimation _pulse;
 
   @override
   void initState() {
@@ -346,6 +360,7 @@ class _AddressLookupLoadingState extends State<_AddressLookupLoading>
 
   @override
   void dispose() {
+    _pulse.dispose();
     _controller.dispose();
     super.dispose();
   }

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 
 class GeocoderResult {
   final String name;
@@ -26,14 +27,58 @@ class SuggestionResult {
   });
 }
 
+/// Reverse geocoding and address suggestions through Yandex.
+///
+/// API keys are injected at build time:
+/// `--dart-define=YANDEX_GEOCODER_KEY=… --dart-define=YANDEX_SUGGEST_KEY=…`.
+/// Without a key the matching lookup is disabled and returns an empty result,
+/// so the app keeps working with manual address entry.
 class YandexGeocoderService {
-  YandexGeocoderService() : _dio = Dio();
+  YandexGeocoderService({
+    Dio? dio,
+    String? geocoderApiKey,
+    String? suggestApiKey,
+  }) : _dio =
+           dio ??
+           Dio(
+             BaseOptions(
+               connectTimeout: _requestTimeout,
+               receiveTimeout: _requestTimeout,
+             ),
+           ),
+       _geocoderApiKey = (geocoderApiKey ?? _configuredGeocoderApiKey).trim(),
+       _suggestApiKey = (suggestApiKey ?? _configuredSuggestApiKey).trim() {
+    _warnIfUnconfigured();
+  }
 
   final Dio _dio;
+  final String _geocoderApiKey;
+  final String _suggestApiKey;
 
-  static const _geocoderApiKey = 'b95528c3-8d5d-481c-a549-e5b760c57e74';
-  static const _suggestApiKey = '0eb8dc58-f9d3-4df8-8cee-1af2c1c083f7';
+  static const _configuredGeocoderApiKey = String.fromEnvironment(
+    'YANDEX_GEOCODER_KEY',
+  );
+  static const _configuredSuggestApiKey = String.fromEnvironment(
+    'YANDEX_SUGGEST_KEY',
+  );
+  static const _requestTimeout = Duration(seconds: 10);
   static const _reverseMinGap = Duration(milliseconds: 650);
+  static bool _warnedUnconfigured = false;
+
+  bool get isGeocoderConfigured => _geocoderApiKey.isNotEmpty;
+  bool get isSuggestConfigured => _suggestApiKey.isNotEmpty;
+
+  void _warnIfUnconfigured() {
+    if (_warnedUnconfigured || (isGeocoderConfigured && isSuggestConfigured)) {
+      return;
+    }
+    _warnedUnconfigured = true;
+    debugPrint(
+      'Yandex API keys are not configured; address lookup is disabled. '
+      'Pass --dart-define=YANDEX_GEOCODER_KEY and YANDEX_SUGGEST_KEY.',
+    );
+  }
+
   static const _maxReverseCacheEntries = 80;
   static const _maxSuggestCacheEntries = 80;
   static const _minSuggestQueryLength = 3;
@@ -54,6 +99,8 @@ class YandexGeocoderService {
     required double longitude,
     String? uri,
   }) async {
+    if (!isGeocoderConfigured) return null;
+
     final cacheKey = _reverseCacheKey(
       latitude: latitude,
       longitude: longitude,
@@ -140,6 +187,8 @@ class YandexGeocoderService {
   }
 
   Future<List<SuggestionResult>> suggest(String query) async {
+    if (!isSuggestConfigured) return const <SuggestionResult>[];
+
     final normalizedQuery = _normalizeSuggestQuery(query);
     if (normalizedQuery.length < _minSuggestQueryLength) return [];
 
@@ -163,7 +212,7 @@ class YandexGeocoderService {
             }
           });
       _suggestInFlight[cacheKey] = request;
-      return request;
+      return await request;
     } catch (_) {
       return [];
     }
@@ -218,6 +267,8 @@ class YandexGeocoderService {
     final gate = Completer<void>();
     _reverseQueue = gate.future;
 
+    // Spaces request *starts* by [_reverseMinGap]; the next caller may start
+    // while this request is still in flight.
     return previous.catchError((_) {}).then((_) async {
       try {
         final lastRequestAt = _lastReverseRequestAt;
@@ -228,12 +279,11 @@ class YandexGeocoderService {
             await Future<void>.delayed(Duration(milliseconds: waitMs));
           }
         }
-
         _lastReverseRequestAt = DateTime.now();
-        return request();
       } finally {
         gate.complete();
       }
+      return request();
     });
   }
 

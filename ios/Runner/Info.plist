@@ -26,8 +26,6 @@
 		<string>$(FLUTTER_BUILD_NUMBER)</string>
 		<key>LSRequiresIPhoneOS</key>
 		<true/>
-		<key>NSCameraUsageDescription</key>
-		<string>Enjoy Lavash uses the camera to scan QR codes and barcodes in the app.</string>
 		<key>NSLocationWhenInUseUsageDescription</key>
 		<string>Enjoy Lavash uses your location while you use the app to find your delivery address.</string>
 		<key>UIApplicationSceneManifest</key>

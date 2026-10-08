@@ -128,6 +128,12 @@ class CartScreen extends StatelessWidget {
     L t,
     int totalItems,
   ) {
+    // Line keys are derived (sorted modifier strings): build the lookup once
+    // per build instead of once per reordered child.
+    final indexByKey = <String, int>{
+      for (var index = 0; index < items.length; index++)
+        items[index].key: index,
+    };
     return Column(
       children: <Widget>[
         Padding(
@@ -192,13 +198,8 @@ class CartScreen extends StatelessWidget {
               parent: AlwaysScrollableScrollPhysics(),
             ),
             itemCount: items.length,
-            findChildIndexCallback: (key) {
-              final valueKey = key as ValueKey<String>;
-              final index = items.indexWhere(
-                (line) => line.key == valueKey.value,
-              );
-              return index == -1 ? null : index;
-            },
+            findChildIndexCallback: (key) =>
+                indexByKey[(key as ValueKey<String>).value],
             itemBuilder: (context, index) {
               final line = items[index];
               return KeyedSubtree(

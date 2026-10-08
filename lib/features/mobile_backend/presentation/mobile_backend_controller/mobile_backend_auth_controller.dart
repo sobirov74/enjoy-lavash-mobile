@@ -11,6 +11,7 @@ extension _MobileBackendAuthController on MobileBackendController {
     final result = await _repository.verifyOtp(request);
     switch (result) {
       case Success(:final data):
+        _sessionGeneration++;
         _client = data.client;
         _failure = null;
         final language =
@@ -32,7 +33,9 @@ extension _MobileBackendAuthController on MobileBackendController {
   Future<Result<ClientProfile>> _updateProfile(
     ClientProfileUpdate request,
   ) async {
+    final generation = _sessionGeneration;
     final result = await _repository.updateProfile(request);
+    if (!_isCurrentSession(generation)) return result;
     switch (result) {
       case Success(:final data):
         _client = data;
@@ -50,9 +53,11 @@ extension _MobileBackendAuthController on MobileBackendController {
     if (normalizedLanguage == null || client == null) return;
     if (client.language == normalizedLanguage) return;
 
+    final generation = _sessionGeneration;
     final result = await _repository.updateProfile(
       ClientProfileUpdate(language: normalizedLanguage),
     );
+    if (!_isCurrentSession(generation)) return;
     switch (result) {
       case Success(:final data):
         _client = data;
@@ -74,9 +79,7 @@ extension _MobileBackendAuthController on MobileBackendController {
       await _pushNotifications.clearLocalRegistration();
     }
     final result = await _repository.logout();
-    if (result.isSuccess) {
-      await handleSessionExpired();
-    }
+    if (result.isSuccess) _endSession(SessionEndReason.signedOut);
     return result;
   }
 
@@ -88,7 +91,7 @@ extension _MobileBackendAuthController on MobileBackendController {
       final result = await _repository.deleteAccount();
       if (result.isSuccess) {
         await _pushNotifications.clearLocalRegistration(resetDeviceId: true);
-        await handleSessionExpired();
+        _endSession(SessionEndReason.accountDeleted);
       }
       return result;
     } finally {
@@ -98,6 +101,14 @@ extension _MobileBackendAuthController on MobileBackendController {
   }
 
   Future<void> _handleSessionExpired() async {
-    _clearAuthenticatedState();
+    // The server rejected the session, so the device registration can no
+    // longer be removed remotely; forget it locally so the next sign-in
+    // registers the token for whoever signs in.
+    _endSession(SessionEndReason.expired);
+    try {
+      await _pushNotifications.clearLocalRegistration();
+    } catch (error) {
+      debugPrint('Push registration cleanup failed: ${error.runtimeType}');
+    }
   }
 }

@@ -9,12 +9,15 @@ import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/theme/app_design_tokens.dart';
 import 'package:enjoy_lavash_mobile/utils/price_formatter.dart';
 import 'package:enjoy_lavash_mobile/widgets/product_image.dart';
+import 'package:enjoy_lavash_mobile/widgets/utils/image_decode_size.dart';
 import 'package:enjoy_lavash_mobile/widgets/home_banner_slider.dart';
 import 'package:enjoy_lavash_mobile/widgets/redesign/app_surface_card.dart';
 import 'package:enjoy_lavash_mobile/widgets/redesign/order_context_pill.dart';
 import 'package:enjoy_lavash_mobile/widgets/animated_error_message.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:enjoy_lavash_mobile/utils/format_cache.dart';
+import 'package:enjoy_lavash_mobile/widgets/utils/cached_image_provider.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({
@@ -380,7 +383,7 @@ class _LoyaltyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final formatted = NumberFormat.decimalPattern(
+    final formatted = decimalFormat(
       Localizations.localeOf(context).toLanguageTag(),
     ).format(balance);
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -629,10 +632,15 @@ class _CategoryImage extends StatelessWidget {
   Widget build(BuildContext context) {
     final imageUrl = category.imageUrl?.trim();
     final image = imageUrl?.isNotEmpty == true
-        ? Image.network(
-            imageUrl!,
-            fit: BoxFit.cover,
-            errorBuilder: (_, _, _) => _fallback(),
+        ? LayoutBuilder(
+            builder: (context, constraints) => Image(
+              image: resizedNetworkImage(
+                imageUrl!,
+                cacheWidth: decodeWidthFor(context, constraints),
+              ),
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => _fallback(),
+            ),
           )
         : _fallback();
 

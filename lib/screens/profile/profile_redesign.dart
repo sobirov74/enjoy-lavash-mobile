@@ -31,7 +31,31 @@ class _RedesignedProfile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = L.of(context);
-    final backend = context.watch<MobileBackendController>();
+    final backend = context
+        .select<
+          MobileBackendController,
+          ({
+            ClientProfile? client,
+            Failure? failure,
+            PushNotificationSettings? pushNotificationSettings,
+            bool pushNotificationsUpdating,
+            List<AssignedPromotionModel> assignedPromotions,
+            LoyaltyWalletModel? loyaltyWallet,
+            List<CustomerOrderModel> orders,
+            List<ClientAddress> addresses,
+          })
+        >(
+          (controller) => (
+            client: controller.client,
+            failure: controller.failure,
+            pushNotificationSettings: controller.pushNotificationSettings,
+            pushNotificationsUpdating: controller.pushNotificationsUpdating,
+            assignedPromotions: controller.assignedPromotions,
+            loyaltyWallet: controller.loyaltyWallet,
+            orders: controller.orders,
+            addresses: controller.addresses,
+          ),
+        );
     final localeController = context.watch<LocaleController>();
     final themeController = context.read<ThemeController>();
     final client = backend.client;

@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:enjoy_lavash_mobile/utils/format_cache.dart';
 
 class AssignedPromotionsScreen extends StatefulWidget {
   const AssignedPromotionsScreen({
@@ -39,6 +40,10 @@ class _AssignedPromotionsScreenState extends State<AssignedPromotionsScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      // Login and app resume already load this list; skip a duplicate
+      // request when it is current. Pull-to-refresh still forces one.
+      final backend = context.read<MobileBackendController>();
+      if (backend.hasFreshAssignedPromotions(includeAll: _showAll)) return;
       unawaited(_refresh());
     });
   }
@@ -94,46 +99,72 @@ class _AssignedPromotionsScreenState extends State<AssignedPromotionsScreen> {
       body: RefreshIndicator(
         color: BaseColors.primary,
         onRefresh: _refresh,
-        child: ListView(
+        // Cards are built lazily: this tab stays alive and is rebuilt on
+        // every backend notification.
+        child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 30),
-          children: <Widget>[
-            _PromotionsHero(isDark: isDark),
-            const SizedBox(height: 14),
-            _PromotionFilter(showAll: _showAll, onChanged: _setShowAll),
-            const SizedBox(height: 14),
-            if (backend.assignedPromotionsLoading && promotions.isEmpty)
-              for (var index = 0; index < 3; index++) ...[
-                _PromotionSkeleton(isDark: isDark),
-                if (index < 2) const SizedBox(height: 12),
-              ]
-            else if (backend.assignedPromotionsFailure != null &&
-                promotions.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 64),
-                child: AnimatedErrorMessage(
-                  failure: backend.assignedPromotionsFailure,
-                  onRetry: () => unawaited(_refresh()),
-                ),
-              )
-            else if (promotions.isEmpty)
-              _EmptyPromotions(isDark: isDark)
-            else
-              for (var index = 0; index < promotions.length; index++) ...[
-                _AssignedPromotionCard(
-                  promotion: promotions[index],
-                  isDark: isDark,
-                  highlighted: _isHighlighted(promotions[index]),
-                  onCopy: () => unawaited(_copyCode(promotions[index].code)),
-                  onUse: promotions[index].canBeUsed
-                      ? () => _usePromotion(promotions[index].code)
-                      : null,
-                ),
-                if (index < promotions.length - 1) const SizedBox(height: 12),
-              ],
+          slivers: <Widget>[
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
+              sliver: SliverList.list(
+                children: <Widget>[
+                  _PromotionsHero(isDark: isDark),
+                  const SizedBox(height: 14),
+                  _PromotionFilter(showAll: _showAll, onChanged: _setShowAll),
+                ],
+              ),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 30),
+              sliver: _buildPromotionsSliver(backend, promotions, isDark),
+            ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildPromotionsSliver(
+    MobileBackendController backend,
+    List<AssignedPromotionModel> promotions,
+    bool isDark,
+  ) {
+    if (backend.assignedPromotionsLoading && promotions.isEmpty) {
+      return SliverList.separated(
+        itemCount: 3,
+        itemBuilder: (_, _) => _PromotionSkeleton(isDark: isDark),
+        separatorBuilder: (_, _) => const SizedBox(height: 12),
+      );
+    }
+    if (backend.assignedPromotionsFailure != null && promotions.isEmpty) {
+      return SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 64),
+          child: AnimatedErrorMessage(
+            failure: backend.assignedPromotionsFailure,
+            onRetry: () => unawaited(_refresh()),
+          ),
+        ),
+      );
+    }
+    if (promotions.isEmpty) {
+      return SliverToBoxAdapter(child: _EmptyPromotions(isDark: isDark));
+    }
+    return SliverList.separated(
+      itemCount: promotions.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        final promotion = promotions[index];
+        return _AssignedPromotionCard(
+          promotion: promotion,
+          isDark: isDark,
+          highlighted: _isHighlighted(promotion),
+          onCopy: () => unawaited(_copyCode(promotion.code)),
+          onUse: promotion.canBeUsed
+              ? () => _usePromotion(promotion.code)
+              : null,
+        );
+      },
     );
   }
 
@@ -463,7 +494,7 @@ class _AssignedPromotionCard extends StatelessWidget {
   }
 
   String _validityText(L t, AssignedPromotionModel promotion, String locale) {
-    final formatter = DateFormat.yMMMd(locale);
+    final formatter = dateFormat(locale, 'yMMMd', DateFormat.yMMMd);
     if (promotion.startsAt != null && promotion.endsAt != null) {
       return '${formatter.format(promotion.startsAt!.toLocal())} — '
           '${formatter.format(promotion.endsAt!.toLocal())}';

@@ -29,9 +29,7 @@ class _DeleteAccountSheetState extends State<_DeleteAccountSheet> {
       case Error(:final failure):
         messenger.showSnackBar(
           appSnackBar(
-            failure.message.isNotEmpty
-                ? failure.message
-                : t.deleteAccountFailed,
+            failureMessage(t, failure, fallback: t.deleteAccountFailed),
           ),
         );
     }
@@ -41,7 +39,9 @@ class _DeleteAccountSheetState extends State<_DeleteAccountSheet> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final t = L.of(context);
-    final deleting = context.watch<MobileBackendController>().accountDeleting;
+    final deleting = context.select<MobileBackendController, bool>(
+      (backend) => backend.accountDeleting,
+    );
     final danger = isDark ? BaseColors.dangerDark : BaseColors.danger;
 
     return PopScope(

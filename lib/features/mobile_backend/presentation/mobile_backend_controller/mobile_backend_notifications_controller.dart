@@ -100,9 +100,11 @@ extension _MobileBackendNotificationsController on MobileBackendController {
   Future<Result<ClientNotificationReadResultModel>> _markNotificationRead({
     required String notificationId,
   }) async {
+    final generation = _sessionGeneration;
     final result = await _repository.markNotificationRead(
       notificationId: notificationId,
     );
+    if (!_isCurrentSession(generation)) return result;
     switch (result) {
       case Success(:final data):
         _notificationsRequestVersion++;
@@ -129,9 +131,11 @@ extension _MobileBackendNotificationsController on MobileBackendController {
   Future<Result<ClientNotificationReadResultModel>> _markNotificationUnread({
     required String notificationId,
   }) async {
+    final generation = _sessionGeneration;
     final result = await _repository.markNotificationUnread(
       notificationId: notificationId,
     );
+    if (!_isCurrentSession(generation)) return result;
     switch (result) {
       case Success(:final data):
         _notificationsRequestVersion++;
@@ -157,7 +161,9 @@ extension _MobileBackendNotificationsController on MobileBackendController {
 
   Future<Result<ClientNotificationReadResultModel>>
   _markAllNotificationsRead() async {
+    final generation = _sessionGeneration;
     final result = await _repository.markAllNotificationsRead();
+    if (!_isCurrentSession(generation)) return result;
     switch (result) {
       case Success(:final data):
         _notificationsRequestVersion++;
@@ -208,6 +214,7 @@ extension _MobileBackendNotificationsController on MobileBackendController {
         case Success(:final data):
           _assignedPromotions = data;
           _assignedPromotionsIncludeAll = includeAll;
+          _assignedPromotionsFetchedAt = _clock();
           _assignedPromotionsFailure = null;
           _failure = null;
         case Error(:final failure):
@@ -223,6 +230,12 @@ extension _MobileBackendNotificationsController on MobileBackendController {
   Future<void> _handleAppResumed({String? locale}) async {
     final client = _client;
     if (client == null) return;
+    // Returning from the payment page, a permission dialog or a quick app
+    // switch should not re-fetch everything each time.
+    final now = _clock();
+    final last = _lastResumeRefreshAt;
+    if (last != null && now.difference(last) < resumeRefreshInterval) return;
+    _lastResumeRefreshAt = now;
 
     _startPushNotificationSync(locale: locale ?? client.language);
     await Future.wait<Object?>([

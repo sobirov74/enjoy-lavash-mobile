@@ -1,3 +1,5 @@
+import 'package:enjoy_lavash_mobile/core/services/external_url_launcher.dart';
+
 /// Destinations available through the app's existing navigation flows.
 enum AppDeepLink {
   home,
@@ -26,8 +28,7 @@ Uri? supportedBannerLink(String? value) {
   if (value == null || value.trim().isEmpty) return null;
   final uri = Uri.tryParse(value.trim());
   if (uri == null) return null;
-  if ((uri.scheme == 'http' || uri.scheme == 'https') && uri.host.isNotEmpty) {
-    return uri;
-  }
+  final external = ExternalUrlLauncher.allowedUri(value);
+  if (external != null) return external;
   return AppDeepLink.fromUri(uri) == null ? null : uri;
 }

@@ -62,9 +62,7 @@ class _SavedAddressesScreenState extends State<_SavedAddressesScreen> {
       case Error(:final failure):
         ScaffoldMessenger.of(context).showSnackBar(
           appSnackBar(
-            failure.message.trim().isNotEmpty
-                ? failure.message
-                : t.addressSaveFailed,
+            failureMessage(t, failure, fallback: t.addressSaveFailed),
           ),
         );
     }
@@ -83,9 +81,7 @@ class _SavedAddressesScreenState extends State<_SavedAddressesScreen> {
       case Error(:final failure):
         ScaffoldMessenger.of(context).showSnackBar(
           appSnackBar(
-            failure.message.trim().isNotEmpty
-                ? failure.message
-                : t.addressSaveFailed,
+            failureMessage(t, failure, fallback: t.addressSaveFailed),
           ),
         );
     }
@@ -122,9 +118,7 @@ class _SavedAddressesScreenState extends State<_SavedAddressesScreen> {
       case Error(:final failure):
         ScaffoldMessenger.of(context).showSnackBar(
           appSnackBar(
-            failure.message.trim().isNotEmpty
-                ? failure.message
-                : t.addressDeleteFailed,
+            failureMessage(t, failure, fallback: t.addressDeleteFailed),
           ),
         );
     }
@@ -133,7 +127,21 @@ class _SavedAddressesScreenState extends State<_SavedAddressesScreen> {
   @override
   Widget build(BuildContext context) {
     final t = L.of(context);
-    final backend = context.watch<MobileBackendController>();
+    final backend = context
+        .select<
+          MobileBackendController,
+          ({
+            List<ClientAddress> addresses,
+            Failure? addressesFailure,
+            bool addressesUpdating,
+          })
+        >(
+          (controller) => (
+            addresses: controller.addresses,
+            addressesFailure: controller.addressesFailure,
+            addressesUpdating: controller.addressesUpdating,
+          ),
+        );
     final addresses = backend.addresses;
 
     return Scaffold(
@@ -147,7 +155,7 @@ class _SavedAddressesScreenState extends State<_SavedAddressesScreen> {
         child: RefreshIndicator(
           color: BaseColors.primary,
           onRefresh: () async {
-            await backend.refreshAddresses();
+            await context.read<MobileBackendController>().refreshAddresses();
           },
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(
@@ -158,7 +166,9 @@ class _SavedAddressesScreenState extends State<_SavedAddressesScreen> {
               if (backend.addressesFailure != null && addresses.isEmpty)
                 AnimatedErrorMessage(
                   failure: backend.addressesFailure!,
-                  onRetry: () => unawaited(backend.refreshAddresses()),
+                  onRetry: () => unawaited(
+                    context.read<MobileBackendController>().refreshAddresses(),
+                  ),
                 )
               else if (addresses.isEmpty)
                 _SavedAddressesEmpty(onAdd: _addAddress)

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:enjoy_lavash_mobile/features/models/cart_line.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CartStorage {
@@ -25,7 +26,10 @@ class CartStorage {
               .where((line) => line.productId.isNotEmpty && line.quantity > 0)
               .toList(growable: false);
         }
-      } on FormatException {
+      } catch (error) {
+        // Corrupt or wrong-typed data from an older build. Drop it once so it
+        // cannot fail every launch; the cart simply starts empty.
+        debugPrint('Discarding unreadable saved cart: ${error.runtimeType}');
         await preferences.remove(_linesStorageKey);
       }
     }
@@ -55,7 +59,8 @@ class CartStorage {
         }
       }
       return cart;
-    } on FormatException {
+    } catch (error) {
+      debugPrint('Discarding unreadable legacy cart: ${error.runtimeType}');
       await preferences.remove(_storageKey);
       return <String, int>{};
     }

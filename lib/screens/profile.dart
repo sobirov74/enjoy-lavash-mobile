@@ -35,6 +35,10 @@ import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
 import 'package:enjoy_lavash_mobile/theme/app_design_tokens.dart';
 import 'package:enjoy_lavash_mobile/theme/app_motion.dart';
 import 'package:enjoy_lavash_mobile/utils/price_formatter.dart';
+import 'package:enjoy_lavash_mobile/widgets/utils/failure_message.dart';
+import 'package:enjoy_lavash_mobile/utils/format_cache.dart';
+import 'package:enjoy_lavash_mobile/core/services/mobile_push_notification_service.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/assigned_promotion_model.dart';
 
 part 'profile/delete_account_sheet.dart';
 part 'profile/profile_sections.dart';
@@ -147,7 +151,14 @@ class _ProfileState extends State<Profile> {
     if (!context.mounted || result.isSuccess) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      appSnackBar(result.failureOrNull?.message ?? t.logoutFailed),
+      appSnackBar(switch (result.failureOrNull) {
+        final Failure failure => failureMessage(
+          t,
+          failure,
+          fallback: t.logoutFailed,
+        ),
+        null => t.logoutFailed,
+      }),
     );
   }
 
@@ -244,9 +255,7 @@ class _ProfileState extends State<Profile> {
       case Error(:final failure):
         ScaffoldMessenger.of(context).showSnackBar(
           appSnackBar(
-            failure.message.isNotEmpty
-                ? failure.message
-                : t.notificationUpdateFailed,
+            failureMessage(t, failure, fallback: t.notificationUpdateFailed),
           ),
         );
     }

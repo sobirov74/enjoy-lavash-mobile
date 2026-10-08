@@ -2450,6 +2450,30 @@ abstract class L {
   /// In uz, this message translates to:
   /// **'Promokodni qo‘llab bo‘lmadi'**
   String get promoCodeCouldNotBeApplied;
+
+  /// No description provided for @cartQuantityLimitReached.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bitta mahsulotdan ko‘pi bilan {count} ta qo‘shish mumkin'**
+  String cartQuantityLimitReached(int count);
+
+  /// No description provided for @cartItemsUnavailable.
+  ///
+  /// In uz, this message translates to:
+  /// **'Endi mavjud emas, savatdan olib tashlandi: {items}'**
+  String cartItemsUnavailable(String items);
+
+  /// No description provided for @cartSomeItemsUnavailable.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ba’zi mahsulotlar endi mavjud emas va savatdan olib tashlandi'**
+  String get cartSomeItemsUnavailable;
+
+  /// No description provided for @repeatOrderSkipped.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savatga qo‘shib bo‘lmadi: {items}'**
+  String repeatOrderSkipped(String items);
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

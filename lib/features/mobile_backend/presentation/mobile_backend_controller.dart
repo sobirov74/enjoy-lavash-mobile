@@ -1,11 +1,13 @@
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/banner_model.dart';
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:enjoy_lavash_mobile/core/api/base_url.dart';
 import 'package:enjoy_lavash_mobile/core/error/failures.dart';
 import 'package:enjoy_lavash_mobile/core/error/result.dart';
 import 'package:enjoy_lavash_mobile/core/services/mobile_push_notification_service.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/address_model.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/app_version_policy_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/assigned_promotion_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/auth_models.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/branch_model.dart';
@@ -17,6 +19,7 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/loyalty_
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/order_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/ordering_status_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/promotion_model.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/entities/mobile_bootstrap.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/repositories/mobile_backend_repository.dart';
 import 'package:enjoy_lavash_mobile/features/models/menu_product.dart';
 import 'package:enjoy_lavash_mobile/features/models/menu_category.dart';
@@ -33,8 +36,23 @@ part 'mobile_backend_controller/mobile_backend_state_controller.dart';
 
 enum MobileBackendStatus { initial, loading, loaded, error }
 
+/// Why the signed-in session ended. The app shell clears on-device customer
+/// data (cart, promo code, typed address) for [signedOut] and
+/// [accountDeleted]; an [expired] session keeps it for the same customer.
+enum SessionEndReason { signedOut, accountDeleted, expired }
+
+/// Minimum time between two background refreshes triggered by app resume.
+const Duration resumeRefreshInterval = Duration(seconds: 30);
+
+/// How long a loaded list of assigned promotions counts as current.
+const Duration assignedPromotionsFreshFor = Duration(minutes: 1);
+
 class MobileBackendController extends ChangeNotifier {
-  MobileBackendController(this._repository, this._pushNotifications) {
+  MobileBackendController(
+    this._repository,
+    this._pushNotifications, {
+    @visibleForTesting DateTime Function()? clock,
+  }) : _clock = clock ?? DateTime.now {
     _pushMessageSubscription = _pushNotifications.messages.listen(
       _handlePushMessage,
     );
@@ -44,6 +62,18 @@ class MobileBackendController extends ChangeNotifier {
   final MobilePushNotificationService _pushNotifications;
   late final StreamSubscription<PushNotificationMessage>
   _pushMessageSubscription;
+  final StreamController<SessionEndReason> _sessionEndedController =
+      StreamController<SessionEndReason>.broadcast();
+
+  /// Bumped whenever the signed-in customer changes (login, logout, expiry).
+  /// Async work captures it first and drops its result if it changed, so a
+  /// late response can never restore or overwrite another session's data.
+  final DateTime Function() _clock;
+  DateTime? _lastResumeRefreshAt;
+  DateTime? _assignedPromotionsFetchedAt;
+  int _sessionGeneration = 0;
+  bool _disposed = false;
+  int _catalogRequestVersion = 0;
 
   MobileBackendStatus _status = MobileBackendStatus.initial;
   Failure? _failure;
@@ -118,6 +148,18 @@ class MobileBackendController extends ChangeNotifier {
   Failure? get notificationsFailure => _notificationsFailure;
   bool get assignedPromotionsLoading => _assignedPromotionsLoading;
   bool get assignedPromotionsIncludeAll => _assignedPromotionsIncludeAll;
+
+  /// Whether the [includeAll] list was loaded within
+  /// [assignedPromotionsFreshFor]; screens skip an initial fetch then.
+  bool hasFreshAssignedPromotions({required bool includeAll}) {
+    final fetchedAt = _assignedPromotionsFetchedAt;
+    if (fetchedAt == null || _assignedPromotionsIncludeAll != includeAll) {
+      return false;
+    }
+    final age = _clock().difference(fetchedAt);
+    return !age.isNegative && age < assignedPromotionsFreshFor;
+  }
+
   Failure? get assignedPromotionsFailure => _assignedPromotionsFailure;
   PushNotificationMessage? get pendingPushMessage => _pendingPushMessage;
   PushNotificationSettings? get pushNotificationSettings =>
@@ -134,6 +176,7 @@ class MobileBackendController extends ChangeNotifier {
   Failure? get loyaltyTransactionsFailure => _loyaltyTransactionsFailure;
   bool get hasMoreLoyaltyTransactions => _loyaltyTransactionsNextCursor != null;
   bool get isAuthenticated => _client != null;
+  Stream<SessionEndReason> get sessionEnded => _sessionEndedController.stream;
   bool get isLoading => _status == MobileBackendStatus.loading;
 
   PushNotificationMessage? takePendingPushMessage() {
@@ -147,7 +190,7 @@ class MobileBackendController extends ChangeNotifier {
       _pendingPushMessage = message;
     }
     if (_client != null) {
-      unawaited(refreshNotificationUnreadCount());
+      // The inbox response carries the unread count too.
       unawaited(refreshNotifications());
       if (message.opensPromotions) {
         unawaited(
@@ -166,13 +209,18 @@ class MobileBackendController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
     unawaited(_pushMessageSubscription.cancel());
+    unawaited(_sessionEndedController.close());
     super.dispose();
   }
 
   // Controller behavior is split into private extensions. Keeping the
   // ChangeNotifier call inside the class preserves its protected contract.
-  void _notifyListeners() => notifyListeners();
+  // Background requests may finish after disposal; notifying then would throw.
+  void _notifyListeners() {
+    if (!_disposed) notifyListeners();
+  }
 
   Future<Result<OtpRequestResponse>> requestOtp({required String phoneNumber}) {
     return _requestOtp(phoneNumber: phoneNumber);
@@ -291,6 +339,18 @@ class MobileBackendController extends ChangeNotifier {
     return _repository.getBranchOrderingStatus(branchId: branchId);
   }
 
+  Future<Result<AppVersionPolicyModel>> getAppVersionPolicy({
+    required String platform,
+    String? currentVersion,
+    String? language,
+  }) {
+    return _repository.getAppVersionPolicy(
+      platform: platform,
+      currentVersion: currentVersion,
+      language: language,
+    );
+  }
+
   Future<Result<List<PaymentMethodModel>>> refreshPaymentMethods({
     required String language,
     String? branchId,
@@ -319,6 +379,17 @@ class MobileBackendController extends ChangeNotifier {
     int limit = 50,
   }) {
     return _loadMoreLoyaltyTransactions(limit: limit);
+  }
+
+  /// Drops the loaded transaction pages once the wallet screen closes; the
+  /// list grows by a page per scroll and nothing else reads it.
+  void releaseLoyaltyTransactions() {
+    _loyaltyTransactionsRequestVersion++;
+    _loyaltyTransactions = const <LoyaltyTransactionModel>[];
+    _loyaltyTransactionsNextCursor = null;
+    _loyaltyTransactionsLoading = false;
+    _loyaltyTransactionsLoadingMore = false;
+    _loyaltyTransactionsFailure = null;
   }
 
   Future<Result<CustomerOrderModel>> refreshOrder({required String id}) {

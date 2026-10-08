@@ -1299,4 +1299,23 @@ class LEn extends L {
 
   @override
   String get promoCodeCouldNotBeApplied => 'Promo code could not be applied';
+
+  @override
+  String cartQuantityLimitReached(int count) {
+    return 'You can add up to $count of one item';
+  }
+
+  @override
+  String cartItemsUnavailable(String items) {
+    return 'No longer available, removed from your cart: $items';
+  }
+
+  @override
+  String get cartSomeItemsUnavailable =>
+      'Some items are no longer available and were removed from your cart';
+
+  @override
+  String repeatOrderSkipped(String items) {
+    return 'Couldn\'t add to your cart: $items';
+  }
 }

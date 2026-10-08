@@ -157,12 +157,14 @@ void main() {
       AppDeepLink.menu,
     );
     expect(supportedBannerLink('https://example.test/sale'), isNotNull);
-    expect(supportedBannerLink('http://example.test/sale'), isNotNull);
     for (final unsupported in [
       null,
       '',
       'enjoylavash://unknown',
       'javascript:alert(1)',
+      // Plain http never leaves the app; only https is handed to the OS.
+      'http://example.test/sale',
+      'intent://scan/#Intent;scheme=zxing;end',
       '/menu',
       'https:missing-host',
     ]) {

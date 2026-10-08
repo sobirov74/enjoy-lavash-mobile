@@ -709,7 +709,7 @@ String _formatPreviewDistance(BuildContext context, int meters) {
   final locale = Localizations.localeOf(context).toLanguageTag();
   final t = L.of(context);
   if (meters < 1000) {
-    return t.distanceMeters(NumberFormat.decimalPattern(locale).format(meters));
+    return t.distanceMeters(decimalFormat(locale).format(meters));
   }
   return t.distanceKilometers(
     NumberFormat.decimalPatternDigits(

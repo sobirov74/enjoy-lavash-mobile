@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 const _refreshEndpoint = ApiEndpoints.clientRefresh;
 const _logoutTriggerCodes = {401};
 const _defaultLanguage = 'uz';
+const _requestTimeout = Duration(seconds: 15);
 const _enableNetworkLogs =
     kDebugMode || bool.fromEnvironment('ENABLE_NETWORK_LOGS');
 
@@ -27,8 +28,9 @@ class ApiClient {
     dio = Dio(
       BaseOptions(
         baseUrl: resolvedBaseUrl,
-        connectTimeout: const Duration(seconds: 15),
-        receiveTimeout: const Duration(seconds: 15),
+        connectTimeout: _requestTimeout,
+        sendTimeout: _requestTimeout,
+        receiveTimeout: _requestTimeout,
         headers: {
           'Content-Type': 'application/json',
           'Accept-Language': _defaultLanguage,
@@ -39,8 +41,9 @@ class ApiClient {
     _refreshDio = Dio(
       BaseOptions(
         baseUrl: resolvedBaseUrl,
-        connectTimeout: const Duration(seconds: 15),
-        receiveTimeout: const Duration(seconds: 15),
+        connectTimeout: _requestTimeout,
+        sendTimeout: _requestTimeout,
+        receiveTimeout: _requestTimeout,
         headers: {
           'Content-Type': 'application/json',
           'Accept-Language': _defaultLanguage,
@@ -115,69 +118,91 @@ class ApiClient {
   }
 
   InterceptorsWrapper _authInterceptor() {
+    // Dio does not await async interceptor callbacks: if one throws, its
+    // handler is never completed and the request hangs forever. Every path
+    // below therefore completes the handler exactly once.
     return InterceptorsWrapper(
       onRequest: (options, handler) async {
-        options.headers['Accept-Language'] ??= _languageCode;
-        if (_isClientProtectedEndpoint(options.path)) {
-          final token = await TokenStorage.getAccessToken();
-          if (token != null) {
-            options.headers['Authorization'] = 'Bearer $token';
+        try {
+          options.headers['Accept-Language'] ??= _languageCode;
+          if (_isClientProtectedEndpoint(options.path)) {
+            final token = await TokenStorage.getAccessToken();
+            if (token != null) {
+              options.headers['Authorization'] = 'Bearer $token';
+            }
           }
+        } catch (error, stackTrace) {
+          return handler.reject(
+            DioException(
+              requestOptions: options,
+              error: error,
+              stackTrace: stackTrace,
+            ),
+          );
         }
         return handler.next(options);
       },
       onError: (error, handler) async {
-        final status = error.response?.statusCode ?? 0;
-        final requestPath = error.requestOptions.path;
-
-        if (!_isClientProtectedEndpoint(requestPath)) {
-          return handler.next(error);
+        Object outcome;
+        try {
+          outcome = await _recoverFromAuthError(error);
+        } catch (recoveryError) {
+          debugPrint('Auth recovery failed: ${recoveryError.runtimeType}');
+          outcome = error;
         }
-
-        if (_logoutTriggerCodes.contains(status)) {
-          if (error.requestOptions.extra['_retry'] == true) {
-            await _logout();
-            return handler.next(error);
-          }
-
-          error.requestOptions.extra['_retry'] = true;
-
-          _refreshPromise ??= _doRefresh().whenComplete(() {
-            _refreshPromise = null;
-          });
-
-          final refreshResult = await _refreshPromise;
-          final newAccessToken = refreshResult?.accessToken;
-
-          if (newAccessToken != null) {
-            error.requestOptions.headers['Authorization'] =
-                'Bearer $newAccessToken';
-            try {
-              final response = await dio.fetch(error.requestOptions);
-              return handler.resolve(response);
-            } on DioException catch (retryError) {
-              final retryStatus = retryError.response?.statusCode ?? 0;
-              if (_logoutTriggerCodes.contains(retryStatus)) {
-                await _logout();
-              }
-              return handler.next(retryError);
-            }
-          } else {
-            if (refreshResult?.shouldLogout == true) {
-              await _logout();
-            }
-          }
-        }
-
-        return handler.next(error);
+        if (outcome is Response<Object?>) return handler.resolve(outcome);
+        return handler.next(outcome is DioException ? outcome : error);
       },
     );
+  }
+
+  /// Refreshes the session after a 401 and replays the request once.
+  /// Returns the replayed [Response] or the [DioException] to propagate.
+  Future<Object> _recoverFromAuthError(DioException error) async {
+    final status = error.response?.statusCode ?? 0;
+    final requestPath = error.requestOptions.path;
+
+    if (!_isClientProtectedEndpoint(requestPath) ||
+        !_logoutTriggerCodes.contains(status)) {
+      return error;
+    }
+
+    if (error.requestOptions.extra['_retry'] == true) {
+      // The replay itself was rejected: the refreshed session is not valid.
+      await _logout();
+      return error;
+    }
+    error.requestOptions.extra['_retry'] = true;
+
+    _refreshPromise ??= _doRefresh().whenComplete(() {
+      _refreshPromise = null;
+    });
+    final refreshResult = await _refreshPromise!;
+    final newAccessToken = refreshResult.accessToken;
+
+    if (newAccessToken == null) {
+      if (refreshResult.shouldLogout) await _logout();
+      return error;
+    }
+
+    error.requestOptions.headers['Authorization'] = 'Bearer $newAccessToken';
+    try {
+      // A 401 on the replay is handled (logout) by the `_retry` branch above
+      // when it passes back through this interceptor.
+      return await dio.fetch<Object?>(error.requestOptions);
+    } on DioException catch (retryError) {
+      return retryError;
+    }
   }
 
   Future<_RefreshResult> _doRefresh() async {
     final sessionGeneration = _sessionGeneration;
     final refreshToken = await TokenStorage.getRefreshToken();
-    if (refreshToken == null) return const _RefreshResult.sessionExpired();
+    if (refreshToken == null) {
+      return sessionGeneration == _sessionGeneration
+          ? const _RefreshResult.sessionExpired()
+          : const _RefreshResult.failed();
+    }
 
     try {
       final response = await _refreshDio.post(
@@ -220,7 +245,10 @@ class ApiClient {
       return const _RefreshResult.sessionExpired();
     } on DioException catch (e) {
       final status = e.response?.statusCode ?? 0;
-      if (_logoutTriggerCodes.contains(status)) {
+      // A refresh that started before a new login must not sign that new
+      // session out when its (old) token is rejected.
+      if (_logoutTriggerCodes.contains(status) &&
+          sessionGeneration == _sessionGeneration) {
         return const _RefreshResult.sessionExpired();
       }
       return const _RefreshResult.failed();

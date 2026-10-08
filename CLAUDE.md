@@ -22,6 +22,7 @@ the tree, and keep them accurate.
   `dart format` on changed Dart files.
 - Strings through `L.of(context)`, colors/spacing through `AppDesignTokens`,
   motion through `AppMotion` with a reduced-motion path.
-- Do not extend legacy folders listed in `PROJECT_STRUCTURE.md`
-  (`lib/widgets/ui/`, `lib/widgets/theme/`, `lib/core/data/`, `lib/enums/`).
+- Do not recreate the removed legacy folders (`lib/widgets/ui/`,
+  `lib/widgets/theme/`, `lib/core/data/`, `lib/enums/`); see
+  `docs/STABILITY_AUDIT.md`, Phase 7.
 - Commit only when asked; commit messages are short lowercase summaries.

@@ -59,6 +59,8 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
   DateTime? _orderingStatusLoadedAt;
   int _orderingStatusRequestVersion = 0;
   Timer? _orderingStatusRefreshTimer;
+  late final VoidCallback _promoCodeListener;
+  late final VoidCallback _pointsListener;
 
   @override
   void initState() {
@@ -70,8 +72,13 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
     _promoCodeController = TextEditingController(text: widget.initialPromoCode);
     _commentController = TextEditingController(text: widget.initialComment);
     _pointsController = TextEditingController(text: '0');
-    _promoCodeController.addListener(_onPromoCodeChanged);
-    _pointsController.addListener(_onPointsChanged);
+    _promoCodeListener = textChangeListener(
+      _promoCodeController,
+      _onPromoCodeChanged,
+    );
+    _pointsListener = textChangeListener(_pointsController, _onPointsChanged);
+    _promoCodeController.addListener(_promoCodeListener);
+    _pointsController.addListener(_pointsListener);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       unawaited(context.read<MobileBackendController>().refreshLoyaltyWallet());
@@ -82,8 +89,8 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
 
   @override
   void dispose() {
-    _promoCodeController.removeListener(_onPromoCodeChanged);
-    _pointsController.removeListener(_onPointsChanged);
+    _promoCodeController.removeListener(_promoCodeListener);
+    _pointsController.removeListener(_pointsListener);
     _previewDebounce?.cancel();
     _orderingStatusRefreshTimer?.cancel();
     _promoCodeController.dispose();
@@ -313,8 +320,7 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
           ? t.orderingNextOpening(formatted)
           : '${t.orderingNextOpening(formatted)} · $timezone';
     }
-    final message = failure.message.trim();
-    return message.isEmpty ? t.couldNotCalculateTotal : message;
+    return failureMessage(t, failure, fallback: t.couldNotCalculateTotal);
   }
 
   Future<void> _confirmOrder() async {
@@ -627,7 +633,25 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
   Widget build(BuildContext context) {
     final t = L.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final backend = context.watch<MobileBackendController>();
+    // Only what checkout renders: the sheet (and the shell under it) must not
+    // rebuild for unrelated backend updates while the customer is paying.
+    final backend = context
+        .select<
+          MobileBackendController,
+          ({
+            List<PaymentMethodModel> paymentMethods,
+            bool paymentMethodsLoading,
+            Failure? paymentMethodsFailure,
+            LoyaltyWalletModel? loyaltyWallet,
+          })
+        >(
+          (controller) => (
+            paymentMethods: controller.paymentMethods,
+            paymentMethodsLoading: controller.paymentMethodsLoading,
+            paymentMethodsFailure: controller.paymentMethodsFailure,
+            loyaltyWallet: controller.loyaltyWallet,
+          ),
+        );
     final currentPaymentMethod = _currentPaymentMethod;
     final paymentMethods = _paymentMethodsForDisplay(backend.paymentMethods);
     final loyaltyPreview = _previewDetails?.preview.loyalty;
@@ -765,7 +789,10 @@ class _OrderConfirmationSheetState extends State<_OrderConfirmationSheet> {
                         isLoading:
                             backend.paymentMethodsLoading &&
                             paymentMethods.isEmpty,
-                        errorText: backend.paymentMethodsFailure?.message,
+                        errorText: switch (backend.paymentMethodsFailure) {
+                          final Failure failure => failureMessage(t, failure),
+                          null => null,
+                        },
                         onRetry: () => unawaited(_retryPaymentMethods()),
                         onChanged: _selectPaymentMethod,
                       ),

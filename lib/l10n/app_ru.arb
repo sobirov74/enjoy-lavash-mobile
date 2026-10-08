@@ -511,5 +511,9 @@
   "promoClientRequired": "Войдите, чтобы использовать промокод",
   "promoConditionsNotMet": "Условия промокода не выполнены",
   "promoConfigurationError": "Сейчас промокод применить нельзя",
-  "promoCodeCouldNotBeApplied": "Не удалось применить промокод"
+  "promoCodeCouldNotBeApplied": "Не удалось применить промокод",
+  "cartQuantityLimitReached": "Можно добавить не больше {count} шт. одного товара",
+  "cartItemsUnavailable": "Больше недоступно, удалено из корзины: {items}",
+  "cartSomeItemsUnavailable": "Некоторые товары больше недоступны и удалены из корзины",
+  "repeatOrderSkipped": "Не удалось добавить в корзину: {items}"
 }

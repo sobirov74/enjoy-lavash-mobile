@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show HttpDate;
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
@@ -53,6 +54,43 @@ void main() {
       expect(find.textContaining('Demo'), findsNothing);
     },
   );
+
+  testWidgets('a fast device clock does not expire the OTP on arrival', (
+    tester,
+  ) async {
+    // The server says the code is valid for 2 more minutes, but this phone's
+    // clock runs 4 minutes fast, so codeExpiresAt is already in its past.
+    final deviceNow = DateTime.now().toUtc();
+    final serverNow = deviceNow.subtract(const Duration(minutes: 4));
+    await _pumpAuthorization(
+      tester,
+      _Adapter((options) async {
+        expect(options.uri.path, ApiEndpoints.requestOtp);
+        return _jsonResponse(
+          {
+            'phoneNumber': '+998',
+            'codeExpiresAt': serverNow
+                .add(const Duration(minutes: 2))
+                .toIso8601String(),
+          },
+          headers: {
+            'date': [HttpDate.format(serverNow)],
+          },
+        );
+      }),
+    );
+
+    await tester.tap(find.text('Send code'));
+    await _pumpUntilFound(tester, find.text('Enter SMS code'));
+
+    expect(find.bySemanticsLabel(RegExp(r'Code expires in')), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(RegExp(r'expired', caseSensitive: false)),
+      findsNothing,
+    );
+    final pinput = tester.widget<Pinput>(find.byType(Pinput));
+    expect(pinput.enabled, isTrue);
+  });
 
   testWidgets('OTP step can return to phone entry to correct the number', (
     tester,

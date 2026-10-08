@@ -47,10 +47,12 @@ extension _MobileBackendOrderController on MobileBackendController {
     CreateOrderRequest request, {
     required String idempotencyKey,
   }) async {
+    final generation = _sessionGeneration;
     final result = await _repository.createOrder(
       request,
       idempotencyKey: idempotencyKey,
     );
+    if (!_isCurrentSession(generation)) return result;
     switch (result) {
       case Success(:final data):
         _orders = <CustomerOrderModel>[
@@ -79,9 +81,14 @@ extension _MobileBackendOrderController on MobileBackendController {
   }
 
   Future<Result<CustomerOrderModel>> _refreshOrder({required String id}) async {
+    final generation = _sessionGeneration;
     final result = await _repository.getOrder(id: id);
+    if (!_isCurrentSession(generation)) return result;
     switch (result) {
       case Success(:final data):
+        // The details sheet polls every few seconds; an unchanged order must
+        // not rebuild every listener in the app.
+        if (_isSameOrderPayload(data)) return result;
         _upsertOrder(data);
         _failure = null;
         if (_isTerminalLoyaltyOrder(data)) {
@@ -98,7 +105,9 @@ extension _MobileBackendOrderController on MobileBackendController {
   Future<Result<CustomerOrderModel>> _retryOrderPayment({
     required String id,
   }) async {
+    final generation = _sessionGeneration;
     final result = await _repository.retryOrderPayment(id: id);
+    if (!_isCurrentSession(generation)) return result;
     switch (result) {
       case Success(:final data):
         _upsertOrder(data);
@@ -108,6 +117,14 @@ extension _MobileBackendOrderController on MobileBackendController {
         _applyFailure(failure);
     }
     return result;
+  }
+
+  bool _isSameOrderPayload(CustomerOrderModel order) {
+    for (final existing in _orders) {
+      if (existing.id != order.id) continue;
+      return jsonEncode(existing.raw) == jsonEncode(order.raw);
+    }
+    return false;
   }
 
   void _upsertOrder(CustomerOrderModel updatedOrder) {

@@ -43,4 +43,14 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Local configuration and credentials. API keys travel via --dart-define.
 .env
+.env.*
+**/GoogleService-Info.plist
+**/firebase_options.dart
+**/key.properties
+*.jks
+*.keystore
+*.p12
+*.mobileprovision

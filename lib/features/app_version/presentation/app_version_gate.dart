@@ -3,22 +3,32 @@ import 'dart:async';
 import 'package:enjoy_lavash_mobile/core/error/result.dart';
 import 'package:enjoy_lavash_mobile/core/services/external_url_launcher.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/app_version_policy_model.dart';
-import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/repositories/mobile_backend_repository.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+/// Fetches the backend's update policy for this build.
+typedef AppVersionPolicyLoader =
+    Future<Result<AppVersionPolicyModel>> Function({
+      required String platform,
+      String? currentVersion,
+      String? language,
+    });
+
+/// Shows the app immediately and lays a force/soft update prompt over it
+/// once the backend says this build needs one. Startup never waits on the
+/// policy request; a failed request simply shows nothing.
 class AppVersionGate extends StatefulWidget {
   const AppVersionGate({
     super.key,
-    required this.repository,
+    required this.loadPolicy,
     required this.languageCode,
     required this.child,
   });
 
-  final MobileBackendRepository repository;
+  final AppVersionPolicyLoader loadPolicy;
   final String languageCode;
   final Widget child;
 
@@ -30,64 +40,51 @@ class _AppVersionGateState extends State<AppVersionGate> {
   late Future<AppVersionPolicyModel?> _policyFuture;
   bool _dismissed = false;
   bool _openingStore = false;
-  bool _hasCompletedPolicyCheck = false;
 
   @override
   void initState() {
     super.initState();
-    _policyFuture = _loadTrackedPolicy();
+    _policyFuture = _loadPolicy();
   }
 
   @override
   void didUpdateWidget(covariant AppVersionGate oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.languageCode != widget.languageCode && !_dismissed) {
-      _policyFuture = _loadTrackedPolicy();
+      _policyFuture = _loadPolicy();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_dismissed) return widget.child;
-
-    return FutureBuilder<AppVersionPolicyModel?>(
-      future: _policyFuture,
-      builder: (context, snapshot) {
-        final policy = snapshot.data;
-        if (snapshot.connectionState != ConnectionState.done ||
-            policy == null) {
-          if (snapshot.connectionState == ConnectionState.done) {
-            return widget.child;
-          }
-          if (_hasCompletedPolicyCheck) {
-            return widget.child;
-          }
-          return const _VersionSplash();
-        }
-
-        return PopScope(
-          canPop: false,
-          child: _VersionPromptStage(
-            policy: policy,
-            languageCode: widget.languageCode,
-            openingStore: _openingStore,
-            onUpdate: () => unawaited(_openStore(policy)),
-            onLater: policy.forceUpdate
-                ? null
-                : () {
-                    setState(() => _dismissed = true);
-                  },
+    // The child stays mounted underneath the prompt so dismissing a soft
+    // update keeps all app state.
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        widget.child,
+        if (!_dismissed)
+          FutureBuilder<AppVersionPolicyModel?>(
+            future: _policyFuture,
+            builder: (context, snapshot) {
+              final policy = snapshot.data;
+              if (policy == null) return const SizedBox.shrink();
+              return PopScope(
+                canPop: false,
+                child: _VersionPromptStage(
+                  policy: policy,
+                  languageCode: widget.languageCode,
+                  openingStore: _openingStore,
+                  onUpdate: () => unawaited(_openStore(policy)),
+                  onLater: policy.forceUpdate
+                      ? null
+                      : () => setState(() => _dismissed = true),
+                ),
+              );
+            },
           ),
-        );
-      },
+      ],
     );
-  }
-
-  Future<AppVersionPolicyModel?> _loadTrackedPolicy() {
-    return _loadPolicy().whenComplete(() {
-      if (!mounted || _hasCompletedPolicyCheck) return;
-      _hasCompletedPolicyCheck = true;
-    });
   }
 
   Future<AppVersionPolicyModel?> _loadPolicy() async {
@@ -103,7 +100,7 @@ class _AppVersionGateState extends State<AppVersionGate> {
       debugPrint('App version lookup failed: $error');
     }
 
-    final result = await widget.repository.getAppVersionPolicy(
+    final result = await widget.loadPolicy(
       platform: platform,
       currentVersion: currentVersion,
       language: _normalizeLanguage(widget.languageCode),
@@ -122,7 +119,10 @@ class _AppVersionGateState extends State<AppVersionGate> {
     if (_openingStore) return;
     setState(() => _openingStore = true);
 
-    final opened = await ExternalUrlLauncher.open(policy.appUrl);
+    final opened = await ExternalUrlLauncher.open(
+      policy.appUrl,
+      allowedHosts: appStoreLinkHosts,
+    );
     if (!mounted) return;
 
     setState(() => _openingStore = false);
@@ -218,18 +218,20 @@ class _UpdatePolicyModalState extends State<_UpdatePolicyModal>
     duration: const Duration(milliseconds: 520),
   )..forward();
 
-  late final Animation<double> _scale = CurvedAnimation(
+  late final CurvedAnimation _scale = CurvedAnimation(
     parent: _controller,
     curve: Curves.easeOutBack,
   );
 
-  late final Animation<double> _fade = CurvedAnimation(
+  late final CurvedAnimation _fade = CurvedAnimation(
     parent: _controller,
     curve: const Interval(0, 0.7, curve: Curves.easeOut),
   );
 
   @override
   void dispose() {
+    _scale.dispose();
+    _fade.dispose();
     _controller.dispose();
     super.dispose();
   }

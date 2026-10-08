@@ -26,7 +26,9 @@ class CartItemCard extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppDesignTokens.surface(context),
-        borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+        borderRadius: const BorderRadius.all(
+          Radius.circular(AppDesignTokens.radiusCard),
+        ),
         boxShadow: AppDesignTokens.cardShadow(context),
       ),
       child: Row(

@@ -111,7 +111,12 @@ class _MainTabsDrawerHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
       child: Row(
         children: <Widget>[
-          Image.asset('assets/images/enjoy-logo.png', height: 28),
+          Image.asset(
+            'assets/images/enjoy-logo.png',
+            height: 28,
+            // The source is 512 px; decode only what a 28 px row needs.
+            cacheHeight: (28 * MediaQuery.devicePixelRatioOf(context)).ceil(),
+          ),
           const SizedBox(width: 12),
           const TypographyText(
             'Enjoy Lavash',

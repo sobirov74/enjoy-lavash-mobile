@@ -127,6 +127,23 @@ void main() {
   });
 
   test(
+    'an unchanged registration is not posted again on the next sync',
+    () async {
+      permissionStatus = PermissionStatus.granted;
+      final adapter = _RecordingAdapter();
+      final service = _service(adapter);
+
+      await service.syncTokenIfPermissionGranted(locale: 'uz');
+      await service.syncTokenIfPermissionGranted(locale: 'uz');
+      expect(adapter.requests, hasLength(1));
+
+      // A different locale is a different registration.
+      await service.syncTokenIfPermissionGranted(locale: 'ru');
+      expect(adapter.requests, hasLength(2));
+    },
+  );
+
+  test(
     'explicit notification enable may request permission and sync',
     () async {
       final adapter = _RecordingAdapter();

@@ -511,5 +511,9 @@
   "promoClientRequired": "Sign in to use this promo code",
   "promoConditionsNotMet": "Promo code conditions were not met",
   "promoConfigurationError": "Promo code cannot be applied right now",
-  "promoCodeCouldNotBeApplied": "Promo code could not be applied"
+  "promoCodeCouldNotBeApplied": "Promo code could not be applied",
+  "cartQuantityLimitReached": "You can add up to {count} of one item",
+  "cartItemsUnavailable": "No longer available, removed from your cart: {items}",
+  "cartSomeItemsUnavailable": "Some items are no longer available and were removed from your cart",
+  "repeatOrderSkipped": "Couldn't add to your cart: {items}"
 }

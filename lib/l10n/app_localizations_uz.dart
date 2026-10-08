@@ -1286,4 +1286,23 @@ class LUz extends L {
 
   @override
   String get promoCodeCouldNotBeApplied => 'Promokodni qo‘llab bo‘lmadi';
+
+  @override
+  String cartQuantityLimitReached(int count) {
+    return 'Bitta mahsulotdan ko‘pi bilan $count ta qo‘shish mumkin';
+  }
+
+  @override
+  String cartItemsUnavailable(String items) {
+    return 'Endi mavjud emas, savatdan olib tashlandi: $items';
+  }
+
+  @override
+  String get cartSomeItemsUnavailable =>
+      'Ba’zi mahsulotlar endi mavjud emas va savatdan olib tashlandi';
+
+  @override
+  String repeatOrderSkipped(String items) {
+    return 'Savatga qo‘shib bo‘lmadi: $items';
+  }
 }

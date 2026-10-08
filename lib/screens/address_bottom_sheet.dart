@@ -43,9 +43,8 @@ class _AddressSheetState extends State<_AddressSheet>
   final _commentController = TextEditingController();
 
   late final AnimationController _animController;
-  late final Animation<double> _fadeAnim;
+  late final CurvedAnimation _fadeAnim;
 
-  final _geocoderService = YandexGeocoderService();
   final Map<String, List<SuggestionResult>> _suggestionCache =
       <String, List<SuggestionResult>>{};
   List<SuggestionResult> _suggestions = [];
@@ -74,8 +73,36 @@ class _AddressSheetState extends State<_AddressSheet>
     _commentController.text = loc.comment;
   }
 
+  // Captured for dispose, where inherited widgets can no longer be read.
+  late LocationController _location;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _location = context.read<LocationController>();
+  }
+
+  /// Saves the apartment details in one update. The fields keep their text
+  /// locally while typing so the sheet and the menu behind it do not rebuild
+  /// on every keystroke.
+  void _commitAddressDetails() {
+    _location.setAddressDetails(
+      houseNumber: _houseController.text,
+      entrance: _entranceController.text,
+      floor: _floorController.text,
+      apartment: _apartmentController.text,
+      comment: _commentController.text,
+    );
+  }
+
   @override
   void dispose() {
+    // Closing by drag or the close button must keep what was typed. Commit
+    // after this frame: notifying listeners while the tree is being torn
+    // down is not allowed.
+    final commit = _commitAddressDetails;
+    scheduleMicrotask(commit);
+    _fadeAnim.dispose();
     _animController.dispose();
     _searchController.dispose();
     _houseController.dispose();
@@ -107,7 +134,9 @@ class _AddressSheetState extends State<_AddressSheet>
         return;
       }
 
-      final results = await _geocoderService.suggest(normalizedQuery);
+      final results = await context.read<LocationController>().suggestAddresses(
+        normalizedQuery,
+      );
       _suggestionCache[cacheKey] = results;
       if (!mounted ||
           requestId != _searchRequestId ||
@@ -263,7 +292,6 @@ class _AddressSheetState extends State<_AddressSheet>
                         controller: _houseController,
                         isDark: isDark,
                         hint: t.houseNumberHint,
-                        onChanged: loc.setHouseNumber,
                       ),
                       const SizedBox(height: 16),
 
@@ -289,7 +317,6 @@ class _AddressSheetState extends State<_AddressSheet>
                                   controller: _entranceController,
                                   isDark: isDark,
                                   hint: '1',
-                                  onChanged: loc.setEntrance,
                                   keyboardType: TextInputType.number,
                                 ),
                               ],
@@ -315,7 +342,6 @@ class _AddressSheetState extends State<_AddressSheet>
                                   controller: _floorController,
                                   isDark: isDark,
                                   hint: '2',
-                                  onChanged: loc.setFloor,
                                   keyboardType: TextInputType.number,
                                 ),
                               ],
@@ -341,7 +367,6 @@ class _AddressSheetState extends State<_AddressSheet>
                                   controller: _apartmentController,
                                   isDark: isDark,
                                   hint: '12',
-                                  onChanged: loc.setApartment,
                                   keyboardType: TextInputType.number,
                                 ),
                               ],
@@ -365,7 +390,6 @@ class _AddressSheetState extends State<_AddressSheet>
                         controller: _commentController,
                         isDark: isDark,
                         hint: t.commentHint,
-                        onChanged: loc.setComment,
                         maxLines: 2,
                       ),
                       const SizedBox(height: 20),
@@ -375,7 +399,10 @@ class _AddressSheetState extends State<_AddressSheet>
                         width: double.infinity,
                         child: ElevatedButton(
                           onPressed: loc.addressName.isNotEmpty
-                              ? () => Navigator.pop(context, true)
+                              ? () {
+                                  _commitAddressDetails();
+                                  Navigator.pop(context, true);
+                                }
                               : null,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: BaseColors.primary,
@@ -711,7 +738,6 @@ class _StyledTextField extends StatelessWidget {
     required this.controller,
     required this.isDark,
     required this.hint,
-    required this.onChanged,
     this.keyboardType,
     this.maxLines = 1,
   });
@@ -719,7 +745,6 @@ class _StyledTextField extends StatelessWidget {
   final TextEditingController controller;
   final bool isDark;
   final String hint;
-  final ValueChanged<String> onChanged;
   final TextInputType? keyboardType;
   final int maxLines;
 
@@ -727,7 +752,6 @@ class _StyledTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextField(
       controller: controller,
-      onChanged: onChanged,
       keyboardType: keyboardType,
       maxLines: maxLines,
       style: TextStyle(

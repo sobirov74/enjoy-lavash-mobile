@@ -96,14 +96,17 @@ abstract final class AppDesignTokens {
       ? Colors.white.withValues(alpha: 0.24)
       : ink.withValues(alpha: 0.24);
 
-  static List<BoxShadow> cardShadow(BuildContext context) => <BoxShadow>[
-    BoxShadow(
-      color: Colors.black.withValues(
-        alpha: Theme.of(context).brightness == Brightness.dark ? 0.45 : 0.06,
-      ),
-      blurRadius: 2,
-      offset: const Offset(0, 1),
-    ),
+  static List<BoxShadow> cardShadow(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+      ? _cardShadowDark
+      : _cardShadowLight;
+
+  // Allocated once; `cardShadow` runs for every product and cart card.
+  static const List<BoxShadow> _cardShadowLight = <BoxShadow>[
+    BoxShadow(color: Color(0x0F000000), blurRadius: 2, offset: Offset(0, 1)),
+  ];
+  static const List<BoxShadow> _cardShadowDark = <BoxShadow>[
+    BoxShadow(color: Color(0x73000000), blurRadius: 2, offset: Offset(0, 1)),
   ];
 
   static const List<BoxShadow> actionGlow = <BoxShadow>[

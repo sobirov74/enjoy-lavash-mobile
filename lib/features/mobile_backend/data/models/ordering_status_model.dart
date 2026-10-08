@@ -98,7 +98,8 @@ class OrderingAvailabilityModel {
   factory OrderingAvailabilityModel.fromJson(Map<String, dynamic> json) {
     final closureSource = json['closureSource'];
     return OrderingAvailabilityModel(
-      isOpen: readBool(json, const ['isOpen']),
+      // Defaults to closed, so a renamed field must not block every order.
+      isOpen: readBool(json, const ['isOpen', 'is_open']),
       evaluatedAt: _requiredUtcDateTime(json, 'evaluatedAt'),
       timezone: readString(json, const ['timezone']),
       localDate: readString(json, const ['localDate']),

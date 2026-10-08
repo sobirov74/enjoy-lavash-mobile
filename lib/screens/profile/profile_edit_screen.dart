@@ -70,9 +70,7 @@ class _ProfileEditScreenState extends State<_ProfileEditScreen> {
       case Error(:final failure):
         ScaffoldMessenger.of(context).showSnackBar(
           appSnackBar(
-            failure.message.trim().isNotEmpty
-                ? failure.message
-                : t.profileUpdateFailed,
+            failureMessage(t, failure, fallback: t.profileUpdateFailed),
           ),
         );
     }
@@ -88,7 +86,9 @@ class _ProfileEditScreenState extends State<_ProfileEditScreen> {
   @override
   Widget build(BuildContext context) {
     final t = L.of(context);
-    final client = context.watch<MobileBackendController>().client;
+    final client = context.select<MobileBackendController, ClientProfile?>(
+      (backend) => backend.client,
+    );
     final dateText = _birthDate == null
         ? t.selectBirthDate
         : DateFormat.yMMMd(

@@ -51,12 +51,15 @@ class AppVersionPolicyModel {
 
     final latest = _normalizeVersion(latestVersion);
     final minSupported = _normalizeVersion(minSupportedVersion);
-    final isDifferentFromLatest = latest != null && current != latest;
+    // Only an older build is prompted; a build newer than the backend's
+    // "latest" (store rollout ahead of the policy) is left alone.
+    final isBehindLatest =
+        latest != null && _compareVersions(current, latest) < 0;
     final isBelowMinimum =
         minSupported != null && _compareVersions(current, minSupported) < 0;
 
     return copyWith(
-      updateAvailable: updateAvailable || isDifferentFromLatest,
+      updateAvailable: updateAvailable || isBehindLatest,
       forceUpdate: forceUpdate || isBelowMinimum,
     );
   }

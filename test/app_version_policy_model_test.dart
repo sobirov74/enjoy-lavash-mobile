@@ -80,6 +80,19 @@ void main() {
     },
   );
 
+  test('does not prompt a build that is newer than latest', () {
+    final policy = AppVersionPolicyModel.fromJson({
+      'platform': 'android',
+      'latestVersion': '1.2.2',
+      'minSupportedVersion': '1.0.0',
+      'appUrl': 'https://play.google.com/store/apps/details?id=app',
+      'updateAvailable': false,
+      'forceUpdate': false,
+    }).resolveForCurrentVersion('1.2.3');
+
+    expect(policy.shouldPrompt, isFalse);
+  });
+
   test('does not prompt when current version matches latest version', () {
     final policy = AppVersionPolicyModel.fromJson({
       'platform': 'android',

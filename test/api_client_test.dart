@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:enjoy_lavash_mobile/core/api/api_client.dart';
 import 'package:enjoy_lavash_mobile/core/api/api_endpoints.dart';
 import 'package:enjoy_lavash_mobile/core/storage/token_storage.dart';
+import 'package:flutter/services.dart' show PlatformException, Uint8List;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -239,7 +239,8 @@ void main() {
     );
 
     await apiClient.dio.get(ApiEndpoints.branches);
-    await apiClient.dio.get(ApiEndpoints.me);
+    // A non-client route (the retired admin API) must never get the token.
+    await apiClient.dio.get('/api/v1/auth/me');
     await apiClient.dio.get(ApiEndpoints.clientOrders);
 
     expect(adapter.requests[0].authorization, isNull);
@@ -299,6 +300,120 @@ void main() {
     expect(await TokenStorage.getAccessToken(), isNull);
     expect(await TokenStorage.getRefreshToken(), isNull);
   });
+
+  test('an unreadable keystore never hangs a request', () async {
+    TokenStorage.storage = _UnreadableSecureStorage();
+    addTearDown(TokenStorage.resetStorage);
+    final adapter = _RecordingAdapter(
+      onFetch: (options) async => _jsonResponse({'orders': const []}),
+    );
+    final apiClient = ApiClient(
+      baseUrl: 'https://example.test',
+      httpClientAdapter: adapter,
+    );
+
+    final response = await apiClient.dio
+        .get<Object?>(ApiEndpoints.clientOrders)
+        .timeout(const Duration(seconds: 5));
+
+    // The broken session is treated as signed out: no bearer token is sent.
+    expect(response.statusCode, 200);
+    expect(adapter.requests.single.authorization, isNull);
+  });
+
+  test('a rejected replay after refresh logs out exactly once', () async {
+    await TokenStorage.saveAccessToken('old-access');
+    await TokenStorage.saveRefreshToken('old-refresh');
+    var logoutCalls = 0;
+    final adapter = _RecordingAdapter(
+      onFetch: (options) async {
+        if (options.uri.path == ApiEndpoints.clientRefresh) {
+          return _jsonResponse({
+            'access_token': 'new-access',
+            'refresh_token': 'new-refresh',
+            'refresh_token_expires_at': '2026-12-01T00:00:00.000Z',
+          });
+        }
+        return _jsonResponse({'message': 'expired'}, statusCode: 401);
+      },
+    );
+    final apiClient = ApiClient(
+      baseUrl: 'https://example.test',
+      httpClientAdapter: adapter,
+      onLogout: () async => logoutCalls++,
+    );
+
+    await expectLater(
+      apiClient.dio.get<Object?>(ApiEndpoints.clientOrders),
+      throwsA(isA<DioException>()),
+    );
+
+    expect(logoutCalls, 1);
+    expect(await TokenStorage.getAccessToken(), isNull);
+  });
+
+  test('a stale refresh rejection does not sign out a new login', () async {
+    await TokenStorage.saveAccessToken('old-access');
+    await TokenStorage.saveRefreshToken('old-refresh');
+    final refreshStarted = Completer<void>();
+    final releaseRefresh = Completer<void>();
+    var loggedOut = false;
+    final adapter = _RecordingAdapter(
+      onFetch: (options) async {
+        if (options.uri.path == ApiEndpoints.clientRefresh) {
+          refreshStarted.complete();
+          await releaseRefresh.future;
+          return _jsonResponse({'message': 'expired'}, statusCode: 401);
+        }
+        return _jsonResponse({'message': 'expired'}, statusCode: 401);
+      },
+    );
+    final apiClient = ApiClient(
+      baseUrl: 'https://example.test',
+      httpClientAdapter: adapter,
+      onLogout: () async => loggedOut = true,
+    );
+
+    final request = apiClient.dio.get<Object?>(ApiEndpoints.clientOrders);
+    await refreshStarted.future;
+    // The customer signs in again while the old refresh is still in flight.
+    await apiClient.replaceClientSession(
+      accessToken: 'fresh-access',
+      refreshToken: 'fresh-refresh',
+    );
+    releaseRefresh.complete();
+
+    await expectLater(request, throwsA(isA<DioException>()));
+    expect(loggedOut, isFalse);
+    expect(await TokenStorage.getAccessToken(), 'fresh-access');
+    expect(await TokenStorage.getRefreshToken(), 'fresh-refresh');
+  });
+}
+
+class _UnreadableSecureStorage extends FlutterSecureStorage {
+  @override
+  Future<String?> read({
+    required String key,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) {
+    throw PlatformException(code: 'BAD_DECRYPT', message: 'keystore reset');
+  }
+
+  @override
+  Future<void> delete({
+    required String key,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {}
 }
 
 class _RequestRecord {

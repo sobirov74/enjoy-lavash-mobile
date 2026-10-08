@@ -5,12 +5,16 @@ String _formatOrderAmount(BuildContext context, int amount) =>
 
 String _formatOrderDate(DateTime? date, String locale) {
   if (date == null) return '';
-  return DateFormat.yMMMMd(locale).format(date.toLocal());
+  return dateFormat(locale, 'yMMMMd', DateFormat.yMMMMd).format(date.toLocal());
 }
 
 String _formatOrderDateTime(DateTime? date, String locale) {
   if (date == null) return '';
-  return DateFormat.yMMMd(locale).add_Hm().format(date.toLocal());
+  return dateFormat(
+    locale,
+    'yMMMd Hm',
+    (locale) => DateFormat.yMMMd(locale).add_Hm(),
+  ).format(date.toLocal());
 }
 
 String _shortOrderId(String id) {

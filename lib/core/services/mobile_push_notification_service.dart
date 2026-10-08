@@ -71,9 +71,23 @@ class PushNotificationMessage {
     RemoteMessage message, {
     required bool openedByUser,
   }) {
+    return PushNotificationMessage.fromPayload(
+      message.data,
+      openedByUser: openedByUser,
+    );
+  }
+
+  /// Builds a message from a raw data payload: FCM `data` on Android, the APNs
+  /// `userInfo` (custom keys at the top level or under `data`) on iOS.
+  factory PushNotificationMessage.fromPayload(
+    Map<Object?, Object?> payload, {
+    required bool openedByUser,
+  }) {
+    final nested = payload['data'];
+    final data = <Object?, Object?>{if (nested is Map) ...nested, ...payload};
     String? nonEmpty(List<String> keys) {
       for (final key in keys) {
-        final value = message.data[key]?.toString().trim();
+        final value = data[key]?.toString().trim();
         if (value != null && value.isNotEmpty) return value;
       }
       return null;
@@ -105,6 +119,15 @@ class MobilePushNotificationService {
   static const String _registeredPushTokenKey = 'registered_push_token';
   static const String _pushRegistrationIdKey = 'push_registration_id';
   static const String _deviceIdKey = 'push_notification_device_id';
+  static const String _registrationFingerprintKey =
+      'push_registration_fingerprint';
+  static const String _registeredAtKey = 'push_registration_registered_at';
+
+  /// An unchanged registration is re-sent at most this often. Sync runs on
+  /// every login and app resume; re-posting the same token each time only
+  /// loads the backend, while a daily refresh still heals a registration the
+  /// server dropped.
+  static const Duration registrationRefreshInterval = Duration(hours: 24);
 
   static const MethodChannel _apnsChannel = MethodChannel(
     'enjoy_lavash_mobile/apns',
@@ -121,6 +144,7 @@ class MobilePushNotificationService {
   String? _lastRegistrationId;
   String? _registrationLocale;
   bool _messagingReady = false;
+  bool _apnsHandlersConfigured = false;
   bool _messagingInitialised = false;
   bool _registrationEnabled = false;
   int _registrationGeneration = 0;
@@ -130,6 +154,7 @@ class MobilePushNotificationService {
   Stream<PushNotificationMessage> get messages => _messageController.stream;
 
   Future<void> configureMessageHandlers() async {
+    if (_usesNativeApns) await _configureApnsHandlers();
     if (!await _ensureMessagingReady()) return;
 
     _foregroundMessageSubscription ??= FirebaseMessaging.onMessage.listen((
@@ -156,6 +181,42 @@ class MobilePushNotificationService {
     if (initialMessage != null) {
       _handleOpenedMessage(initialMessage);
     }
+  }
+
+  /// iOS registers with APNs directly (no Firebase config), so notification
+  /// taps arrive from `AppDelegate` over the APNs channel instead of
+  /// `FirebaseMessaging.onMessageOpenedApp`.
+  bool get _usesNativeApns =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
+
+  Future<void> _configureApnsHandlers() async {
+    if (_apnsHandlersConfigured) return;
+    _apnsHandlersConfigured = true;
+    _apnsChannel.setMethodCallHandler((call) async {
+      if (call.method == 'notificationOpened') {
+        _emitPayload(call.arguments, openedByUser: true);
+      }
+      return null;
+    });
+    try {
+      // A tap that launched the app arrives before Dart is listening; the
+      // native side keeps it until asked.
+      final launch = await _apnsChannel.invokeMethod<Object?>(
+        'takeLaunchNotification',
+      );
+      _emitPayload(launch, openedByUser: true);
+    } on PlatformException catch (error) {
+      debugPrint('Launch notification lookup failed: ${error.message}');
+    } on MissingPluginException {
+      return;
+    }
+  }
+
+  void _emitPayload(Object? payload, {required bool openedByUser}) {
+    if (payload is! Map || _messageController.isClosed) return;
+    _messageController.add(
+      PushNotificationMessage.fromPayload(payload, openedByUser: openedByUser),
+    );
   }
 
   Future<PushNotificationSettings> getSettings() async {
@@ -328,13 +389,17 @@ class MobilePushNotificationService {
       await _clearStoredRegistration(preferences);
     }
 
+    final payload = await _registrationPayload(
+      platform: platform,
+      token: token,
+      locale: locale,
+    );
+    final fingerprint = _registrationFingerprint(payload);
+    if (_isRegistrationFresh(preferences, fingerprint, token)) return;
+
     final response = await _dio.post(
       ApiEndpoints.clientPushTokens,
-      data: await _registrationPayload(
-        platform: platform,
-        token: token,
-        locale: locale,
-      ),
+      data: payload,
     );
     final registrationId = _registrationIdFromResponse(response.data);
     if (registrationId == null) {
@@ -347,6 +412,44 @@ class MobilePushNotificationService {
     _lastRegistrationId = registrationId;
     await preferences.setString(_registeredPushTokenKey, token);
     await preferences.setString(_pushRegistrationIdKey, registrationId);
+    await preferences.setString(_registrationFingerprintKey, fingerprint);
+    await preferences.setString(
+      _registeredAtKey,
+      DateTime.now().toUtc().toIso8601String(),
+    );
+  }
+
+  String _registrationFingerprint(Map<String, Object?> payload) {
+    return [
+      payload['platform'],
+      payload['token'],
+      payload['deviceId'],
+      payload['appVersion'],
+      payload['locale'],
+    ].join('|');
+  }
+
+  /// Whether this exact registration was accepted recently enough to skip.
+  bool _isRegistrationFresh(
+    SharedPreferences preferences,
+    String fingerprint,
+    String token,
+  ) {
+    final registrationId =
+        _lastRegistrationId ?? preferences.getString(_pushRegistrationIdKey);
+    if (registrationId == null || registrationId.isEmpty) return false;
+    final registeredToken =
+        _lastRegisteredToken ?? preferences.getString(_registeredPushTokenKey);
+    if (registeredToken != token) return false;
+    if (preferences.getString(_registrationFingerprintKey) != fingerprint) {
+      return false;
+    }
+    final registeredAt = DateTime.tryParse(
+      preferences.getString(_registeredAtKey) ?? '',
+    );
+    if (registeredAt == null) return false;
+    final age = DateTime.now().toUtc().difference(registeredAt);
+    return !age.isNegative && age < registrationRefreshInterval;
   }
 
   Future<void> _deleteStoredRegistration() async {
@@ -374,6 +477,8 @@ class MobilePushNotificationService {
     _lastRegistrationId = null;
     await preferences.remove(_registeredPushTokenKey);
     await preferences.remove(_pushRegistrationIdKey);
+    await preferences.remove(_registrationFingerprintKey);
+    await preferences.remove(_registeredAtKey);
   }
 
   Future<T> _serializeRegistrationMutation<T>(Future<T> Function() mutation) {

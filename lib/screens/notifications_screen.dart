@@ -16,6 +16,9 @@ import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:enjoy_lavash_mobile/core/error/failures.dart';
+import 'package:enjoy_lavash_mobile/widgets/utils/failure_message.dart';
+import 'package:enjoy_lavash_mobile/utils/format_cache.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({
@@ -56,7 +59,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         .read<MobileBackendController>()
         .markAllNotificationsRead();
     if (!mounted || result.isSuccess) return;
-    _showFailure(result.failureOrNull?.message);
+    _showFailure(result.failureOrNull);
   }
 
   Future<void> _markUnread(ClientNotificationItemModel notification) async {
@@ -64,7 +67,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         .read<MobileBackendController>()
         .markNotificationUnread(notificationId: notification.notificationId);
     if (!mounted || result.isSuccess) return;
-    _showFailure(result.failureOrNull?.message);
+    _showFailure(result.failureOrNull);
   }
 
   Future<void> _openNotification(
@@ -76,7 +79,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           .markNotificationRead(notificationId: notification.notificationId);
       if (!mounted) return;
       if (result.isError) {
-        _showFailure(result.failureOrNull?.message);
+        _showFailure(result.failureOrNull);
       }
     }
 
@@ -142,11 +145,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
-  void _showFailure(String? message) {
-    final text = message?.trim();
+  void _showFailure(Failure? failure) {
+    final t = L.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
       appSnackBar(
-        text?.isNotEmpty == true ? text! : L.of(context).errorGenericBody,
+        failure == null
+            ? t.errorGenericBody
+            : failureMessage(t, failure, fallback: t.errorGenericBody),
       ),
     );
   }
@@ -420,7 +425,11 @@ class _NotificationCard extends StatelessWidget {
     final sentAt = notification.sentAt?.toLocal();
     final date = sentAt == null
         ? null
-        : DateFormat('d MMM, HH:mm', locale).format(sentAt);
+        : dateFormat(
+            locale,
+            'd MMM, HH:mm',
+            (locale) => DateFormat('d MMM, HH:mm', locale),
+          ).format(sentAt);
     final surface = unread
         ? BaseColors.primary.withValues(alpha: isDark ? 0.15 : 0.09)
         : (isDark ? const Color(0xFF1D1A18) : Colors.white);

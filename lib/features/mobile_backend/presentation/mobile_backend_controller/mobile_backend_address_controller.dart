@@ -2,7 +2,9 @@ part of '../mobile_backend_controller.dart';
 
 extension _MobileBackendAddressController on MobileBackendController {
   Future<Result<List<ClientAddress>>> _refreshAddresses() async {
+    final generation = _sessionGeneration;
     final result = await _repository.getAddresses();
+    if (!_isCurrentSession(generation)) return result;
     switch (result) {
       case Success(:final data):
         _addresses = _sortedAddresses(data);
@@ -29,7 +31,9 @@ extension _MobileBackendAddressController on MobileBackendController {
     _addressesFailure = null;
     _notifyListeners();
     try {
+      final generation = _sessionGeneration;
       final result = await _repository.createAddress(request);
+      if (!_isCurrentSession(generation)) return result;
       switch (result) {
         case Success(:final data):
           _upsertAddress(data);
@@ -59,7 +63,9 @@ extension _MobileBackendAddressController on MobileBackendController {
     _addressesFailure = null;
     _notifyListeners();
     try {
+      final generation = _sessionGeneration;
       final result = await _repository.updateAddress(id: id, request: request);
+      if (!_isCurrentSession(generation)) return result;
       switch (result) {
         case Success(:final data):
           _upsertAddress(data);
@@ -86,7 +92,9 @@ extension _MobileBackendAddressController on MobileBackendController {
     _addressesFailure = null;
     _notifyListeners();
     try {
+      final generation = _sessionGeneration;
       final result = await _repository.deleteAddress(id: id);
+      if (!_isCurrentSession(generation)) return result;
       switch (result) {
         case Success():
           _addresses = List<ClientAddress>.unmodifiable(

@@ -1,22 +1,49 @@
 import 'client_profile_model.dart';
 import 'json_helpers.dart';
 
+/// Longest OTP lifetime the client will display. A longer computed lifetime
+/// means the device clock is behind; the server still rejects late codes.
+const Duration maxOtpLifetime = Duration(minutes: 15);
+
+/// Lifetime shown when it cannot be measured reliably (no server time and a
+/// device clock so far ahead that the code would look expired on arrival).
+const Duration fallbackOtpLifetime = Duration(minutes: 2);
+
 class OtpRequestResponse {
   const OtpRequestResponse({
     required this.phoneNumber,
     required this.codeExpiresAt,
+    this.serverTime,
   });
 
   final String phoneNumber;
   final DateTime codeExpiresAt;
 
-  factory OtpRequestResponse.fromJson(Map<String, dynamic> json) {
+  /// Server clock when the response was produced (HTTP `Date` header).
+  final DateTime? serverTime;
+
+  /// How long the code stays valid, measured on the server's clock when
+  /// available. Count this down from the device's "now" instead of comparing
+  /// [codeExpiresAt] with the device clock, which may be wrong.
+  Duration codeLifetimeFrom(DateTime deviceNow) {
+    final reference = serverTime ?? deviceNow;
+    final lifetime = codeExpiresAt.toUtc().difference(reference.toUtc());
+    if (lifetime <= Duration.zero) return fallbackOtpLifetime;
+    if (lifetime > maxOtpLifetime) return maxOtpLifetime;
+    return lifetime;
+  }
+
+  factory OtpRequestResponse.fromJson(
+    Map<String, dynamic> json, {
+    DateTime? serverTime,
+  }) {
     return OtpRequestResponse(
       phoneNumber: readString(json, const ['phoneNumber', 'phone_number']),
       codeExpiresAt: _requiredDateTime(json, const [
         'codeExpiresAt',
         'code_expires_at',
       ], fieldName: 'codeExpiresAt'),
+      serverTime: serverTime,
     );
   }
 }
@@ -63,25 +90,22 @@ class VerifyOtpResponse {
 
   factory VerifyOtpResponse.fromJson(Map<String, dynamic> json) {
     return VerifyOtpResponse(
-      accessToken: _requiredString(
-        json,
-        const ['access_token', 'accessToken'],
-        fieldName: 'access_token',
-      ),
+      accessToken: _requiredString(json, const [
+        'access_token',
+        'accessToken',
+      ], fieldName: 'access_token'),
       refreshToken: _requiredString(json, const [
         'refresh_token',
         'refreshToken',
       ], fieldName: 'refresh_token'),
-      refreshTokenExpiresAt: _requiredDateTime(
-        json,
-        const ['refresh_token_expires_at', 'refreshTokenExpiresAt'],
-        fieldName: 'refresh_token_expires_at',
-      ),
-      tokenType: _requiredString(
-        json,
-        const ['token_type', 'tokenType'],
-        fieldName: 'token_type',
-      ),
+      refreshTokenExpiresAt: _requiredDateTime(json, const [
+        'refresh_token_expires_at',
+        'refreshTokenExpiresAt',
+      ], fieldName: 'refresh_token_expires_at'),
+      tokenType: _requiredString(json, const [
+        'token_type',
+        'tokenType',
+      ], fieldName: 'token_type'),
       client: ClientProfile.fromJson(asJsonMap(json['client'])),
       isNewClient: readBool(json, const [
         'clientCreated',

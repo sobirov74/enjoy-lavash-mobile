@@ -83,7 +83,7 @@ class _ProductListItemState extends State<ProductListItem> {
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: AppDesignTokens.surface(context),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: const BorderRadius.all(Radius.circular(12)),
         boxShadow: AppDesignTokens.cardShadow(context),
       ),
       child: Column(

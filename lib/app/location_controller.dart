@@ -146,6 +146,11 @@ class LocationController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Address autocomplete through the app-wide geocoder (one HTTP client).
+  Future<List<SuggestionResult>> suggestAddresses(String query) {
+    return _geocoderService.suggest(query);
+  }
+
   Future<GeocoderResult?> resolveAddressName({
     required double latitude,
     required double longitude,
@@ -156,6 +161,31 @@ class LocationController extends ChangeNotifier {
       longitude: longitude,
       uri: uri,
     );
+  }
+
+  /// Updates the apartment details together, notifying once and only when
+  /// something changed. The address sheet commits here when it closes instead
+  /// of notifying (and rebuilding the menu) on every keystroke.
+  void setAddressDetails({
+    required String houseNumber,
+    required String entrance,
+    required String floor,
+    required String apartment,
+    required String comment,
+  }) {
+    if (houseNumber == _houseNumber &&
+        entrance == _entrance &&
+        floor == _floor &&
+        apartment == _apartment &&
+        comment == _comment) {
+      return;
+    }
+    _houseNumber = houseNumber;
+    _entrance = entrance;
+    _floor = floor;
+    _apartment = apartment;
+    _comment = comment;
+    notifyListeners();
   }
 
   void setHouseNumber(String value) {

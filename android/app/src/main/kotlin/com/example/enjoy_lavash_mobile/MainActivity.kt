@@ -24,8 +24,16 @@ class MainActivity : FlutterActivity() {
                 return@setMethodCallHandler
             }
 
+            // Only web links leave the app. Dart validates first; this is the
+            // last line of defence against custom schemes (intent:, file:, tel:).
+            val uri = Uri.parse(url)
+            if (!uri.scheme.equals("https", ignoreCase = true) || uri.host.isNullOrBlank()) {
+                result.success(false)
+                return@setMethodCallHandler
+            }
+
             try {
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                val intent = Intent(Intent.ACTION_VIEW, uri)
                 startActivity(intent)
                 result.success(true)
             } catch (_: Exception) {

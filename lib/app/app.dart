@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:enjoy_lavash_mobile/app/locale_controller.dart';
 import 'package:enjoy_lavash_mobile/app/location_controller.dart';
+import 'package:enjoy_lavash_mobile/features/app_version/presentation/app_version_gate.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/presentation/mobile_backend_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -77,7 +78,11 @@ class MyApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      home: const MainTabs(),
+      home: AppVersionGate(
+        loadPolicy: context.read<MobileBackendController>().getAppVersionPolicy,
+        languageCode: locale.languageCode,
+        child: const MainTabs(),
+      ),
     );
   }
 }

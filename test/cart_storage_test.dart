@@ -33,6 +33,36 @@ void main() {
     expect(await CartStorage.read(), isEmpty);
   });
 
+  test(
+    'wrong-typed saved lines are coerced or dropped, never thrown',
+    () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        'mobile_cart_lines_v2':
+            '[{"productId": 42, "quantity": "2", "modifiers": '
+            '[{"groupId": "g", "modifierId": 7, "price": "3000"}]},'
+            '{"productId": "fries", "quantity": {"bad": true}}]',
+      });
+
+      final restored = await CartStorage.readSelections();
+
+      expect(restored, hasLength(1));
+      expect(restored.single.productId, '42');
+      expect(restored.single.quantity, 2);
+      expect(restored.single.modifiers.single.modifierId, '7');
+      expect(restored.single.modifiers.single.price, 3000);
+    },
+  );
+
+  test('a structurally broken saved cart is discarded once', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'mobile_cart_lines_v2': '[{"productId": "lavash", "modifiers": "x"}',
+    });
+
+    expect(await CartStorage.readSelections(), isEmpty);
+    final preferences = await SharedPreferences.getInstance();
+    expect(preferences.getString('mobile_cart_lines_v2'), isNull);
+  });
+
   test('persists configured cart lines without losing modifiers', () async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     final selection = CartSelection(

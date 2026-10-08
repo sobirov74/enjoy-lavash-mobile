@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:enjoy_lavash_mobile/app/locale_controller.dart';
 import 'package:enjoy_lavash_mobile/app/location_controller.dart';
@@ -11,6 +10,7 @@ import 'package:enjoy_lavash_mobile/core/services/app_share_service.dart';
 import 'package:enjoy_lavash_mobile/core/services/external_url_launcher.dart';
 import 'package:enjoy_lavash_mobile/core/services/mobile_push_notification_service.dart';
 import 'package:enjoy_lavash_mobile/core/storage/cart_storage.dart';
+import 'package:enjoy_lavash_mobile/features/checkout/order_submission_keys.dart';
 import 'package:enjoy_lavash_mobile/features/models/cart_line.dart';
 import 'package:enjoy_lavash_mobile/features/models/menu_product.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/address_model.dart';
@@ -35,6 +35,7 @@ import 'package:enjoy_lavash_mobile/screens/profile.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
 import 'package:enjoy_lavash_mobile/theme/app_design_tokens.dart';
 import 'package:enjoy_lavash_mobile/theme/app_motion.dart';
+import 'package:enjoy_lavash_mobile/utils/log_redaction.dart';
 import 'package:enjoy_lavash_mobile/utils/price_formatter.dart';
 import 'package:enjoy_lavash_mobile/widgets/app_bottom_sheet_drag_handle.dart';
 import 'package:enjoy_lavash_mobile/widgets/app_modal_bottom_sheet.dart';
@@ -42,11 +43,21 @@ import 'package:enjoy_lavash_mobile/widgets/app_snack_bar.dart';
 import 'package:enjoy_lavash_mobile/widgets/redesign/cart_pill.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:enjoy_lavash_mobile/widgets/cart_animation/cart_arrival_feedback.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:enjoy_lavash_mobile/widgets/utils/failure_message.dart';
+import 'package:enjoy_lavash_mobile/widgets/utils/text_change_listener.dart';
+import 'package:enjoy_lavash_mobile/widgets/curved_fade_transition.dart';
+import 'package:enjoy_lavash_mobile/utils/format_cache.dart';
+import 'package:enjoy_lavash_mobile/features/cart/presentation/cart_controller.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/banner_model.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/client_profile_model.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/promotion_model.dart';
+import 'package:enjoy_lavash_mobile/features/models/menu_category.dart';
 
 part 'main_tabs/checkout_models.dart';
 part 'main_tabs/main_tabs_bottom_navigation.dart';
@@ -60,10 +71,27 @@ part 'main_tabs/order_confirmation_items.dart';
 part 'main_tabs/checkout_preview_summary.dart';
 
 String _formatLoyaltyPoints(BuildContext context, int value) {
-  return NumberFormat.decimalPattern(
+  return decimalFormat(
     Localizations.localeOf(context).toLanguageTag(),
   ).format(value);
 }
+
+/// The backend fields the shell renders. It rebuilds only when one of them
+/// changes; lists compare by identity because the controller replaces them.
+typedef _ShellData = ({
+  MobileBackendStatus status,
+  Failure? failure,
+  ClientProfile? client,
+  List<String> menuCategories,
+  List<MenuCategory> menuCategoryItems,
+  List<MenuProduct> menuProducts,
+  List<PromotionModel> promotions,
+  List<BannerModel> banners,
+  LoyaltyWalletModel? loyaltyWallet,
+  int notificationUnreadCount,
+  List<CustomerOrderModel> orders,
+  bool isAuthenticated,
+});
 
 class MainTabs extends StatefulWidget {
   const MainTabs({super.key});
@@ -81,17 +109,23 @@ class _MainTabsState extends State<MainTabs> {
   static const int _tabCount = 5;
 
   int _currentIndex = 0;
-  int _cartArrival = 0;
+
+  /// Bumped when an add-to-cart flight lands; only the cart icon listens.
+  final ValueNotifier<int> _cartArrival = ValueNotifier<int>(0);
   final _cartIconKey = GlobalKey(debugLabel: 'main-cart-icon');
   // -1 is the reference design's "All" filter.
   int _selectedCategoryIndex = -1;
-  final Map<String, CartSelection> _cart = <String, CartSelection>{};
+
+  /// Owned here, listened to only by the menu tab, the cart tab and the
+  /// bottom bar, so a quantity change does not rebuild the whole shell.
+  final CartController _cart = CartController();
   MobileOrderType _orderType = MobileOrderType.delivery;
   BranchModel? _selectedBranch;
   String? _deliveryBranchId;
   String _promoCode = '';
   bool _isCheckingOut = false;
-  bool _cartEditedSinceLaunch = false;
+  final OrderSubmissionKeys _orderSubmissionKeys = OrderSubmissionKeys();
+  StreamSubscription<SessionEndReason>? _sessionEndedSubscription;
   bool _pushNavigationScheduled = false;
   bool _startupBirthDatePromptChecked = false;
   bool _cartReconciliationScheduled = false;
@@ -109,58 +143,81 @@ class _MainTabsState extends State<MainTabs> {
     onPromoSelected: _applyAssignedPromoCode,
   );
 
+  late final MobileBackendController _backend;
+
   @override
   void initState() {
     super.initState();
+    _backend = context.read<MobileBackendController>();
     unawaited(_restoreSavedCart());
+    _sessionEndedSubscription = _backend.sessionEnded.listen(
+      _handleSessionEnded,
+    );
+    // Push taps are consumed from a listener, not from build: the shell no
+    // longer rebuilds on every backend notification.
+    _backend.addListener(_takePendingPushMessage);
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _takePendingPushMessage(),
+    );
   }
 
   @override
   void dispose() {
+    _backend.removeListener(_takePendingPushMessage);
+    unawaited(_sessionEndedSubscription?.cancel());
     _tabPageController.dispose();
+    _cart.dispose();
+    _cartArrival.dispose();
     super.dispose();
+  }
+
+  void _takePendingPushMessage() {
+    if (!mounted ||
+        _pushNavigationScheduled ||
+        _backend.pendingPushMessage == null) {
+      return;
+    }
+    final message = _backend.takePendingPushMessage();
+    if (message == null) return;
+    _pushNavigationScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        await _handlePushNavigation(message);
+      } finally {
+        _pushNavigationScheduled = false;
+        // A message that arrived while this one was handled is next.
+        _takePendingPushMessage();
+      }
+    });
+    WidgetsBinding.instance.scheduleFrame();
+  }
+
+  /// After an explicit sign-out or account deletion the next person to use
+  /// the device must not inherit the cart, promo code or typed address. An
+  /// expired session keeps them: it is almost always the same customer.
+  void _handleSessionEnded(SessionEndReason reason) {
+    if (!mounted || reason == SessionEndReason.expired) return;
+    _cart.clear();
+    setState(() => _promoCode = '');
+    context.read<LocationController>().clearPersonalData();
   }
 
   Future<void> _restoreSavedCart() async {
     final savedCart = await CartStorage.readSelections();
-    if (!mounted || _cartEditedSinceLaunch || savedCart.isEmpty) return;
+    if (!mounted || _cart.editedSinceLaunch || savedCart.isEmpty) return;
     final products = context.read<MobileBackendController>().menuProducts;
     final restored = products.isEmpty
         ? <String, CartSelection>{for (final line in savedCart) line.key: line}
         : _reconciledCart(savedCart, products);
-    setState(() {
-      for (final line in restored.values) {
-        _cart[line.key] = line;
-      }
-    });
-    if (products.isNotEmpty && restored.length != savedCart.length) {
-      _persistCart();
-    }
-  }
-
-  void _persistCart() {
-    unawaited(CartStorage.saveSelections(_cart.values));
-  }
-
-  List<CartLine> _buildCartLines(List<MenuProduct> products) {
-    final productById = <String, MenuProduct>{
-      for (final product in products) product.id: product,
-    };
-    final lines = <CartLine>[];
-    for (final selection in _cart.values) {
-      final product = productById[selection.productId];
-      if (product == null) continue;
-      final reconciled = reconcileCartSelection(selection, product);
-      if (reconciled == null) continue;
-      lines.add(
-        CartLine(
-          product: product,
-          quantity: reconciled.quantity,
-          modifiers: reconciled.modifiers,
-        ),
+    final changed = products.isNotEmpty && restored.length != savedCart.length;
+    // Only re-save when reconciliation dropped something.
+    _cart.replaceAll(restored.values, persist: changed);
+    if (changed) {
+      _notifyUnavailableLines(
+        _unavailableSelections(savedCart, products),
+        products,
       );
     }
-    return lines;
   }
 
   Map<String, CartSelection> _reconciledCart(
@@ -194,14 +251,16 @@ class _MainTabsState extends State<MainTabs> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _cartReconciliationScheduled = false;
       if (!mounted) return;
+      final previousProducts = _lastReconciledProducts;
       _lastReconciledProducts = products;
-      final next = _reconciledCart(_cart.values, products);
+      final current = _cart.selections.toList(growable: false);
+      final next = _reconciledCart(current, products);
       final currentJson = jsonEncode(
-        _cart.entries
+        current
             .map(
-              (entry) => <String, Object?>{
-                'key': entry.key,
-                ...entry.value.toJson(),
+              (selection) => <String, Object?>{
+                'key': selection.key,
+                ...selection.toJson(),
               },
             )
             .toList(growable: false),
@@ -217,21 +276,52 @@ class _MainTabsState extends State<MainTabs> {
             .toList(growable: false),
       );
       if (currentJson == nextJson) return;
-      setState(() {
-        _cart
-          ..clear()
-          ..addAll(next);
-      });
-      _persistCart();
+      final removed = _unavailableSelections(current, products);
+      _cart.replaceAll(next.values);
+      _notifyUnavailableLines(removed, [...products, ...?previousProducts]);
     });
   }
 
-  int _calculateTotalAmount(List<CartLine> cartLines) {
-    return cartLines.fold<int>(0, (sum, item) => sum + item.lineTotal);
+  /// Saved lines the [products] catalog can no longer fulfil: the product is
+  /// gone or its saved configuration is no longer valid.
+  List<CartSelection> _unavailableSelections(
+    Iterable<CartSelection> selections,
+    List<MenuProduct> products,
+  ) {
+    final productsById = <String, MenuProduct>{
+      for (final product in products) product.id: product,
+    };
+    return selections
+        .where((selection) {
+          final product = productsById[selection.productId];
+          return product == null ||
+              reconcileCartSelection(selection, product) == null;
+        })
+        .toList(growable: false);
   }
 
-  int _calculateTotalItems(List<CartLine> cartLines) {
-    return cartLines.fold<int>(0, (sum, item) => sum + item.quantity);
+  /// Tells the customer which lines were removed, by name when every removed
+  /// product is known from [knownProducts].
+  void _notifyUnavailableLines(
+    List<CartSelection> removed,
+    List<MenuProduct> knownProducts,
+  ) {
+    if (removed.isEmpty || !mounted) return;
+    final titles = <String, String>{
+      for (final product in knownProducts) product.id: product.title,
+    };
+    final names = <String>{
+      for (final selection in removed) ?titles[selection.productId],
+    };
+    final t = L.of(context);
+    final allNamed = removed.every(
+      (selection) => titles.containsKey(selection.productId),
+    );
+    _showSnack(
+      allNamed && names.isNotEmpty
+          ? t.cartItemsUnavailable(names.join(', '))
+          : t.cartSomeItemsUnavailable,
+    );
   }
 
   Future<void> _shareApp(L t) async {
@@ -247,7 +337,7 @@ class _MainTabsState extends State<MainTabs> {
   }
 
   Future<void> _openBannerLink(Uri uri) async {
-    if (uri.scheme == 'http' || uri.scheme == 'https') {
+    if (ExternalUrlLauncher.allowedUri(uri.toString()) != null) {
       await ExternalUrlLauncher.open(uri.toString());
       return;
     }
@@ -290,8 +380,8 @@ class _MainTabsState extends State<MainTabs> {
 
   Future<void> _openLoyaltyWallet() async {
     if (!await _ensureAuthenticated() || !mounted) return;
-    await context.read<MobileBackendController>().refreshLoyaltyWallet();
-    if (!mounted) return;
+    // The wallet screen refreshes itself on open; waiting here only delayed
+    // the navigation by a round trip.
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(builder: (_) => const LoyaltyWalletScreen()),
     );
@@ -317,15 +407,17 @@ class _MainTabsState extends State<MainTabs> {
     await showAllOrdersScreen(context);
   }
 
-  void _maybeShowStartupBirthDatePrompt(MobileBackendController backend) {
+  void _maybeShowStartupBirthDatePrompt(
+    MobileBackendStatus status,
+    ClientProfile? client,
+  ) {
     if (_startupBirthDatePromptChecked ||
-        backend.status != MobileBackendStatus.loaded ||
+        status != MobileBackendStatus.loaded ||
         _pushNavigationScheduled) {
       return;
     }
 
     _startupBirthDatePromptChecked = true;
-    final client = backend.client;
     if (client == null || client.birthDate != null) return;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -338,7 +430,7 @@ class _MainTabsState extends State<MainTabs> {
     final normalized = code.trim();
     if (normalized.isEmpty || !mounted) return;
     final products = context.read<MobileBackendController>().menuProducts;
-    final hasCartItems = _buildCartLines(products).isNotEmpty;
+    final hasCartItems = !_cart.snapshot(products).isEmpty;
     setState(() => _promoCode = normalized);
     _selectTab(hasCartItems ? _cartPageIndex : _menuTabIndex);
     ScaffoldMessenger.of(context).showSnackBar(
@@ -362,8 +454,6 @@ class _MainTabsState extends State<MainTabs> {
       return;
     }
     if (message.opensLoyalty) {
-      await context.read<MobileBackendController>().refreshLoyaltyWallet();
-      if (!mounted) return;
       await Navigator.of(context).push<void>(
         MaterialPageRoute<void>(builder: (_) => const LoyaltyWalletScreen()),
       );
@@ -380,39 +470,43 @@ class _MainTabsState extends State<MainTabs> {
     _addCartSelection(selection);
   }
 
+  /// Adds [selection], capped at [maxCartLineQuantity]. Throws
+  /// [CartLineLimitReached] when nothing could be added, so the menu's
+  /// add-to-cart flow reports the limit instead of a false "added".
   void _addCartSelection(CartSelection selection) {
-    setState(() {
-      _cartEditedSinceLaunch = true;
-      final existing = _cart[selection.key];
-      _cart[selection.key] = selection.copyWith(
-        quantity: (existing?.quantity ?? 0) + selection.quantity,
-      );
-    });
-    _persistCart();
+    final existingQuantity = _cart.lineFor(selection.key)?.quantity ?? 0;
+    final quantity = _cappedQuantity(existingQuantity + selection.quantity);
+    if (quantity == existingQuantity) throw const CartLineLimitReached();
+    _cart.put(selection.copyWith(quantity: quantity));
+  }
+
+  int _cappedQuantity(int quantity) =>
+      quantity > maxCartLineQuantity ? maxCartLineQuantity : quantity;
+
+  void _showQuantityLimit() {
+    _showSnack(L.of(context).cartQuantityLimitReached(maxCartLineQuantity));
   }
 
   void _updateCart(MenuProduct product, int delta) {
-    final matchingKeys = _cart.entries
-        .where((entry) => entry.value.productId == product.id)
-        .map((entry) => entry.key)
+    final matching = _cart.selections
+        .where((selection) => selection.productId == product.id)
         .toList(growable: false);
     if (delta > 0) {
-      if (matchingKeys.isEmpty) {
+      if (matching.isEmpty) {
         _addToCart(product);
       } else {
-        final key = matchingKeys.last;
-        final line = _cart[key]!;
+        final line = matching.last;
         _setCartSelectionQuantity(line, line.quantity + delta);
       }
       return;
     }
-    if (matchingKeys.isEmpty) return;
-    final line = _cart[matchingKeys.last]!;
+    if (matching.isEmpty) return;
+    final line = matching.last;
     _setCartSelectionQuantity(line, line.quantity + delta, product: product);
   }
 
   void _updateCartLine(CartLine line, int delta) {
-    final selection = _cart[line.key];
+    final selection = _cart.lineFor(line.key);
     if (selection == null) return;
     _setCartSelectionQuantity(
       selection,
@@ -423,21 +517,15 @@ class _MainTabsState extends State<MainTabs> {
 
   void _setCartSelectionQuantity(
     CartSelection selection,
-    int nextQuantity, {
+    int requestedQuantity, {
     MenuProduct? product,
   }) {
     final previousQuantity = selection.quantity;
-    var removedLine = false;
-    setState(() {
-      _cartEditedSinceLaunch = true;
-      if (nextQuantity <= 0) {
-        _cart.remove(selection.key);
-        removedLine = previousQuantity > 0;
-      } else {
-        _cart[selection.key] = selection.copyWith(quantity: nextQuantity);
-      }
-    });
-    _persistCart();
+    final nextQuantity = _cappedQuantity(requestedQuantity);
+    if (requestedQuantity > nextQuantity) _showQuantityLimit();
+    if (nextQuantity == previousQuantity) return;
+    final removedLine = nextQuantity <= 0 && previousQuantity > 0;
+    _cart.put(selection.copyWith(quantity: nextQuantity));
 
     if (removedLine && product != null) {
       final messenger = ScaffoldMessenger.of(context);
@@ -447,13 +535,7 @@ class _MainTabsState extends State<MainTabs> {
         actionLabel: L.of(context).undo,
         onAction: () {
           if (!mounted) return;
-          setState(() {
-            _cartEditedSinceLaunch = true;
-            _cart[selection.key] = selection.copyWith(
-              quantity: previousQuantity,
-            );
-          });
-          _persistCart();
+          _cart.put(selection.copyWith(quantity: previousQuantity));
         },
       );
     }
@@ -501,30 +583,47 @@ class _MainTabsState extends State<MainTabs> {
           product.iikoId!.trim(): product,
     };
 
+    final t = L.of(context);
+    final language = Localizations.localeOf(context).languageCode;
     var added = 0;
-    setState(() {
-      _cartEditedSinceLaunch = true;
-      for (final item in order.items) {
-        final product = productsById[item.productId];
-        if (product == null || item.quantity <= 0) continue;
-        final selection = CartSelection(
-          productId: product.id,
-          quantity: item.quantity,
+    final skipped = <String>[];
+    final merged = <String, CartSelection>{
+      for (final selection in _cart.selections) selection.key: selection,
+    };
+    for (final item in order.items) {
+      if (item.quantity <= 0) continue;
+      final product = productsById[item.productId];
+      // Order history does not keep modifier choices, so the product's
+      // standard configuration is used. A product that needs a choice (or
+      // is gone from the menu) is named to the customer instead of being
+      // dropped silently by cart reconciliation.
+      final selection = product == null
+          ? null
+          : standardCartSelection(product, quantity: item.quantity);
+      if (selection == null) {
+        skipped.add(
+          product?.title ?? item.localizedName(language) ?? item.productId,
         );
-        final existing = _cart[selection.key];
-        _cart[selection.key] = selection.copyWith(
-          quantity: (existing?.quantity ?? 0) + item.quantity,
-        );
-        added += item.quantity;
+        continue;
       }
-    });
+      final existing = merged[selection.key];
+      merged[selection.key] = selection.copyWith(
+        quantity: _cappedQuantity(
+          (existing?.quantity ?? 0) + selection.quantity,
+        ),
+      );
+      added += item.quantity;
+    }
 
+    if (skipped.isNotEmpty) {
+      _showSnack(t.repeatOrderSkipped(skipped.join(', ')));
+    }
     if (added == 0) {
-      _showSnack(L.of(context).noProductsFound);
+      if (skipped.isEmpty) _showSnack(t.noProductsFound);
       _selectTab(_menuTabIndex);
       return;
     }
-    _persistCart();
+    _cart.replaceAll(merged.values, edited: true);
     _selectTab(_cartPageIndex);
   }
 
@@ -874,9 +973,7 @@ class _MainTabsState extends State<MainTabs> {
         : null;
     final message =
         orderingClosedMessage ??
-        (failure.message.trim().isEmpty
-            ? t.orderCreateFailed
-            : failure.message.trim());
+        failureDetail(t, failure, fallback: t.orderCreateFailed);
 
     return await showDialog<_OrderFailureAction>(
           context: context,
@@ -1075,12 +1172,16 @@ class _MainTabsState extends State<MainTabs> {
     _logCheckoutPayload('OrderCreate', label, payload);
   }
 
+  /// Debug builds only. Checkout payloads carry the delivery address, door
+  /// code and payment link, which must never reach the device log in release.
   void _logCheckoutPayload(String scope, String label, Object? payload) {
+    if (!kDebugMode) return;
+    final redacted = redactSensitiveLogFields(payload);
     try {
       const encoder = JsonEncoder.withIndent('  ');
-      debugPrint('[$scope] $label:\n${encoder.convert(payload)}');
+      debugPrint('[$scope] $label:\n${encoder.convert(redacted)}');
     } catch (_) {
-      debugPrint('[$scope] $label: $payload');
+      debugPrint('[$scope] $label: $redacted');
     }
   }
 
@@ -1273,7 +1374,7 @@ class _MainTabsState extends State<MainTabs> {
 
     _logOrderCreation('request', request.toJson());
     setState(() => _isCheckingOut = true);
-    final idempotencyKey = _newIdempotencyKey();
+    final idempotencyKey = _orderSubmissionKeys.keyFor(request.toJson());
     late Result<CustomerOrderModel> result;
     var creationErrorShown = false;
     var removePointsRequested = false;
@@ -1285,11 +1386,7 @@ class _MainTabsState extends State<MainTabs> {
       );
       if (!mounted) return;
       if (result case Error(:final failure)) {
-        final retryable =
-            failure is NetworkFailure ||
-            failure is TimeoutFailure ||
-            (failure is ServerFailure && failure.statusCode >= 500);
-        if (retryable) {
+        if (OrderSubmissionKeys.isOutcomeUnknown(failure)) {
           creationErrorShown = true;
           final canRemovePoints =
               request.loyaltyRedemptionAmount > 0 &&
@@ -1311,6 +1408,17 @@ class _MainTabsState extends State<MainTabs> {
       }
       break;
     } while (true);
+    _orderSubmissionKeys.resolve(
+      succeeded: result.isSuccess,
+      failure: result.failureOrNull,
+    );
+    if (result case Error(
+      :final failure,
+    ) when OrderSubmissionKeys.isOutcomeUnknown(failure)) {
+      // The order may exist even though the request failed; reload history so
+      // it shows up instead of the customer ordering again.
+      unawaited(backend.refreshCustomerData());
+    }
     if (result case Success(:final data)) {
       _logOrderCreation('response', data.raw);
     }
@@ -1325,13 +1433,9 @@ class _MainTabsState extends State<MainTabs> {
     setState(() => _isCheckingOut = false);
     switch (result) {
       case Success(:final data):
-        setState(() {
-          _cartEditedSinceLaunch = true;
-          _cart.clear();
-          _promoCode = '';
-        });
+        _cart.clear();
+        setState(() => _promoCode = '');
         _selectTab(_profileTabIndex);
-        _persistCart();
         final paymentUrl = data.totalAmount == 0
             ? null
             : data.paymentUrl?.trim();
@@ -1345,19 +1449,21 @@ class _MainTabsState extends State<MainTabs> {
             pageBuilder: (_, _, _) => OrderSuccessScreen(
               order: data,
               openPaymentPage: paymentUrl?.isNotEmpty == true
-                  ? () => ExternalUrlLauncher.open(paymentUrl!)
+                  ? () => ExternalUrlLauncher.open(
+                      paymentUrl!,
+                      allowedHosts: paymentLinkHosts,
+                    )
                   : null,
               onTrackOrder: () => _openCreatedOrder(data),
               onBackHome: () => _selectTab(_homeTabIndex),
             ),
-            transitionsBuilder: (_, animation, _, child) => FadeTransition(
-              opacity: CurvedAnimation(
-                parent: animation,
-                curve: AppMotion.enter,
-                reverseCurve: AppMotion.exit,
-              ),
-              child: child,
-            ),
+            transitionsBuilder: (_, animation, _, child) =>
+                CurvedFadeTransition(
+                  animation: animation,
+                  curve: AppMotion.enter,
+                  reverseCurve: AppMotion.exit,
+                  child: child,
+                ),
           ),
         );
       case Error(:final failure):
@@ -1388,18 +1494,6 @@ class _MainTabsState extends State<MainTabs> {
           unawaited(_handleCheckout(cartLines));
         }
     }
-  }
-
-  String _newIdempotencyKey() {
-    final bytes = List<int>.generate(16, (_) => Random.secure().nextInt(256));
-    bytes[6] = (bytes[6] & 0x0f) | 0x40;
-    bytes[8] = (bytes[8] & 0x3f) | 0x80;
-    final value = bytes
-        .map((byte) => byte.toRadixString(16).padLeft(2, '0'))
-        .join();
-    return '${value.substring(0, 8)}-${value.substring(8, 12)}-'
-        '${value.substring(12, 16)}-${value.substring(16, 20)}-'
-        '${value.substring(20)}';
   }
 
   void _openCreatedOrder(CustomerOrderModel createdOrder) {
@@ -1436,43 +1530,35 @@ class _MainTabsState extends State<MainTabs> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final t = L.of(context);
-    final backend = context.watch<MobileBackendController>();
-    final pendingPushMessage = backend.pendingPushMessage;
-    if (pendingPushMessage != null && !_pushNavigationScheduled) {
-      final message = backend.takePendingPushMessage();
-      if (message != null) {
-        _pushNavigationScheduled = true;
-        WidgetsBinding.instance.addPostFrameCallback((_) async {
-          try {
-            await _handlePushNavigation(message);
-          } finally {
-            if (mounted) {
-              setState(() => _pushNavigationScheduled = false);
-            } else {
-              _pushNavigationScheduled = false;
-            }
-          }
-        });
-      }
-    }
-    _maybeShowStartupBirthDatePrompt(backend);
+    // Only the fields rendered here: notifications, payment methods,
+    // addresses, loyalty pages and loading flags no longer rebuild the shell.
+    final backend = context.select<MobileBackendController, _ShellData>(
+      (controller) => (
+        status: controller.status,
+        failure: controller.failure,
+        client: controller.client,
+        menuCategories: controller.menuCategories,
+        menuCategoryItems: controller.menuCategoryItems,
+        menuProducts: controller.menuProducts,
+        promotions: controller.promotions,
+        banners: controller.banners,
+        loyaltyWallet: controller.loyaltyWallet,
+        notificationUnreadCount: controller.notificationUnreadCount,
+        orders: controller.orders,
+        isAuthenticated: controller.isAuthenticated,
+      ),
+    );
+    // Home's delivery label follows address edits.
+    context.select<LocationController, String>(
+      (location) => location.fullAddress,
+    );
+    _maybeShowStartupBirthDatePrompt(backend.status, backend.client);
     final categories = backend.menuCategories;
     final products = backend.menuProducts;
     _scheduleCartReconciliation(products);
     final promotions = backend.promotions
         .where((promotion) => promotion.isActive)
         .toList(growable: false);
-    final cartLines = _buildCartLines(products);
-    final totalItems = _calculateTotalItems(cartLines);
-    final totalAmount = _calculateTotalAmount(cartLines);
-    final cartQuantities = <String, int>{};
-    for (final line in cartLines) {
-      cartQuantities.update(
-        line.product.id,
-        (quantity) => quantity + line.quantity,
-        ifAbsent: () => line.quantity,
-      );
-    }
     final selectedCategoryIndex = categories.isEmpty
         ? -1
         : _selectedCategoryIndex.clamp(-1, categories.length - 1);
@@ -1505,8 +1591,9 @@ class _MainTabsState extends State<MainTabs> {
             physics: const PageScrollPhysics(),
             children: <Widget>[
               _KeepAliveTabPage(
+                active: _currentIndex == _homeTabIndex,
                 child: HomeScreen(
-                  customerName: _homeCustomerName(backend, t),
+                  customerName: _homeCustomerName(backend.client, t),
                   loyaltyBalance:
                       backend.loyaltyWallet?.spendableBalance ??
                       backend.client?.bonusBalance ??
@@ -1547,105 +1634,134 @@ class _MainTabsState extends State<MainTabs> {
                 ),
               ),
               _KeepAliveTabPage(
-                child: MenuScreen(
-                  isDark: isDark,
-                  isMenuLoading:
-                      backend.status == MobileBackendStatus.loading &&
-                      products.isEmpty,
-                  menuErrorText:
-                      backend.status == MobileBackendStatus.error &&
-                          products.isEmpty
-                      ? backend.failure?.message
-                      : null,
-                  menuFailure:
-                      backend.status == MobileBackendStatus.error &&
-                          products.isEmpty
-                      ? backend.failure
-                      : null,
-                  selectedCategoryIndex: selectedCategoryIndex,
-                  categories: categories,
-                  products: products,
-                  promotions: promotions,
-                  orderType: _orderType,
-                  selectedBranch: _selectedBranch,
-                  onCategorySelected: _setSelectedCategory,
-                  onAddToCart: _addToCart,
-                  onAddConfiguredToCart: _addConfiguredToCart,
-                  onDecreaseFromCart: (product) => _updateCart(product, -1),
-                  onCartTap: () => _selectTab(_cartPageIndex),
-                  onOrderContextTap: () => unawaited(_openOrderContextPicker()),
-                  showCartSummary: false,
-                  isActive: _currentIndex == _menuTabIndex,
-                  cartTargetKey: _cartIconKey,
-                  onCartArrival: () {
-                    if (mounted) setState(() => _cartArrival++);
+                active: _currentIndex == _menuTabIndex,
+                child: ListenableBuilder(
+                  listenable: _cart,
+                  builder: (context, _) {
+                    final cart = _cart.snapshot(products);
+                    return MenuScreen(
+                      isDark: isDark,
+                      isMenuLoading:
+                          backend.status == MobileBackendStatus.loading &&
+                          products.isEmpty,
+                      menuErrorText:
+                          backend.status == MobileBackendStatus.error &&
+                              products.isEmpty
+                          ? switch (backend.failure) {
+                              final Failure failure => failureDetail(
+                                t,
+                                failure,
+                              ),
+                              null => null,
+                            }
+                          : null,
+                      menuFailure:
+                          backend.status == MobileBackendStatus.error &&
+                              products.isEmpty
+                          ? backend.failure
+                          : null,
+                      selectedCategoryIndex: selectedCategoryIndex,
+                      categories: categories,
+                      products: products,
+                      promotions: promotions,
+                      orderType: _orderType,
+                      selectedBranch: _selectedBranch,
+                      onCategorySelected: _setSelectedCategory,
+                      onAddToCart: _addToCart,
+                      onAddConfiguredToCart: _addConfiguredToCart,
+                      onDecreaseFromCart: (product) => _updateCart(product, -1),
+                      onCartTap: () => _selectTab(_cartPageIndex),
+                      onOrderContextTap: () =>
+                          unawaited(_openOrderContextPicker()),
+                      showCartSummary: false,
+                      isActive: _currentIndex == _menuTabIndex,
+                      cartTargetKey: _cartIconKey,
+                      onCartArrival: () => _cartArrival.value++,
+                      onOrderTypeChanged: _setOrderType,
+                      onBranchSelected: _setPickupBranch,
+                      onRefresh: _refreshMenuData,
+                      onRetryMenu: () =>
+                          context.read<MobileBackendController>().bootstrap(
+                            language: context
+                                .read<LocaleController>()
+                                .locale
+                                .languageCode,
+                            branchId: _selectedBranch?.id,
+                          ),
+                      cartCount: cart.totalItems,
+                      cartTotal: cart.totalAmount,
+                      cartQuantities: cart.quantitiesByProduct,
+                      notificationUnreadCount: backend.notificationUnreadCount,
+                      onNotificationsTap: () => unawaited(_openNotifications()),
+                    );
                   },
-                  onOrderTypeChanged: _setOrderType,
-                  onBranchSelected: _setPickupBranch,
-                  onRefresh: _refreshMenuData,
-                  onRetryMenu: () =>
-                      context.read<MobileBackendController>().bootstrap(
-                        language: context
-                            .read<LocaleController>()
-                            .locale
-                            .languageCode,
-                        branchId: _selectedBranch?.id,
-                      ),
-                  cartCount: totalItems,
-                  cartTotal: totalAmount,
-                  cartQuantities: cartQuantities,
-                  notificationUnreadCount: backend.notificationUnreadCount,
-                  onNotificationsTap: () => unawaited(_openNotifications()),
                 ),
               ),
               _KeepAliveTabPage(
+                active: _currentIndex == _promotionsTabIndex,
                 child: backend.isAuthenticated
                     ? _promotionsTab
                     : const SizedBox.shrink(),
               ),
               _KeepAliveTabPage(
-                child: CartScreen(
-                  isDark: isDark,
-                  items: cartLines,
-                  totalAmount: totalAmount,
-                  isCheckingOut: _isCheckingOut,
-                  onDecrease: (line) => _updateCartLine(line, -1),
-                  onIncrease: (line) => _updateCartLine(line, 1),
-                  onBrowseMenu: () => _selectTab(_menuTabIndex),
-                  onCheckout: () => unawaited(_handleCheckout(cartLines)),
+                active: _currentIndex == _cartPageIndex,
+                child: ListenableBuilder(
+                  listenable: _cart,
+                  builder: (context, _) {
+                    final cart = _cart.snapshot(products);
+                    return CartScreen(
+                      isDark: isDark,
+                      items: cart.lines,
+                      totalAmount: cart.totalAmount,
+                      isCheckingOut: _isCheckingOut,
+                      onDecrease: (line) => _updateCartLine(line, -1),
+                      onIncrease: (line) => _updateCartLine(line, 1),
+                      onBrowseMenu: () => _selectTab(_menuTabIndex),
+                      onCheckout: () => unawaited(_handleCheckout(cart.lines)),
+                    );
+                  },
                 ),
               ),
-              _KeepAliveTabPage(child: _profileTab),
+              _KeepAliveTabPage(
+                active: _currentIndex == _profileTabIndex,
+                child: _profileTab,
+              ),
             ],
           ),
         ),
-        bottomNavigationBar: _MainTabsBottomNavigation(
-          cartIconKey: _cartIconKey,
-          cartArrival: _cartArrival,
-          isDark: isDark,
-          currentIndex: _currentIndex,
-          totalItems: totalItems,
-          totalAmount: totalAmount,
-          showCartPill:
-              totalItems > 0 &&
-              (_currentIndex == _homeTabIndex ||
-                  _currentIndex == _menuTabIndex),
-          t: t,
-          onCartTap: () => _selectTab(_cartPageIndex),
-          onDestinationSelected: (index) {
-            if (index == _promotionsTabIndex) {
-              unawaited(_selectPromotionsTab());
-            } else {
-              _selectTab(index);
-            }
+        bottomNavigationBar: ListenableBuilder(
+          listenable: Listenable.merge(<Listenable>[_cart, _cartArrival]),
+          builder: (context, _) {
+            final cart = _cart.snapshot(products);
+            return _MainTabsBottomNavigation(
+              cartIconKey: _cartIconKey,
+              cartArrival: _cartArrival.value,
+              isDark: isDark,
+              currentIndex: _currentIndex,
+              totalItems: cart.totalItems,
+              totalAmount: cart.totalAmount,
+              showCartPill:
+                  cart.totalItems > 0 &&
+                  (_currentIndex == _homeTabIndex ||
+                      _currentIndex == _menuTabIndex),
+              t: t,
+              onCartTap: () => _selectTab(_cartPageIndex),
+              onDestinationSelected: (index) {
+                if (index == _promotionsTabIndex) {
+                  unawaited(_selectPromotionsTab());
+                } else {
+                  _selectTab(index);
+                }
+              },
+            );
           },
         ),
       ),
     );
   }
 
-  String _homeCustomerName(MobileBackendController backend, L t) {
-    final fullName = backend.client?.fullName.trim();
+  String _homeCustomerName(ClientProfile? client, L t) {
+    final fullName = client?.fullName.trim();
     if (fullName == null || fullName.isEmpty) return t.guest;
     return fullName.split(RegExp(r'\s+')).first;
   }
@@ -1659,9 +1775,12 @@ class _MainTabsState extends State<MainTabs> {
   }
 }
 
+/// Keeps a tab's state while it is off screen and freezes its animations
+/// there: tickers on an inactive tab would otherwise keep scheduling frames.
 class _KeepAliveTabPage extends StatefulWidget {
-  const _KeepAliveTabPage({required this.child});
+  const _KeepAliveTabPage({required this.active, required this.child});
 
+  final bool active;
   final Widget child;
 
   @override
@@ -1676,6 +1795,6 @@ class _KeepAliveTabPageState extends State<_KeepAliveTabPage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return widget.child;
+    return TickerMode(enabled: widget.active, child: widget.child);
   }
 }

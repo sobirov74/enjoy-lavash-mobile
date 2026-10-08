@@ -1,7 +1,18 @@
 part of '../mobile_backend_controller.dart';
 
 extension _MobileBackendStateController on MobileBackendController {
+  bool _isCurrentSession(int generation) => generation == _sessionGeneration;
+
+  /// Ends the session for [reason] and tells listeners (the app shell clears
+  /// on-device customer data for an explicit sign-out or deletion).
+  void _endSession(SessionEndReason reason) {
+    _pendingPushMessage = null;
+    _clearAuthenticatedState();
+    if (!_sessionEndedController.isClosed) _sessionEndedController.add(reason);
+  }
+
   void _clearAuthenticatedState({bool notify = true}) {
+    _sessionGeneration++;
     _notificationsRequestVersion++;
     _notificationCountRequestVersion++;
     _assignedPromotionsRequestVersion++;
@@ -21,6 +32,7 @@ extension _MobileBackendStateController on MobileBackendController {
     _assignedPromotionsLoading = false;
     _assignedPromotionsIncludeAll = false;
     _assignedPromotionsFailure = null;
+    _assignedPromotionsFetchedAt = null;
     _loyaltyWallet = null;
     _loyaltyWalletLoading = false;
     _loyaltyWalletFailure = null;
@@ -30,8 +42,9 @@ extension _MobileBackendStateController on MobileBackendController {
     _loyaltyTransactionsLoadingMore = false;
     _loyaltyTransactionsFailure = null;
     _failure = null;
-    if (_status == MobileBackendStatus.initial ||
-        _status == MobileBackendStatus.loading) {
+    // A running bootstrap owns the loading state and settles it itself;
+    // flipping it here let a second bootstrap start concurrently.
+    if (_status == MobileBackendStatus.initial) {
       _status = MobileBackendStatus.loaded;
     }
     if (notify) {

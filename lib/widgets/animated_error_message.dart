@@ -5,6 +5,7 @@ import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
+import 'package:enjoy_lavash_mobile/widgets/utils/failure_message.dart';
 
 class AnimatedErrorMessage extends StatefulWidget {
   const AnimatedErrorMessage({
@@ -24,6 +25,8 @@ class AnimatedErrorMessage extends StatefulWidget {
   State<AnimatedErrorMessage> createState() => _AnimatedErrorMessageState();
 }
 
+const int _pulseCycles = 6;
+
 class _AnimatedErrorMessageState extends State<AnimatedErrorMessage>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
@@ -31,10 +34,12 @@ class _AnimatedErrorMessageState extends State<AnimatedErrorMessage>
   @override
   void initState() {
     super.initState();
+    // A few attention pulses, then still: an error card on a kept-alive tab
+    // must not keep forcing frames for as long as it is shown.
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1400),
-    )..repeat(reverse: true);
+    )..repeat(reverse: true, count: _pulseCycles);
   }
 
   @override
@@ -67,8 +72,8 @@ class _AnimatedErrorMessageState extends State<AnimatedErrorMessage>
     final provided = widget.message?.trim();
     if (provided?.isNotEmpty == true) return provided!;
 
-    final failureMessage = widget.failure?.message.trim();
-    if (failureMessage?.isNotEmpty == true) return failureMessage!;
+    final failure = widget.failure;
+    if (failure != null) return failureDetail(t, failure);
 
     return t.errorGenericBody;
   }
@@ -85,52 +90,38 @@ class _AnimatedErrorMessageState extends State<AnimatedErrorMessage>
       _ => BaseColors.primary,
     };
 
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        final value = Curves.easeInOut.transform(_controller.value);
-        final pulseScale = 1 + value * 0.18;
-        final pulseOpacity = 0.08 + (1 - value) * 0.12;
-
-        return Container(
-          width: double.infinity,
-          padding: EdgeInsets.all(widget.compact ? 14 : 18),
-          decoration: BoxDecoration(
-            color: cardColor,
-            borderRadius: BorderRadius.circular(widget.compact ? 18 : 24),
-            border: Border.all(
-              color: pulseColor.withValues(alpha: isDark ? 0.28 : 0.18),
-            ),
-            boxShadow: <BoxShadow>[
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.16 : 0.06),
-                blurRadius: widget.compact ? 18 : 28,
-                offset: const Offset(0, 12),
-              ),
-            ],
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(widget.compact ? 14 : 18),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(widget.compact ? 18 : 24),
+        border: Border.all(
+          color: pulseColor.withValues(alpha: isDark ? 0.28 : 0.18),
+        ),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.16 : 0.06),
+            blurRadius: widget.compact ? 18 : 28,
+            offset: const Offset(0, 12),
           ),
-          child: widget.compact
-              ? _buildCompact(t, pulseColor, pulseScale, pulseOpacity)
-              : _buildFull(t, pulseColor, pulseScale, pulseOpacity),
-        );
-      },
+        ],
+      ),
+      // Text and buttons are built once; only the icon listens to the pulse.
+      child: widget.compact
+          ? _buildCompact(t, pulseColor)
+          : _buildFull(t, pulseColor),
     );
   }
 
-  Widget _buildFull(
-    L t,
-    Color pulseColor,
-    double pulseScale,
-    double pulseOpacity,
-  ) {
+  Widget _buildFull(L t, Color pulseColor) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         _AnimatedErrorIcon(
           icon: _icon,
           color: pulseColor,
-          pulseScale: pulseScale,
-          pulseOpacity: pulseOpacity,
+          pulse: _controller,
           size: 76,
         ),
         const SizedBox(height: 16),
@@ -170,20 +161,14 @@ class _AnimatedErrorMessageState extends State<AnimatedErrorMessage>
     );
   }
 
-  Widget _buildCompact(
-    L t,
-    Color pulseColor,
-    double pulseScale,
-    double pulseOpacity,
-  ) {
+  Widget _buildCompact(L t, Color pulseColor) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         _AnimatedErrorIcon(
           icon: _icon,
           color: pulseColor,
-          pulseScale: pulseScale,
-          pulseOpacity: pulseOpacity,
+          pulse: _controller,
           size: 48,
         ),
         const SizedBox(width: 12),
@@ -234,47 +219,58 @@ class _AnimatedErrorIcon extends StatelessWidget {
   const _AnimatedErrorIcon({
     required this.icon,
     required this.color,
-    required this.pulseScale,
-    required this.pulseOpacity,
+    required this.pulse,
     required this.size,
   });
 
   final IconData icon;
   final Color color;
-  final double pulseScale;
-  final double pulseOpacity;
+  final Animation<double> pulse;
   final double size;
 
   @override
   Widget build(BuildContext context) {
+    final badge = Container(
+      width: size * 0.72,
+      height: size * 0.72,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.14),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(icon, color: color, size: size * 0.38),
+    );
     return SizedBox(
       width: size,
       height: size,
-      child: Stack(
-        alignment: Alignment.center,
-        children: <Widget>[
-          Transform.scale(
-            scale: pulseScale,
-            child: Container(
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: pulseOpacity),
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-          Transform.rotate(
-            angle: math.sin(pulseScale * math.pi) * 0.04,
-            child: Container(
-              width: size * 0.72,
-              height: size * 0.72,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.14),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: size * 0.38),
-            ),
-          ),
-        ],
+      child: RepaintBoundary(
+        child: AnimatedBuilder(
+          animation: pulse,
+          child: badge,
+          builder: (context, badge) {
+            final value = Curves.easeInOut.transform(pulse.value);
+            final pulseScale = 1 + value * 0.18;
+            final pulseOpacity = 0.08 + (1 - value) * 0.12;
+            return Stack(
+              alignment: Alignment.center,
+              children: <Widget>[
+                Transform.scale(
+                  scale: pulseScale,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: pulseOpacity),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const SizedBox.expand(),
+                  ),
+                ),
+                Transform.rotate(
+                  angle: math.sin(pulseScale * math.pi) * 0.04,
+                  child: badge,
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }

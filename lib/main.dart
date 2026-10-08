@@ -9,6 +9,7 @@ import 'package:enjoy_lavash_mobile/app/locale_controller.dart';
 import 'package:enjoy_lavash_mobile/app/location_controller.dart';
 import 'package:enjoy_lavash_mobile/app/theme_controller.dart';
 import 'package:enjoy_lavash_mobile/core/api/api_client.dart';
+import 'package:enjoy_lavash_mobile/core/services/error_reporter.dart';
 import 'package:enjoy_lavash_mobile/core/services/yandex_geocoder_service.dart';
 import 'package:enjoy_lavash_mobile/core/services/mobile_push_notification_service.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/repositories/mobile_backend_repository.dart';
@@ -21,17 +22,15 @@ Future<void> main() async {
 Future<void> _startApp() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  FlutterError.onError = (details) {
-    FlutterError.presentError(details);
-    _reportUnhandledError(
-      details.exception,
-      details.stack ?? StackTrace.current,
-    );
-  };
+  // Local logging only. When a SENTRY_DSN is configured, ErrorReporter.init
+  // chains Sentry onto these handlers, which then reports each error once.
+  FlutterError.onError = FlutterError.presentError;
   PlatformDispatcher.instance.onError = (error, stack) {
-    _reportUnhandledError(error, stack);
+    debugPrint('Uncaught platform error: ${error.runtimeType}');
+    debugPrintStack(stackTrace: stack, maxFrames: 20);
     return true;
   };
+  await ErrorReporter.init();
 
   setupDi();
 
@@ -51,10 +50,15 @@ Future<void> _startApp() async {
     ),
   );
 
-  await Future.wait([
-    themeController.loadTheme(),
-    localeController.loadLocale(),
-  ]);
+  // Both loaders fall back to defaults internally; this guard only makes sure
+  // nothing unexpected can keep the app on the native splash.
+  await _runStartupTask(
+    'theme and locale',
+    () => Future.wait([
+      themeController.loadTheme(),
+      localeController.loadLocale(),
+    ]),
+  );
   apiClient.setLanguage(localeController.locale.languageCode);
   localeController.addListener(() {
     final language = localeController.locale.languageCode;
@@ -97,12 +101,10 @@ Future<void> _runStartupTask(String name, Future<void> Function() task) async {
   try {
     await task();
   } catch (error, stackTrace) {
-    debugPrint('Startup task failed: $name');
-    _reportUnhandledError(error, stackTrace);
+    ErrorReporter.report(error, stackTrace, context: 'startup: $name');
   }
 }
 
 void _reportUnhandledError(Object error, StackTrace stackTrace) {
-  debugPrint('Unhandled app error: $error');
-  debugPrintStack(stackTrace: stackTrace);
+  ErrorReporter.report(error, stackTrace, context: 'zone');
 }

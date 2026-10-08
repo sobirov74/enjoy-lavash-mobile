@@ -1293,4 +1293,23 @@ class LRu extends L {
 
   @override
   String get promoCodeCouldNotBeApplied => 'Не удалось применить промокод';
+
+  @override
+  String cartQuantityLimitReached(int count) {
+    return 'Можно добавить не больше $count шт. одного товара';
+  }
+
+  @override
+  String cartItemsUnavailable(String items) {
+    return 'Больше недоступно, удалено из корзины: $items';
+  }
+
+  @override
+  String get cartSomeItemsUnavailable =>
+      'Некоторые товары больше недоступны и удалены из корзины';
+
+  @override
+  String repeatOrderSkipped(String items) {
+    return 'Не удалось добавить в корзину: $items';
+  }
 }

@@ -21,6 +21,7 @@ import 'package:intl/intl.dart';
 import 'package:pinput/pinput.dart';
 import 'package:provider/provider.dart';
 import 'package:smart_auth/smart_auth.dart';
+import 'package:enjoy_lavash_mobile/widgets/utils/failure_message.dart';
 
 const int _otpCodeLength = 4;
 
@@ -234,16 +235,18 @@ class _AuthorizationScreenState extends State<AuthorizationScreen> {
 
     switch (result) {
       case Success(:final data):
-        final expiresAt = data.codeExpiresAt.toUtc();
-        final codeLifetime = expiresAt.difference(DateTime.now().toUtc());
+        // Anchor the countdown to this device's clock using the lifetime the
+        // server granted, so a wrong device clock cannot expire the code on
+        // arrival (which used to make login impossible).
+        final now = DateTime.now().toUtc();
+        final codeLifetime = data.codeLifetimeFrom(now);
+        final expiresAt = now.add(codeLifetime);
         setState(() {
           _otpRequested = true;
           _codeExpiresAt = expiresAt;
           _requestAvailableAt = expiresAt;
           _verificationAvailableAt = null;
-          _codeLifetime = codeLifetime.isNegative
-              ? Duration.zero
-              : codeLifetime;
+          _codeLifetime = codeLifetime;
           _isSubmitting = false;
           _errorText = null;
         });
@@ -261,7 +264,7 @@ class _AuthorizationScreenState extends State<AuthorizationScreen> {
           _requestAvailableAt = _retryAvailableAt(failure);
         }
         setState(() {
-          _errorText = failure.message;
+          _errorText = failureMessage(L.of(context), failure);
           _isSubmitting = false;
         });
         _restartCountdownTimer();
@@ -321,7 +324,7 @@ class _AuthorizationScreenState extends State<AuthorizationScreen> {
           _verificationAvailableAt = _retryAvailableAt(failure);
         }
         setState(() {
-          _errorText = failure.message;
+          _errorText = failureMessage(L.of(context), failure);
           _isSubmitting = false;
           _codeHasError = true;
         });
@@ -993,7 +996,7 @@ class _NamePromptSheetState extends State<_NamePromptSheet> {
       case Error(:final failure):
         setState(() {
           _isSaving = false;
-          _errorText = failure.message;
+          _errorText = failureMessage(L.of(context), failure);
         });
     }
   }
@@ -1254,7 +1257,7 @@ class _BirthDatePromptSheetState extends State<_BirthDatePromptSheet> {
       case Error(:final failure):
         setState(() {
           _isSaving = false;
-          _errorText = failure.message;
+          _errorText = failureMessage(L.of(context), failure);
         });
     }
   }

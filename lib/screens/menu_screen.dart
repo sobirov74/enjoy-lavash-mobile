@@ -23,18 +23,23 @@ import 'package:enjoy_lavash_mobile/widgets/redesign/order_context_pill.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:enjoy_lavash_mobile/widgets/app_snack_bar.dart';
 import 'package:enjoy_lavash_mobile/widgets/cart_animation/cart_animation_controller.dart';
 import 'package:enjoy_lavash_mobile/widgets/cart_animation/cart_animation_source.dart';
 import 'package:enjoy_lavash_mobile/widgets/cart_animation/cart_arrival_feedback.dart';
 import 'package:enjoy_lavash_mobile/widgets/cart_animation/packaging_visual.dart';
 import 'package:provider/provider.dart';
+import 'package:enjoy_lavash_mobile/widgets/curved_fade_transition.dart';
 
 const double _stickyCategoryHeaderHeight = 56;
 
 // ---------------------------------------------------------------------------
 // MenuScreen — main scrollable menu with sticky category tabs
 // ---------------------------------------------------------------------------
+
+const double _productGridSpacing = 12;
+const double _productGridWideBreakpoint = 720;
 
 class MenuScreen extends StatefulWidget {
   const MenuScreen({
@@ -142,10 +147,17 @@ class _MenuScreenState extends State<MenuScreen> {
     });
   }
 
+  bool _packagingPreloaded = false;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    unawaited(_cartAnimation.preload(context, widget.packagingAssets.values));
+    // Dependencies change on every theme, locale or text-scale update; the
+    // packaging artwork only needs warming once (and again if it changes).
+    if (!_packagingPreloaded) {
+      _packagingPreloaded = true;
+      unawaited(_cartAnimation.preload(context, widget.packagingAssets.values));
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _updateCategoryPillGeometry();
     });
@@ -234,15 +246,52 @@ class _MenuScreenState extends State<MenuScreen> {
     return label.isEmpty ? null : label;
   }
 
-  String? _deliveryButtonSubtitle(BuildContext context) {
-    final loc = context.watch<LocationController>();
-    if (loc.addressName.trim().isNotEmpty) {
-      final fullAddress = loc.fullAddress.trim();
-      return fullAddress.isEmpty ? loc.addressName.trim() : fullAddress;
+  /// Delivery address shown on the order-context pill. Build code passes
+  /// selected slices so the menu rebuilds only when the address itself
+  /// changes; event handlers pass values read once.
+  String? _deliveryButtonSubtitle({
+    required String addressName,
+    required String fullAddress,
+    required List<ClientAddress> addresses,
+  }) {
+    if (addressName.trim().isNotEmpty) {
+      final full = fullAddress.trim();
+      return full.isEmpty ? addressName.trim() : full;
     }
-
-    final addresses = context.watch<MobileBackendController>().addresses;
     return _formatSavedAddress(_defaultAddress(addresses));
+  }
+
+  String? _watchedDeliverySubtitle(BuildContext context) {
+    final (addressName, fullAddress) = context
+        .select<LocationController, (String, String)>(
+          (location) => (location.addressName, location.fullAddress),
+        );
+    // Saved addresses matter only when nothing was picked on this device.
+    if (addressName.trim().isNotEmpty) {
+      return _deliveryButtonSubtitle(
+        addressName: addressName,
+        fullAddress: fullAddress,
+        addresses: const <ClientAddress>[],
+      );
+    }
+    final addresses = context
+        .select<MobileBackendController, List<ClientAddress>>(
+          (backend) => backend.addresses,
+        );
+    return _deliveryButtonSubtitle(
+      addressName: addressName,
+      fullAddress: fullAddress,
+      addresses: addresses,
+    );
+  }
+
+  String? _currentDeliverySubtitle() {
+    final location = context.read<LocationController>();
+    return _deliveryButtonSubtitle(
+      addressName: location.addressName,
+      fullAddress: location.fullAddress,
+      addresses: context.read<MobileBackendController>().addresses,
+    );
   }
 
   double get _activeStickyHeaderHeight => _stickyCategoryHeaderHeight;
@@ -295,6 +344,8 @@ class _MenuScreenState extends State<MenuScreen> {
       for (var index = 0; index < selection.quantity; index++) {
         try {
           await widget.onAddToCart(product);
+        } on CartLineLimitReached {
+          rethrow;
         } catch (error) {
           throw _PartialCartAddition(
             selection.copyWith(quantity: selection.quantity - index),
@@ -354,6 +405,16 @@ class _MenuScreenState extends State<MenuScreen> {
       },
       onFailed: (error, stack) {
         if (!mounted || !host.mounted) return;
+        if (error is CartLineLimitReached) {
+          ScaffoldMessenger.of(host)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              appSnackBar(
+                L.of(host).cartQuantityLimitReached(maxCartLineQuantity),
+              ),
+            );
+          return;
+        }
         final retrySelection = error is _PartialCartAddition
             ? error.remaining
             : selection;
@@ -430,8 +491,9 @@ class _MenuScreenState extends State<MenuScreen> {
                 stagingBounds: stagingBounds,
               ),
         ),
-        transitionsBuilder: (_, animation, _, child) => FadeTransition(
-          opacity: CurvedAnimation(parent: animation, curve: AppMotion.enter),
+        transitionsBuilder: (_, animation, _, child) => CurvedFadeTransition(
+          animation: animation,
+          curve: AppMotion.enter,
           child: child,
         ),
       ),
@@ -553,7 +615,7 @@ class _MenuScreenState extends State<MenuScreen> {
           onRefresh: widget.onRefresh,
           child: CustomScrollView(
             controller: _scrollController,
-            cacheExtent: 1200,
+            scrollCacheExtent: const ScrollCacheExtent.pixels(1200),
             physics: const BouncingScrollPhysics(
               parent: AlwaysScrollableScrollPhysics(),
             ),
@@ -616,9 +678,7 @@ class _MenuScreenState extends State<MenuScreen> {
                 else
                   SliverPadding(
                     padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-                    sliver: SliverToBoxAdapter(
-                      child: _buildProductGrid(visibleProducts),
-                    ),
+                    sliver: _buildProductGrid(visibleProducts),
                   ),
               ],
               if (widget.showCartSummary && widget.cartCount > 0)
@@ -654,7 +714,7 @@ class _MenuScreenState extends State<MenuScreen> {
       final branchName = widget.selectedBranch?.name.trim();
       return branchName?.isNotEmpty == true ? branchName! : t.pickupBranch;
     }
-    return _deliveryButtonSubtitle(context) ?? t.tapToSelectAddress;
+    return _watchedDeliverySubtitle(context) ?? t.tapToSelectAddress;
   }
 
   Future<void> _showOrderContextPicker() async {
@@ -664,7 +724,7 @@ class _MenuScreenState extends State<MenuScreen> {
       currentType: widget.orderType,
       selectedBranch: widget.selectedBranch,
       branches: backend.branches,
-      deliveryAddress: _deliveryButtonSubtitle(context),
+      deliveryAddress: _currentDeliverySubtitle(),
       onTypeChanged: widget.onOrderTypeChanged,
       onBranchSelected: widget.onBranchSelected,
     );
@@ -1033,37 +1093,55 @@ class _MenuScreenState extends State<MenuScreen> {
     );
   }
 
+  /// Lazily built grid: one sliver row per [columns] products, created only
+  /// as it scrolls into view. (A `Wrap` in a box adapter built, laid out and
+  /// painted every card of the category at once.) Rows keep the cards'
+  /// natural height, which the card itself keeps uniform.
   Widget _buildProductGrid(List<MenuProduct> products) {
-    return LayoutBuilder(
+    return SliverLayoutBuilder(
       builder: (context, constraints) {
-        final columns = constraints.maxWidth >= 720 ? 3 : 2;
-        final itemWidth =
-            (constraints.maxWidth - (12 * (columns - 1))) / columns;
-        return Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: <Widget>[
-            for (final product in products)
-              SizedBox(
-                width: itemWidth,
-                child: RepaintBoundary(
-                  child: ProductListItem(
-                    key: ValueKey<String>('menu-${product.id}'),
-                    product: product,
-                    isDark: widget.isDark,
-                    quantity: widget.cartQuantities[product.id] ?? 0,
-                    imageHeroTag: _productHeroTag(product),
-                    onImageTap: () => _showProductImagePreview(product),
-                    onAdd: () => _quickAdd(product),
-                    onAddRequested: (source) => _quickAdd(product, source),
-                    onDecrease: () => widget.onDecreaseFromCart(product),
-                    onIncrease: () => _quickAdd(product),
+        final columns =
+            constraints.crossAxisExtent >= _productGridWideBreakpoint ? 3 : 2;
+        final rowCount = (products.length / columns).ceil();
+        return SliverList.separated(
+          itemCount: rowCount,
+          separatorBuilder: (_, _) =>
+              const SizedBox(height: _productGridSpacing),
+          itemBuilder: (context, row) {
+            final start = row * columns;
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                for (var column = 0; column < columns; column++) ...<Widget>[
+                  if (column > 0) const SizedBox(width: _productGridSpacing),
+                  Expanded(
+                    child: start + column < products.length
+                        ? _buildProductCard(products[start + column])
+                        : const SizedBox.shrink(),
                   ),
-                ),
-              ),
-          ],
+                ],
+              ],
+            );
+          },
         );
       },
+    );
+  }
+
+  Widget _buildProductCard(MenuProduct product) {
+    return RepaintBoundary(
+      child: ProductListItem(
+        key: ValueKey<String>('menu-${product.id}'),
+        product: product,
+        isDark: widget.isDark,
+        quantity: widget.cartQuantities[product.id] ?? 0,
+        imageHeroTag: _productHeroTag(product),
+        onImageTap: () => _showProductImagePreview(product),
+        onAdd: () => _quickAdd(product),
+        onAddRequested: (source) => _quickAdd(product, source),
+        onDecrease: () => widget.onDecreaseFromCart(product),
+        onIncrease: () => _quickAdd(product),
+      ),
     );
   }
 

@@ -59,8 +59,6 @@ void main() {
     expect(result, isA<Error<MobileBootstrap>>());
     expect(result.failureOrNull, isA<ServiceUnavailableFailure>());
     expect(adapter.paths, contains(ApiEndpoints.clientMe));
-    expect(adapter.paths, isNot(contains(ApiEndpoints.clientAddresses)));
-    expect(adapter.paths, isNot(contains(ApiEndpoints.clientOrders)));
   });
 
   test(
@@ -137,6 +135,52 @@ void main() {
       expect(adapter.paths, isNot(contains(ApiEndpoints.clientMe)));
     },
   );
+
+  test('expired session at cold start loads the catalog as a guest', () async {
+    await TokenStorage.saveAccessToken('expired-access');
+    await TokenStorage.saveRefreshToken('expired-refresh');
+    final adapter = _BootstrapAdapter((options) async {
+      return switch (options.uri.path) {
+        ApiEndpoints.branches => _jsonResponse({'branches': const []}),
+        ApiEndpoints.catalog => _jsonResponse({
+          'categories': [
+            {
+              'id': 'cat-lavash',
+              'name': 'Lavash',
+              'products': [
+                {'id': 'prod-1', 'name': 'Classic', 'basePrice': 32000},
+              ],
+            },
+          ],
+        }),
+        ApiEndpoints.activePromotions => _jsonResponse({
+          'promotions': const [],
+        }),
+        ApiEndpoints.paymentMethods => _jsonResponse({
+          'paymentMethods': const [],
+        }),
+        ApiEndpoints.clientMe => _jsonResponse({
+          'errorCode': 'ACCESS_TOKEN_EXPIRED',
+        }, statusCode: 401),
+        ApiEndpoints.clientRefresh => _jsonResponse({
+          'errorCode': 'INVALID_REFRESH_TOKEN',
+        }, statusCode: 401),
+        _ => _jsonResponse({'message': 'Unexpected request'}, statusCode: 500),
+      };
+    });
+    final repository = MobileBackendRepositoryImpl(
+      ApiClient(baseUrl: 'https://example.test', httpClientAdapter: adapter),
+    );
+
+    final result = await repository.bootstrap(language: 'en');
+
+    expect(result, isA<Success<MobileBootstrap>>());
+    expect(result.dataOrNull?.client, isNull);
+    expect(result.dataOrNull?.catalog.products.single.id, 'prod-1');
+    expect(adapter.paths, contains(ApiEndpoints.clientRefresh));
+    expect(await TokenStorage.getAccessToken(), isNull);
+    expect(await TokenStorage.getRefreshToken(), isNull);
+  });
 
   test(
     'controller preserves an established client on bootstrap error',

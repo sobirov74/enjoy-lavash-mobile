@@ -511,5 +511,24 @@
   "promoClientRequired": "Promokoddan foydalanish uchun tizimga kiring",
   "promoConditionsNotMet": "Promokod shartlari bajarilmadi",
   "promoConfigurationError": "Hozir promokodni qo‘llab bo‘lmaydi",
-  "promoCodeCouldNotBeApplied": "Promokodni qo‘llab bo‘lmadi"
+  "promoCodeCouldNotBeApplied": "Promokodni qo‘llab bo‘lmadi",
+  "cartQuantityLimitReached": "Bitta mahsulotdan ko‘pi bilan {count} ta qo‘shish mumkin",
+  "@cartQuantityLimitReached": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "cartItemsUnavailable": "Endi mavjud emas, savatdan olib tashlandi: {items}",
+  "@cartItemsUnavailable": {
+    "placeholders": {
+      "items": { "type": "String" }
+    }
+  },
+  "cartSomeItemsUnavailable": "Ba’zi mahsulotlar endi mavjud emas va savatdan olib tashlandi",
+  "repeatOrderSkipped": "Savatga qo‘shib bo‘lmadi: {items}",
+  "@repeatOrderSkipped": {
+    "placeholders": {
+      "items": { "type": "String" }
+    }
+  }
 }

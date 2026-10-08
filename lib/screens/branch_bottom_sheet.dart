@@ -37,8 +37,9 @@ class _BranchSheet extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final t = L.of(context);
     final branches = context
-        .watch<MobileBackendController>()
-        .branches
+        .select<MobileBackendController, List<BranchModel>>(
+          (backend) => backend.branches,
+        )
         .where((branch) => branch.isActive)
         .toList(growable: false);
 

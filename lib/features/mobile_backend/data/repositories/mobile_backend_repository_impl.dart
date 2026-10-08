@@ -1,5 +1,7 @@
-import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/banner_model.dart';
+import 'dart:io' show HttpDate, HttpException;
+
 import 'package:dio/dio.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/banner_model.dart';
 import 'package:enjoy_lavash_mobile/core/api/api_client.dart';
 import 'package:enjoy_lavash_mobile/core/api/api_endpoints.dart';
 import 'package:enjoy_lavash_mobile/core/error/dio_error_mapper.dart';
@@ -42,8 +44,24 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
         ApiEndpoints.requestOtp,
         data: {'phoneNumber': phoneNumber},
       );
-      return OtpRequestResponse.fromJson(asJsonMap(response.data));
+      return OtpRequestResponse.fromJson(
+        asJsonMap(response.data),
+        serverTime: _serverTime(response),
+      );
     });
+  }
+
+  /// Parses the HTTP `Date` header, the server's clock at response time.
+  DateTime? _serverTime(Response<Object?> response) {
+    final value = response.headers.value('date')?.trim();
+    if (value == null || value.isEmpty) return null;
+    try {
+      return HttpDate.parse(value).toUtc();
+    } on FormatException {
+      return null;
+    } on HttpException {
+      return null;
+    }
   }
 
   @override
@@ -126,11 +144,7 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
 
       final authFuture = hasToken
           ? _fetchAuthenticatedData()
-          : Future<List<Object?>>.value(<Object?>[
-              null,
-              const <ClientAddress>[],
-              const <CustomerOrderModel>[],
-            ]);
+          : Future<List<Object?>>.value(_guestAuthData);
 
       final publicData = await publicFuture;
       final authData = await authFuture;
@@ -618,22 +632,36 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
   }
 
   Future<List<Object?>> _fetchAuthenticatedData() async {
-    final profile = await _fetchProfile();
-    List<ClientAddress> addresses;
-    List<CustomerOrderModel> orders;
+    // Addresses and orders are optional and requested alongside the profile,
+    // so a signed-in launch waits for one round trip instead of three.
+    final addresses = _orFallback(_fetchAddresses(), const <ClientAddress>[]);
+    final orders = _orFallback(_fetchOrders(), const <CustomerOrderModel>[]);
+    final ClientProfile profile;
     try {
-      addresses = await _fetchAddresses();
-    } catch (_) {
-      addresses = const <ClientAddress>[];
+      profile = await _fetchProfile();
+    } on DioException catch (error) {
+      // The stored session is no longer valid (the auth interceptor already
+      // tried to refresh it). Browse as a guest instead of failing the whole
+      // bootstrap, which would leave the menu empty with no error.
+      if (error.response?.statusCode == 401) return _guestAuthData;
+      rethrow;
     }
-    try {
-      orders = await _fetchOrders();
-    } catch (_) {
-      orders = const <CustomerOrderModel>[];
-    }
-
-    return <Object?>[profile, addresses, orders];
+    return <Object?>[profile, await addresses, await orders];
   }
+
+  static Future<T> _orFallback<T>(Future<T> request, T fallback) async {
+    try {
+      return await request;
+    } catch (_) {
+      return fallback;
+    }
+  }
+
+  static const List<Object?> _guestAuthData = <Object?>[
+    null,
+    <ClientAddress>[],
+    <CustomerOrderModel>[],
+  ];
 
   Future<List<CustomerOrderModel>> _fetchOrders() async {
     final response = await _dio.get(ApiEndpoints.clientOrders);

@@ -6,8 +6,15 @@ class ThemeController extends ChangeNotifier {
 
   ThemeMode get themeMode => _themeMode;
 
+  /// Restores the saved mode. Unreadable preferences keep the system mode so
+  /// startup can never stall here.
   Future<void> loadTheme() async {
-    _themeMode = await ThemeStorage.loadThemeMode();
+    try {
+      _themeMode = await ThemeStorage.loadThemeMode();
+    } catch (error) {
+      debugPrint('Saved theme unreadable, using system: ${error.runtimeType}');
+      _themeMode = ThemeMode.system;
+    }
     notifyListeners();
   }
 

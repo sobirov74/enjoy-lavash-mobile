@@ -10,6 +10,7 @@ import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:enjoy_lavash_mobile/utils/format_cache.dart';
 
 class LoyaltyWalletScreen extends StatefulWidget {
   const LoyaltyWalletScreen({super.key});
@@ -36,7 +37,17 @@ class _LoyaltyWalletScreenState extends State<LoyaltyWalletScreen> {
     _scrollController
       ..removeListener(_loadMoreNearEnd)
       ..dispose();
+    _backend?.releaseLoyaltyTransactions();
     super.dispose();
+  }
+
+  // Captured for dispose, where the inherited widget can no longer be read.
+  MobileBackendController? _backend;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _backend = context.read<MobileBackendController>();
   }
 
   void _loadMoreNearEnd() {
@@ -197,7 +208,11 @@ class _WalletOverview extends StatelessWidget {
     final locale = Localizations.localeOf(context).toLanguageTag();
     final expiry = wallet.nextExpiryAt == null
         ? null
-        : DateFormat.yMMMd(locale).format(wallet.nextExpiryAt!.toLocal());
+        : dateFormat(
+            locale,
+            'yMMMd',
+            DateFormat.yMMMd,
+          ).format(wallet.nextExpiryAt!.toLocal());
 
     return Column(
       children: <Widget>[
@@ -526,9 +541,11 @@ class _TransactionTile extends StatelessWidget {
     final locale = Localizations.localeOf(context).toLanguageTag();
     final date = transaction.createdAt == null
         ? ''
-        : DateFormat.yMMMd(
+        : dateFormat(
             locale,
-          ).add_Hm().format(transaction.createdAt!.toLocal());
+            'yMMMd Hm',
+            (locale) => DateFormat.yMMMd(locale).add_Hm(),
+          ).format(transaction.createdAt!.toLocal());
 
     return Container(
       padding: const EdgeInsets.all(13),
@@ -761,7 +778,7 @@ class _SkeletonBlock extends StatelessWidget {
 }
 
 String _formatPoints(BuildContext context, int value) {
-  return NumberFormat.decimalPattern(
+  return decimalFormat(
     Localizations.localeOf(context).toLanguageTag(),
   ).format(value);
 }

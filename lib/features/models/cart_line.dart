@@ -1,4 +1,17 @@
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/json_helpers.dart';
 import 'package:enjoy_lavash_mobile/features/models/menu_product.dart';
+
+/// Most units of one cart line (same product and configuration).
+const int maxCartLineQuantity = 99;
+
+/// Thrown by the cart owner when an add cannot change the cart because the
+/// line is already at [maxCartLineQuantity].
+class CartLineLimitReached implements Exception {
+  const CartLineLimitReached();
+
+  @override
+  String toString() => 'CartLineLimitReached($maxCartLineQuantity)';
+}
 
 class CartModifierSelection {
   const CartModifierSelection({
@@ -26,12 +39,13 @@ class CartModifierSelection {
   };
 
   factory CartModifierSelection.fromJson(Map<String, dynamic> json) {
+    // Persisted on-device data: tolerate wrong types instead of throwing.
     return CartModifierSelection(
-      groupId: json['groupId'] as String? ?? '',
-      modifierId: json['modifierId'] as String? ?? '',
-      name: json['name'] as String? ?? '',
-      price: json['price'] as int? ?? 0,
-      quantity: json['quantity'] as int? ?? 1,
+      groupId: readString(json, const ['groupId']),
+      modifierId: readString(json, const ['modifierId']),
+      name: readString(json, const ['name']),
+      price: readInt(json, const ['price']),
+      quantity: readInt(json, const ['quantity'], fallback: 1),
     );
   }
 }
@@ -63,8 +77,8 @@ class CartSelection {
   factory CartSelection.fromJson(Map<String, dynamic> json) {
     final rawModifiers = json['modifiers'];
     return CartSelection(
-      productId: json['productId'] as String? ?? '',
-      quantity: json['quantity'] as int? ?? 0,
+      productId: readString(json, const ['productId']),
+      quantity: readInt(json, const ['quantity']),
       modifiers: rawModifiers is List
           ? rawModifiers
                 .whereType<Map>()

@@ -17,7 +17,8 @@ class _OrderDetailsSheet extends StatefulWidget {
   State<_OrderDetailsSheet> createState() => _OrderDetailsSheetState();
 }
 
-class _OrderDetailsSheetState extends State<_OrderDetailsSheet> {
+class _OrderDetailsSheetState extends State<_OrderDetailsSheet>
+    with WidgetsBindingObserver {
   late CustomerOrderModel _order;
   bool _isRetryingPayment = false;
   bool _isRefreshingOrder = false;
@@ -27,6 +28,7 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet> {
   void initState() {
     super.initState();
     _order = widget.order;
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       unawaited(_refreshOrderFromServer());
@@ -35,8 +37,21 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _orderPollTimer?.cancel();
     super.dispose();
+  }
+
+  /// No polling while the app is in the background; resuming refreshes at
+  /// once (which re-arms the timer if the order is still active).
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_refreshOrderFromServer());
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden) {
+      _orderPollTimer?.cancel();
+    }
   }
 
   bool get _canRetryPayment =>
@@ -58,6 +73,8 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet> {
   void _scheduleOrderPolling() {
     _orderPollTimer?.cancel();
     if (!_shouldPollOrder) return;
+    final lifecycle = WidgetsBinding.instance.lifecycleState;
+    if (lifecycle != null && lifecycle != AppLifecycleState.resumed) return;
     _orderPollTimer = Timer.periodic(const Duration(seconds: 8), (_) {
       unawaited(_refreshOrderFromServer());
     });
@@ -65,15 +82,25 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet> {
 
   Future<void> _refreshOrderFromServer() async {
     if (_isRefreshingOrder) return;
+    final backend = context.read<MobileBackendController>();
+    // Signed out (or the session expired): stop instead of hitting a
+    // protected endpoint every few seconds.
+    if (!backend.isAuthenticated) {
+      _orderPollTimer?.cancel();
+      return;
+    }
     _isRefreshingOrder = true;
-    final result = await context.read<MobileBackendController>().refreshOrder(
-      id: _order.id,
-    );
+    final result = await backend.refreshOrder(id: _order.id);
     _isRefreshingOrder = false;
     if (!mounted) return;
 
-    if (result case Success(:final data)) {
-      setState(() => _order = data);
+    switch (result) {
+      case Success(:final data):
+        setState(() => _order = data);
+      case Error(failure: AuthFailure()):
+        _orderPollTimer?.cancel();
+        return;
+      case Error():
     }
     _scheduleOrderPolling();
   }
@@ -99,14 +126,17 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet> {
           return;
         }
 
-        final opened = await ExternalUrlLauncher.open(paymentUrl!);
+        final opened = await ExternalUrlLauncher.open(
+          paymentUrl!,
+          allowedHosts: paymentLinkHosts,
+        );
         if (!mounted) return;
         _showOrderSnack(
           opened ? t.completePaymentOnline : t.paymentPageOpenFailed,
         );
       case Error(:final failure):
         _showOrderSnack(
-          failure.message.isNotEmpty ? failure.message : t.retryPaymentFailed,
+          failureMessage(t, failure, fallback: t.retryPaymentFailed),
         );
     }
   }

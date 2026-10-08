@@ -207,9 +207,13 @@ class CatalogProductModel {
         language,
         fallback: readString(json, const ['description']),
       ),
-      price: _normalizePrice(
-        readInt(json, const ['price', 'amount', 'basePrice', 'base_price']),
-      ),
+      // Whole UZS, exactly as sent (API_DOCS.md "Prices"). Never rescale.
+      price: readInt(json, const [
+        'price',
+        'amount',
+        'basePrice',
+        'base_price',
+      ]),
       image: _readImageUrl(json),
       calories: _optionalPositiveInt(json, const [
         'calories',
@@ -337,7 +341,7 @@ class CatalogModifierOptionModel {
         language,
         fallback: readString(json, const ['name', 'title']),
       ),
-      price: _normalizePrice(readInt(json, const ['price', 'amount'])),
+      price: readInt(json, const ['price', 'amount']),
       quantity: readInt(json, const ['quantity'], fallback: 1),
       image: _readImageUrl(json),
       isDefault: readBool(json, const ['isDefault', 'is_default']),
@@ -446,11 +450,6 @@ Map<String, List<CatalogProductModel>> _groupProductsByCategory(
     (grouped[categoryId] ??= <CatalogProductModel>[]).add(product);
   }
   return grouped;
-}
-
-int _normalizePrice(int value) {
-  if (value >= 100000 && value % 100 == 0) return value ~/ 100;
-  return value;
 }
 
 int? _optionalPositiveInt(Map<String, dynamic> json, List<String> keys) {

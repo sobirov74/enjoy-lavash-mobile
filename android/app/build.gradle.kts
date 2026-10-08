@@ -74,10 +74,35 @@ android {
         }
         release {
             manifestPlaceholders["usesCleartextTraffic"] = "false"
+            // Never fall back to the debug key. Without a keystore the release
+            // packaging tasks below fail loudly instead of producing a
+            // debug-signed artifact.
             signingConfig = if (hasReleaseKeystore) {
                 signingConfigs.getByName("release")
             } else {
-                signingConfigs.getByName("debug")
+                null
+            }
+        }
+    }
+}
+
+val releasePackagingTasks = setOf(
+    "assembleRelease",
+    "bundleRelease",
+    "packageRelease",
+    "packageReleaseBundle",
+    "packageReleaseUniversalApk",
+)
+
+tasks.configureEach {
+    if (name in releasePackagingTasks) {
+        doFirst {
+            if (!hasReleaseKeystore) {
+                throw GradleException(
+                    "Release keystore is not configured. Create android/key.properties " +
+                        "with storeFile, storePassword, keyAlias and keyPassword " +
+                        "before building a release."
+                )
             }
         }
     }

@@ -269,7 +269,7 @@ void main() {
     for (final entry in const <String, String>{
       'en': 'UZS',
       'ru': 'сум',
-      'uz': "so'm",
+      'uz': 'söm',
     }.entries) {
       testWidgets('formats UZS using the ${entry.key} locale', (tester) async {
         const amount = 1234567;

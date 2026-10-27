@@ -126,13 +126,13 @@ abstract class L {
   /// No description provided for @delivery.
   ///
   /// In uz, this message translates to:
-  /// **'Yetkazib berish'**
+  /// **'Yetkazib beriş'**
   String get delivery;
 
   /// No description provided for @pickup.
   ///
   /// In uz, this message translates to:
-  /// **'Olib ketish'**
+  /// **'Olib ketiş'**
   String get pickup;
 
   /// No description provided for @specialOffer.
@@ -144,7 +144,7 @@ abstract class L {
   /// No description provided for @specialOfferDesc.
   ///
   /// In uz, this message translates to:
-  /// **'Hafta oxirigacha lavashga 20% chegirma'**
+  /// **'Hafta oxirigaça lavaşga 20% çegirma'**
   String get specialOfferDesc;
 
   /// No description provided for @specialOfferCta.
@@ -156,19 +156,19 @@ abstract class L {
   /// No description provided for @cartEmpty.
   ///
   /// In uz, this message translates to:
-  /// **'Savat bo\'sh'**
+  /// **'Savat böş'**
   String get cartEmpty;
 
   /// No description provided for @cartEmptyDesc.
   ///
   /// In uz, this message translates to:
-  /// **'Menyudan taom qo\'shing va bir necha bosishda buyurtma bering.'**
+  /// **'Menyudan taom qöşing va bir neça bosişda buyurtma bering.'**
   String get cartEmptyDesc;
 
   /// No description provided for @browseMenu.
   ///
   /// In uz, this message translates to:
-  /// **'Menyuga o\'tish'**
+  /// **'Menyuga ötiş'**
   String get browseMenu;
 
   /// No description provided for @cart.
@@ -186,13 +186,13 @@ abstract class L {
   /// No description provided for @checkout.
   ///
   /// In uz, this message translates to:
-  /// **'Buyurtma berish'**
+  /// **'Buyurtma beriş'**
   String get checkout;
 
   /// No description provided for @viewCart.
   ///
   /// In uz, this message translates to:
-  /// **'Savatni ochish'**
+  /// **'Savatni oçiş'**
   String get viewCart;
 
   /// No description provided for @cartItemsCount.
@@ -204,31 +204,31 @@ abstract class L {
   /// No description provided for @itemAddedToCart.
   ///
   /// In uz, this message translates to:
-  /// **'{product} savatga qo‘shildi'**
+  /// **'{product} savatga qöşildi'**
   String itemAddedToCart(String product);
 
   /// No description provided for @itemRemovedFromCart.
   ///
   /// In uz, this message translates to:
-  /// **'{product} savatdan olib tashlandi'**
+  /// **'{product} savatdan olib taşlandi'**
   String itemRemovedFromCart(String product);
 
   /// No description provided for @undo.
   ///
   /// In uz, this message translates to:
-  /// **'Qaytarish'**
+  /// **'Qaytariş'**
   String get undo;
 
   /// No description provided for @increaseQuantity.
   ///
   /// In uz, this message translates to:
-  /// **'Miqdorni oshirish'**
+  /// **'Miqdorni oşiriş'**
   String get increaseQuantity;
 
   /// No description provided for @decreaseQuantity.
   ///
   /// In uz, this message translates to:
-  /// **'Miqdorni kamaytirish'**
+  /// **'Miqdorni kamaytiriş'**
   String get decreaseQuantity;
 
   /// No description provided for @menuLoading.
@@ -240,7 +240,7 @@ abstract class L {
   /// No description provided for @searchAgain.
   ///
   /// In uz, this message translates to:
-  /// **'Qidiruvni tozalash'**
+  /// **'Qidiruvni tozalaş'**
   String get searchAgain;
 
   /// No description provided for @orderCreated.
@@ -258,7 +258,7 @@ abstract class L {
   /// No description provided for @orderSuccessMessage.
   ///
   /// In uz, this message translates to:
-  /// **'Buyurtma oshxonaga yuborildi. Holatini profilingizda kuzatib boring.'**
+  /// **'Buyurtma oşxonaga yuborildi. Holatini profilingizda kuzatib boring.'**
   String get orderSuccessMessage;
 
   /// No description provided for @orderSuccessNumber.
@@ -270,67 +270,67 @@ abstract class L {
   /// No description provided for @trackOrder.
   ///
   /// In uz, this message translates to:
-  /// **'Buyurtmani kuzatish'**
+  /// **'Buyurtmani kuzatiş'**
   String get trackOrder;
 
   /// No description provided for @orderSuccessPaymentOpening.
   ///
   /// In uz, this message translates to:
-  /// **'Xavfsiz to\'lov sahifasi ochilmoqda…'**
+  /// **'Xavfsiz tölov sahifasi oçilmoqda…'**
   String get orderSuccessPaymentOpening;
 
   /// No description provided for @orderSuccessPaymentOpened.
   ///
   /// In uz, this message translates to:
-  /// **'Ochilgan sahifada to\'lovni yakunlang.'**
+  /// **'Oçilgan sahifada tölovni yakunlang.'**
   String get orderSuccessPaymentOpened;
 
   /// No description provided for @orderSuccessPayOnReceipt.
   ///
   /// In uz, this message translates to:
-  /// **'Buyurtmani olganda to\'lov qilasiz.'**
+  /// **'Buyurtmani olganda tölov qilasiz.'**
   String get orderSuccessPayOnReceipt;
 
   /// No description provided for @orderSuccessPaymentPaid.
   ///
   /// In uz, this message translates to:
-  /// **'To\'lov qabul qilindi. Hammasi tayyor.'**
+  /// **'Tölov qabul qilindi. Hammasi tayyor.'**
   String get orderSuccessPaymentPaid;
 
   /// No description provided for @orderSuccessPaymentFailed.
   ///
   /// In uz, this message translates to:
-  /// **'To\'lov yakunlanmadi. Keyingi qadamni buyurtma tafsilotlarida ko\'ring.'**
+  /// **'Tölov yakunlanmadi. Keyingi qadamni buyurtma tafsilotlarida köring.'**
   String get orderSuccessPaymentFailed;
 
   /// No description provided for @orderSuccessPaymentRefunded.
   ///
   /// In uz, this message translates to:
-  /// **'Ushbu to\'lov qaytarildi.'**
+  /// **'Uşbu tölov qaytarildi.'**
   String get orderSuccessPaymentRefunded;
 
   /// No description provided for @orderCreateFailed.
   ///
   /// In uz, this message translates to:
-  /// **'Buyurtma yaratib bo\'lmadi. Qayta urinib ko\'ring.'**
+  /// **'Buyurtma yaratib bölmadi. Qayta urinib köring.'**
   String get orderCreateFailed;
 
   /// No description provided for @selectDeliveryAddressFirst.
   ///
   /// In uz, this message translates to:
-  /// **'Avval yetkazib berish manzilini tanlang'**
+  /// **'Avval yetkazib beriş manzilini tanlang'**
   String get selectDeliveryAddressFirst;
 
   /// No description provided for @selectPickupBranchFirst.
   ///
   /// In uz, this message translates to:
-  /// **'Avval olib ketish filialini tanlang'**
+  /// **'Avval olib ketiş filialini tanlang'**
   String get selectPickupBranchFirst;
 
   /// No description provided for @paymentMethodsUnavailable.
   ///
   /// In uz, this message translates to:
-  /// **'To\'lov usullari vaqtincha mavjud emas. Qayta urinib ko\'ring.'**
+  /// **'Tölov usullari vaqtinça mavjud emas. Qayta urinib köring.'**
   String get paymentMethodsUnavailable;
 
   /// No description provided for @profile.
@@ -348,13 +348,13 @@ abstract class L {
   /// No description provided for @lightTheme.
   ///
   /// In uz, this message translates to:
-  /// **'Yorug\''**
+  /// **'Yoruğ'**
   String get lightTheme;
 
   /// No description provided for @darkTheme.
   ///
   /// In uz, this message translates to:
-  /// **'Qorong\'i'**
+  /// **'Qoronği'**
   String get darkTheme;
 
   /// No description provided for @loyaltyCard.
@@ -366,19 +366,19 @@ abstract class L {
   /// No description provided for @accumulatedPoints.
   ///
   /// In uz, this message translates to:
-  /// **'To\'plangan ballar'**
+  /// **'Töplangan ballar'**
   String get accumulatedPoints;
 
   /// No description provided for @showCodeForPoints.
   ///
   /// In uz, this message translates to:
-  /// **'Ball olish uchun to\'lovda kodni ko\'rsating'**
+  /// **'Ball oliş uçun tölovda kodni körsating'**
   String get showCodeForPoints;
 
   /// No description provided for @personalInfo.
   ///
   /// In uz, this message translates to:
-  /// **'Shaxsiy ma\'lumotlar'**
+  /// **'Şaxsiy ma\'lumotlar'**
   String get personalInfo;
 
   /// No description provided for @email.
@@ -414,19 +414,19 @@ abstract class L {
   /// No description provided for @cashbackSystem.
   ///
   /// In uz, this message translates to:
-  /// **'Keshbek tizimi'**
+  /// **'Keşbek tizimi'**
   String get cashbackSystem;
 
   /// No description provided for @perOrder.
   ///
   /// In uz, this message translates to:
-  /// **'Har bir buyurtma uchun'**
+  /// **'Har bir buyurtma uçun'**
   String get perOrder;
 
   /// No description provided for @perOrderValue.
   ///
   /// In uz, this message translates to:
-  /// **'Ballar amaldagi aksiyalarga bog‘liq'**
+  /// **'Ballar amaldagi aksiyalarga boğliq'**
   String get perOrderValue;
 
   /// No description provided for @onePointEquals.
@@ -438,79 +438,79 @@ abstract class L {
   /// No description provided for @onePointValue.
   ///
   /// In uz, this message translates to:
-  /// **'1 so\'m'**
+  /// **'1 söm'**
   String get onePointValue;
 
   /// No description provided for @canSpend.
   ///
   /// In uz, this message translates to:
-  /// **'Sarflash mumkin'**
+  /// **'Sarflaş mumkin'**
   String get canSpend;
 
   /// No description provided for @canSpendValue.
   ///
   /// In uz, this message translates to:
-  /// **'Buyurtmaning 50% gacha'**
+  /// **'Buyurtmaning 50% gaça'**
   String get canSpendValue;
 
   /// No description provided for @shareApp.
   ///
   /// In uz, this message translates to:
-  /// **'Ilovani ulashish'**
+  /// **'Ilovani ulaşiş'**
   String get shareApp;
 
   /// No description provided for @shareAppText.
   ///
   /// In uz, this message translates to:
-  /// **'EnjoyLavash ilovasini ko\'ring: https://play.google.com/store/apps/details?id=com.aurumdev.enjoy_lavash_mobile'**
+  /// **'EnjoyLavash ilovasini köring: https://play.google.com/store/apps/details?id=com.aurumdev.enjoy_lavash_mobile'**
   String get shareAppText;
 
   /// No description provided for @logout.
   ///
   /// In uz, this message translates to:
-  /// **'Chiqish'**
+  /// **'Çiqiş'**
   String get logout;
 
   /// No description provided for @logoutTitle.
   ///
   /// In uz, this message translates to:
-  /// **'Akkauntdan chiqasizmi?'**
+  /// **'Akkauntdan çiqasizmi?'**
   String get logoutTitle;
 
   /// No description provided for @logoutMessage.
   ///
   /// In uz, this message translates to:
-  /// **'Saqlangan token ushbu qurilmadan o\'chiriladi.'**
+  /// **'Saqlangan token uşbu qurilmadan öçiriladi.'**
   String get logoutMessage;
 
   /// No description provided for @logoutFailed.
   ///
   /// In uz, this message translates to:
-  /// **'Chiqib bo\'lmadi. Qayta urinib ko\'ring.'**
+  /// **'Çiqib bölmadi. Qayta urinib köring.'**
   String get logoutFailed;
 
   /// No description provided for @notFoundTitle.
   ///
   /// In uz, this message translates to:
-  /// **'Bu sahifa ishlab chiqilmoqda'**
+  /// **'Bu sahifa işlab çiqilmoqda'**
   String get notFoundTitle;
 
   /// No description provided for @goHome.
   ///
   /// In uz, this message translates to:
-  /// **'Bosh sahifaga'**
+  /// **'Boş sahifaga'**
   String get goHome;
 
   /// No description provided for @emptyList.
   ///
   /// In uz, this message translates to:
-  /// **'Ro\'yxat bo\'sh'**
+  /// **'Röyxat böş'**
   String get emptyList;
 
   /// No description provided for @confirm.
   ///
   /// In uz, this message translates to:
-  /// **'Tasdiqlash'**
+  /// **'Tasdiqlaş'**
   String get confirm;
 
   /// No description provided for @yes.
@@ -522,19 +522,19 @@ abstract class L {
   /// No description provided for @no.
   ///
   /// In uz, this message translates to:
-  /// **'Yo\'q'**
+  /// **'Yöq'**
   String get no;
 
   /// No description provided for @save.
   ///
   /// In uz, this message translates to:
-  /// **'Saqlash'**
+  /// **'Saqlaş'**
   String get save;
 
   /// No description provided for @skip.
   ///
   /// In uz, this message translates to:
-  /// **'O\'tkazib yuborish'**
+  /// **'Ötkazib yuboriş'**
   String get skip;
 
   /// No description provided for @statusCompleted.
@@ -582,7 +582,7 @@ abstract class L {
   /// No description provided for @statusNeedAccept.
   ///
   /// In uz, this message translates to:
-  /// **'Tovarni qabul qilish vaqti!'**
+  /// **'Tovarni qabul qiliş vaqti!'**
   String get statusNeedAccept;
 
   /// No description provided for @tableNumber.
@@ -624,7 +624,7 @@ abstract class L {
   /// No description provided for @deliveryAddress.
   ///
   /// In uz, this message translates to:
-  /// **'Yetkazib berish manzili'**
+  /// **'Yetkazib beriş manzili'**
   String get deliveryAddress;
 
   /// No description provided for @searchAddress.
@@ -648,7 +648,7 @@ abstract class L {
   /// No description provided for @entranceLabel.
   ///
   /// In uz, this message translates to:
-  /// **'Kirish'**
+  /// **'Kiriş'**
   String get entranceLabel;
 
   /// No description provided for @floorLabel.
@@ -672,37 +672,37 @@ abstract class L {
   /// No description provided for @commentHint.
   ///
   /// In uz, this message translates to:
-  /// **'Kuryer uchun ko\'rsatmalar...'**
+  /// **'Kuryer uçun körsatmalar...'**
   String get commentHint;
 
   /// No description provided for @confirmAddress.
   ///
   /// In uz, this message translates to:
-  /// **'Manzilni tasdiqlash'**
+  /// **'Manzilni tasdiqlaş'**
   String get confirmAddress;
 
   /// No description provided for @tapToSelectAddress.
   ///
   /// In uz, this message translates to:
-  /// **'Manzilni tanlash uchun bosing'**
+  /// **'Manzilni tanlaş uçun bosing'**
   String get tapToSelectAddress;
 
   /// No description provided for @locationPermissionDenied.
   ///
   /// In uz, this message translates to:
-  /// **'Joylashuv ruxsati rad etildi'**
+  /// **'Joylaşuv ruxsati rad etildi'**
   String get locationPermissionDenied;
 
   /// No description provided for @enableLocation.
   ///
   /// In uz, this message translates to:
-  /// **'Joylashuvni yoqish'**
+  /// **'Joylaşuvni yoqiş'**
   String get enableLocation;
 
   /// No description provided for @currentLocation.
   ///
   /// In uz, this message translates to:
-  /// **'Joriy joylashuv'**
+  /// **'Joriy joylaşuv'**
   String get currentLocation;
 
   /// No description provided for @selectBranch.
@@ -714,7 +714,7 @@ abstract class L {
   /// No description provided for @branchWorkingHours.
   ///
   /// In uz, this message translates to:
-  /// **'Ish vaqti'**
+  /// **'Iş vaqti'**
   String get branchWorkingHours;
 
   /// No description provided for @menu.
@@ -738,7 +738,7 @@ abstract class L {
   /// No description provided for @contactUs.
   ///
   /// In uz, this message translates to:
-  /// **'Bog\'lanish'**
+  /// **'Boğlaniş'**
   String get contactUs;
 
   /// No description provided for @authorization.
@@ -750,7 +750,7 @@ abstract class L {
   /// No description provided for @tapToSignIn.
   ///
   /// In uz, this message translates to:
-  /// **'Kirish va profilingizni ko\'rish uchun bosing'**
+  /// **'Kiriş va profilingizni köriş uçun bosing'**
   String get tapToSignIn;
 
   /// No description provided for @enterPhoneNumber.
@@ -768,13 +768,13 @@ abstract class L {
   /// No description provided for @otpSentMessage.
   ///
   /// In uz, this message translates to:
-  /// **'Telefon raqamingizga tasdiqlash kodi yuborildi.'**
+  /// **'Telefon raqamingizga tasdiqlaş kodi yuborildi.'**
   String get otpSentMessage;
 
   /// No description provided for @signInToCheckout.
   ///
   /// In uz, this message translates to:
-  /// **'Savatdan buyurtma berish uchun tizimga kiring.'**
+  /// **'Savatdan buyurtma beriş uçun tizimga kiring.'**
   String get signInToCheckout;
 
   /// No description provided for @authWelcomeSubtitle.
@@ -804,25 +804,25 @@ abstract class L {
   /// No description provided for @birthDateTitle.
   ///
   /// In uz, this message translates to:
-  /// **'Sizning tug\'ilgan kuningiz 🎂'**
+  /// **'Sizning tuğilgan kuningiz 🎂'**
   String get birthDateTitle;
 
   /// No description provided for @birthDate.
   ///
   /// In uz, this message translates to:
-  /// **'Tug\'ilgan sana'**
+  /// **'Tuğilgan sana'**
   String get birthDate;
 
   /// No description provided for @selectBirthDate.
   ///
   /// In uz, this message translates to:
-  /// **'Tug\'ilgan sanani tanlang'**
+  /// **'Tuğilgan sanani tanlang'**
   String get selectBirthDate;
 
   /// No description provided for @birthDateSubtitle.
   ///
   /// In uz, this message translates to:
-  /// **'Bir necha aylantirishda tanlang. Tug\'ilgan kuningiz uchun maxsus sovg\'alar tayyorlaymiz.'**
+  /// **'Bir neça aylantirişda tanlang. Tuğilgan kuningiz uçun maxsus sovğalar tayyorlaymiz.'**
   String get birthDateSubtitle;
 
   /// No description provided for @birthDateDay.
@@ -852,19 +852,19 @@ abstract class L {
   /// No description provided for @otpCodeExpired.
   ///
   /// In uz, this message translates to:
-  /// **'Tasdiqlash kodining muddati tugadi.'**
+  /// **'Tasdiqlaş kodining muddati tugadi.'**
   String get otpCodeExpired;
 
   /// No description provided for @resendCode.
   ///
   /// In uz, this message translates to:
-  /// **'Kodni qayta yuborish'**
+  /// **'Kodni qayta yuboriş'**
   String get resendCode;
 
   /// No description provided for @resendCodeIn.
   ///
   /// In uz, this message translates to:
-  /// **'{time} dan keyin qayta yuborish'**
+  /// **'{time} dan keyin qayta yuboriş'**
   String resendCodeIn(String time);
 
   /// No description provided for @tryAgainIn.
@@ -876,13 +876,13 @@ abstract class L {
   /// No description provided for @sendCode.
   ///
   /// In uz, this message translates to:
-  /// **'Kod yuborish'**
+  /// **'Kod yuboriş'**
   String get sendCode;
 
   /// No description provided for @continueButton.
   ///
   /// In uz, this message translates to:
-  /// **'Davom etish'**
+  /// **'Davom etiş'**
   String get continueButton;
 
   /// No description provided for @promoCodeCopied.
@@ -906,37 +906,37 @@ abstract class L {
   /// No description provided for @discount.
   ///
   /// In uz, this message translates to:
-  /// **'Chegirma'**
+  /// **'Çegirma'**
   String get discount;
 
   /// No description provided for @validUntil.
   ///
   /// In uz, this message translates to:
-  /// **'{date} gacha amal qiladi'**
+  /// **'{date} gaça amal qiladi'**
   String validUntil(String date);
 
   /// No description provided for @copyCode.
   ///
   /// In uz, this message translates to:
-  /// **'Kodni nusxalash'**
+  /// **'Kodni nusxalaş'**
   String get copyCode;
 
   /// No description provided for @close.
   ///
   /// In uz, this message translates to:
-  /// **'Yopish'**
+  /// **'Yopiş'**
   String get close;
 
   /// No description provided for @orderCreatedPaymentOnline.
   ///
   /// In uz, this message translates to:
-  /// **'Buyurtma yaratildi. Onlayn to\'lovni yakunlang.'**
+  /// **'Buyurtma yaratildi. Onlayn tölovni yakunlang.'**
   String get orderCreatedPaymentOnline;
 
   /// No description provided for @orderCreatedPaymentPageOpenFailed.
   ///
   /// In uz, this message translates to:
-  /// **'Buyurtma yaratildi, ammo to\'lov sahifasi ochilmadi.'**
+  /// **'Buyurtma yaratildi, ammo tölov sahifasi oçilmadi.'**
   String get orderCreatedPaymentPageOpenFailed;
 
   /// No description provided for @enterPromoCode.
@@ -948,19 +948,19 @@ abstract class L {
   /// No description provided for @apply.
   ///
   /// In uz, this message translates to:
-  /// **'Qo\'llash'**
+  /// **'Qöllaş'**
   String get apply;
 
   /// No description provided for @couldNotCalculateTotal.
   ///
   /// In uz, this message translates to:
-  /// **'Jami summani hisoblab bo\'lmadi'**
+  /// **'Jami summani hisoblab bölmadi'**
   String get couldNotCalculateTotal;
 
   /// No description provided for @createOrderTitle.
   ///
   /// In uz, this message translates to:
-  /// **'Buyurtma berish'**
+  /// **'Buyurtma beriş'**
   String get createOrderTitle;
 
   /// No description provided for @orderType.
@@ -978,43 +978,43 @@ abstract class L {
   /// No description provided for @cancel.
   ///
   /// In uz, this message translates to:
-  /// **'Bekor qilish'**
+  /// **'Bekor qiliş'**
   String get cancel;
 
   /// No description provided for @createOrderAction.
   ///
   /// In uz, this message translates to:
-  /// **'Buyurtma berish'**
+  /// **'Buyurtma beriş'**
   String get createOrderAction;
 
   /// No description provided for @createOrderFor.
   ///
   /// In uz, this message translates to:
-  /// **'Buyurtma berish · {price}'**
+  /// **'Buyurtma beriş · {price}'**
   String createOrderFor(String price);
 
   /// No description provided for @change.
   ///
   /// In uz, this message translates to:
-  /// **'O\'zgartirish'**
+  /// **'Özgartiriş'**
   String get change;
 
   /// No description provided for @payment.
   ///
   /// In uz, this message translates to:
-  /// **'To\'lov'**
+  /// **'Tölov'**
   String get payment;
 
   /// No description provided for @onlinePayment.
   ///
   /// In uz, this message translates to:
-  /// **'Onlayn to\'lov'**
+  /// **'Onlayn tölov'**
   String get onlinePayment;
 
   /// No description provided for @payOnReceipt.
   ///
   /// In uz, this message translates to:
-  /// **'Qabul qilganda to\'lash'**
+  /// **'Qabul qilganda tölaş'**
   String get payOnReceipt;
 
   /// No description provided for @calculatingTotal.
@@ -1026,7 +1026,7 @@ abstract class L {
   /// No description provided for @recalculate.
   ///
   /// In uz, this message translates to:
-  /// **'Qayta hisoblash'**
+  /// **'Qayta hisoblaş'**
   String get recalculate;
 
   /// No description provided for @orderPreview.
@@ -1044,25 +1044,25 @@ abstract class L {
   /// No description provided for @viewOrderDetails.
   ///
   /// In uz, this message translates to:
-  /// **'Buyurtma tafsilotlarini ko\'rish'**
+  /// **'Buyurtma tafsilotlarini köriş'**
   String get viewOrderDetails;
 
   /// No description provided for @deliveryBranch.
   ///
   /// In uz, this message translates to:
-  /// **'Yetkazib beruvchi filial'**
+  /// **'Yetkazib beruvçi filial'**
   String get deliveryBranch;
 
   /// No description provided for @deliveryDestination.
   ///
   /// In uz, this message translates to:
-  /// **'Yetkazib berish manzili'**
+  /// **'Yetkazib beriş manzili'**
   String get deliveryDestination;
 
   /// No description provided for @deliveryDistance.
   ///
   /// In uz, this message translates to:
-  /// **'Yetkazib berish masofasi'**
+  /// **'Yetkazib beriş masofasi'**
   String get deliveryDistance;
 
   /// No description provided for @distanceMeters.
@@ -1080,19 +1080,19 @@ abstract class L {
   /// No description provided for @roadRoute.
   ///
   /// In uz, this message translates to:
-  /// **'Yo\'l bo\'yicha marshrut'**
+  /// **'Yöl böyiça marşrut'**
   String get roadRoute;
 
   /// No description provided for @estimatedRoute.
   ///
   /// In uz, this message translates to:
-  /// **'Taxminiy marshrut'**
+  /// **'Taxminiy marşrut'**
   String get estimatedRoute;
 
   /// No description provided for @previewEstimateNotice.
   ///
   /// In uz, this message translates to:
-  /// **'Filial, marshrut, ballar va yakuniy summa buyurtma yaratilganda tasdiqlanadi.'**
+  /// **'Filial, marşrut, ballar va yakuniy summa buyurtma yaratilganda tasdiqlanadi.'**
   String get previewEstimateNotice;
 
   /// No description provided for @items.
@@ -1104,7 +1104,7 @@ abstract class L {
   /// No description provided for @modifiers.
   ///
   /// In uz, this message translates to:
-  /// **'Qo\'shimchalar'**
+  /// **'Qöşimçalar'**
   String get modifiers;
 
   /// No description provided for @serviceFee.
@@ -1116,7 +1116,7 @@ abstract class L {
   /// No description provided for @pickupBranch.
   ///
   /// In uz, this message translates to:
-  /// **'Olib ketish filiali'**
+  /// **'Olib ketiş filiali'**
   String get pickupBranch;
 
   /// No description provided for @clientAddress.
@@ -1164,7 +1164,7 @@ abstract class L {
   /// No description provided for @errorConnectionProblem.
   ///
   /// In uz, this message translates to:
-  /// **'Ulanishda muammo'**
+  /// **'Ulanişda muammo'**
   String get errorConnectionProblem;
 
   /// No description provided for @errorBackend.
@@ -1182,31 +1182,31 @@ abstract class L {
   /// No description provided for @errorGenericTitle.
   ///
   /// In uz, this message translates to:
-  /// **'Nimadir noto\'g\'ri ketdi'**
+  /// **'Nimadir notöğri ketdi'**
   String get errorGenericTitle;
 
   /// No description provided for @errorGenericBody.
   ///
   /// In uz, this message translates to:
-  /// **'Birozdan keyin qayta urinib ko\'ring.'**
+  /// **'Birozdan keyin qayta urinib köring.'**
   String get errorGenericBody;
 
   /// No description provided for @retry.
   ///
   /// In uz, this message translates to:
-  /// **'Qayta urinish'**
+  /// **'Qayta uriniş'**
   String get retry;
 
   /// No description provided for @searchProducts.
   ///
   /// In uz, this message translates to:
-  /// **'Mahsulot qidirish'**
+  /// **'Mahsulot qidiriş'**
   String get searchProducts;
 
   /// No description provided for @clearSearch.
   ///
   /// In uz, this message translates to:
-  /// **'Qidiruvni tozalash'**
+  /// **'Qidiruvni tozalaş'**
   String get clearSearch;
 
   /// No description provided for @searchProductsResultCount.
@@ -1230,7 +1230,7 @@ abstract class L {
   /// No description provided for @checkingThisLocation.
   ///
   /// In uz, this message translates to:
-  /// **'Bu joy tekshirilmoqda'**
+  /// **'Bu joy tekşirilmoqda'**
   String get checkingThisLocation;
 
   /// No description provided for @gettingAddressDetails.
@@ -1242,25 +1242,25 @@ abstract class L {
   /// No description provided for @allowNotificationsInSettings.
   ///
   /// In uz, this message translates to:
-  /// **'Telefon sozlamalarida bildirishnomalarga ruxsat bering'**
+  /// **'Telefon sozlamalarida bildirişnomalarga ruxsat bering'**
   String get allowNotificationsInSettings;
 
   /// No description provided for @notificationPermissionDenied.
   ///
   /// In uz, this message translates to:
-  /// **'Bildirishnomalarga ruxsat berilmadi'**
+  /// **'Bildirişnomalarga ruxsat berilmadi'**
   String get notificationPermissionDenied;
 
   /// No description provided for @notificationUpdateFailed.
   ///
   /// In uz, this message translates to:
-  /// **'Bildirishnoma sozlamalarini yangilab bo\'lmadi'**
+  /// **'Bildirişnoma sozlamalarini yangilab bölmadi'**
   String get notificationUpdateFailed;
 
   /// No description provided for @notifications.
   ///
   /// In uz, this message translates to:
-  /// **'Bildirishnomalar'**
+  /// **'Bildirişnomalar'**
   String get notifications;
 
   /// No description provided for @notificationInbox.
@@ -1290,31 +1290,31 @@ abstract class L {
   /// No description provided for @noNotificationsForFilter.
   ///
   /// In uz, this message translates to:
-  /// **'Bu filtrga mos bildirishnoma yo\'q.'**
+  /// **'Bu filtrga mos bildirişnoma yöq.'**
   String get noNotificationsForFilter;
 
   /// No description provided for @markAllRead.
   ///
   /// In uz, this message translates to:
-  /// **'Barchasini o\'qilgan qilish'**
+  /// **'Barçasini öqilgan qiliş'**
   String get markAllRead;
 
   /// No description provided for @markUnread.
   ///
   /// In uz, this message translates to:
-  /// **'O\'qilmagan qilish'**
+  /// **'Öqilmagan qiliş'**
   String get markUnread;
 
   /// No description provided for @noNotifications.
   ///
   /// In uz, this message translates to:
-  /// **'Hozircha xabarlar yo\'q'**
+  /// **'Hozirça xabarlar yöq'**
   String get noNotifications;
 
   /// No description provided for @noNotificationsSubtitle.
   ///
   /// In uz, this message translates to:
-  /// **'Buyurtma yangiliklari va shaxsiy takliflar shu yerda ko\'rinadi.'**
+  /// **'Buyurtma yangiliklari va şaxsiy takliflar şu yerda körinadi.'**
   String get noNotificationsSubtitle;
 
   /// No description provided for @myPromotions.
@@ -1326,13 +1326,13 @@ abstract class L {
   /// No description provided for @myPromotionsSubtitle.
   ///
   /// In uz, this message translates to:
-  /// **'Siz uchun ajratilgan maxsus promokodlardan foydalaning.'**
+  /// **'Siz uçun ajratilgan maxsus promokodlardan foydalaning.'**
   String get myPromotionsSubtitle;
 
   /// No description provided for @personalOffers.
   ///
   /// In uz, this message translates to:
-  /// **'Siz uchun takliflar'**
+  /// **'Siz uçun takliflar'**
   String get personalOffers;
 
   /// No description provided for @activePromotions.
@@ -1344,7 +1344,7 @@ abstract class L {
   /// No description provided for @allPromotions.
   ///
   /// In uz, this message translates to:
-  /// **'Barchasi'**
+  /// **'Barçasi'**
   String get allPromotions;
 
   /// No description provided for @activePromoCount.
@@ -1356,13 +1356,13 @@ abstract class L {
   /// No description provided for @noAssignedPromotions.
   ///
   /// In uz, this message translates to:
-  /// **'Faol promokod yo\'q'**
+  /// **'Faol promokod yöq'**
   String get noAssignedPromotions;
 
   /// No description provided for @noAssignedPromotionsSubtitle.
   ///
   /// In uz, this message translates to:
-  /// **'Yangi shaxsiy taklif berilganda bu yerda paydo bo\'ladi.'**
+  /// **'Yangi şaxsiy taklif berilganda bu yerda paydo böladi.'**
   String get noAssignedPromotionsSubtitle;
 
   /// No description provided for @reward.
@@ -1374,25 +1374,25 @@ abstract class L {
   /// No description provided for @conditions.
   ///
   /// In uz, this message translates to:
-  /// **'Shartlar'**
+  /// **'Şartlar'**
   String get conditions;
 
   /// No description provided for @validity.
   ///
   /// In uz, this message translates to:
-  /// **'Amal qilish muddati'**
+  /// **'Amal qiliş muddati'**
   String get validity;
 
   /// No description provided for @usage.
   ///
   /// In uz, this message translates to:
-  /// **'Foydalanish'**
+  /// **'Foydalaniş'**
   String get usage;
 
   /// No description provided for @remainingUses.
   ///
   /// In uz, this message translates to:
-  /// **'{count} marta foydalanish mumkin'**
+  /// **'{count} marta foydalaniş mumkin'**
   String remainingUses(int count);
 
   /// No description provided for @validFrom.
@@ -1404,13 +1404,13 @@ abstract class L {
   /// No description provided for @usePromo.
   ///
   /// In uz, this message translates to:
-  /// **'Buyurtmada ishlatish'**
+  /// **'Buyurtmada işlatiş'**
   String get usePromo;
 
   /// No description provided for @promoReadyForCheckout.
   ///
   /// In uz, this message translates to:
-  /// **'{code} promokodi buyurtma uchun tanlandi'**
+  /// **'{code} promokodi buyurtma uçun tanlandi'**
   String promoReadyForCheckout(String code);
 
   /// No description provided for @promoStatusActive.
@@ -1428,7 +1428,7 @@ abstract class L {
   /// No description provided for @promoStatusUsed.
   ///
   /// In uz, this message translates to:
-  /// **'Ishlatilgan'**
+  /// **'Işlatilgan'**
   String get promoStatusUsed;
 
   /// No description provided for @promoStatusExpired.
@@ -1464,19 +1464,19 @@ abstract class L {
   /// No description provided for @marketingOffersSubtitle.
   ///
   /// In uz, this message translates to:
-  /// **'Sizga mos promokod va chegirmalar haqida xabar oling'**
+  /// **'Sizga mos promokod va çegirmalar haqida xabar oling'**
   String get marketingOffersSubtitle;
 
   /// No description provided for @marketingUpdateFailed.
   ///
   /// In uz, this message translates to:
-  /// **'Aksiya xabarlari sozlamasini yangilab bo\'lmadi'**
+  /// **'Aksiya xabarlari sozlamasini yangilab bölmadi'**
   String get marketingUpdateFailed;
 
   /// No description provided for @appearance.
   ///
   /// In uz, this message translates to:
-  /// **'Ko\'rinish'**
+  /// **'Köriniş'**
   String get appearance;
 
   /// No description provided for @chooseAppColorMode.
@@ -1500,7 +1500,7 @@ abstract class L {
   /// No description provided for @seeAllOrders.
   ///
   /// In uz, this message translates to:
-  /// **'Barcha buyurtmalar'**
+  /// **'Barça buyurtmalar'**
   String get seeAllOrders;
 
   /// No description provided for @actions.
@@ -1512,37 +1512,37 @@ abstract class L {
   /// No description provided for @deleteAccount.
   ///
   /// In uz, this message translates to:
-  /// **'Hisobni o\'chirish'**
+  /// **'Hisobni öçiriş'**
   String get deleteAccount;
 
   /// No description provided for @accountDeleted.
   ///
   /// In uz, this message translates to:
-  /// **'Hisobingiz o\'chirildi'**
+  /// **'Hisobingiz öçirildi'**
   String get accountDeleted;
 
   /// No description provided for @deleteAccountFailed.
   ///
   /// In uz, this message translates to:
-  /// **'Hisobni o\'chirib bo\'lmadi. Qayta urinib ko\'ring.'**
+  /// **'Hisobni öçirib bölmadi. Qayta urinib köring.'**
   String get deleteAccountFailed;
 
   /// No description provided for @deleteAccountQuestion.
   ///
   /// In uz, this message translates to:
-  /// **'Hisob o\'chirilsinmi?'**
+  /// **'Hisob öçirilsinmi?'**
   String get deleteAccountQuestion;
 
   /// No description provided for @deleteAccountPermanentWarning.
   ///
   /// In uz, this message translates to:
-  /// **'Bu amalni ortga qaytarib bo\'lmaydi'**
+  /// **'Bu amalni ortga qaytarib bölmaydi'**
   String get deleteAccountPermanentWarning;
 
   /// No description provided for @deleteAccountItemsTitle.
   ///
   /// In uz, this message translates to:
-  /// **'Quyidagilar o\'chiriladi:'**
+  /// **'Quyidagilar öçiriladi:'**
   String get deleteAccountItemsTitle;
 
   /// No description provided for @deleteAccountProfilePhone.
@@ -1554,37 +1554,37 @@ abstract class L {
   /// No description provided for @deleteAccountSavedAddresses.
   ///
   /// In uz, this message translates to:
-  /// **'Saqlangan yetkazib berish manzillari'**
+  /// **'Saqlangan yetkazib beriş manzillari'**
   String get deleteAccountSavedAddresses;
 
   /// No description provided for @deleteAccountBonusPoints.
   ///
   /// In uz, this message translates to:
-  /// **'To\'plangan bonus ballari'**
+  /// **'Töplangan bonus ballari'**
   String get deleteAccountBonusPoints;
 
   /// No description provided for @deleteAccountAcknowledgement.
   ///
   /// In uz, this message translates to:
-  /// **'Ma\'lumotlarim butunlay o\'chirilishini tushunaman'**
+  /// **'Ma\'lumotlarim butunlay öçirilişini tuşunaman'**
   String get deleteAccountAcknowledgement;
 
   /// No description provided for @deleting.
   ///
   /// In uz, this message translates to:
-  /// **'O\'chirilmoqda...'**
+  /// **'Öçirilmoqda...'**
   String get deleting;
 
   /// No description provided for @deleteMyAccount.
   ///
   /// In uz, this message translates to:
-  /// **'Hisobimni o\'chirish'**
+  /// **'Hisobimni öçiriş'**
   String get deleteMyAccount;
 
   /// No description provided for @allOrders.
   ///
   /// In uz, this message translates to:
-  /// **'Barcha buyurtmalar'**
+  /// **'Barça buyurtmalar'**
   String get allOrders;
 
   /// No description provided for @ordersSearchHint.
@@ -1596,7 +1596,7 @@ abstract class L {
   /// No description provided for @all.
   ///
   /// In uz, this message translates to:
-  /// **'Barchasi'**
+  /// **'Barçasi'**
   String get all;
 
   /// No description provided for @anyStatus.
@@ -1608,7 +1608,7 @@ abstract class L {
   /// No description provided for @noOrdersMatchFilters.
   ///
   /// In uz, this message translates to:
-  /// **'Filtrlarga mos buyurtma yo\'q'**
+  /// **'Filtrlarga mos buyurtma yöq'**
   String get noOrdersMatchFilters;
 
   /// No description provided for @appVersion.
@@ -1620,13 +1620,13 @@ abstract class L {
   /// No description provided for @notificationCheckingPermission.
   ///
   /// In uz, this message translates to:
-  /// **'Bildirishnoma ruxsati tekshirilmoqda'**
+  /// **'Bildirişnoma ruxsati tekşirilmoqda'**
   String get notificationCheckingPermission;
 
   /// No description provided for @notificationsUnavailable.
   ///
   /// In uz, this message translates to:
-  /// **'Bu qurilmada bildirishnomalar mavjud emas'**
+  /// **'Bu qurilmada bildirişnomalar mavjud emas'**
   String get notificationsUnavailable;
 
   /// No description provided for @notificationsEnabled.
@@ -1650,7 +1650,7 @@ abstract class L {
   /// No description provided for @viewPoints.
   ///
   /// In uz, this message translates to:
-  /// **'Ko\'rish'**
+  /// **'Köriş'**
   String get viewPoints;
 
   /// No description provided for @profileOrdersSection.
@@ -1680,7 +1680,7 @@ abstract class L {
   /// No description provided for @editProfile.
   ///
   /// In uz, this message translates to:
-  /// **'Profilni tahrirlash'**
+  /// **'Profilni tahrirlaş'**
   String get editProfile;
 
   /// No description provided for @profileName.
@@ -1698,7 +1698,7 @@ abstract class L {
   /// No description provided for @profileUpdateFailed.
   ///
   /// In uz, this message translates to:
-  /// **'Profilni yangilab bo\'lmadi'**
+  /// **'Profilni yangilab bölmadi'**
   String get profileUpdateFailed;
 
   /// No description provided for @savedAddresses.
@@ -1710,19 +1710,19 @@ abstract class L {
   /// No description provided for @noSavedAddresses.
   ///
   /// In uz, this message translates to:
-  /// **'Saqlangan manzil yo\'q'**
+  /// **'Saqlangan manzil yöq'**
   String get noSavedAddresses;
 
   /// No description provided for @noSavedAddressesSubtitle.
   ///
   /// In uz, this message translates to:
-  /// **'Buyurtmani tezroq rasmiylashtirish uchun manzil qo\'shing.'**
+  /// **'Buyurtmani tezroq rasmiylaştiriş uçun manzil qöşing.'**
   String get noSavedAddressesSubtitle;
 
   /// No description provided for @addAddress.
   ///
   /// In uz, this message translates to:
-  /// **'Manzil qo\'shish'**
+  /// **'Manzil qöşiş'**
   String get addAddress;
 
   /// No description provided for @addressLabel.
@@ -1740,7 +1740,7 @@ abstract class L {
   /// No description provided for @setAsDefault.
   ///
   /// In uz, this message translates to:
-  /// **'Asosiy qilish'**
+  /// **'Asosiy qiliş'**
   String get setAsDefault;
 
   /// No description provided for @defaultAddress.
@@ -1758,25 +1758,25 @@ abstract class L {
   /// No description provided for @addressSaveFailed.
   ///
   /// In uz, this message translates to:
-  /// **'Manzilni saqlab bo\'lmadi'**
+  /// **'Manzilni saqlab bölmadi'**
   String get addressSaveFailed;
 
   /// No description provided for @addressDeleted.
   ///
   /// In uz, this message translates to:
-  /// **'Manzil o\'chirildi'**
+  /// **'Manzil öçirildi'**
   String get addressDeleted;
 
   /// No description provided for @addressDeleteFailed.
   ///
   /// In uz, this message translates to:
-  /// **'Manzilni o\'chirib bo\'lmadi'**
+  /// **'Manzilni öçirib bölmadi'**
   String get addressDeleteFailed;
 
   /// No description provided for @deleteAddress.
   ///
   /// In uz, this message translates to:
-  /// **'Manzilni o\'chirish'**
+  /// **'Manzilni öçiriş'**
   String get deleteAddress;
 
   /// No description provided for @profileNotificationsSubtitle.
@@ -1806,7 +1806,7 @@ abstract class L {
   /// No description provided for @orderStatusOnTheWay.
   ///
   /// In uz, this message translates to:
-  /// **'Yo\'lda'**
+  /// **'Yölda'**
   String get orderStatusOnTheWay;
 
   /// No description provided for @paymentStatusPending.
@@ -1818,13 +1818,13 @@ abstract class L {
   /// No description provided for @paymentStatusPaid.
   ///
   /// In uz, this message translates to:
-  /// **'To\'langan'**
+  /// **'Tölangan'**
   String get paymentStatusPaid;
 
   /// No description provided for @paymentStatusFailed.
   ///
   /// In uz, this message translates to:
-  /// **'To\'lanmadi'**
+  /// **'Tölanmadi'**
   String get paymentStatusFailed;
 
   /// No description provided for @paymentStatusRefunded.
@@ -1842,31 +1842,31 @@ abstract class L {
   /// No description provided for @noProductsInOrder.
   ///
   /// In uz, this message translates to:
-  /// **'Buyurtmada mahsulot yo\'q'**
+  /// **'Buyurtmada mahsulot yöq'**
   String get noProductsInOrder;
 
   /// No description provided for @paymentLinkUnavailable.
   ///
   /// In uz, this message translates to:
-  /// **'To\'lov havolasi hali mavjud emas.'**
+  /// **'Tölov havolasi hali mavjud emas.'**
   String get paymentLinkUnavailable;
 
   /// No description provided for @completePaymentOnline.
   ///
   /// In uz, this message translates to:
-  /// **'Onlayn to\'lovni yakunlang.'**
+  /// **'Onlayn tölovni yakunlang.'**
   String get completePaymentOnline;
 
   /// No description provided for @paymentPageOpenFailed.
   ///
   /// In uz, this message translates to:
-  /// **'To\'lov sahifasini ochib bo\'lmadi.'**
+  /// **'Tölov sahifasini oçib bölmadi.'**
   String get paymentPageOpenFailed;
 
   /// No description provided for @retryPaymentFailed.
   ///
   /// In uz, this message translates to:
-  /// **'To\'lovni qayta urinish imkoni bo\'lmadi.'**
+  /// **'Tölovni qayta uriniş imkoni bölmadi.'**
   String get retryPaymentFailed;
 
   /// No description provided for @currentStatus.
@@ -1884,25 +1884,25 @@ abstract class L {
   /// No description provided for @scheduledFor.
   ///
   /// In uz, this message translates to:
-  /// **'Rejalashtirilgan'**
+  /// **'Rejalaştirilgan'**
   String get scheduledFor;
 
   /// No description provided for @lastUpdate.
   ///
   /// In uz, this message translates to:
-  /// **'Oxirgi yangilanish'**
+  /// **'Oxirgi yangilaniş'**
   String get lastUpdate;
 
   /// No description provided for @paymentStatus.
   ///
   /// In uz, this message translates to:
-  /// **'To\'lov holati'**
+  /// **'Tölov holati'**
   String get paymentStatus;
 
   /// No description provided for @retryPayment.
   ///
   /// In uz, this message translates to:
-  /// **'To\'lovni qayta urinish'**
+  /// **'Tölovni qayta uriniş'**
   String get retryPayment;
 
   /// No description provided for @products.
@@ -1920,7 +1920,7 @@ abstract class L {
   /// No description provided for @additionalInfo.
   ///
   /// In uz, this message translates to:
-  /// **'Qo\'shimcha ma\'lumot'**
+  /// **'Qöşimça ma\'lumot'**
   String get additionalInfo;
 
   /// No description provided for @requiredChoice.
@@ -1944,13 +1944,13 @@ abstract class L {
   /// No description provided for @addToCartFor.
   ///
   /// In uz, this message translates to:
-  /// **'Qo\'shish · {price}'**
+  /// **'Qöşiş · {price}'**
   String addToCartFor(String price);
 
   /// No description provided for @kitchenOrder.
   ///
   /// In uz, this message translates to:
-  /// **'Oshxona buyurtmasi'**
+  /// **'Oşxona buyurtmasi'**
   String get kitchenOrder;
 
   /// No description provided for @loyaltyWallet.
@@ -1962,37 +1962,37 @@ abstract class L {
   /// No description provided for @spendablePoints.
   ///
   /// In uz, this message translates to:
-  /// **'Sarflash uchun mavjud'**
+  /// **'Sarflaş uçun mavjud'**
   String get spendablePoints;
 
   /// No description provided for @reservedPoints.
   ///
   /// In uz, this message translates to:
-  /// **'Buyurtmalar uchun band qilingan'**
+  /// **'Buyurtmalar uçun band qilingan'**
   String get reservedPoints;
 
   /// No description provided for @loyaltyDebt.
   ///
   /// In uz, this message translates to:
-  /// **'Ballar bo\'yicha qarz'**
+  /// **'Ballar böyiça qarz'**
   String get loyaltyDebt;
 
   /// No description provided for @loyaltyDebtHint.
   ///
   /// In uz, this message translates to:
-  /// **'Yangi ballar avval ushbu qarzni qoplaydi.'**
+  /// **'Yangi ballar avval uşbu qarzni qoplaydi.'**
   String get loyaltyDebtHint;
 
   /// No description provided for @pointsExpiringSoon.
   ///
   /// In uz, this message translates to:
-  /// **'7 kun ichida tugaydi'**
+  /// **'7 kun içida tugaydi'**
   String get pointsExpiringSoon;
 
   /// No description provided for @nextPointsExpiry.
   ///
   /// In uz, this message translates to:
-  /// **'Eng yaqin tugash sanasi'**
+  /// **'Eng yaqin tugaş sanasi'**
   String get nextPointsExpiry;
 
   /// No description provided for @loyaltyHistory.
@@ -2004,79 +2004,79 @@ abstract class L {
   /// No description provided for @loyaltyHistoryEmpty.
   ///
   /// In uz, this message translates to:
-  /// **'Ballar bilan amallar shu yerda ko\'rinadi.'**
+  /// **'Ballar bilan amallar şu yerda körinadi.'**
   String get loyaltyHistoryEmpty;
 
   /// No description provided for @loyaltyProgramUnavailable.
   ///
   /// In uz, this message translates to:
-  /// **'Ballar dasturi vaqtincha mavjud emas.'**
+  /// **'Ballar dasturi vaqtinça mavjud emas.'**
   String get loyaltyProgramUnavailable;
 
   /// No description provided for @loyaltyRedemptionUnavailable.
   ///
   /// In uz, this message translates to:
-  /// **'Hozir ballarni sarflash imkoni yo\'q.'**
+  /// **'Hozir ballarni sarflaş imkoni yöq.'**
   String get loyaltyRedemptionUnavailable;
 
   /// No description provided for @loyaltyHowItWorks.
   ///
   /// In uz, this message translates to:
-  /// **'Ballar qanday ishlaydi'**
+  /// **'Ballar qanday işlaydi'**
   String get loyaltyHowItWorks;
 
   /// No description provided for @loyaltyPointValueInfo.
   ///
   /// In uz, this message translates to:
-  /// **'1 ball 1 so\'mga teng.'**
+  /// **'1 ball 1 sömga teng.'**
   String get loyaltyPointValueInfo;
 
   /// No description provided for @loyaltyEarningInfo.
   ///
   /// In uz, this message translates to:
-  /// **'Ball miqdori buyurtma yetkazilgandagi faol aksiyaga bog\'liq.'**
+  /// **'Ball miqdori buyurtma yetkazilgandagi faol aksiyaga boğliq.'**
   String get loyaltyEarningInfo;
 
   /// No description provided for @loyaltyValidityInfo.
   ///
   /// In uz, this message translates to:
-  /// **'Olingan ballar ko\'rsatilgan muddat davomida amal qiladi.'**
+  /// **'Olingan ballar körsatilgan muddat davomida amal qiladi.'**
   String get loyaltyValidityInfo;
 
   /// No description provided for @loyaltyFeesDeliveryAllowed.
   ///
   /// In uz, this message translates to:
-  /// **'Yetkazib berishni ballar bilan to\'lash mumkin.'**
+  /// **'Yetkazib berişni ballar bilan tölaş mumkin.'**
   String get loyaltyFeesDeliveryAllowed;
 
   /// No description provided for @loyaltyFeesDeliveryNotAllowed.
   ///
   /// In uz, this message translates to:
-  /// **'Yetkazib berishni ballar bilan to\'lab bo\'lmaydi.'**
+  /// **'Yetkazib berişni ballar bilan tölab bölmaydi.'**
   String get loyaltyFeesDeliveryNotAllowed;
 
   /// No description provided for @loyaltyFeesServiceAllowed.
   ///
   /// In uz, this message translates to:
-  /// **'Xizmat haqini ballar bilan to\'lash mumkin.'**
+  /// **'Xizmat haqini ballar bilan tölaş mumkin.'**
   String get loyaltyFeesServiceAllowed;
 
   /// No description provided for @loyaltyFeesServiceNotAllowed.
   ///
   /// In uz, this message translates to:
-  /// **'Xizmat haqini ballar bilan to\'lab bo\'lmaydi.'**
+  /// **'Xizmat haqini ballar bilan tölab bölmaydi.'**
   String get loyaltyFeesServiceNotAllowed;
 
   /// No description provided for @validForDays.
   ///
   /// In uz, this message translates to:
-  /// **'Amal qilish muddati (kun)'**
+  /// **'Amal qiliş muddati (kun)'**
   String get validForDays;
 
   /// No description provided for @usePoints.
   ///
   /// In uz, this message translates to:
-  /// **'Ballar bilan to\'lash'**
+  /// **'Ballar bilan tölaş'**
   String get usePoints;
 
   /// No description provided for @pointsAvailable.
@@ -2094,49 +2094,49 @@ abstract class L {
   /// No description provided for @useMaximum.
   ///
   /// In uz, this message translates to:
-  /// **'Maksimumini ishlatish'**
+  /// **'Maksimumini işlatiş'**
   String get useMaximum;
 
   /// No description provided for @clearPoints.
   ///
   /// In uz, this message translates to:
-  /// **'Tozalash'**
+  /// **'Tozalaş'**
   String get clearPoints;
 
   /// No description provided for @continueWithoutPoints.
   ///
   /// In uz, this message translates to:
-  /// **'Ballarsiz davom etish'**
+  /// **'Ballarsiz davom etiş'**
   String get continueWithoutPoints;
 
   /// No description provided for @pointsDebtCheckout.
   ///
   /// In uz, this message translates to:
-  /// **'Qarz mavjud paytda ballarni ishlatib bo\'lmaydi.'**
+  /// **'Qarz mavjud paytda ballarni işlatib bölmaydi.'**
   String get pointsDebtCheckout;
 
   /// No description provided for @fullyPaidWithPoints.
   ///
   /// In uz, this message translates to:
-  /// **'To\'liq ballar bilan to\'landi'**
+  /// **'Töliq ballar bilan tölandi'**
   String get fullyPaidWithPoints;
 
   /// No description provided for @orderBeforePoints.
   ///
   /// In uz, this message translates to:
-  /// **'Ballargacha buyurtma summasi'**
+  /// **'Ballargaça buyurtma summasi'**
   String get orderBeforePoints;
 
   /// No description provided for @pointsUsed.
   ///
   /// In uz, this message translates to:
-  /// **'Ishlatilgan ballar'**
+  /// **'Işlatilgan ballar'**
   String get pointsUsed;
 
   /// No description provided for @amountToPay.
   ///
   /// In uz, this message translates to:
-  /// **'To\'lov summasi'**
+  /// **'Tölov summasi'**
   String get amountToPay;
 
   /// No description provided for @estimatedPoints.
@@ -2154,13 +2154,13 @@ abstract class L {
   /// No description provided for @loyaltyPending.
   ///
   /// In uz, this message translates to:
-  /// **'Yetkazilgandan so\'ng hisoblanadi'**
+  /// **'Yetkazilgandan söng hisoblanadi'**
   String get loyaltyPending;
 
   /// No description provided for @loyaltyEarned.
   ///
   /// In uz, this message translates to:
-  /// **'Ballar qo\'shildi'**
+  /// **'Ballar qöşildi'**
   String get loyaltyEarned;
 
   /// No description provided for @loyaltyNoReward.
@@ -2172,7 +2172,7 @@ abstract class L {
   /// No description provided for @loyaltyReversed.
   ///
   /// In uz, this message translates to:
-  /// **'Ball berish bekor qilindi'**
+  /// **'Ball beriş bekor qilindi'**
   String get loyaltyReversed;
 
   /// No description provided for @loyaltyRestored.
@@ -2190,7 +2190,7 @@ abstract class L {
   /// No description provided for @transactionSpend.
   ///
   /// In uz, this message translates to:
-  /// **'Ballar ishlatildi'**
+  /// **'Ballar işlatildi'**
   String get transactionSpend;
 
   /// No description provided for @transactionRelease.
@@ -2208,7 +2208,7 @@ abstract class L {
   /// No description provided for @transactionReversal.
   ///
   /// In uz, this message translates to:
-  /// **'Ball berish bekor qilindi'**
+  /// **'Ball beriş bekor qilindi'**
   String get transactionReversal;
 
   /// No description provided for @transactionDebtRepayment.
@@ -2220,7 +2220,7 @@ abstract class L {
   /// No description provided for @transactionOpeningBalance.
   ///
   /// In uz, this message translates to:
-  /// **'Boshlang\'ich balans'**
+  /// **'Boşlanğiç balans'**
   String get transactionOpeningBalance;
 
   /// No description provided for @transactionBalanceUpdate.
@@ -2232,7 +2232,7 @@ abstract class L {
   /// No description provided for @tabHome.
   ///
   /// In uz, this message translates to:
-  /// **'Bosh sahifa'**
+  /// **'Boş sahifa'**
   String get tabHome;
 
   /// No description provided for @homeGreeting.
@@ -2244,7 +2244,7 @@ abstract class L {
   /// No description provided for @loyaltyMoneyHint.
   ///
   /// In uz, this message translates to:
-  /// **'1 ball 1 so\'mga teng · 50% gacha'**
+  /// **'1 ball 1 sömga teng · 50% gaça'**
   String get loyaltyMoneyHint;
 
   /// No description provided for @repeatOrderTitle.
@@ -2256,19 +2256,19 @@ abstract class L {
   /// No description provided for @repeatOrderAction.
   ///
   /// In uz, this message translates to:
-  /// **'Takrorlash · {amount}'**
+  /// **'Takrorlaş · {amount}'**
   String repeatOrderAction(String amount);
 
   /// No description provided for @orderContextDelivery.
   ///
   /// In uz, this message translates to:
-  /// **'Yetkazib berish'**
+  /// **'Yetkazib beriş'**
   String get orderContextDelivery;
 
   /// No description provided for @orderContextPickup.
   ///
   /// In uz, this message translates to:
-  /// **'Olib ketish'**
+  /// **'Olib ketiş'**
   String get orderContextPickup;
 
   /// No description provided for @orderContextChoose.
@@ -2280,19 +2280,19 @@ abstract class L {
   /// No description provided for @markAllReadShort.
   ///
   /// In uz, this message translates to:
-  /// **'Barchasini o\'qish'**
+  /// **'Barçasini öqiş'**
   String get markAllReadShort;
 
   /// No description provided for @cartOpen.
   ///
   /// In uz, this message translates to:
-  /// **'Savatni ochish'**
+  /// **'Savatni oçiş'**
   String get cartOpen;
 
   /// No description provided for @changePhoneNumber.
   ///
   /// In uz, this message translates to:
-  /// **'Raqamni o‘zgartirish'**
+  /// **'Raqamni özgartiriş'**
   String get changePhoneNumber;
 
   /// No description provided for @caloriesLabel.
@@ -2322,19 +2322,19 @@ abstract class L {
   /// No description provided for @useInOrder.
   ///
   /// In uz, this message translates to:
-  /// **'Buyurtmada ishlatish'**
+  /// **'Buyurtmada işlatiş'**
   String get useInOrder;
 
   /// No description provided for @promotionGift.
   ///
   /// In uz, this message translates to:
-  /// **'Sovg‘a'**
+  /// **'Sovğa'**
   String get promotionGift;
 
   /// No description provided for @backToHome.
   ///
   /// In uz, this message translates to:
-  /// **'Bosh sahifaga'**
+  /// **'Boş sahifaga'**
   String get backToHome;
 
   /// No description provided for @orderingAvailability.
@@ -2346,13 +2346,13 @@ abstract class L {
   /// No description provided for @orderingChecking.
   ///
   /// In uz, this message translates to:
-  /// **'Filial ish vaqti tekshirilmoqda…'**
+  /// **'Filial iş vaqti tekşirilmoqda…'**
   String get orderingChecking;
 
   /// No description provided for @orderingOpen.
   ///
   /// In uz, this message translates to:
-  /// **'Hozir ochiq'**
+  /// **'Hozir oçiq'**
   String get orderingOpen;
 
   /// No description provided for @orderingClosed.
@@ -2364,31 +2364,31 @@ abstract class L {
   /// No description provided for @pickupAvailability.
   ///
   /// In uz, this message translates to:
-  /// **'Olib ketish'**
+  /// **'Olib ketiş'**
   String get pickupAvailability;
 
   /// No description provided for @deliveryAvailability.
   ///
   /// In uz, this message translates to:
-  /// **'Yetkazib berish'**
+  /// **'Yetkazib beriş'**
   String get deliveryAvailability;
 
   /// No description provided for @orderingNextOpening.
   ///
   /// In uz, this message translates to:
-  /// **'Keyingi ochilish: {value}'**
+  /// **'Keyingi oçiliş: {value}'**
   String orderingNextOpening(String value);
 
   /// No description provided for @orderingStatusUnavailable.
   ///
   /// In uz, this message translates to:
-  /// **'Ish vaqtini tekshirib bo‘lmadi. Mavjudlik buyurtma paytida tekshiriladi.'**
+  /// **'Iş vaqtini tekşirib bölmadi. Mavjudlik buyurtma paytida tekşiriladi.'**
   String get orderingStatusUnavailable;
 
   /// No description provided for @orderingClosedAction.
   ///
   /// In uz, this message translates to:
-  /// **'Boshqa filialni tanlang yoki keyinroq urinib ko‘ring.'**
+  /// **'Boşqa filialni tanlang yoki keyinroq urinib köring.'**
   String get orderingClosedAction;
 
   /// No description provided for @promoCodeNotFound.
@@ -2424,55 +2424,55 @@ abstract class L {
   /// No description provided for @promoClientLimitReached.
   ///
   /// In uz, this message translates to:
-  /// **'Bu promokoddan allaqachon foydalangansiz'**
+  /// **'Bu promokoddan allaqaçon foydalangansiz'**
   String get promoClientLimitReached;
 
   /// No description provided for @promoClientRequired.
   ///
   /// In uz, this message translates to:
-  /// **'Promokoddan foydalanish uchun tizimga kiring'**
+  /// **'Promokoddan foydalaniş uçun tizimga kiring'**
   String get promoClientRequired;
 
   /// No description provided for @promoConditionsNotMet.
   ///
   /// In uz, this message translates to:
-  /// **'Promokod shartlari bajarilmadi'**
+  /// **'Promokod şartlari bajarilmadi'**
   String get promoConditionsNotMet;
 
   /// No description provided for @promoConfigurationError.
   ///
   /// In uz, this message translates to:
-  /// **'Hozir promokodni qo‘llab bo‘lmaydi'**
+  /// **'Hozir promokodni qöllab bölmaydi'**
   String get promoConfigurationError;
 
   /// No description provided for @promoCodeCouldNotBeApplied.
   ///
   /// In uz, this message translates to:
-  /// **'Promokodni qo‘llab bo‘lmadi'**
+  /// **'Promokodni qöllab bölmadi'**
   String get promoCodeCouldNotBeApplied;
 
   /// No description provided for @cartQuantityLimitReached.
   ///
   /// In uz, this message translates to:
-  /// **'Bitta mahsulotdan ko‘pi bilan {count} ta qo‘shish mumkin'**
+  /// **'Bitta mahsulotdan köpi bilan {count} ta qöşiş mumkin'**
   String cartQuantityLimitReached(int count);
 
   /// No description provided for @cartItemsUnavailable.
   ///
   /// In uz, this message translates to:
-  /// **'Endi mavjud emas, savatdan olib tashlandi: {items}'**
+  /// **'Endi mavjud emas, savatdan olib taşlandi: {items}'**
   String cartItemsUnavailable(String items);
 
   /// No description provided for @cartSomeItemsUnavailable.
   ///
   /// In uz, this message translates to:
-  /// **'Ba’zi mahsulotlar endi mavjud emas va savatdan olib tashlandi'**
+  /// **'Ba’zi mahsulotlar endi mavjud emas va savatdan olib taşlandi'**
   String get cartSomeItemsUnavailable;
 
   /// No description provided for @repeatOrderSkipped.
   ///
   /// In uz, this message translates to:
-  /// **'Savatga qo‘shib bo‘lmadi: {items}'**
+  /// **'Savatga qöşib bölmadi: {items}'**
   String repeatOrderSkipped(String items);
 }
 

@@ -630,15 +630,15 @@ _UpdateCopy _copyFor(String languageCode, {required bool force}) {
     case 'uz':
     default:
       return (
-        title: force ? 'Yangilash majburiy' : 'Yangilanish mavjud',
+        title: force ? 'Yangilaş majburiy' : 'Yangilaniş mavjud',
         description: force
-            ? "Ilovadan foydalanishni davom ettirish uchun yangi versiyani o'rnating."
-            : "So'nggi yaxshilanishlarni olish uchun yangi versiyani o'rnating.",
-        update: 'Yangilash',
+            ? 'Ilovadan foydalanişni davom ettiriş uçun yangi versiyani örnating.'
+            : 'Sönggi yaxşilanişlarni oliş uçun yangi versiyani örnating.',
+        update: 'Yangilaş',
         later: 'Keyinroq',
-        opening: 'Ochilyapti...',
-        openFailed: "Yangilash havolasini ochib bo'lmadi.",
-        forceNotice: "Bu yangilanish majburiy. Oynani yopib bo'lmaydi.",
+        opening: 'Oçilyapti...',
+        openFailed: 'Yangilaş havolasini oçib bölmadi.',
+        forceNotice: 'Bu yangilaniş majburiy. Oynani yopib bölmaydi.',
         latestVersion: (version) => 'Versiya $version',
       );
   }

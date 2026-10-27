@@ -21,29 +21,29 @@ class LUz extends L {
   String get tabProfile => 'Profil';
 
   @override
-  String get delivery => 'Yetkazib berish';
+  String get delivery => 'Yetkazib beriş';
 
   @override
-  String get pickup => 'Olib ketish';
+  String get pickup => 'Olib ketiş';
 
   @override
   String get specialOffer => 'Maxsus taklif';
 
   @override
-  String get specialOfferDesc => 'Hafta oxirigacha lavashga 20% chegirma';
+  String get specialOfferDesc => 'Hafta oxirigaça lavaşga 20% çegirma';
 
   @override
   String get specialOfferCta => '🔥 Buyurtma bering';
 
   @override
-  String get cartEmpty => 'Savat bo\'sh';
+  String get cartEmpty => 'Savat böş';
 
   @override
   String get cartEmptyDesc =>
-      'Menyudan taom qo\'shing va bir necha bosishda buyurtma bering.';
+      'Menyudan taom qöşing va bir neça bosişda buyurtma bering.';
 
   @override
-  String get browseMenu => 'Menyuga o\'tish';
+  String get browseMenu => 'Menyuga ötiş';
 
   @override
   String get cart => 'Savat';
@@ -52,10 +52,10 @@ class LUz extends L {
   String get total => 'Jami';
 
   @override
-  String get checkout => 'Buyurtma berish';
+  String get checkout => 'Buyurtma beriş';
 
   @override
-  String get viewCart => 'Savatni ochish';
+  String get viewCart => 'Savatni oçiş';
 
   @override
   String cartItemsCount(int count) {
@@ -64,28 +64,28 @@ class LUz extends L {
 
   @override
   String itemAddedToCart(String product) {
-    return '$product savatga qo‘shildi';
+    return '$product savatga qöşildi';
   }
 
   @override
   String itemRemovedFromCart(String product) {
-    return '$product savatdan olib tashlandi';
+    return '$product savatdan olib taşlandi';
   }
 
   @override
-  String get undo => 'Qaytarish';
+  String get undo => 'Qaytariş';
 
   @override
-  String get increaseQuantity => 'Miqdorni oshirish';
+  String get increaseQuantity => 'Miqdorni oşiriş';
 
   @override
-  String get decreaseQuantity => 'Miqdorni kamaytirish';
+  String get decreaseQuantity => 'Miqdorni kamaytiriş';
 
   @override
   String get menuLoading => 'Menyu tayyorlanmoqda...';
 
   @override
-  String get searchAgain => 'Qidiruvni tozalash';
+  String get searchAgain => 'Qidiruvni tozalaş';
 
   @override
   String get orderCreated => 'Buyurtma yaratildi';
@@ -95,7 +95,7 @@ class LUz extends L {
 
   @override
   String get orderSuccessMessage =>
-      'Buyurtma oshxonaga yuborildi. Holatini profilingizda kuzatib boring.';
+      'Buyurtma oşxonaga yuborildi. Holatini profilingizda kuzatib boring.';
 
   @override
   String orderSuccessNumber(String number) {
@@ -103,44 +103,41 @@ class LUz extends L {
   }
 
   @override
-  String get trackOrder => 'Buyurtmani kuzatish';
+  String get trackOrder => 'Buyurtmani kuzatiş';
 
   @override
-  String get orderSuccessPaymentOpening =>
-      'Xavfsiz to\'lov sahifasi ochilmoqda…';
+  String get orderSuccessPaymentOpening => 'Xavfsiz tölov sahifasi oçilmoqda…';
 
   @override
-  String get orderSuccessPaymentOpened =>
-      'Ochilgan sahifada to\'lovni yakunlang.';
+  String get orderSuccessPaymentOpened => 'Oçilgan sahifada tölovni yakunlang.';
 
   @override
-  String get orderSuccessPayOnReceipt => 'Buyurtmani olganda to\'lov qilasiz.';
+  String get orderSuccessPayOnReceipt => 'Buyurtmani olganda tölov qilasiz.';
 
   @override
-  String get orderSuccessPaymentPaid =>
-      'To\'lov qabul qilindi. Hammasi tayyor.';
+  String get orderSuccessPaymentPaid => 'Tölov qabul qilindi. Hammasi tayyor.';
 
   @override
   String get orderSuccessPaymentFailed =>
-      'To\'lov yakunlanmadi. Keyingi qadamni buyurtma tafsilotlarida ko\'ring.';
+      'Tölov yakunlanmadi. Keyingi qadamni buyurtma tafsilotlarida köring.';
 
   @override
-  String get orderSuccessPaymentRefunded => 'Ushbu to\'lov qaytarildi.';
+  String get orderSuccessPaymentRefunded => 'Uşbu tölov qaytarildi.';
 
   @override
   String get orderCreateFailed =>
-      'Buyurtma yaratib bo\'lmadi. Qayta urinib ko\'ring.';
+      'Buyurtma yaratib bölmadi. Qayta urinib köring.';
 
   @override
   String get selectDeliveryAddressFirst =>
-      'Avval yetkazib berish manzilini tanlang';
+      'Avval yetkazib beriş manzilini tanlang';
 
   @override
-  String get selectPickupBranchFirst => 'Avval olib ketish filialini tanlang';
+  String get selectPickupBranchFirst => 'Avval olib ketiş filialini tanlang';
 
   @override
   String get paymentMethodsUnavailable =>
-      'To\'lov usullari vaqtincha mavjud emas. Qayta urinib ko\'ring.';
+      'Tölov usullari vaqtinça mavjud emas. Qayta urinib köring.';
 
   @override
   String get profile => 'Profil';
@@ -149,23 +146,22 @@ class LUz extends L {
   String get guest => 'Mehmon';
 
   @override
-  String get lightTheme => 'Yorug\'';
+  String get lightTheme => 'Yoruğ';
 
   @override
-  String get darkTheme => 'Qorong\'i';
+  String get darkTheme => 'Qoronği';
 
   @override
   String get loyaltyCard => 'Sodiqlik kartasi';
 
   @override
-  String get accumulatedPoints => 'To\'plangan ballar';
+  String get accumulatedPoints => 'Töplangan ballar';
 
   @override
-  String get showCodeForPoints =>
-      'Ball olish uchun to\'lovda kodni ko\'rsating';
+  String get showCodeForPoints => 'Ball oliş uçun tölovda kodni körsating';
 
   @override
-  String get personalInfo => 'Shaxsiy ma\'lumotlar';
+  String get personalInfo => 'Şaxsiy ma\'lumotlar';
 
   @override
   String get email => 'Email';
@@ -183,68 +179,68 @@ class LUz extends L {
   String get completed => 'Bajarildi';
 
   @override
-  String get cashbackSystem => 'Keshbek tizimi';
+  String get cashbackSystem => 'Keşbek tizimi';
 
   @override
-  String get perOrder => 'Har bir buyurtma uchun';
+  String get perOrder => 'Har bir buyurtma uçun';
 
   @override
-  String get perOrderValue => 'Ballar amaldagi aksiyalarga bog‘liq';
+  String get perOrderValue => 'Ballar amaldagi aksiyalarga boğliq';
 
   @override
   String get onePointEquals => '1 ball teng';
 
   @override
-  String get onePointValue => '1 so\'m';
+  String get onePointValue => '1 söm';
 
   @override
-  String get canSpend => 'Sarflash mumkin';
+  String get canSpend => 'Sarflaş mumkin';
 
   @override
-  String get canSpendValue => 'Buyurtmaning 50% gacha';
+  String get canSpendValue => 'Buyurtmaning 50% gaça';
 
   @override
-  String get shareApp => 'Ilovani ulashish';
+  String get shareApp => 'Ilovani ulaşiş';
 
   @override
   String get shareAppText =>
-      'EnjoyLavash ilovasini ko\'ring: https://play.google.com/store/apps/details?id=com.aurumdev.enjoy_lavash_mobile';
+      'EnjoyLavash ilovasini köring: https://play.google.com/store/apps/details?id=com.aurumdev.enjoy_lavash_mobile';
 
   @override
-  String get logout => 'Chiqish';
+  String get logout => 'Çiqiş';
 
   @override
-  String get logoutTitle => 'Akkauntdan chiqasizmi?';
+  String get logoutTitle => 'Akkauntdan çiqasizmi?';
 
   @override
-  String get logoutMessage => 'Saqlangan token ushbu qurilmadan o\'chiriladi.';
+  String get logoutMessage => 'Saqlangan token uşbu qurilmadan öçiriladi.';
 
   @override
-  String get logoutFailed => 'Chiqib bo\'lmadi. Qayta urinib ko\'ring.';
+  String get logoutFailed => 'Çiqib bölmadi. Qayta urinib köring.';
 
   @override
-  String get notFoundTitle => 'Bu sahifa ishlab chiqilmoqda';
+  String get notFoundTitle => 'Bu sahifa işlab çiqilmoqda';
 
   @override
-  String get goHome => 'Bosh sahifaga';
+  String get goHome => 'Boş sahifaga';
 
   @override
-  String get emptyList => 'Ro\'yxat bo\'sh';
+  String get emptyList => 'Röyxat böş';
 
   @override
-  String get confirm => 'Tasdiqlash';
+  String get confirm => 'Tasdiqlaş';
 
   @override
   String get yes => 'Ha';
 
   @override
-  String get no => 'Yo\'q';
+  String get no => 'Yöq';
 
   @override
-  String get save => 'Saqlash';
+  String get save => 'Saqlaş';
 
   @override
-  String get skip => 'O\'tkazib yuborish';
+  String get skip => 'Ötkazib yuboriş';
 
   @override
   String get statusCompleted => 'Yakunlangan';
@@ -268,7 +264,7 @@ class LUz extends L {
   String get statusArchive => 'Arxiv';
 
   @override
-  String get statusNeedAccept => 'Tovarni qabul qilish vaqti!';
+  String get statusNeedAccept => 'Tovarni qabul qiliş vaqti!';
 
   @override
   String get tableNumber => '№';
@@ -289,7 +285,7 @@ class LUz extends L {
   String get status => 'Holat:';
 
   @override
-  String get deliveryAddress => 'Yetkazib berish manzili';
+  String get deliveryAddress => 'Yetkazib beriş manzili';
 
   @override
   String get searchAddress => 'Manzilni qidiring...';
@@ -301,7 +297,7 @@ class LUz extends L {
   String get houseNumberHint => 'masalan 25A';
 
   @override
-  String get entranceLabel => 'Kirish';
+  String get entranceLabel => 'Kiriş';
 
   @override
   String get floorLabel => 'Qavat';
@@ -313,28 +309,28 @@ class LUz extends L {
   String get commentLabel => 'Izoh';
 
   @override
-  String get commentHint => 'Kuryer uchun ko\'rsatmalar...';
+  String get commentHint => 'Kuryer uçun körsatmalar...';
 
   @override
-  String get confirmAddress => 'Manzilni tasdiqlash';
+  String get confirmAddress => 'Manzilni tasdiqlaş';
 
   @override
-  String get tapToSelectAddress => 'Manzilni tanlash uchun bosing';
+  String get tapToSelectAddress => 'Manzilni tanlaş uçun bosing';
 
   @override
-  String get locationPermissionDenied => 'Joylashuv ruxsati rad etildi';
+  String get locationPermissionDenied => 'Joylaşuv ruxsati rad etildi';
 
   @override
-  String get enableLocation => 'Joylashuvni yoqish';
+  String get enableLocation => 'Joylaşuvni yoqiş';
 
   @override
-  String get currentLocation => 'Joriy joylashuv';
+  String get currentLocation => 'Joriy joylaşuv';
 
   @override
   String get selectBranch => 'Filialni tanlang';
 
   @override
-  String get branchWorkingHours => 'Ish vaqti';
+  String get branchWorkingHours => 'Iş vaqti';
 
   @override
   String get menu => 'Menyu';
@@ -346,13 +342,13 @@ class LUz extends L {
   String get aboutUs => 'Biz haqimizda';
 
   @override
-  String get contactUs => 'Bog\'lanish';
+  String get contactUs => 'Boğlaniş';
 
   @override
   String get authorization => 'Avtorizatsiya';
 
   @override
-  String get tapToSignIn => 'Kirish va profilingizni ko\'rish uchun bosing';
+  String get tapToSignIn => 'Kiriş va profilingizni köriş uçun bosing';
 
   @override
   String get enterPhoneNumber => 'Telefon raqamingizni kiriting';
@@ -361,12 +357,10 @@ class LUz extends L {
   String get enterSmsCode => 'SMS kodni kiriting';
 
   @override
-  String get otpSentMessage =>
-      'Telefon raqamingizga tasdiqlash kodi yuborildi.';
+  String get otpSentMessage => 'Telefon raqamingizga tasdiqlaş kodi yuborildi.';
 
   @override
-  String get signInToCheckout =>
-      'Savatdan buyurtma berish uchun tizimga kiring.';
+  String get signInToCheckout => 'Savatdan buyurtma beriş uçun tizimga kiring.';
 
   @override
   String get authWelcomeSubtitle =>
@@ -382,17 +376,17 @@ class LUz extends L {
   String get nameOptional => 'Ism (ixtiyoriy)';
 
   @override
-  String get birthDateTitle => 'Sizning tug\'ilgan kuningiz 🎂';
+  String get birthDateTitle => 'Sizning tuğilgan kuningiz 🎂';
 
   @override
-  String get birthDate => 'Tug\'ilgan sana';
+  String get birthDate => 'Tuğilgan sana';
 
   @override
-  String get selectBirthDate => 'Tug\'ilgan sanani tanlang';
+  String get selectBirthDate => 'Tuğilgan sanani tanlang';
 
   @override
   String get birthDateSubtitle =>
-      'Bir necha aylantirishda tanlang. Tug\'ilgan kuningiz uchun maxsus sovg\'alar tayyorlaymiz.';
+      'Bir neça aylantirişda tanlang. Tuğilgan kuningiz uçun maxsus sovğalar tayyorlaymiz.';
 
   @override
   String get birthDateDay => 'Kun';
@@ -409,14 +403,14 @@ class LUz extends L {
   }
 
   @override
-  String get otpCodeExpired => 'Tasdiqlash kodining muddati tugadi.';
+  String get otpCodeExpired => 'Tasdiqlaş kodining muddati tugadi.';
 
   @override
-  String get resendCode => 'Kodni qayta yuborish';
+  String get resendCode => 'Kodni qayta yuboriş';
 
   @override
   String resendCodeIn(String time) {
-    return '$time dan keyin qayta yuborish';
+    return '$time dan keyin qayta yuboriş';
   }
 
   @override
@@ -425,10 +419,10 @@ class LUz extends L {
   }
 
   @override
-  String get sendCode => 'Kod yuborish';
+  String get sendCode => 'Kod yuboriş';
 
   @override
-  String get continueButton => 'Davom etish';
+  String get continueButton => 'Davom etiş';
 
   @override
   String get promoCodeCopied => 'Promokod nusxalandi!';
@@ -440,38 +434,38 @@ class LUz extends L {
   String get promoCode => 'Promokod';
 
   @override
-  String get discount => 'Chegirma';
+  String get discount => 'Çegirma';
 
   @override
   String validUntil(String date) {
-    return '$date gacha amal qiladi';
+    return '$date gaça amal qiladi';
   }
 
   @override
-  String get copyCode => 'Kodni nusxalash';
+  String get copyCode => 'Kodni nusxalaş';
 
   @override
-  String get close => 'Yopish';
+  String get close => 'Yopiş';
 
   @override
   String get orderCreatedPaymentOnline =>
-      'Buyurtma yaratildi. Onlayn to\'lovni yakunlang.';
+      'Buyurtma yaratildi. Onlayn tölovni yakunlang.';
 
   @override
   String get orderCreatedPaymentPageOpenFailed =>
-      'Buyurtma yaratildi, ammo to\'lov sahifasi ochilmadi.';
+      'Buyurtma yaratildi, ammo tölov sahifasi oçilmadi.';
 
   @override
   String get enterPromoCode => 'Promokodni kiriting';
 
   @override
-  String get apply => 'Qo\'llash';
+  String get apply => 'Qöllaş';
 
   @override
-  String get couldNotCalculateTotal => 'Jami summani hisoblab bo\'lmadi';
+  String get couldNotCalculateTotal => 'Jami summani hisoblab bölmadi';
 
   @override
-  String get createOrderTitle => 'Buyurtma berish';
+  String get createOrderTitle => 'Buyurtma beriş';
 
   @override
   String get orderType => 'Buyurtma turi';
@@ -480,33 +474,33 @@ class LUz extends L {
   String get orderItems => 'Buyurtma mahsulotlari';
 
   @override
-  String get cancel => 'Bekor qilish';
+  String get cancel => 'Bekor qiliş';
 
   @override
-  String get createOrderAction => 'Buyurtma berish';
+  String get createOrderAction => 'Buyurtma beriş';
 
   @override
   String createOrderFor(String price) {
-    return 'Buyurtma berish · $price';
+    return 'Buyurtma beriş · $price';
   }
 
   @override
-  String get change => 'O\'zgartirish';
+  String get change => 'Özgartiriş';
 
   @override
-  String get payment => 'To\'lov';
+  String get payment => 'Tölov';
 
   @override
-  String get onlinePayment => 'Onlayn to\'lov';
+  String get onlinePayment => 'Onlayn tölov';
 
   @override
-  String get payOnReceipt => 'Qabul qilganda to\'lash';
+  String get payOnReceipt => 'Qabul qilganda tölaş';
 
   @override
   String get calculatingTotal => 'Jami hisoblanmoqda';
 
   @override
-  String get recalculate => 'Qayta hisoblash';
+  String get recalculate => 'Qayta hisoblaş';
 
   @override
   String get orderPreview => 'Buyurtma hisobi';
@@ -515,16 +509,16 @@ class LUz extends L {
   String get orderDetails => 'Buyurtma tafsilotlari';
 
   @override
-  String get viewOrderDetails => 'Buyurtma tafsilotlarini ko\'rish';
+  String get viewOrderDetails => 'Buyurtma tafsilotlarini köriş';
 
   @override
-  String get deliveryBranch => 'Yetkazib beruvchi filial';
+  String get deliveryBranch => 'Yetkazib beruvçi filial';
 
   @override
-  String get deliveryDestination => 'Yetkazib berish manzili';
+  String get deliveryDestination => 'Yetkazib beriş manzili';
 
   @override
-  String get deliveryDistance => 'Yetkazib berish masofasi';
+  String get deliveryDistance => 'Yetkazib beriş masofasi';
 
   @override
   String distanceMeters(String distance) {
@@ -537,26 +531,26 @@ class LUz extends L {
   }
 
   @override
-  String get roadRoute => 'Yo\'l bo\'yicha marshrut';
+  String get roadRoute => 'Yöl böyiça marşrut';
 
   @override
-  String get estimatedRoute => 'Taxminiy marshrut';
+  String get estimatedRoute => 'Taxminiy marşrut';
 
   @override
   String get previewEstimateNotice =>
-      'Filial, marshrut, ballar va yakuniy summa buyurtma yaratilganda tasdiqlanadi.';
+      'Filial, marşrut, ballar va yakuniy summa buyurtma yaratilganda tasdiqlanadi.';
 
   @override
   String get items => 'Mahsulotlar';
 
   @override
-  String get modifiers => 'Qo\'shimchalar';
+  String get modifiers => 'Qöşimçalar';
 
   @override
   String get serviceFee => 'Xizmat haqi';
 
   @override
-  String get pickupBranch => 'Olib ketish filiali';
+  String get pickupBranch => 'Olib ketiş filiali';
 
   @override
   String get clientAddress => 'Mijoz manzili';
@@ -580,7 +574,7 @@ class LUz extends L {
   String get errorSlowNetwork => 'Internet sekin';
 
   @override
-  String get errorConnectionProblem => 'Ulanishda muammo';
+  String get errorConnectionProblem => 'Ulanişda muammo';
 
   @override
   String get errorBackend => 'Server xatosi';
@@ -589,19 +583,19 @@ class LUz extends L {
   String get errorAuthorizationExpired => 'Avtorizatsiya muddati tugadi';
 
   @override
-  String get errorGenericTitle => 'Nimadir noto\'g\'ri ketdi';
+  String get errorGenericTitle => 'Nimadir notöğri ketdi';
 
   @override
-  String get errorGenericBody => 'Birozdan keyin qayta urinib ko\'ring.';
+  String get errorGenericBody => 'Birozdan keyin qayta urinib köring.';
 
   @override
-  String get retry => 'Qayta urinish';
+  String get retry => 'Qayta uriniş';
 
   @override
-  String get searchProducts => 'Mahsulot qidirish';
+  String get searchProducts => 'Mahsulot qidiriş';
 
   @override
-  String get clearSearch => 'Qidiruvni tozalash';
+  String get clearSearch => 'Qidiruvni tozalaş';
 
   @override
   String searchProductsResultCount(int count) {
@@ -615,25 +609,25 @@ class LUz extends L {
   String get findingAddress => 'Manzil aniqlanmoqda...';
 
   @override
-  String get checkingThisLocation => 'Bu joy tekshirilmoqda';
+  String get checkingThisLocation => 'Bu joy tekşirilmoqda';
 
   @override
   String get gettingAddressDetails => 'Manzil ma\'lumotlari olinmoqda';
 
   @override
   String get allowNotificationsInSettings =>
-      'Telefon sozlamalarida bildirishnomalarga ruxsat bering';
+      'Telefon sozlamalarida bildirişnomalarga ruxsat bering';
 
   @override
   String get notificationPermissionDenied =>
-      'Bildirishnomalarga ruxsat berilmadi';
+      'Bildirişnomalarga ruxsat berilmadi';
 
   @override
   String get notificationUpdateFailed =>
-      'Bildirishnoma sozlamalarini yangilab bo\'lmadi';
+      'Bildirişnoma sozlamalarini yangilab bölmadi';
 
   @override
-  String get notifications => 'Bildirishnomalar';
+  String get notifications => 'Bildirişnomalar';
 
   @override
   String get notificationInbox => 'Xabarlar';
@@ -648,36 +642,36 @@ class LUz extends L {
   String get filterPromotions => 'Aksiyalar';
 
   @override
-  String get noNotificationsForFilter => 'Bu filtrga mos bildirishnoma yo\'q.';
+  String get noNotificationsForFilter => 'Bu filtrga mos bildirişnoma yöq.';
 
   @override
-  String get markAllRead => 'Barchasini o\'qilgan qilish';
+  String get markAllRead => 'Barçasini öqilgan qiliş';
 
   @override
-  String get markUnread => 'O\'qilmagan qilish';
+  String get markUnread => 'Öqilmagan qiliş';
 
   @override
-  String get noNotifications => 'Hozircha xabarlar yo\'q';
+  String get noNotifications => 'Hozirça xabarlar yöq';
 
   @override
   String get noNotificationsSubtitle =>
-      'Buyurtma yangiliklari va shaxsiy takliflar shu yerda ko\'rinadi.';
+      'Buyurtma yangiliklari va şaxsiy takliflar şu yerda körinadi.';
 
   @override
   String get myPromotions => 'Mening promokodlarim';
 
   @override
   String get myPromotionsSubtitle =>
-      'Siz uchun ajratilgan maxsus promokodlardan foydalaning.';
+      'Siz uçun ajratilgan maxsus promokodlardan foydalaning.';
 
   @override
-  String get personalOffers => 'Siz uchun takliflar';
+  String get personalOffers => 'Siz uçun takliflar';
 
   @override
   String get activePromotions => 'Faol';
 
   @override
-  String get allPromotions => 'Barchasi';
+  String get allPromotions => 'Barçasi';
 
   @override
   String activePromoCount(int count) {
@@ -685,27 +679,27 @@ class LUz extends L {
   }
 
   @override
-  String get noAssignedPromotions => 'Faol promokod yo\'q';
+  String get noAssignedPromotions => 'Faol promokod yöq';
 
   @override
   String get noAssignedPromotionsSubtitle =>
-      'Yangi shaxsiy taklif berilganda bu yerda paydo bo\'ladi.';
+      'Yangi şaxsiy taklif berilganda bu yerda paydo böladi.';
 
   @override
   String get reward => 'Foyda';
 
   @override
-  String get conditions => 'Shartlar';
+  String get conditions => 'Şartlar';
 
   @override
-  String get validity => 'Amal qilish muddati';
+  String get validity => 'Amal qiliş muddati';
 
   @override
-  String get usage => 'Foydalanish';
+  String get usage => 'Foydalaniş';
 
   @override
   String remainingUses(int count) {
-    return '$count marta foydalanish mumkin';
+    return '$count marta foydalaniş mumkin';
   }
 
   @override
@@ -714,11 +708,11 @@ class LUz extends L {
   }
 
   @override
-  String get usePromo => 'Buyurtmada ishlatish';
+  String get usePromo => 'Buyurtmada işlatiş';
 
   @override
   String promoReadyForCheckout(String code) {
-    return '$code promokodi buyurtma uchun tanlandi';
+    return '$code promokodi buyurtma uçun tanlandi';
   }
 
   @override
@@ -728,7 +722,7 @@ class LUz extends L {
   String get promoStatusNotStarted => 'Tez orada';
 
   @override
-  String get promoStatusUsed => 'Ishlatilgan';
+  String get promoStatusUsed => 'Işlatilgan';
 
   @override
   String get promoStatusExpired => 'Muddati tugagan';
@@ -747,14 +741,14 @@ class LUz extends L {
 
   @override
   String get marketingOffersSubtitle =>
-      'Sizga mos promokod va chegirmalar haqida xabar oling';
+      'Sizga mos promokod va çegirmalar haqida xabar oling';
 
   @override
   String get marketingUpdateFailed =>
-      'Aksiya xabarlari sozlamasini yangilab bo\'lmadi';
+      'Aksiya xabarlari sozlamasini yangilab bölmadi';
 
   @override
-  String get appearance => 'Ko\'rinish';
+  String get appearance => 'Köriniş';
 
   @override
   String get chooseAppColorMode => 'Ilova rang rejimini tanlang';
@@ -766,76 +760,76 @@ class LUz extends L {
   String get languageSubtitle => 'Ilovadan qulay tilda foydalaning';
 
   @override
-  String get seeAllOrders => 'Barcha buyurtmalar';
+  String get seeAllOrders => 'Barça buyurtmalar';
 
   @override
   String get actions => 'Amallar';
 
   @override
-  String get deleteAccount => 'Hisobni o\'chirish';
+  String get deleteAccount => 'Hisobni öçiriş';
 
   @override
-  String get accountDeleted => 'Hisobingiz o\'chirildi';
+  String get accountDeleted => 'Hisobingiz öçirildi';
 
   @override
   String get deleteAccountFailed =>
-      'Hisobni o\'chirib bo\'lmadi. Qayta urinib ko\'ring.';
+      'Hisobni öçirib bölmadi. Qayta urinib köring.';
 
   @override
-  String get deleteAccountQuestion => 'Hisob o\'chirilsinmi?';
+  String get deleteAccountQuestion => 'Hisob öçirilsinmi?';
 
   @override
   String get deleteAccountPermanentWarning =>
-      'Bu amalni ortga qaytarib bo\'lmaydi';
+      'Bu amalni ortga qaytarib bölmaydi';
 
   @override
-  String get deleteAccountItemsTitle => 'Quyidagilar o\'chiriladi:';
+  String get deleteAccountItemsTitle => 'Quyidagilar öçiriladi:';
 
   @override
   String get deleteAccountProfilePhone => 'Profil va telefon raqami';
 
   @override
   String get deleteAccountSavedAddresses =>
-      'Saqlangan yetkazib berish manzillari';
+      'Saqlangan yetkazib beriş manzillari';
 
   @override
-  String get deleteAccountBonusPoints => 'To\'plangan bonus ballari';
+  String get deleteAccountBonusPoints => 'Töplangan bonus ballari';
 
   @override
   String get deleteAccountAcknowledgement =>
-      'Ma\'lumotlarim butunlay o\'chirilishini tushunaman';
+      'Ma\'lumotlarim butunlay öçirilişini tuşunaman';
 
   @override
-  String get deleting => 'O\'chirilmoqda...';
+  String get deleting => 'Öçirilmoqda...';
 
   @override
-  String get deleteMyAccount => 'Hisobimni o\'chirish';
+  String get deleteMyAccount => 'Hisobimni öçiriş';
 
   @override
-  String get allOrders => 'Barcha buyurtmalar';
+  String get allOrders => 'Barça buyurtmalar';
 
   @override
   String get ordersSearchHint => 'Mahsulot, holat yoki buyurtma raqami';
 
   @override
-  String get all => 'Barchasi';
+  String get all => 'Barçasi';
 
   @override
   String get anyStatus => 'Har qanday holat';
 
   @override
-  String get noOrdersMatchFilters => 'Filtrlarga mos buyurtma yo\'q';
+  String get noOrdersMatchFilters => 'Filtrlarga mos buyurtma yöq';
 
   @override
   String get appVersion => 'Ilova versiyasi';
 
   @override
   String get notificationCheckingPermission =>
-      'Bildirishnoma ruxsati tekshirilmoqda';
+      'Bildirişnoma ruxsati tekşirilmoqda';
 
   @override
   String get notificationsUnavailable =>
-      'Bu qurilmada bildirishnomalar mavjud emas';
+      'Bu qurilmada bildirişnomalar mavjud emas';
 
   @override
   String get notificationsEnabled => 'Buyurtma holati va aksiyalar yoqilgan';
@@ -848,7 +842,7 @@ class LUz extends L {
   String get profilePointsLabel => 'BALLARIM';
 
   @override
-  String get viewPoints => 'Ko\'rish';
+  String get viewPoints => 'Köriş';
 
   @override
   String get profileOrdersSection => 'BUYURTMALAR';
@@ -867,7 +861,7 @@ class LUz extends L {
   }
 
   @override
-  String get editProfile => 'Profilni tahrirlash';
+  String get editProfile => 'Profilni tahrirlaş';
 
   @override
   String get profileName => 'Ism';
@@ -876,20 +870,20 @@ class LUz extends L {
   String get profileUpdated => 'Profil yangilandi';
 
   @override
-  String get profileUpdateFailed => 'Profilni yangilab bo\'lmadi';
+  String get profileUpdateFailed => 'Profilni yangilab bölmadi';
 
   @override
   String get savedAddresses => 'Saqlangan manzillar';
 
   @override
-  String get noSavedAddresses => 'Saqlangan manzil yo\'q';
+  String get noSavedAddresses => 'Saqlangan manzil yöq';
 
   @override
   String get noSavedAddressesSubtitle =>
-      'Buyurtmani tezroq rasmiylashtirish uchun manzil qo\'shing.';
+      'Buyurtmani tezroq rasmiylaştiriş uçun manzil qöşing.';
 
   @override
-  String get addAddress => 'Manzil qo\'shish';
+  String get addAddress => 'Manzil qöşiş';
 
   @override
   String get addressLabel => 'Manzil nomi';
@@ -898,7 +892,7 @@ class LUz extends L {
   String get addressLabelHint => 'Masalan, Uy';
 
   @override
-  String get setAsDefault => 'Asosiy qilish';
+  String get setAsDefault => 'Asosiy qiliş';
 
   @override
   String get defaultAddress => 'Asosiy';
@@ -907,16 +901,16 @@ class LUz extends L {
   String get addressSaved => 'Manzil saqlandi';
 
   @override
-  String get addressSaveFailed => 'Manzilni saqlab bo\'lmadi';
+  String get addressSaveFailed => 'Manzilni saqlab bölmadi';
 
   @override
-  String get addressDeleted => 'Manzil o\'chirildi';
+  String get addressDeleted => 'Manzil öçirildi';
 
   @override
-  String get addressDeleteFailed => 'Manzilni o\'chirib bo\'lmadi';
+  String get addressDeleteFailed => 'Manzilni öçirib bölmadi';
 
   @override
-  String get deleteAddress => 'Manzilni o\'chirish';
+  String get deleteAddress => 'Manzilni öçiriş';
 
   @override
   String get profileNotificationsSubtitle => 'Buyurtma holati va takliflar';
@@ -931,16 +925,16 @@ class LUz extends L {
   String get orderStatusCourierAssigned => 'Kuryer biriktirildi';
 
   @override
-  String get orderStatusOnTheWay => 'Yo\'lda';
+  String get orderStatusOnTheWay => 'Yölda';
 
   @override
   String get paymentStatusPending => 'Kutilmoqda';
 
   @override
-  String get paymentStatusPaid => 'To\'langan';
+  String get paymentStatusPaid => 'Tölangan';
 
   @override
-  String get paymentStatusFailed => 'To\'lanmadi';
+  String get paymentStatusFailed => 'Tölanmadi';
 
   @override
   String get paymentStatusRefunded => 'Qaytarilgan';
@@ -949,19 +943,19 @@ class LUz extends L {
   String get product => 'Mahsulot';
 
   @override
-  String get noProductsInOrder => 'Buyurtmada mahsulot yo\'q';
+  String get noProductsInOrder => 'Buyurtmada mahsulot yöq';
 
   @override
-  String get paymentLinkUnavailable => 'To\'lov havolasi hali mavjud emas.';
+  String get paymentLinkUnavailable => 'Tölov havolasi hali mavjud emas.';
 
   @override
-  String get completePaymentOnline => 'Onlayn to\'lovni yakunlang.';
+  String get completePaymentOnline => 'Onlayn tölovni yakunlang.';
 
   @override
-  String get paymentPageOpenFailed => 'To\'lov sahifasini ochib bo\'lmadi.';
+  String get paymentPageOpenFailed => 'Tölov sahifasini oçib bölmadi.';
 
   @override
-  String get retryPaymentFailed => 'To\'lovni qayta urinish imkoni bo\'lmadi.';
+  String get retryPaymentFailed => 'Tölovni qayta uriniş imkoni bölmadi.';
 
   @override
   String get currentStatus => 'Joriy holat';
@@ -970,16 +964,16 @@ class LUz extends L {
   String get created => 'Yaratilgan';
 
   @override
-  String get scheduledFor => 'Rejalashtirilgan';
+  String get scheduledFor => 'Rejalaştirilgan';
 
   @override
-  String get lastUpdate => 'Oxirgi yangilanish';
+  String get lastUpdate => 'Oxirgi yangilaniş';
 
   @override
-  String get paymentStatus => 'To\'lov holati';
+  String get paymentStatus => 'Tölov holati';
 
   @override
-  String get retryPayment => 'To\'lovni qayta urinish';
+  String get retryPayment => 'Tölovni qayta uriniş';
 
   @override
   String get products => 'Mahsulotlar';
@@ -988,7 +982,7 @@ class LUz extends L {
   String get statusHistory => 'Holatlar tarixi';
 
   @override
-  String get additionalInfo => 'Qo\'shimcha ma\'lumot';
+  String get additionalInfo => 'Qöşimça ma\'lumot';
 
   @override
   String get requiredChoice => 'Majburiy';
@@ -1003,83 +997,82 @@ class LUz extends L {
 
   @override
   String addToCartFor(String price) {
-    return 'Qo\'shish · $price';
+    return 'Qöşiş · $price';
   }
 
   @override
-  String get kitchenOrder => 'Oshxona buyurtmasi';
+  String get kitchenOrder => 'Oşxona buyurtmasi';
 
   @override
   String get loyaltyWallet => 'Mening ballarim';
 
   @override
-  String get spendablePoints => 'Sarflash uchun mavjud';
+  String get spendablePoints => 'Sarflaş uçun mavjud';
 
   @override
-  String get reservedPoints => 'Buyurtmalar uchun band qilingan';
+  String get reservedPoints => 'Buyurtmalar uçun band qilingan';
 
   @override
-  String get loyaltyDebt => 'Ballar bo\'yicha qarz';
+  String get loyaltyDebt => 'Ballar böyiça qarz';
 
   @override
-  String get loyaltyDebtHint => 'Yangi ballar avval ushbu qarzni qoplaydi.';
+  String get loyaltyDebtHint => 'Yangi ballar avval uşbu qarzni qoplaydi.';
 
   @override
-  String get pointsExpiringSoon => '7 kun ichida tugaydi';
+  String get pointsExpiringSoon => '7 kun içida tugaydi';
 
   @override
-  String get nextPointsExpiry => 'Eng yaqin tugash sanasi';
+  String get nextPointsExpiry => 'Eng yaqin tugaş sanasi';
 
   @override
   String get loyaltyHistory => 'Ballar tarixi';
 
   @override
-  String get loyaltyHistoryEmpty =>
-      'Ballar bilan amallar shu yerda ko\'rinadi.';
+  String get loyaltyHistoryEmpty => 'Ballar bilan amallar şu yerda körinadi.';
 
   @override
   String get loyaltyProgramUnavailable =>
-      'Ballar dasturi vaqtincha mavjud emas.';
+      'Ballar dasturi vaqtinça mavjud emas.';
 
   @override
   String get loyaltyRedemptionUnavailable =>
-      'Hozir ballarni sarflash imkoni yo\'q.';
+      'Hozir ballarni sarflaş imkoni yöq.';
 
   @override
-  String get loyaltyHowItWorks => 'Ballar qanday ishlaydi';
+  String get loyaltyHowItWorks => 'Ballar qanday işlaydi';
 
   @override
-  String get loyaltyPointValueInfo => '1 ball 1 so\'mga teng.';
+  String get loyaltyPointValueInfo => '1 ball 1 sömga teng.';
 
   @override
   String get loyaltyEarningInfo =>
-      'Ball miqdori buyurtma yetkazilgandagi faol aksiyaga bog\'liq.';
+      'Ball miqdori buyurtma yetkazilgandagi faol aksiyaga boğliq.';
 
   @override
   String get loyaltyValidityInfo =>
-      'Olingan ballar ko\'rsatilgan muddat davomida amal qiladi.';
+      'Olingan ballar körsatilgan muddat davomida amal qiladi.';
 
   @override
   String get loyaltyFeesDeliveryAllowed =>
-      'Yetkazib berishni ballar bilan to\'lash mumkin.';
+      'Yetkazib berişni ballar bilan tölaş mumkin.';
 
   @override
   String get loyaltyFeesDeliveryNotAllowed =>
-      'Yetkazib berishni ballar bilan to\'lab bo\'lmaydi.';
+      'Yetkazib berişni ballar bilan tölab bölmaydi.';
 
   @override
   String get loyaltyFeesServiceAllowed =>
-      'Xizmat haqini ballar bilan to\'lash mumkin.';
+      'Xizmat haqini ballar bilan tölaş mumkin.';
 
   @override
   String get loyaltyFeesServiceNotAllowed =>
-      'Xizmat haqini ballar bilan to\'lab bo\'lmaydi.';
+      'Xizmat haqini ballar bilan tölab bölmaydi.';
 
   @override
-  String get validForDays => 'Amal qilish muddati (kun)';
+  String get validForDays => 'Amal qiliş muddati (kun)';
 
   @override
-  String get usePoints => 'Ballar bilan to\'lash';
+  String get usePoints => 'Ballar bilan tölaş';
 
   @override
   String get pointsAvailable => 'Mavjud ballar';
@@ -1088,29 +1081,29 @@ class LUz extends L {
   String get pointsInputHint => 'Butun ball kiriting';
 
   @override
-  String get useMaximum => 'Maksimumini ishlatish';
+  String get useMaximum => 'Maksimumini işlatiş';
 
   @override
-  String get clearPoints => 'Tozalash';
+  String get clearPoints => 'Tozalaş';
 
   @override
-  String get continueWithoutPoints => 'Ballarsiz davom etish';
+  String get continueWithoutPoints => 'Ballarsiz davom etiş';
 
   @override
   String get pointsDebtCheckout =>
-      'Qarz mavjud paytda ballarni ishlatib bo\'lmaydi.';
+      'Qarz mavjud paytda ballarni işlatib bölmaydi.';
 
   @override
-  String get fullyPaidWithPoints => 'To\'liq ballar bilan to\'landi';
+  String get fullyPaidWithPoints => 'Töliq ballar bilan tölandi';
 
   @override
-  String get orderBeforePoints => 'Ballargacha buyurtma summasi';
+  String get orderBeforePoints => 'Ballargaça buyurtma summasi';
 
   @override
-  String get pointsUsed => 'Ishlatilgan ballar';
+  String get pointsUsed => 'Işlatilgan ballar';
 
   @override
-  String get amountToPay => 'To\'lov summasi';
+  String get amountToPay => 'Tölov summasi';
 
   @override
   String get estimatedPoints => 'Taxminiy ballar';
@@ -1120,16 +1113,16 @@ class LUz extends L {
       'Yakuniy miqdor buyurtma yetkazilganda aniqlanadi.';
 
   @override
-  String get loyaltyPending => 'Yetkazilgandan so\'ng hisoblanadi';
+  String get loyaltyPending => 'Yetkazilgandan söng hisoblanadi';
 
   @override
-  String get loyaltyEarned => 'Ballar qo\'shildi';
+  String get loyaltyEarned => 'Ballar qöşildi';
 
   @override
   String get loyaltyNoReward => 'Ball berilmadi';
 
   @override
-  String get loyaltyReversed => 'Ball berish bekor qilindi';
+  String get loyaltyReversed => 'Ball beriş bekor qilindi';
 
   @override
   String get loyaltyRestored => 'Ballar qaytarildi';
@@ -1138,7 +1131,7 @@ class LUz extends L {
   String get transactionEarn => 'Ballar olindi';
 
   @override
-  String get transactionSpend => 'Ballar ishlatildi';
+  String get transactionSpend => 'Ballar işlatildi';
 
   @override
   String get transactionRelease => 'Ballar qaytarildi';
@@ -1147,19 +1140,19 @@ class LUz extends L {
   String get transactionExpiry => 'Ballar muddati tugadi';
 
   @override
-  String get transactionReversal => 'Ball berish bekor qilindi';
+  String get transactionReversal => 'Ball beriş bekor qilindi';
 
   @override
   String get transactionDebtRepayment => 'Qarz qoplandi';
 
   @override
-  String get transactionOpeningBalance => 'Boshlang\'ich balans';
+  String get transactionOpeningBalance => 'Boşlanğiç balans';
 
   @override
   String get transactionBalanceUpdate => 'Balans yangilandi';
 
   @override
-  String get tabHome => 'Bosh sahifa';
+  String get tabHome => 'Boş sahifa';
 
   @override
   String homeGreeting(String name) {
@@ -1167,33 +1160,33 @@ class LUz extends L {
   }
 
   @override
-  String get loyaltyMoneyHint => '1 ball 1 so\'mga teng · 50% gacha';
+  String get loyaltyMoneyHint => '1 ball 1 sömga teng · 50% gaça';
 
   @override
   String get repeatOrderTitle => 'Yana takrorlaymizmi?';
 
   @override
   String repeatOrderAction(String amount) {
-    return 'Takrorlash · $amount';
+    return 'Takrorlaş · $amount';
   }
 
   @override
-  String get orderContextDelivery => 'Yetkazib berish';
+  String get orderContextDelivery => 'Yetkazib beriş';
 
   @override
-  String get orderContextPickup => 'Olib ketish';
+  String get orderContextPickup => 'Olib ketiş';
 
   @override
   String get orderContextChoose => 'Manzil yoki filialni tanlang';
 
   @override
-  String get markAllReadShort => 'Barchasini o\'qish';
+  String get markAllReadShort => 'Barçasini öqiş';
 
   @override
-  String get cartOpen => 'Savatni ochish';
+  String get cartOpen => 'Savatni oçiş';
 
   @override
-  String get changePhoneNumber => 'Raqamni o‘zgartirish';
+  String get changePhoneNumber => 'Raqamni özgartiriş';
 
   @override
   String caloriesLabel(int value) {
@@ -1216,44 +1209,44 @@ class LUz extends L {
   }
 
   @override
-  String get useInOrder => 'Buyurtmada ishlatish';
+  String get useInOrder => 'Buyurtmada işlatiş';
 
   @override
-  String get promotionGift => 'Sovg‘a';
+  String get promotionGift => 'Sovğa';
 
   @override
-  String get backToHome => 'Bosh sahifaga';
+  String get backToHome => 'Boş sahifaga';
 
   @override
   String get orderingAvailability => 'Buyurtma mavjudligi';
 
   @override
-  String get orderingChecking => 'Filial ish vaqti tekshirilmoqda…';
+  String get orderingChecking => 'Filial iş vaqti tekşirilmoqda…';
 
   @override
-  String get orderingOpen => 'Hozir ochiq';
+  String get orderingOpen => 'Hozir oçiq';
 
   @override
   String get orderingClosed => 'Hozir mavjud emas';
 
   @override
-  String get pickupAvailability => 'Olib ketish';
+  String get pickupAvailability => 'Olib ketiş';
 
   @override
-  String get deliveryAvailability => 'Yetkazib berish';
+  String get deliveryAvailability => 'Yetkazib beriş';
 
   @override
   String orderingNextOpening(String value) {
-    return 'Keyingi ochilish: $value';
+    return 'Keyingi oçiliş: $value';
   }
 
   @override
   String get orderingStatusUnavailable =>
-      'Ish vaqtini tekshirib bo‘lmadi. Mavjudlik buyurtma paytida tekshiriladi.';
+      'Iş vaqtini tekşirib bölmadi. Mavjudlik buyurtma paytida tekşiriladi.';
 
   @override
   String get orderingClosedAction =>
-      'Boshqa filialni tanlang yoki keyinroq urinib ko‘ring.';
+      'Boşqa filialni tanlang yoki keyinroq urinib köring.';
 
   @override
   String get promoCodeNotFound => 'Promokod topilmadi';
@@ -1272,37 +1265,37 @@ class LUz extends L {
 
   @override
   String get promoClientLimitReached =>
-      'Bu promokoddan allaqachon foydalangansiz';
+      'Bu promokoddan allaqaçon foydalangansiz';
 
   @override
   String get promoClientRequired =>
-      'Promokoddan foydalanish uchun tizimga kiring';
+      'Promokoddan foydalaniş uçun tizimga kiring';
 
   @override
-  String get promoConditionsNotMet => 'Promokod shartlari bajarilmadi';
+  String get promoConditionsNotMet => 'Promokod şartlari bajarilmadi';
 
   @override
-  String get promoConfigurationError => 'Hozir promokodni qo‘llab bo‘lmaydi';
+  String get promoConfigurationError => 'Hozir promokodni qöllab bölmaydi';
 
   @override
-  String get promoCodeCouldNotBeApplied => 'Promokodni qo‘llab bo‘lmadi';
+  String get promoCodeCouldNotBeApplied => 'Promokodni qöllab bölmadi';
 
   @override
   String cartQuantityLimitReached(int count) {
-    return 'Bitta mahsulotdan ko‘pi bilan $count ta qo‘shish mumkin';
+    return 'Bitta mahsulotdan köpi bilan $count ta qöşiş mumkin';
   }
 
   @override
   String cartItemsUnavailable(String items) {
-    return 'Endi mavjud emas, savatdan olib tashlandi: $items';
+    return 'Endi mavjud emas, savatdan olib taşlandi: $items';
   }
 
   @override
   String get cartSomeItemsUnavailable =>
-      'Ba’zi mahsulotlar endi mavjud emas va savatdan olib tashlandi';
+      'Ba’zi mahsulotlar endi mavjud emas va savatdan olib taşlandi';
 
   @override
   String repeatOrderSkipped(String items) {
-    return 'Savatga qo‘shib bo‘lmadi: $items';
+    return 'Savatga qöşib bölmadi: $items';
   }
 }

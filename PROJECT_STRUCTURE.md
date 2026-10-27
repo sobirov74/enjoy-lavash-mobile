@@ -229,6 +229,10 @@ Not referenced by app code today, kept as redesign building blocks:
 `app_uz.arb` is the template; `app_ru.arb` and `app_en.arb` must carry the same
 keys. Generated `app_localizations*.dart` are committed. Access strings with
 `L.of(context).key`. Never hardcode user-facing Russian/Uzbek text.
+Uzbek copy uses the reformed Latin alphabet adopted in 2026: `ö ğ ş ç` in
+place of `oʻ gʻ sh ch`; the in-word apostrophe (`maʼlumot`) and `ng` are
+unchanged. This also applies to the Uzbek literals in
+`mobile_error_messages.dart`, `app_version_gate.dart` and `price_formatter.dart`.
 
 ## `test/`
 

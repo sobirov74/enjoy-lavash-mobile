@@ -7,7 +7,7 @@ String formatSum(BuildContext context, int value) {
   final currency = switch (language) {
     'ru' => 'сум',
     'en' => 'UZS',
-    _ => "so'm",
+    _ => 'söm',
   };
   return '$amount $currency';
 }

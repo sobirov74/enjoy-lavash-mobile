@@ -53,7 +53,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text(expected), findsOneWidget);
-    expect(find.text("15000 so'm"), findsNothing);
+    expect(find.text('15000 söm'), findsNothing);
   });
 
   testWidgets('profile order sheet uses locale-aware order amounts', (
@@ -106,7 +106,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text(expected), findsWidgets);
-    expect(find.text("56 000 so'm"), findsNothing);
+    expect(find.text('56 000 söm'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 }

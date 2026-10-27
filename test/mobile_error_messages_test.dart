@@ -123,7 +123,7 @@ void main() {
     );
     expect(
       resolveApiErrorMessage(data: null, statusCode: 503, languageCode: 'uz'),
-      'Xizmat vaqtincha ishlamayapti. Qayta urinib ko‘ring.',
+      'Xizmat vaqtinça işlamayapti. Qayta urinib köring.',
     );
   });
 }

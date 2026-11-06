@@ -14,6 +14,7 @@ import 'package:enjoy_lavash_mobile/widgets/home_banner_slider.dart';
 import 'package:enjoy_lavash_mobile/widgets/redesign/app_surface_card.dart';
 import 'package:enjoy_lavash_mobile/widgets/redesign/order_context_pill.dart';
 import 'package:enjoy_lavash_mobile/widgets/animated_error_message.dart';
+import 'package:enjoy_lavash_mobile/widgets/notification_button.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:enjoy_lavash_mobile/utils/format_cache.dart';
@@ -107,7 +108,7 @@ class HomeScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 10),
-                      _NotificationButton(
+                      NotificationButton(
                         unreadCount: notificationUnreadCount,
                         label: t.notificationInbox,
                         onTap: onNotificationsTap,
@@ -298,73 +299,6 @@ class _HomeSkeleton extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppDesignTokens.surface(context),
         borderRadius: BorderRadius.circular(radius),
-      ),
-    );
-  }
-}
-
-class _NotificationButton extends StatelessWidget {
-  const _NotificationButton({
-    required this.unreadCount,
-    required this.label,
-    required this.onTap,
-  });
-
-  final int unreadCount;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: label,
-      child: Semantics(
-        button: true,
-        label: label,
-        excludeSemantics: true,
-        child: Material(
-          color: Colors.transparent,
-          child: Ink(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: AppDesignTokens.surface(context),
-              shape: BoxShape.circle,
-              boxShadow: AppDesignTokens.cardShadow(context),
-            ),
-            child: InkWell(
-              onTap: onTap,
-              customBorder: const CircleBorder(),
-              child: Stack(
-                alignment: Alignment.center,
-                children: <Widget>[
-                  Icon(
-                    Icons.notifications_none_rounded,
-                    size: 22,
-                    color: AppDesignTokens.primaryText(context),
-                  ),
-                  if (unreadCount > 0)
-                    Positioned(
-                      top: 9,
-                      right: 9,
-                      child: Container(
-                        width: 9,
-                        height: 9,
-                        decoration: BoxDecoration(
-                          color: AppDesignTokens.action,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: AppDesignTokens.surface(context),
-                            width: 1.5,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        ),
       ),
     );
   }

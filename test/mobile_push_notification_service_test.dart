@@ -144,6 +144,55 @@ void main() {
   );
 
   test(
+    'requestPermission shows the OS prompt while it is still denied',
+    () async {
+      final adapter = _RecordingAdapter();
+      final service = _service(adapter);
+
+      final settings = await service.requestPermission();
+
+      expect(permissionRequestCount, 1);
+      expect(settings.permissionGranted, isTrue);
+      // Asking for permission never registers a token on its own.
+      expect(apnsTokenRequestCount, 0);
+      expect(adapter.requests, isEmpty);
+    },
+  );
+
+  test('requestPermission does not prompt once already granted', () async {
+    permissionStatus = PermissionStatus.granted;
+    final service = _service(_RecordingAdapter());
+
+    final settings = await service.requestPermission();
+
+    expect(permissionRequestCount, 0);
+    expect(settings.enabled, isTrue);
+  });
+
+  test('requestPermission does not prompt when the OS locked it', () async {
+    permissionStatus = PermissionStatus.permanentlyDenied;
+    final service = _service(_RecordingAdapter());
+
+    final settings = await service.requestPermission();
+
+    expect(permissionRequestCount, 0);
+    expect(settings.permissionPermanentlyDenied, isTrue);
+    expect(settings.canRequestPermission, isFalse);
+  });
+
+  test('requestPermission respects the in-app notification opt-out', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'push_notifications_enabled': false,
+    });
+    final service = _service(_RecordingAdapter());
+
+    final settings = await service.requestPermission();
+
+    expect(permissionRequestCount, 0);
+    expect(settings.userEnabled, isFalse);
+  });
+
+  test(
     'explicit notification enable may request permission and sync',
     () async {
       final adapter = _RecordingAdapter();

@@ -271,6 +271,14 @@ class MobilePushNotificationService {
     await _syncToken(locale: locale, requestPermission: false);
   }
 
+  /// Shows the OS notification permission prompt when it can still be shown:
+  /// the permission is not granted yet, the OS has not locked it as
+  /// permanently denied, and the customer has not switched notifications off
+  /// in the app. Does not register a token; callers sync afterwards.
+  Future<PushNotificationSettings> requestPermission() {
+    return _ensureNotificationPermission();
+  }
+
   Future<void> _syncToken({
     required bool requestPermission,
     String? locale,

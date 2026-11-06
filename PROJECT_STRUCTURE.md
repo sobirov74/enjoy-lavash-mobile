@@ -25,7 +25,7 @@ differ, the code is the truth and this file records it.
 | Fonts | Manrope and GolosText variable fonts in `assets/fonts/` |
 | Assets | Only `assets/images/` is declared in `pubspec.yaml`. `assets/icons/*.svg` is **not bundled** and no longer referenced by any Dart file |
 | Lints | `flutter_lints` via `analysis_options.yaml` |
-| Tests | `flutter test` (all green, ~279 tests, 64 files), `flutter_test` only, no mocking package |
+| Tests | `flutter test` (all green, ~290 tests, 65 files), `flutter_test` only, no mocking package |
 | Backend | REST API documented in `API_DOCS.md`; banners in `BANNERS_API.md` |
 | Config | `--dart-define`: `API_BASE_URL`, `ORGANISATION_ID`, `YANDEX_GEOCODER_KEY`, `YANDEX_SUGGEST_KEY`, `ENABLE_NETWORK_LOGS` (see `README.md`). No secrets in source |
 | Audit | `docs/STABILITY_AUDIT.md`: known issues table and the phased remediation plan with status |
@@ -88,7 +88,7 @@ fire-and-forget startup tasks, then `runApp` with:
 
 ```
 MultiProvider(ThemeController, LocaleController, LocationController, MobileBackendController)
-  └── InitialLocationLoader          (lib/app/app.dart: asks for location on first frame, resumes backend on app resume)
+  └── InitialLocationLoader          (lib/app/app.dart: on first frame asks for location, then notification permission; resumes backend on app resume)
         └── MyApp                    (MaterialApp: lightTheme/darkTheme, L.delegate, home: AppVersionGate → MainTabs)
 ```
 
@@ -96,7 +96,7 @@ MultiProvider(ThemeController, LocaleController, LocationController, MobileBacke
 
 | File | Contents |
 | --- | --- |
-| `app.dart` | `MyApp` (MaterialApp) and `InitialLocationLoader` |
+| `app.dart` | `MyApp` (MaterialApp) and `InitialLocationLoader` (startup permissions in order: location, then push notifications via `MobileBackendController.requestPushNotificationPermission`, so the two OS dialogs never overlap) |
 | `di.dart` | `sl` (GetIt 9) and `setupDi()`: `ApiClient`, `MobilePushNotificationService`, `MobileBackendRepository` → `MobileBackendRepositoryImpl` (all lazy singletons) |
 | `theme_controller.dart` | `ThemeController` (ThemeMode, persisted via `ThemeStorage`) |
 | `locale_controller.dart` | `LocaleController` (`supportedLocales`, persisted) |
@@ -109,7 +109,7 @@ MultiProvider(ThemeController, LocaleController, LocationController, MobileBacke
 | `api/` | `ApiClient` (Dio, token refresh, language header, logout callback), `ApiEndpoints`, `BaseUrl`, `backend_image_url.dart` (resolve relative image paths) |
 | `error/` | `failures.dart` (`Failure` sealed: Network, Server, Conflict, PayloadTooLarge, RateLimit, ServiceUnavailable, `ApiFailurePayload`), `result.dart` (`Result<T>` = `Success` / `Error`, `ResultX` helpers), `dio_error_mapper.dart`, `mobile_error_messages.dart` (failure → localized copy) |
 | `storage/` | `TokenStorage` (secure; unreadable keystore → session cleared, never throws on read/clear), `ThemeStorage`, `CartStorage` (persists `CartSelection`s) |
-| `services/` | `ErrorReporter` (Sentry, only when `SENTRY_DSN` is defined; `report()` for zone and startup errors), `MobilePushNotificationService` (Firebase Messaging on Android; raw APNs channel on iOS, where `AppDelegate` forwards notification taps as `notificationOpened` and keeps a cold-start tap for `takeLaunchNotification`), `YandexGeocoderService` (keys from `--dart-define`, lookups disabled when empty, 10 s timeouts), `AppShareService`, `ExternalUrlLauncher` (`https` only; `paymentLinkHosts` / `appStoreLinkHosts` allowlists for backend-supplied links; native channels re-check the scheme) |
+| `services/` | `ErrorReporter` (Sentry, only when `SENTRY_DSN` is defined; `report()` for zone and startup errors), `MobilePushNotificationService` (Firebase Messaging on Android; raw APNs channel on iOS, where `AppDelegate` forwards notification taps as `notificationOpened` and keeps a cold-start tap for `takeLaunchNotification`; `requestPermission()` shows the OS prompt while it is still undecided and respects the in-app opt-out, `syncTokenIfPermissionGranted()` never prompts), `YandexGeocoderService` (keys from `--dart-define`, lookups disabled when empty, 10 s timeouts), `AppShareService`, `ExternalUrlLauncher` (`https` only; `paymentLinkHosts` / `appStoreLinkHosts` allowlists for backend-supplied links; native channels re-check the scheme) |
 | `navigation/` | `AppDeepLink` enum (`enjoylavash://home`, `menu`, `cart`, `profile`, `promotions`, `orders`, `notifications`, `loyalty`) |
 
 ### `lib/features/`
@@ -120,7 +120,7 @@ MultiProvider(ThemeController, LocaleController, LocationController, MobileBacke
 | `mobile_backend/domain/entities/mobile_bootstrap.dart` | `MobileBootstrap` |
 | `mobile_backend/data/repositories/mobile_backend_repository_impl.dart` | `MobileBackendRepositoryImpl` over `ApiClient` |
 | `mobile_backend/data/models/` | JSON models: `catalog_model`, `cart_model` (order type, payment method, cart preview request/response), `order_model`, `loyalty_model`, `assigned_promotion_model`, `promotion_model`, `banner_model`, `branch_model`, `address_model`, `auth_models`, `client_profile_model`, `client_notification_model`, `ordering_status_model` (working hours), `app_version_policy_model`, `file_upload_model`, `json_helpers` |
-| `mobile_backend/presentation/mobile_backend_controller.dart` | `MobileBackendController` (ChangeNotifier, `MobileBackendStatus`, `SessionEndReason` + `sessionEnded` stream; a session generation drops late responses from a previous session), the app's main state holder. Split with `part` files in `mobile_backend_controller/`: auth, address, bootstrap, catalog adapter (backend catalog → `MenuProduct`), notifications, order, loyalty, state |
+| `mobile_backend/presentation/mobile_backend_controller.dart` | `MobileBackendController` (ChangeNotifier, `MobileBackendStatus`, `SessionEndReason` + `sessionEnded` stream; a session generation drops late responses from a previous session; `requestPushNotificationPermission()` prompts on app entry, login prompts too, bootstrap/resume syncs only when already granted), the app's main state holder. Split with `part` files in `mobile_backend_controller/`: auth, address, bootstrap, catalog adapter (backend catalog → `MenuProduct`), notifications, order, loyalty, state |
 | `models/` | UI-facing domain models: `MenuProduct` / `MenuModifierGroup` / `MenuModifierOption`, `MenuCategory`, `CartSelection` / `CartModifierSelection` / `CartLine`, `maxCartLineQuantity`, `CartLineLimitReached` (`cart_line.dart`) |
 | `data/menu_catalog.dart` | Static fallback catalog (`menuProducts`); used by tests, not by app code |
 | `app_version/presentation/app_version_gate.dart` | `AppVersionGate` (force/soft update prompt laid over the running app; wired as `MaterialApp.home` around `MainTabs` in `app.dart`, policy loaded via `MobileBackendController.getAppVersionPolicy`) |
@@ -156,7 +156,7 @@ Part files in `navigation/main_tabs/` (all `part of main_tabs.dart`):
 | `HomeScreen` | `home_screen.dart` | banners (`HomeBannerSlider`), promos, ordering status |
 | `MenuScreen` | `menu_screen.dart` | category pills, lazily built product grid (`SliverList` of rows), private `_ProductDetailPage`, add-to-cart animation wiring (`CartAnimationController`), `packagingAssets` override map |
 | `CartScreen` | `cart_screen.dart` | reads props from `MainTabs` |
-| `Profile` | `profile.dart` + `profile/` part files | `profile_redesign.dart` (main body), `profile_sections.dart`, `profile_cards.dart`, `settings_widgets.dart`, `profile_edit_screen.dart`, `saved_addresses_screen.dart`, `all_orders_screen.dart`, `order_row.dart`, `order_details_sheet.dart` (`OrderProgressJourney`), `order_detail_widgets.dart`, `order_helpers.dart`, `delete_account_sheet.dart` |
+| `Profile` | `profile.dart` + `profile/` part files | `profile_redesign.dart` (main body; header carries `NotificationButton` when `onNotificationsTap` is set), `profile_sections.dart`, `profile_cards.dart`, `settings_widgets.dart`, `profile_edit_screen.dart`, `saved_addresses_screen.dart`, `all_orders_screen.dart`, `order_row.dart`, `order_details_sheet.dart` (`OrderProgressJourney`), `order_detail_widgets.dart`, `order_helpers.dart`, `delete_account_sheet.dart` |
 | `AuthorizationScreen`, `OtpCountdownCard` | `authorization_screen.dart` | phone + OTP flow |
 | `NotificationsScreen` | `notifications_screen.dart` | inbox with filters |
 | `LoyaltyWalletScreen` | `loyalty_wallet_screen.dart` | |
@@ -181,6 +181,7 @@ Shared, redesign-era widgets (use these):
 | `CartItemCard` | `cart_item_card.dart` |
 | `BannerImageCard` | `banner_image_card.dart` |
 | `HomeBannerSlider` | `home_banner_slider.dart` |
+| `NotificationButton` (round inbox button with unread dot; home and profile headers) | `notification_button.dart` |
 | `PromoSlider`, `showPromotionDetails()` | `promo_slider.dart` |
 | `AppSurfaceCard` | `redesign/app_surface_card.dart` |
 | `CartPill` | `redesign/cart_pill.dart` |
@@ -241,11 +242,11 @@ Flat folder, one file per concern, named `<area>_test.dart`. Groups:
 - Cart animation: `cart_animation_controller_test`, `cart_packaging_preset_integration_test`, `cart_packaging_visual_test`, `preset_packaging_visual_test`, `cart_add_failure_test`, `cart_flight_preview_test`. The last two visual tests write contact sheets when given `--dart-define=PACKAGING_PREVIEW_PATH=…` / `CART_FLIGHT_PREVIEW_PATH=…`.
 - Screens/UX: `home_screen_test`, `menu_lazy_grid_test`, `menu_motion_test`, `cart_screen_ux_test`, `profile_redesign_test`, `notifications_promotions_ui_test`, `loyalty_wallet_screen_test`, `order_success_screen_test`, `authorization_*`, `branch_bottom_sheet_test`, `product_list_item_test`, `product_configuration_test`, `widget_test`.
 - Checkout: `order_submission_keys_test` (key reuse after unknown outcomes), `cart_safety_nets_test` (removed-item notice, repeat order, quantity cap).
-- Session: `mobile_backend_session_test` (late responses across login/logout, session end reasons, resume throttle, change-only order polling, promotions freshness).
+- Session: `mobile_backend_session_test` (late responses across login/logout, session end reasons, resume throttle, change-only order polling, promotions freshness), `push_permission_prompt_test` (OS notification prompt on app entry and login, never on background refresh; guests are asked but not registered).
 - Performance guards: `shell_rebuild_scope_test`, `menu_lazy_grid_test`, `startup_requests_test`, `cart_controller_test`, `token_storage_test`, `text_change_listener_test`.
 - Models/repositories: `*_model_test`, `ordering_status_repository_test`, `promotion_banner_repository_test`, `api_client_test`, `cart_storage_test`, `mobile_backend_migration_contract_test`, `redesign_audit_contract_test`.
 - Startup/errors: `startup_preferences_test`, `failure_message_test`.
-- Services: `ios_notification_tap_test`, `app_version_gate_test`, `mobile_push_notification_service_test`, `app_share_service_test`, `initial_location_loader_test`, `external_url_launcher_test` (scheme + host allowlist, channel never called for rejected links), `yandex_geocoder_service_test` (no network without keys, key injection), `log_redaction_test`.
+- Services: `ios_notification_tap_test`, `app_version_gate_test`, `mobile_push_notification_service_test`, `app_share_service_test`, `initial_location_loader_test` (location first, then notification permission), `external_url_launcher_test` (scheme + host allowlist, channel never called for rejected links), `yandex_geocoder_service_test` (no network without keys, key injection), `log_redaction_test`.
 
 Tests build real widgets with `MaterialApp` + `MediaQuery` and fake
 repositories by hand; there is no mockito/mocktail. `flutter_test_config.dart`

@@ -14,6 +14,7 @@ class _RedesignedProfile extends StatelessWidget {
     required this.onNotificationsChanged,
     required this.onShare,
     required this.onLogout,
+    this.onNotificationsTap,
   });
 
   final Future<String?> appVersionFuture;
@@ -27,6 +28,7 @@ class _RedesignedProfile extends StatelessWidget {
   final Future<void> Function(bool enabled) onNotificationsChanged;
   final Future<void> Function() onShare;
   final Future<void> Function() onLogout;
+  final VoidCallback? onNotificationsTap;
 
   @override
   Widget build(BuildContext context) {
@@ -43,6 +45,7 @@ class _RedesignedProfile extends StatelessWidget {
             LoyaltyWalletModel? loyaltyWallet,
             List<CustomerOrderModel> orders,
             List<ClientAddress> addresses,
+            int notificationUnreadCount,
           })
         >(
           (controller) => (
@@ -54,9 +57,11 @@ class _RedesignedProfile extends StatelessWidget {
             loyaltyWallet: controller.loyaltyWallet,
             orders: controller.orders,
             addresses: controller.addresses,
+            notificationUnreadCount: controller.notificationUnreadCount,
           ),
         );
     final localeController = context.watch<LocaleController>();
+    final onNotificationsTap = this.onNotificationsTap;
     final themeController = context.read<ThemeController>();
     final client = backend.client;
     final isAuthorized = client != null;
@@ -92,13 +97,30 @@ class _RedesignedProfile extends StatelessWidget {
               children: <Widget>[
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
-                  child: Text(
-                    t.profile,
-                    style: AppTextStyles.display(
-                      size: 26,
-                      height: 30 / 26,
-                      color: _ProfilePalette.primary(context),
-                    ).copyWith(letterSpacing: 0),
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          t.profile,
+                          style: AppTextStyles.display(
+                            size: 26,
+                            height: 30 / 26,
+                            color: _ProfilePalette.primary(context),
+                          ).copyWith(letterSpacing: 0),
+                        ),
+                      ),
+                      if (onNotificationsTap != null) ...<Widget>[
+                        const SizedBox(width: 10),
+                        NotificationButton(
+                          key: const ValueKey<String>(
+                            'profile-notifications-button',
+                          ),
+                          unreadCount: backend.notificationUnreadCount,
+                          label: t.notificationInbox,
+                          onTap: onNotificationsTap,
+                        ),
+                      ],
+                    ],
                   ),
                 ),
                 Padding(

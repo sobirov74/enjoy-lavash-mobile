@@ -7,6 +7,7 @@ import 'package:enjoy_lavash_mobile/widgets/app_modal_bottom_sheet.dart';
 import 'package:enjoy_lavash_mobile/widgets/app_snack_bar.dart';
 import 'package:enjoy_lavash_mobile/widgets/confirm_dialog.dart';
 import 'package:enjoy_lavash_mobile/widgets/fade_slide_in.dart';
+import 'package:enjoy_lavash_mobile/widgets/notification_button.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -86,10 +87,18 @@ Future<void> showAllOrdersScreen(BuildContext context) {
 }
 
 class Profile extends StatefulWidget {
-  const Profile({super.key, this.onRefresh, this.onPromoSelected});
+  const Profile({
+    super.key,
+    this.onRefresh,
+    this.onPromoSelected,
+    this.onNotificationsTap,
+  });
 
   final Future<void> Function()? onRefresh;
   final ValueChanged<String>? onPromoSelected;
+
+  /// Opens the notification inbox. The header button is hidden when null.
+  final VoidCallback? onNotificationsTap;
 
   @override
   State<Profile> createState() => _ProfileState();
@@ -276,6 +285,7 @@ class _ProfileState extends State<Profile> {
       onOpenOrders: () async => _openAllOrders(context),
       onOpenPromotions: () => _openAssignedPromotions(context),
       onOpenAddresses: () => _openSavedAddresses(context),
+      onNotificationsTap: widget.onNotificationsTap,
       onNotificationsChanged: (enabled) =>
           _setPushNotifications(context, enabled),
       onShare: () => _shareApp(t),

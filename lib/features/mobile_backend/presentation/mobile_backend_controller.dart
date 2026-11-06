@@ -242,6 +242,12 @@ class MobileBackendController extends ChangeNotifier {
     return _refreshPushNotificationSettings();
   }
 
+  /// Asks for notification permission on app entry; registers the token when
+  /// the customer is signed in and the permission was granted.
+  Future<void> requestPushNotificationPermission({String? locale}) {
+    return _syncPushNotificationToken(locale: locale, requestPermission: true);
+  }
+
   Future<Result<PushNotificationSettings>> setPushNotificationsEnabled(
     bool enabled,
   ) {

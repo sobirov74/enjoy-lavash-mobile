@@ -137,6 +137,7 @@ class _MainTabsState extends State<MainTabs> {
   late final Widget _profileTab = Profile(
     onRefresh: _refreshProfileData,
     onPromoSelected: _applyAssignedPromoCode,
+    onNotificationsTap: () => unawaited(_openNotifications()),
   );
   late final Widget _promotionsTab = AssignedPromotionsScreen(
     embedded: true,

@@ -248,12 +248,33 @@ extension _MobileBackendNotificationsController on MobileBackendController {
     ]);
   }
 
-  void _startPushNotificationSync({String? locale}) {
-    unawaited(_syncPushNotificationToken(locale: locale));
+  void _startPushNotificationSync({
+    String? locale,
+    bool requestPermission = false,
+  }) {
+    unawaited(
+      _syncPushNotificationToken(
+        locale: locale,
+        requestPermission: requestPermission,
+      ),
+    );
   }
 
-  Future<void> _syncPushNotificationToken({String? locale}) async {
+  /// Registers the device token when notifications are allowed. With
+  /// [requestPermission] the OS prompt is shown first (app entry and login);
+  /// background refreshes never prompt. A guest only gets the prompt, the
+  /// token is registered once the customer signs in.
+  Future<void> _syncPushNotificationToken({
+    String? locale,
+    bool requestPermission = false,
+  }) async {
     try {
+      if (requestPermission) {
+        final settings = await _pushNotifications.requestPermission();
+        _pushNotificationSettings = settings;
+        _notifyListeners();
+        if (!settings.enabled || _client == null) return;
+      }
       await _pushNotifications.syncTokenIfPermissionGranted(locale: locale);
       _pushNotificationSettings = await _pushNotifications.getSettings();
       _notifyListeners();

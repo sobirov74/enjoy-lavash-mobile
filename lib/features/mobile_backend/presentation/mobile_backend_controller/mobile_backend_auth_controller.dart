@@ -16,7 +16,7 @@ extension _MobileBackendAuthController on MobileBackendController {
         _failure = null;
         final language =
             _supportedLanguageOrNull(request.language) ?? data.client.language;
-        _startPushNotificationSync(locale: language);
+        _startPushNotificationSync(locale: language, requestPermission: true);
         unawaited(syncClientLanguage(language: language));
         unawaited(refreshNotifications());
         unawaited(refreshAssignedPromotions(language: language));

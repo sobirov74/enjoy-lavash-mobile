@@ -30,10 +30,22 @@ class _InitialLocationLoaderState extends State<InitialLocationLoader>
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      unawaited(
-        context.read<LocationController>().requestPermissionAndLocate(),
-      );
+      unawaited(_requestStartupPermissions());
     });
+  }
+
+  /// Location first, then notifications: the OS shows one permission dialog
+  /// at a time, and overlapping requests can cancel each other on Android.
+  /// The notification prompt repeats on every launch until it is granted or
+  /// the OS stops allowing it.
+  Future<void> _requestStartupPermissions() async {
+    await context.read<LocationController>().requestPermissionAndLocate();
+    if (!mounted) return;
+    await context
+        .read<MobileBackendController>()
+        .requestPushNotificationPermission(
+          locale: context.read<LocaleController>().locale.languageCode,
+        );
   }
 
   @override

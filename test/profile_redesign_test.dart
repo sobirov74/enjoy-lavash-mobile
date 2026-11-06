@@ -20,6 +20,7 @@ import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/screens/authorization_screen.dart';
 import 'package:enjoy_lavash_mobile/screens/profile.dart';
 import 'package:enjoy_lavash_mobile/theme/app_theme.dart';
+import 'package:enjoy_lavash_mobile/widgets/notification_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -140,6 +141,58 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Profile header shows the shared notification button', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final fixture = await _ProfileFixture.authenticated(
+      unreadNotificationCount: 3,
+    );
+    addTearDown(fixture.dispose);
+    var taps = 0;
+    await tester.pumpWidget(fixture.host(onNotificationsTap: () => taps++));
+    await _settleProfile(tester);
+
+    final button = find.byKey(
+      const ValueKey<String>('profile-notifications-button'),
+    );
+    expect(button, findsOneWidget);
+    expect(tester.widget<NotificationButton>(button).unreadCount, 3);
+
+    // Right-aligned in the 20 px gutter, centred on the title line.
+    final buttonRect = tester.getRect(button);
+    final titleRect = tester.getRect(find.text('Profil'));
+    expect(buttonRect.right, 370);
+    expect(buttonRect.center.dy, closeTo(titleRect.center.dy, 0.5));
+
+    await tester.tap(button);
+    await tester.pump();
+    expect(taps, 1);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Profile hides the notification button without a handler', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final fixture = await _ProfileFixture.authenticated();
+    addTearDown(fixture.dispose);
+    await tester.pumpWidget(fixture.host());
+    await _settleProfile(tester);
+
+    expect(find.byType(NotificationButton), findsNothing);
+    expect(find.text('Profil'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('guest Profile keeps public settings and gates account data', (
     tester,
   ) async {
@@ -239,8 +292,14 @@ class _ProfileFixture {
   final ThemeController themeController;
   final double textScale;
 
-  static Future<_ProfileFixture> authenticated({double textScale = 1}) async {
-    final repository = _ProfileRepository(authenticated: true);
+  static Future<_ProfileFixture> authenticated({
+    double textScale = 1,
+    int unreadNotificationCount = 0,
+  }) async {
+    final repository = _ProfileRepository(
+      authenticated: true,
+      unreadNotificationCount: unreadNotificationCount,
+    );
     final push = _FakePushService();
     final controller = MobileBackendController(repository, push);
     await controller.bootstrap(language: 'uz');
@@ -267,7 +326,7 @@ class _ProfileFixture {
     );
   }
 
-  Widget host() {
+  Widget host({VoidCallback? onNotificationsTap}) {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider<MobileBackendController>.value(
@@ -296,7 +355,11 @@ class _ProfileFixture {
             ),
             child: child!,
           ),
-          home: const Scaffold(body: SafeArea(child: Profile())),
+          home: Scaffold(
+            body: SafeArea(
+              child: Profile(onNotificationsTap: onNotificationsTap),
+            ),
+          ),
         ),
       ),
     );
@@ -347,9 +410,13 @@ class _FakePushService extends MobilePushNotificationService {
 }
 
 class _ProfileRepository implements MobileBackendRepository {
-  _ProfileRepository({required this.authenticated});
+  _ProfileRepository({
+    required this.authenticated,
+    this.unreadNotificationCount = 0,
+  });
 
   final bool authenticated;
+  final int unreadNotificationCount;
 
   static final ClientProfile client = ClientProfile.fromJson({
     'id': 'client-1',
@@ -473,7 +540,7 @@ class _ProfileRepository implements MobileBackendRepository {
   }) async => Success(
     ClientNotificationInboxModel(
       items: const [],
-      unreadCount: 0,
+      unreadCount: unreadNotificationCount,
       total: 0,
       limit: limit,
       offset: offset,

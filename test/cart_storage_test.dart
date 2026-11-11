@@ -4,25 +4,34 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  test('persists only valid cart quantities', () async {
-    SharedPreferences.setMockInitialValues(<String, Object>{});
+  test(
+    'a cart saved by an older build is read without invalid lines',
+    () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        'mobile_cart_quantities': '{"lavash": 2, "fries": 1, "invalid": 0}',
+      });
 
-    await CartStorage.save(<String, int>{
-      'lavash': 2,
-      'fries': 1,
-      'invalid': 0,
+      expect(await CartStorage.read(), <String, int>{'lavash': 2, 'fries': 1});
+      final restored = await CartStorage.readSelections();
+      expect(
+        {for (final line in restored) line.productId: line.quantity},
+        <String, int>{'lavash': 2, 'fries': 1},
+      );
+    },
+  );
+
+  test('saving an empty cart clears the current and the legacy data', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'mobile_cart_quantities': '{"lavash": 1}',
+      'mobile_cart_lines_v2': '[{"productId": "lavash", "quantity": 1}]',
     });
 
-    expect(await CartStorage.read(), <String, int>{'lavash': 2, 'fries': 1});
-  });
+    await CartStorage.saveSelections(const <CartSelection>[]);
 
-  test('clears the stored cart when it becomes empty', () async {
-    SharedPreferences.setMockInitialValues(<String, Object>{});
-    await CartStorage.save(<String, int>{'lavash': 1});
-
-    await CartStorage.save(<String, int>{});
-
-    expect(await CartStorage.read(), isEmpty);
+    expect(await CartStorage.readSelections(), isEmpty);
+    final preferences = await SharedPreferences.getInstance();
+    expect(preferences.getString('mobile_cart_quantities'), isNull);
+    expect(preferences.getString('mobile_cart_lines_v2'), isNull);
   });
 
   test('recovers safely from malformed stored data', () async {

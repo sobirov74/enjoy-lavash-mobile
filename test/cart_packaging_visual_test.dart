@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:enjoy_lavash_mobile/features/data/menu_catalog.dart';
+import 'support/menu_catalog.dart';
 import 'package:enjoy_lavash_mobile/features/models/menu_product.dart';
 import 'package:enjoy_lavash_mobile/widgets/cart_animation/packaging_visual.dart';
 import 'package:flutter/material.dart';

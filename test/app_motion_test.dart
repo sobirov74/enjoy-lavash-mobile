@@ -92,34 +92,6 @@ void main() {
       expect(fade.opacity.value, 1);
       expect(slide.position.value, Offset.zero);
     });
-
-    testWidgets('FadeIndexedStack does not animate a tab change', (
-      tester,
-    ) async {
-      Widget buildStack(int index) {
-        return _motionHost(
-          accessibleNavigation: true,
-          child: FadeIndexedStack(
-            index: index,
-            children: const [Text('Menu'), Text('Cart')],
-          ),
-        );
-      }
-
-      await tester.pumpWidget(buildStack(0));
-      await tester.pumpWidget(buildStack(1));
-
-      final stack = find.byType(FadeIndexedStack);
-      final fade = tester.widget<FadeTransition>(
-        find.descendant(of: stack, matching: find.byType(FadeTransition)),
-      );
-      final slide = tester.widget<SlideTransition>(
-        find.descendant(of: stack, matching: find.byType(SlideTransition)),
-      );
-      expect(fade.opacity.value, 1);
-      expect(slide.position.value, Offset.zero);
-      expect(find.text('Cart'), findsOneWidget);
-    });
   });
 }
 

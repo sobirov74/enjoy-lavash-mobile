@@ -1,5 +1,13 @@
 part of 'package:enjoy_lavash_mobile/screens/profile.dart';
 
+/// What the order history renders from the backend controller.
+typedef _OrdersState = ({
+  List<CustomerOrderModel> orders,
+  Failure? failure,
+  List<BranchModel> branches,
+  List<ClientAddress> addresses,
+});
+
 class _AllOrdersScreen extends StatefulWidget {
   const _AllOrdersScreen();
 
@@ -17,6 +25,8 @@ class _AllOrdersScreenState extends State<_AllOrdersScreen> {
   Timer? _searchDebounce;
   _OrderFilterInputs? _filterInputs;
   List<CustomerOrderModel> _filterResult = const <CustomerOrderModel>[];
+  List<CustomerOrderModel>? _statusesSource;
+  List<MobileOrderStatus> _statuses = const <MobileOrderStatus>[];
 
   static const Duration _searchDebounceDuration = Duration(milliseconds: 250);
 
@@ -129,17 +139,34 @@ class _AllOrdersScreenState extends State<_AllOrdersScreen> {
     );
   }
 
+  /// Statuses present in [orders], in enum order, for the filter chips.
+  List<MobileOrderStatus> _statusesIn(List<CustomerOrderModel> orders) {
+    if (identical(_statusesSource, orders)) return _statuses;
+    _statusesSource = orders;
+    return _statuses = {for (final order in orders) order.status}.toList()
+      ..sort((a, b) => a.index.compareTo(b.index));
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final t = L.of(context);
-    final locale = context.watch<LocaleController>().locale.languageCode;
-    final backend = context.watch<MobileBackendController>();
+    final locale = context.select<LocaleController, String>(
+      (controller) => controller.locale.languageCode,
+    );
+    // Only the history and what its rows resolve against.
+    final backend = context.select<MobileBackendController, _OrdersState>(
+      (controller) => (
+        orders: controller.orders,
+        failure: controller.failure,
+        branches: controller.branches,
+        addresses: controller.addresses,
+      ),
+    );
     final orders = backend.orders;
     final failure = backend.failure;
-    final statuses = ({for (final order in orders) order.status}.toList()
-      ..sort((a, b) => a.index.compareTo(b.index)));
+    final statuses = _statusesIn(orders);
     final filteredOrders = _filteredOrders(
       orders: orders,
       branches: backend.branches,

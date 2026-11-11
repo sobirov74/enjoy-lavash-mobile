@@ -41,26 +41,32 @@ class _RedesignedProfile extends StatelessWidget {
             Failure? failure,
             PushNotificationSettings? pushNotificationSettings,
             bool pushNotificationsUpdating,
-            List<AssignedPromotionModel> assignedPromotions,
-            LoyaltyWalletModel? loyaltyWallet,
-            List<CustomerOrderModel> orders,
-            List<ClientAddress> addresses,
+            int activePromotionCount,
+            int? walletBalance,
+            int orderCount,
+            int addressCount,
             int notificationUnreadCount,
           })
         >(
+          // Counts and the balance, not the lists: refreshed lists with the
+          // same counts do not rebuild the profile.
           (controller) => (
             client: controller.client,
             failure: controller.failure,
             pushNotificationSettings: controller.pushNotificationSettings,
             pushNotificationsUpdating: controller.pushNotificationsUpdating,
-            assignedPromotions: controller.assignedPromotions,
-            loyaltyWallet: controller.loyaltyWallet,
-            orders: controller.orders,
-            addresses: controller.addresses,
+            activePromotionCount: controller.assignedPromotions
+                .where((promotion) => promotion.canBeUsed)
+                .length,
+            walletBalance: controller.loyaltyWallet?.availableBalance,
+            orderCount: controller.orders.length,
+            addressCount: controller.addresses.length,
             notificationUnreadCount: controller.notificationUnreadCount,
           ),
         );
-    final localeController = context.watch<LocaleController>();
+    final languageCode = context.select<LocaleController, String>(
+      (controller) => controller.locale.languageCode,
+    );
     final onNotificationsTap = this.onNotificationsTap;
     final themeController = context.read<ThemeController>();
     final client = backend.client;
@@ -70,17 +76,14 @@ class _RedesignedProfile extends StatelessWidget {
     final pushSettings = backend.pushNotificationSettings;
     final notificationsEnabled = pushSettings?.enabled ?? false;
     final notificationsSupported = pushSettings?.supported ?? true;
-    final activePromotionCount = backend.assignedPromotions
-        .where((promotion) => promotion.canBeUsed)
-        .length;
+    final activePromotionCount = backend.activePromotionCount;
     final displayName = client?.fullName.trim().isNotEmpty == true
         ? client!.fullName.trim()
         : (isAuthorized ? t.guest : t.authorization);
     final subtitle = isAuthorized
         ? _formatProfilePhone(client.phoneNumber)
         : t.tapToSignIn;
-    final points =
-        backend.loyaltyWallet?.availableBalance ?? client?.bonusBalance ?? 0;
+    final points = backend.walletBalance ?? client?.bonusBalance ?? 0;
 
     return RefreshIndicator(
       color: BaseColors.primary,
@@ -161,7 +164,7 @@ class _RedesignedProfile extends StatelessWidget {
                           key: const ValueKey<String>('profile-orders-row'),
                           title: t.orderHistory,
                           trailing: _ProfileCountTrailing(
-                            value: t.profileOrderCount(backend.orders.length),
+                            value: t.profileOrderCount(backend.orderCount),
                           ),
                           onTap: onOpenOrders,
                         ),
@@ -177,9 +180,7 @@ class _RedesignedProfile extends StatelessWidget {
                           key: const ValueKey<String>('profile-addresses-row'),
                           title: t.myAddresses,
                           trailing: _ProfileCountTrailing(
-                            value: t.profileAddressCount(
-                              backend.addresses.length,
-                            ),
+                            value: t.profileAddressCount(backend.addressCount),
                           ),
                           onTap: onOpenAddresses,
                         ),
@@ -195,13 +196,11 @@ class _RedesignedProfile extends StatelessWidget {
                         key: const ValueKey<String>('profile-language-row'),
                         title: t.language,
                         trailing: _ProfileCountTrailing(
-                          value: _profileLanguageName(
-                            localeController.locale.languageCode,
-                          ),
+                          value: _profileLanguageName(languageCode),
                         ),
                         onTap: () => _showProfileLanguageSheet(
                           context,
-                          localeController,
+                          context.read<LocaleController>(),
                         ),
                       ),
                       const _ProfileDivider(),
@@ -1010,7 +1009,7 @@ class _ProfileLanguageOption extends StatelessWidget {
 String _profileLanguageName(String code) => switch (code) {
   'ru' => 'Русский',
   'en' => 'English',
-  _ => "O'zbekcha",
+  _ => "Özbekça",
 };
 
 String _formatProfilePhone(String value) {

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:enjoy_lavash_mobile/core/error/failures.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/assigned_promotion_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/presentation/mobile_backend_controller.dart';
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
@@ -12,6 +13,13 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:enjoy_lavash_mobile/utils/format_cache.dart';
+
+/// What the promotions screen renders from the backend controller.
+typedef _PromotionsState = ({
+  List<AssignedPromotionModel> promotions,
+  bool loading,
+  Failure? failure,
+});
 
 class AssignedPromotionsScreen extends StatefulWidget {
   const AssignedPromotionsScreen({
@@ -34,6 +42,9 @@ class AssignedPromotionsScreen extends StatefulWidget {
 
 class _AssignedPromotionsScreenState extends State<AssignedPromotionsScreen> {
   late bool _showAll = widget.initialShowAll;
+  List<AssignedPromotionModel>? _orderedSource;
+  bool? _orderedShowAll;
+  List<AssignedPromotionModel> _ordered = const <AssignedPromotionModel>[];
 
   @override
   void initState() {
@@ -83,10 +94,18 @@ class _AssignedPromotionsScreenState extends State<AssignedPromotionsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final backend = context.watch<MobileBackendController>();
+    // Only the promotion list and its request state: this tab stays alive,
+    // and watching the whole controller rebuilt it on every notification.
+    final state = context.select<MobileBackendController, _PromotionsState>(
+      (backend) => (
+        promotions: backend.assignedPromotions,
+        loading: backend.assignedPromotionsLoading,
+        failure: backend.assignedPromotionsFailure,
+      ),
+    );
     final t = L.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final promotions = _orderedPromotions(backend.assignedPromotions);
+    final promotions = _orderedPromotions(state.promotions);
 
     return Scaffold(
       appBar: AppBar(
@@ -99,8 +118,7 @@ class _AssignedPromotionsScreenState extends State<AssignedPromotionsScreen> {
       body: RefreshIndicator(
         color: BaseColors.primary,
         onRefresh: _refresh,
-        // Cards are built lazily: this tab stays alive and is rebuilt on
-        // every backend notification.
+        // Cards are built lazily.
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: <Widget>[
@@ -116,7 +134,7 @@ class _AssignedPromotionsScreenState extends State<AssignedPromotionsScreen> {
             ),
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 30),
-              sliver: _buildPromotionsSliver(backend, promotions, isDark),
+              sliver: _buildPromotionsSliver(state, promotions, isDark),
             ),
           ],
         ),
@@ -125,23 +143,23 @@ class _AssignedPromotionsScreenState extends State<AssignedPromotionsScreen> {
   }
 
   Widget _buildPromotionsSliver(
-    MobileBackendController backend,
+    _PromotionsState state,
     List<AssignedPromotionModel> promotions,
     bool isDark,
   ) {
-    if (backend.assignedPromotionsLoading && promotions.isEmpty) {
+    if (state.loading && promotions.isEmpty) {
       return SliverList.separated(
         itemCount: 3,
         itemBuilder: (_, _) => _PromotionSkeleton(isDark: isDark),
         separatorBuilder: (_, _) => const SizedBox(height: 12),
       );
     }
-    if (backend.assignedPromotionsFailure != null && promotions.isEmpty) {
+    if (state.failure != null && promotions.isEmpty) {
       return SliverToBoxAdapter(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 64),
           child: AnimatedErrorMessage(
-            failure: backend.assignedPromotionsFailure,
+            failure: state.failure,
             onRetry: () => unawaited(_refresh()),
           ),
         ),
@@ -168,7 +186,20 @@ class _AssignedPromotionsScreenState extends State<AssignedPromotionsScreen> {
     );
   }
 
+  /// The visible promotions in display order, recomputed only when the list
+  /// or the filter changes.
   List<AssignedPromotionModel> _orderedPromotions(
+    List<AssignedPromotionModel> promotions,
+  ) {
+    if (identical(_orderedSource, promotions) && _orderedShowAll == _showAll) {
+      return _ordered;
+    }
+    _orderedSource = promotions;
+    _orderedShowAll = _showAll;
+    return _ordered = _orderPromotions(promotions);
+  }
+
+  List<AssignedPromotionModel> _orderPromotions(
     List<AssignedPromotionModel> promotions,
   ) {
     final items = _showAll

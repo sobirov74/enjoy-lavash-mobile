@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:collection';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
@@ -8,7 +7,6 @@ import 'package:enjoy_lavash_mobile/core/api/api_endpoints.dart';
 import 'package:enjoy_lavash_mobile/core/error/result.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/assigned_promotion_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/cart_model.dart';
-import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/file_upload_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/order_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/repositories/mobile_backend_repository_impl.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -167,37 +165,6 @@ void main() {
       '/clients/me/notifications/notification%2Fid/unread',
     );
   });
-
-  test('file uploads can be rejected locally above 10 MB', () {
-    final request = FileUploadRequest(
-      bytes: _VirtualBytes(FileUploadRequest.maxSizeBytes + 1),
-      filename: 'large.jpg',
-    );
-
-    expect(request.isTooLarge, isTrue);
-  });
-}
-
-class _VirtualBytes extends ListBase<int> {
-  _VirtualBytes(this._length);
-
-  final int _length;
-
-  @override
-  int get length => _length;
-
-  @override
-  int operator [](int index) => 0;
-
-  @override
-  void operator []=(int index, int value) {
-    throw UnsupportedError('read only');
-  }
-
-  @override
-  set length(int value) {
-    throw UnsupportedError('fixed length');
-  }
 }
 
 class _Adapter implements HttpClientAdapter {

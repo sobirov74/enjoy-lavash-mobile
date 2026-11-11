@@ -332,9 +332,7 @@ Object? _firstValue(Object? data, List<String> keys) {
 bool _isClientProtectedEndpoint(String path) {
   final parsedPath = Uri.tryParse(path)?.path ?? path;
   return parsedPath == ApiEndpoints.clientMe ||
-      parsedPath.startsWith('${ApiEndpoints.clientMe}/') ||
-      parsedPath == ApiEndpoints.filesUpload ||
-      parsedPath == ApiEndpoints.filesDelete;
+      parsedPath.startsWith('${ApiEndpoints.clientMe}/');
 }
 
 String _normalizeLanguage(String languageCode) {

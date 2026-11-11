@@ -8,7 +8,8 @@ import 'package:enjoy_lavash_mobile/features/models/menu_product.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/address_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/branch_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/cart_model.dart';
-import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/promotion_model.dart';
+import 'package:enjoy_lavash_mobile/features/cart/presentation/cart_controller.dart';
+import 'package:enjoy_lavash_mobile/features/cart/presentation/product_quantities.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/presentation/mobile_backend_controller.dart';
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/screens/order_context_sheet.dart';
@@ -22,6 +23,7 @@ import 'package:enjoy_lavash_mobile/widgets/product_list_item.dart';
 import 'package:enjoy_lavash_mobile/widgets/redesign/order_context_pill.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:enjoy_lavash_mobile/widgets/app_snack_bar.dart';
@@ -49,7 +51,6 @@ class MenuScreen extends StatefulWidget {
     required this.selectedCategoryIndex,
     required this.categories,
     required this.products,
-    required this.promotions,
     required this.orderType,
     required this.selectedBranch,
     required this.onCategorySelected,
@@ -60,15 +61,11 @@ class MenuScreen extends StatefulWidget {
     required this.onBranchSelected,
     required this.onRetryMenu,
     required this.onRefresh,
-    required this.cartCount,
-    required this.cartTotal,
-    required this.cartQuantities,
-    this.notificationUnreadCount = 0,
+    required this.cart,
     this.onAddConfiguredToCart,
-    this.onNotificationsTap,
     this.onOrderContextTap,
     this.showCartSummary = true,
-    this.isActive = true,
+    this.active,
     this.cartTargetKey,
     this.onCartArrival,
     this.packagingAssets = const {},
@@ -81,7 +78,6 @@ class MenuScreen extends StatefulWidget {
   final int selectedCategoryIndex;
   final List<String> categories;
   final List<MenuProduct> products;
-  final List<PromotionModel> promotions;
   final MobileOrderType orderType;
   final BranchModel? selectedBranch;
   final ValueChanged<int> onCategorySelected;
@@ -93,14 +89,17 @@ class MenuScreen extends StatefulWidget {
   final Future<void> Function(BranchModel?) onBranchSelected;
   final VoidCallback onRetryMenu;
   final Future<void> Function() onRefresh;
-  final int cartCount;
-  final int cartTotal;
-  final Map<String, int> cartQuantities;
-  final int notificationUnreadCount;
-  final VoidCallback? onNotificationsTap;
+
+  /// The cart this menu shows quantities for. The menu listens to it itself,
+  /// so a quantity change rebuilds only the affected card (and the optional
+  /// summary bar), not the whole grid.
+  final CartController cart;
   final VoidCallback? onOrderContextTap;
   final bool showCartSummary;
-  final bool isActive;
+
+  /// Whether this menu is the visible tab; null means always. Turning false
+  /// cancels a running add-to-cart flight.
+  final ValueListenable<bool>? active;
   final GlobalKey? cartTargetKey;
   final VoidCallback? onCartArrival;
 
@@ -128,11 +127,26 @@ class _MenuScreenState extends State<MenuScreen> {
     widget.categories.length + 1,
   );
 
-  double? _categoryPillLeft;
-  double? _categoryPillWidth;
+  /// Position of the shared selection pill behind the category chips. Only
+  /// the category header listens, so measuring it does not rebuild the grid.
+  final ValueNotifier<({double left, double width})?> _categoryPill =
+      ValueNotifier<({double left, double width})?>(null);
   final _cartAnimation = CartAnimationController();
-  late final ValueNotifier<int> _cartCount = ValueNotifier(widget.cartCount);
+  final ProductQuantities _quantities = ProductQuantities();
+
+  /// Cart item count for the product detail page's badge.
+  late final ValueNotifier<int> _cartCount = ValueNotifier(
+    _cartSnapshot.totalItems,
+  );
   int _cartArrivalPulse = 0;
+
+  List<MenuProduct>? _visibleProductsSource;
+  String? _visibleProductsCategory;
+  List<MenuProduct> _visibleProducts = const <MenuProduct>[];
+
+  CartSnapshot get _cartSnapshot => widget.cart.snapshot(widget.products);
+
+  bool get _isActive => widget.active?.value ?? true;
 
   // -------------------------------------------------------------------------
   // Lifecycle
@@ -141,10 +155,25 @@ class _MenuScreenState extends State<MenuScreen> {
   @override
   void initState() {
     super.initState();
+    _quantities.update(_cartSnapshot.quantitiesByProduct);
+    widget.cart.addListener(_handleCartChanged);
+    widget.active?.addListener(_handleActiveChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollSelectedChipIntoView();
       _updateCategoryPillGeometry();
     });
+  }
+
+  /// A cart change outside the build phase (a tap, a restore, a
+  /// reconciliation): only the cards whose quantity changed rebuild.
+  void _handleCartChanged() {
+    final snapshot = _cartSnapshot;
+    _quantities.update(snapshot.quantitiesByProduct);
+    _cartCount.value = snapshot.totalItems;
+  }
+
+  void _handleActiveChanged() {
+    if (!_isActive) _cartAnimation.cancel();
   }
 
   bool _packagingPreloaded = false;
@@ -166,13 +195,24 @@ class _MenuScreenState extends State<MenuScreen> {
   @override
   void didUpdateWidget(covariant MenuScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (!widget.isActive) _cartAnimation.cancel();
+    if (oldWidget.active != widget.active) {
+      oldWidget.active?.removeListener(_handleActiveChanged);
+      widget.active?.addListener(_handleActiveChanged);
+      if (!_isActive) _cartAnimation.cancel();
+    }
     if (oldWidget.packagingAssets != widget.packagingAssets) {
       unawaited(_cartAnimation.preload(context, widget.packagingAssets.values));
     }
-    if (oldWidget.cartCount != widget.cartCount) {
+    if (oldWidget.cart != widget.cart ||
+        !identical(oldWidget.products, widget.products)) {
+      oldWidget.cart.removeListener(_handleCartChanged);
+      widget.cart.addListener(_handleCartChanged);
+      final snapshot = _cartSnapshot;
+      // The cards are descendants about to rebuild anyway; the detail page's
+      // badge is another route, so it is updated after this frame.
+      _quantities.update(snapshot.quantitiesByProduct);
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _cartCount.value = widget.cartCount;
+        if (mounted) _cartCount.value = snapshot.totalItems;
       });
     }
 
@@ -191,8 +231,12 @@ class _MenuScreenState extends State<MenuScreen> {
 
   @override
   void dispose() {
+    widget.cart.removeListener(_handleCartChanged);
+    widget.active?.removeListener(_handleActiveChanged);
     _cartAnimation.dispose();
     _cartCount.dispose();
+    _quantities.dispose();
+    _categoryPill.dispose();
     _scrollController.dispose();
     _categoryScrollController.dispose();
     super.dispose();
@@ -320,17 +364,14 @@ class _MenuScreenState extends State<MenuScreen> {
     );
     final nextLeft = chipOffset.dx;
     final nextWidth = chipRenderObject.size.width;
-    if (_categoryPillLeft != null &&
-        (nextLeft - _categoryPillLeft!).abs() < 0.5 &&
-        _categoryPillWidth != null &&
-        (nextWidth - _categoryPillWidth!).abs() < 0.5) {
+    final current = _categoryPill.value;
+    if (current != null &&
+        (nextLeft - current.left).abs() < 0.5 &&
+        (nextWidth - current.width).abs() < 0.5) {
       return;
     }
 
-    setState(() {
-      _categoryPillLeft = nextLeft;
-      _categoryPillWidth = nextWidth;
-    });
+    _categoryPill.value = (left: nextLeft, width: nextWidth);
   }
 
   Future<void> _commitSelection(
@@ -386,7 +427,7 @@ class _MenuScreenState extends State<MenuScreen> {
           () =>
               cartAnimationBounds(widget.cartTargetKey ?? _cartFlightTargetKey),
       onConfirmed: () {
-        if (!mounted || !widget.isActive || !host.mounted) return;
+        if (!mounted || !_isActive || !host.mounted) return;
         if (onArrival != null) {
           onArrival();
         } else if (widget.onCartArrival != null) {
@@ -602,11 +643,7 @@ class _MenuScreenState extends State<MenuScreen> {
             widget.selectedCategoryIndex < widget.categories.length
         ? widget.categories[widget.selectedCategoryIndex]
         : null;
-    final visibleProducts = selectedCategory == null
-        ? widget.products
-        : widget.products
-              .where((product) => product.category == selectedCategory)
-              .toList(growable: false);
+    final visibleProducts = _productsIn(selectedCategory);
 
     return Stack(
       children: <Widget>[
@@ -681,8 +718,14 @@ class _MenuScreenState extends State<MenuScreen> {
                     sliver: _buildProductGrid(visibleProducts),
                   ),
               ],
-              if (widget.showCartSummary && widget.cartCount > 0)
-                const SliverToBoxAdapter(child: SizedBox(height: 90)),
+              if (widget.showCartSummary)
+                SliverToBoxAdapter(
+                  child: ListenableBuilder(
+                    listenable: widget.cart,
+                    builder: (context, _) =>
+                        SizedBox(height: _cartSnapshot.totalItems > 0 ? 90 : 0),
+                  ),
+                ),
             ],
           ),
         ),
@@ -691,22 +734,48 @@ class _MenuScreenState extends State<MenuScreen> {
             left: 16,
             right: 16,
             bottom: 12,
-            child: AnimatedSlide(
-              duration: AppMotion.duration(context, AppMotion.state),
-              curve: AppMotion.enter,
-              offset: widget.cartCount > 0 ? Offset.zero : const Offset(0, 1.4),
-              child: AnimatedOpacity(
-                duration: AppMotion.duration(context, AppMotion.micro),
-                opacity: widget.cartCount > 0 ? 1 : 0,
-                child: IgnorePointer(
-                  ignoring: widget.cartCount <= 0,
-                  child: _buildCartSummaryBar(t),
-                ),
-              ),
+            child: ListenableBuilder(
+              listenable: widget.cart,
+              builder: (context, _) {
+                final cart = _cartSnapshot;
+                final hasItems = cart.totalItems > 0;
+                return AnimatedSlide(
+                  duration: AppMotion.duration(context, AppMotion.state),
+                  curve: AppMotion.enter,
+                  offset: hasItems ? Offset.zero : const Offset(0, 1.4),
+                  child: AnimatedOpacity(
+                    duration: AppMotion.duration(context, AppMotion.micro),
+                    opacity: hasItems ? 1 : 0,
+                    child: IgnorePointer(
+                      ignoring: !hasItems,
+                      child: _buildCartSummaryBar(
+                        t,
+                        count: cart.totalItems,
+                        total: cart.totalAmount,
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
       ],
     );
+  }
+
+  /// Products of [category] (all of them for null), filtered once per
+  /// catalog and category instead of on every build.
+  List<MenuProduct> _productsIn(String? category) {
+    if (category == null) return widget.products;
+    if (!identical(_visibleProductsSource, widget.products) ||
+        _visibleProductsCategory != category) {
+      _visibleProductsSource = widget.products;
+      _visibleProductsCategory = category;
+      _visibleProducts = widget.products
+          .where((product) => product.category == category)
+          .toList(growable: false);
+    }
+    return _visibleProducts;
   }
 
   String _orderContextLabel(L t) {
@@ -811,7 +880,7 @@ class _MenuScreenState extends State<MenuScreen> {
     );
   }
 
-  Widget _buildCartSummaryBar(L t) {
+  Widget _buildCartSummaryBar(L t, {required int count, required int total}) {
     final isDark = widget.isDark;
     final surface = isDark ? const Color(0xFF29231F) : Colors.white;
     final foreground = isDark ? Colors.white : const Color(0xFF201C19);
@@ -835,8 +904,8 @@ class _MenuScreenState extends State<MenuScreen> {
     return Semantics(
       button: true,
       label:
-          '${t.viewCart}, ${t.cartItemsCount(widget.cartCount)}, '
-          '${formatSum(context, widget.cartTotal)}',
+          '${t.viewCart}, ${t.cartItemsCount(count)}, '
+          '${formatSum(context, total)}',
       child: Material(
         key: const ValueKey<String>('menu-cart-summary-bar'),
         color: surface,
@@ -886,7 +955,7 @@ class _MenuScreenState extends State<MenuScreen> {
                         ],
                       ),
                       child: Badge(
-                        label: Text('${widget.cartCount}'),
+                        label: Text('$count'),
                         child: const Icon(
                           Icons.shopping_bag_outlined,
                           color: Colors.white,
@@ -913,7 +982,7 @@ class _MenuScreenState extends State<MenuScreen> {
                         ),
                         const SizedBox(height: 2),
                         TypographyText(
-                          t.cartItemsCount(widget.cartCount),
+                          t.cartItemsCount(count),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -938,7 +1007,7 @@ class _MenuScreenState extends State<MenuScreen> {
                         border: Border.all(color: totalBorder),
                       ),
                       child: TypographyText(
-                        formatSum(context, widget.cartTotal),
+                        formatSum(context, total),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.end,
@@ -986,42 +1055,49 @@ class _MenuScreenState extends State<MenuScreen> {
               controller: _categoryScrollController,
               physics: const BouncingScrollPhysics(),
               scrollDirection: Axis.horizontal,
-              child: Stack(
-                key: _categoryPillTrackKey,
-                alignment: Alignment.centerLeft,
-                children: <Widget>[
-                  if (_categoryPillLeft != null && _categoryPillWidth != null)
-                    AnimatedPositioned(
-                      duration: AppMotion.duration(context, AppMotion.state),
-                      curve: AppMotion.standard,
-                      left: _categoryPillLeft,
-                      top: 0,
-                      width: _categoryPillWidth,
-                      height: AppDesignTokens.chipHeight,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: AppDesignTokens.inkSurface(context),
-                          borderRadius: BorderRadius.all(
-                            Radius.circular(AppDesignTokens.radiusPill),
+              // Only the chips and the pill follow the measured pill position.
+              child: ValueListenableBuilder<({double left, double width})?>(
+                valueListenable: _categoryPill,
+                builder: (context, pill, _) => Stack(
+                  key: _categoryPillTrackKey,
+                  alignment: Alignment.centerLeft,
+                  children: <Widget>[
+                    if (pill != null)
+                      AnimatedPositioned(
+                        duration: AppMotion.duration(context, AppMotion.state),
+                        curve: AppMotion.standard,
+                        left: pill.left,
+                        top: 0,
+                        width: pill.width,
+                        height: AppDesignTokens.chipHeight,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: AppDesignTokens.inkSurface(context),
+                            borderRadius: BorderRadius.all(
+                              Radius.circular(AppDesignTokens.radiusPill),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      for (
-                        var displayIndex = 0;
-                        displayIndex <= widget.categories.length;
-                        displayIndex++
-                      ) ...<Widget>[
-                        _buildCategoryChip(displayIndex),
-                        if (displayIndex < widget.categories.length)
-                          const SizedBox(width: 8),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        for (
+                          var displayIndex = 0;
+                          displayIndex <= widget.categories.length;
+                          displayIndex++
+                        ) ...<Widget>[
+                          _buildCategoryChip(
+                            displayIndex,
+                            hasSharedPill: pill != null,
+                          ),
+                          if (displayIndex < widget.categories.length)
+                            const SizedBox(width: 8),
+                        ],
                       ],
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -1030,13 +1106,12 @@ class _MenuScreenState extends State<MenuScreen> {
     );
   }
 
-  Widget _buildCategoryChip(int displayIndex) {
+  Widget _buildCategoryChip(int displayIndex, {required bool hasSharedPill}) {
     final categoryIndex = displayIndex - 1;
     final isActive = categoryIndex == widget.selectedCategoryIndex;
     final labelColor = isActive
         ? AppDesignTokens.onInk(context)
         : AppDesignTokens.primaryText(context);
-    final hasSharedPill = _categoryPillLeft != null;
 
     return KeyedSubtree(
       key: _categoryChipKeys[displayIndex],
@@ -1098,12 +1173,21 @@ class _MenuScreenState extends State<MenuScreen> {
   /// painted every card of the category at once.) Rows keep the cards'
   /// natural height, which the card itself keeps uniform.
   Widget _buildProductGrid(List<MenuProduct> products) {
+    // The layout builder runs on every layout of the sliver, and scrolling
+    // changes its constraints each frame. Returning a new list each time
+    // rebuilt every visible card per frame, so the list made for this menu
+    // build is reused while the column count stays the same.
+    ({int columns, Widget sliver})? built;
     return SliverLayoutBuilder(
       builder: (context, constraints) {
         final columns =
             constraints.crossAxisExtent >= _productGridWideBreakpoint ? 3 : 2;
+        final reusable = built;
+        if (reusable != null && reusable.columns == columns) {
+          return reusable.sliver;
+        }
         final rowCount = (products.length / columns).ceil();
-        return SliverList.separated(
+        final sliver = SliverList.separated(
           itemCount: rowCount,
           separatorBuilder: (_, _) =>
               const SizedBox(height: _productGridSpacing),
@@ -1124,23 +1208,29 @@ class _MenuScreenState extends State<MenuScreen> {
             );
           },
         );
+        built = (columns: columns, sliver: sliver);
+        return sliver;
       },
     );
   }
 
   Widget _buildProductCard(MenuProduct product) {
     return RepaintBoundary(
-      child: ProductListItem(
-        key: ValueKey<String>('menu-${product.id}'),
-        product: product,
-        isDark: widget.isDark,
-        quantity: widget.cartQuantities[product.id] ?? 0,
-        imageHeroTag: _productHeroTag(product),
-        onImageTap: () => _showProductImagePreview(product),
-        onAdd: () => _quickAdd(product),
-        onAddRequested: (source) => _quickAdd(product, source),
-        onDecrease: () => widget.onDecreaseFromCart(product),
-        onIncrease: () => _quickAdd(product),
+      // Rebuilt on its own when this product's cart quantity changes.
+      child: ValueListenableBuilder<int>(
+        valueListenable: _quantities.of(product.id),
+        builder: (context, quantity, _) => ProductListItem(
+          key: ValueKey<String>('menu-${product.id}'),
+          product: product,
+          isDark: widget.isDark,
+          quantity: quantity,
+          imageHeroTag: _productHeroTag(product),
+          onImageTap: () => _showProductImagePreview(product),
+          onAdd: () => _quickAdd(product),
+          onAddRequested: (source) => _quickAdd(product, source),
+          onDecrease: () => widget.onDecreaseFromCart(product),
+          onIncrease: () => _quickAdd(product),
+        ),
       ),
     );
   }

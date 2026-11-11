@@ -1,9 +1,10 @@
+import 'package:enjoy_lavash_mobile/features/cart/presentation/cart_controller.dart';
+import 'package:enjoy_lavash_mobile/features/models/cart_line.dart';
 import 'package:enjoy_lavash_mobile/app/location_controller.dart';
 import 'package:enjoy_lavash_mobile/core/services/yandex_geocoder_service.dart';
-import 'package:enjoy_lavash_mobile/features/data/menu_catalog.dart';
+import 'support/menu_catalog.dart';
 import 'package:enjoy_lavash_mobile/features/models/menu_product.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/cart_model.dart';
-import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/promotion_model.dart';
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/screens/menu_screen.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
@@ -227,19 +228,24 @@ class _MenuMotionHarnessState extends State<_MenuMotionHarness> {
   late final LocationController _location = LocationController(
     YandexGeocoderService(),
   )..setFromMap(latitude: 41.31, longitude: 69.28, address: 'Test address');
-  final Map<String, int> _cart = <String, int>{};
+  final CartController _cart = CartController(persist: (_) async {});
   MobileOrderType _orderType = MobileOrderType.delivery;
 
   @override
   void dispose() {
     _location.dispose();
+    _cart.dispose();
     super.dispose();
+  }
+
+  void _changeQuantity(MenuProduct product, int delta) {
+    final current = _cart.lineFor(product.id)?.quantity ?? 0;
+    _cart.put(CartSelection(productId: product.id, quantity: current + delta));
   }
 
   @override
   Widget build(BuildContext context) {
     final product = menuProducts.first;
-    final quantity = _cart[product.id] ?? 0;
 
     return ChangeNotifierProvider<LocationController>.value(
       value: _location,
@@ -259,30 +265,17 @@ class _MenuMotionHarnessState extends State<_MenuMotionHarness> {
               selectedCategoryIndex: 0,
               categories: <String>[product.category],
               products: <MenuProduct>[product],
-              promotions: const <PromotionModel>[],
               orderType: _orderType,
               selectedBranch: null,
               onCategorySelected: (_) {},
-              onAddToCart: (_) {
-                setState(() => _cart[product.id] = quantity + 1);
-              },
-              onDecreaseFromCart: (_) {
-                setState(() {
-                  if (quantity <= 1) {
-                    _cart.remove(product.id);
-                  } else {
-                    _cart[product.id] = quantity - 1;
-                  }
-                });
-              },
+              onAddToCart: (product) => _changeQuantity(product, 1),
+              onDecreaseFromCart: (product) => _changeQuantity(product, -1),
               onCartTap: () {},
               onOrderTypeChanged: (type) => setState(() => _orderType = type),
               onBranchSelected: (_) async {},
               onRetryMenu: () {},
               onRefresh: () async {},
-              cartCount: quantity,
-              cartTotal: product.price * quantity,
-              cartQuantities: _cart,
+              cart: _cart,
             ),
           ),
         ),

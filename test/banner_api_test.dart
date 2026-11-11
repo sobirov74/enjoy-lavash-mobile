@@ -4,7 +4,6 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:enjoy_lavash_mobile/core/api/api_client.dart';
 import 'package:enjoy_lavash_mobile/core/api/api_endpoints.dart';
-import 'package:enjoy_lavash_mobile/core/error/failures.dart';
 import 'package:enjoy_lavash_mobile/core/error/result.dart';
 import 'package:enjoy_lavash_mobile/core/navigation/app_deep_link.dart';
 import 'package:enjoy_lavash_mobile/core/services/mobile_push_notification_service.dart';
@@ -45,7 +44,7 @@ void main() {
   );
 
   test(
-    'list and detail are global public GETs even with a stored token',
+    'the banner list is a global public GET even with a stored token',
     () async {
       await TokenStorage.saveAccessToken('client-access');
       final requests = <RequestOptions>[];
@@ -54,47 +53,23 @@ void main() {
           baseUrl: 'https://backend.test',
           httpClientAdapter: _Adapter((request) {
             requests.add(request);
-            return _json(
-              request.path == ApiEndpoints.activeBanners
-                  ? [_banner('first'), _banner('second', promotion: true)]
-                  : _banner('second', promotion: true),
-            );
+            return _json([
+              _banner('first'),
+              _banner('second', promotion: true),
+            ]);
           }),
         ),
         organisationId: 'should-not-be-sent',
       );
       final list = await repository.getActiveBanners(language: 'en');
       expect(list.dataOrNull!.map((banner) => banner.id), ['first', 'second']);
-      final detail = await repository.getBanner(
-        id: 'banner/with slash',
-        language: 'en',
-      );
-      expect(detail.dataOrNull!.promotion!.code, 'SAVE20');
-      expect(requests.last.path, '/banners/banner%2Fwith%20slash');
-      for (final request in requests) {
-        expect(request.method, 'GET');
-        expect(request.queryParameters, isEmpty);
-        expect(request.headers['Authorization'], isNull);
-      }
+      expect(list.dataOrNull!.last.promotion!.code, 'SAVE20');
+      expect(requests.single.path, ApiEndpoints.activeBanners);
+      expect(requests.single.method, 'GET');
+      expect(requests.single.queryParameters, isEmpty);
+      expect(requests.single.headers['Authorization'], isNull);
     },
   );
-
-  test('unavailable banner detail preserves 404', () async {
-    final repository = MobileBackendRepositoryImpl(
-      ApiClient(
-        baseUrl: 'https://backend.test',
-        httpClientAdapter: _Adapter(
-          (_) => _json({'message': 'Not found'}, status: 404),
-        ),
-      ),
-    );
-    final result = await repository.getBanner(id: 'deleted');
-    expect(result, isA<Error<BannerModel>>());
-    expect(
-      ((result as Error<BannerModel>).failure as ServerFailure).statusCode,
-      404,
-    );
-  });
 
   test(
     'launch and refresh update global banners independently of promotions',

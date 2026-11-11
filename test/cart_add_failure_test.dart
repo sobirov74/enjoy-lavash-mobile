@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:enjoy_lavash_mobile/features/cart/presentation/cart_controller.dart';
 import 'package:enjoy_lavash_mobile/app/location_controller.dart';
 import 'package:enjoy_lavash_mobile/core/services/yandex_geocoder_service.dart';
 import 'package:enjoy_lavash_mobile/features/models/cart_line.dart';
@@ -127,6 +128,8 @@ Future<void> _openDetail(
   final location = LocationController(YandexGeocoderService())
     ..setFromMap(latitude: 41.31, longitude: 69.28, address: 'Test address');
   addTearDown(location.dispose);
+  final cart = CartController(persist: (_) async {});
+  addTearDown(cart.dispose);
 
   await tester.pumpWidget(
     ChangeNotifierProvider<LocationController>.value(
@@ -143,7 +146,6 @@ Future<void> _openDetail(
             selectedCategoryIndex: 0,
             categories: const ['Lavash'],
             products: const [_product],
-            promotions: const [],
             orderType: MobileOrderType.delivery,
             selectedBranch: null,
             onCategorySelected: (_) {},
@@ -155,9 +157,7 @@ Future<void> _openDetail(
             onBranchSelected: (_) async {},
             onRetryMenu: () {},
             onRefresh: () async {},
-            cartCount: 0,
-            cartTotal: 0,
-            cartQuantities: const {},
+            cart: cart,
           ),
         ),
       ),

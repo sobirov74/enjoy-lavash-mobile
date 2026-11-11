@@ -7,7 +7,7 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/repositories/
 import 'package:enjoy_lavash_mobile/features/mobile_backend/presentation/mobile_backend_controller.dart';
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/screens/profile.dart';
-import 'package:enjoy_lavash_mobile/widgets/promo_slider.dart';
+import 'package:enjoy_lavash_mobile/widgets/promotion_details_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
@@ -120,9 +120,15 @@ Widget _promotionHost({
     supportedLocales: L.supportedLocales,
     localizationsDelegates: L.localizationsDelegates,
     home: Scaffold(
-      body: PromoSlider(
-        promotions: <PromotionModel>[promotion],
-        locale: locale.languageCode,
+      body: Builder(
+        builder: (context) => TextButton(
+          onPressed: () => showPromotionDetails(
+            context,
+            promotion: promotion,
+            locale: locale.languageCode,
+          ),
+          child: Text(promotion.title),
+        ),
       ),
     ),
   );

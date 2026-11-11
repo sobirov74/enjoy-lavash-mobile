@@ -25,6 +25,12 @@ val hasReleaseKeystore =
         releaseStoreFile?.exists() == true &&
         !releaseStorePassword.isNullOrBlank()
 
+// Performance measurement builds (`-P perfBuild=true`, see
+// docs/PERFORMANCE_PASS_2.md) install next to the store app instead of
+// replacing it and wiping its data. They never initialise Firebase, which is
+// configured for the store package name only.
+val isPerfBuild = project.hasProperty("perfBuild")
+
 android {
     namespace = "com.aurumdev.enjoy_lavash_mobile"
     compileSdk = flutter.compileSdkVersion
@@ -49,6 +55,9 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         manifestPlaceholders["usesCleartextTraffic"] = "false"
+        if (isPerfBuild) {
+            applicationIdSuffix = ".perf"
+        }
     }
 
     signingConfigs {
@@ -95,6 +104,9 @@ val releasePackagingTasks = setOf(
 )
 
 tasks.configureEach {
+    if (isPerfBuild && name.startsWith("process") && name.endsWith("GoogleServices")) {
+        enabled = false
+    }
     if (name in releasePackagingTasks) {
         doFirst {
             if (!hasReleaseKeystore) {

@@ -17,7 +17,6 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/cart_mod
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/catalog_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/client_notification_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/client_profile_model.dart';
-import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/file_upload_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/json_helpers.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/loyalty_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/order_model.dart';
@@ -188,11 +187,6 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
   }
 
   @override
-  Future<Result<List<BranchModel>>> getBranches({String language = 'ru'}) {
-    return _guard(() => _fetchBranches(language: language));
-  }
-
-  @override
   Future<Result<OrderingStatusModel>> getBranchOrderingStatus({
     required String branchId,
   }) {
@@ -210,23 +204,6 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
     String? branchId,
   }) {
     return _guard(() => _fetchCatalog(language: language, branchId: branchId));
-  }
-
-  @override
-  Future<Result<CatalogProductModel>> getCatalogProduct({
-    required String idOrSlug,
-    String language = 'ru',
-  }) {
-    return _guard(() async {
-      final response = await _dio.get(
-        ApiEndpoints.catalogProduct(idOrSlug),
-        queryParameters: {'lang': language},
-      );
-      return CatalogProductModel.fromJson(
-        asJsonMap(response.data),
-        language: language,
-      );
-    });
   }
 
   @override
@@ -377,22 +354,6 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
   }
 
   @override
-  Future<Result<CustomerOrderModel?>> cancelOrder({
-    required String id,
-    required String reason,
-  }) {
-    return _guard(() async {
-      final response = await _dio.post(
-        ApiEndpoints.clientOrderCancel(id),
-        data: {'reason': reason},
-      );
-      final data = asJsonMap(response.data);
-      if (data.isEmpty) return null;
-      return CustomerOrderModel.fromJson(data);
-    });
-  }
-
-  @override
   Future<Result<ClientNotificationInboxModel>> getNotifications({
     int limit = 50,
     int offset = 0,
@@ -488,39 +449,6 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
     });
   }
 
-  @override
-  Future<Result<FileUploadResultModel>> uploadFile(FileUploadRequest request) {
-    if (request.isTooLarge) {
-      return Future<Result<FileUploadResultModel>>.value(
-        const Error<FileUploadResultModel>(
-          PayloadTooLargeFailure('File must be 10 MB or smaller'),
-        ),
-      );
-    }
-    return _guard(() async {
-      final response = await _dio.post(
-        ApiEndpoints.filesUpload,
-        data: FormData.fromMap({
-          request.fieldName: MultipartFile.fromBytes(
-            request.bytes,
-            filename: request.filename,
-          ),
-        }),
-      );
-      return FileUploadResultModel.fromJson(asJsonMap(response.data));
-    });
-  }
-
-  @override
-  Future<Result<void>> deleteFile({required String filename}) {
-    return _guard(() async {
-      await _dio.delete(
-        ApiEndpoints.filesDelete,
-        queryParameters: {'filename': filename},
-      );
-    });
-  }
-
   Future<List<BranchModel>> _fetchBranches({required String language}) async {
     final response = await _dio.get(ApiEndpoints.branches);
     return asJsonMapList(_listPayload(response.data, key: 'branches'))
@@ -542,21 +470,6 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
   @override
   Future<Result<List<BannerModel>>> getActiveBanners({String language = 'uz'}) {
     return _guard(() => _fetchActiveBanners(language: language));
-  }
-
-  @override
-  Future<Result<BannerModel>> getBanner({
-    required String id,
-    String language = 'uz',
-  }) {
-    return _guard(() async {
-      final response = await _dio.get(ApiEndpoints.banner(id));
-      return BannerModel.fromJson(
-        asJsonMap(response.data),
-        language: language,
-        backendBaseUrl: _dio.options.baseUrl,
-      );
-    });
   }
 
   Future<List<BannerModel>> _fetchActiveBanners({

@@ -78,6 +78,11 @@ class HomeScreen extends StatelessWidget {
     if (failure != null && products.isEmpty) {
       return _HomeFailureState(failure: failure!, onRetry: onRefresh);
     }
+    // One pass over the catalog instead of one per category tile.
+    final firstProductByCategory = <String, MenuProduct>{};
+    for (final product in products) {
+      firstProductByCategory.putIfAbsent(product.category, () => product);
+    }
     return RefreshIndicator(
       color: AppDesignTokens.action,
       onRefresh: onRefresh,
@@ -193,7 +198,7 @@ class HomeScreen extends StatelessWidget {
                 separatorBuilder: (_, _) => const SizedBox(width: 12),
                 itemBuilder: (context, index) {
                   final category = categories[index];
-                  final product = _firstProductForCategory(category.name);
+                  final product = firstProductByCategory[category.name];
                   return _CategoryCard(
                     category: category,
                     product: product,
@@ -207,13 +212,6 @@ class HomeScreen extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  MenuProduct? _firstProductForCategory(String category) {
-    for (final product in products) {
-      if (product.category == category) return product;
-    }
-    return null;
   }
 }
 

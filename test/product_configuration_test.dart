@@ -1,9 +1,9 @@
+import 'package:enjoy_lavash_mobile/features/cart/presentation/cart_controller.dart';
 import 'package:enjoy_lavash_mobile/app/location_controller.dart';
 import 'package:enjoy_lavash_mobile/core/services/yandex_geocoder_service.dart';
 import 'package:enjoy_lavash_mobile/features/models/cart_line.dart';
 import 'package:enjoy_lavash_mobile/features/models/menu_product.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/cart_model.dart';
-import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/promotion_model.dart';
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/screens/menu_screen.dart';
 import 'package:enjoy_lavash_mobile/theme/light_theme.dart';
@@ -23,6 +23,8 @@ void main() {
     addTearDown(location.dispose);
     CartSelection? configured;
     final additions = <CartSelection>[];
+    final cart = CartController(persist: (_) async {});
+    addTearDown(cart.dispose);
 
     await tester.pumpWidget(
       ChangeNotifierProvider<LocationController>.value(
@@ -39,7 +41,6 @@ void main() {
               selectedCategoryIndex: 0,
               categories: const <String>['Lavash'],
               products: const <MenuProduct>[_configuredProduct],
-              promotions: const <PromotionModel>[],
               orderType: MobileOrderType.delivery,
               selectedBranch: null,
               onCategorySelected: (_) {},
@@ -54,9 +55,7 @@ void main() {
               onBranchSelected: (_) async {},
               onRetryMenu: () {},
               onRefresh: () async {},
-              cartCount: 0,
-              cartTotal: 0,
-              cartQuantities: const <String, int>{},
+              cart: cart,
             ),
           ),
         ),

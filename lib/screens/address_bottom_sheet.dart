@@ -44,6 +44,10 @@ class _AddressSheetState extends State<_AddressSheet>
 
   late final AnimationController _animController;
   late final CurvedAnimation _fadeAnim;
+  late final Animation<Offset> _slide = Tween<Offset>(
+    begin: const Offset(0, 0.15),
+    end: Offset.zero,
+  ).animate(_fadeAnim);
 
   final Map<String, List<SuggestionResult>> _suggestionCache =
       <String, List<SuggestionResult>>{};
@@ -164,272 +168,287 @@ class _AddressSheetState extends State<_AddressSheet>
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final t = L.of(context);
-    final loc = context.watch<LocationController>();
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    // Only what the sheet shows; the apartment fields keep their own text.
+    final (addressName, district, isLocating) = context
+        .select<LocationController, (String, String, bool)>(
+          (location) => (
+            location.addressName,
+            location.district,
+            location.status == LocationStatus.loading,
+          ),
+        );
 
     return FadeTransition(
       opacity: _fadeAnim,
       child: SlideTransition(
-        position: Tween<Offset>(
-          begin: const Offset(0, 0.15),
-          end: Offset.zero,
-        ).animate(_fadeAnim),
-        child: Container(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.9,
-          ),
-          margin: EdgeInsets.only(bottom: bottomInset),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1D1A18) : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AppBottomSheetDragHandle(
-                margin: const EdgeInsets.only(top: 4),
-                color: isDark
-                    ? const Color(0xFF3A3530)
-                    : const Color(0xFFE0DBD5),
+        position: _slide,
+        // The keyboard inset changes on every frame while the keyboard
+        // animates; only this padding follows it, not the sheet's content.
+        child: _KeyboardInset(
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(context).height * 0.9,
+            ),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1D1A18) : Colors.white,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
               ),
-              const SizedBox(height: 4),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TypographyText(
-                        t.deliveryAddress,
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? const Color(0xFF2A2522)
-                              : const Color(0xFFF3F0EB),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(Icons.close_rounded, size: 20),
-                      ),
-                    ),
-                  ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppBottomSheetDragHandle(
+                  margin: const EdgeInsets.only(top: 4),
+                  color: isDark
+                      ? const Color(0xFF3A3530)
+                      : const Color(0xFFE0DBD5),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Flexible(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                const SizedBox(height: 4),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
                     children: [
-                      // Current address display
-                      _AnimatedAddressCard(
-                        isDark: isDark,
-                        addressName: loc.addressName,
-                        district: loc.district,
-                        isLoading: loc.status == LocationStatus.loading,
-                        onTap: () async {
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ChangeNotifierProvider.value(
-                                value: context.read<LocationController>(),
-                                child: const MapPickerScreen(),
-                              ),
-                            ),
-                          );
-                        },
-                        onLocate: () => loc.requestPermissionAndLocate(),
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Search section
-                      AnimatedSize(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeOutCubic,
-                        child: _showSearch
-                            ? Column(
-                                children: [
-                                  _SearchField(
-                                    controller: _searchController,
-                                    isDark: isDark,
-                                    hint: t.searchAddress,
-                                    onChanged: _onSearchChanged,
-                                  ),
-                                  if (_suggestions.isNotEmpty) ...[
-                                    const SizedBox(height: 8),
-                                    _SuggestionsList(
-                                      suggestions: _suggestions,
-                                      isDark: isDark,
-                                      onSelect: _selectSuggestion,
-                                    ),
-                                  ],
-                                  const SizedBox(height: 12),
-                                ],
-                              )
-                            : const SizedBox.shrink(),
-                      ),
-
-                      // House number (required)
-                      TypographyText(
-                        t.houseNumber,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: isDark ? Colors.white70 : BaseColors.textGray,
+                      Expanded(
+                        child: TypographyText(
+                          t.deliveryAddress,
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      _StyledTextField(
-                        controller: _houseController,
-                        isDark: isDark,
-                        hint: t.houseNumberHint,
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Extra fields row
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                TypographyText(
-                                  t.entranceLabel,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    color: isDark
-                                        ? Colors.white70
-                                        : BaseColors.textGray,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                _StyledTextField(
-                                  controller: _entranceController,
-                                  isDark: isDark,
-                                  hint: '1',
-                                  keyboardType: TextInputType.number,
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                TypographyText(
-                                  t.floorLabel,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    color: isDark
-                                        ? Colors.white70
-                                        : BaseColors.textGray,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                _StyledTextField(
-                                  controller: _floorController,
-                                  isDark: isDark,
-                                  hint: '2',
-                                  keyboardType: TextInputType.number,
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                TypographyText(
-                                  t.apartmentLabel,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    color: isDark
-                                        ? Colors.white70
-                                        : BaseColors.textGray,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                _StyledTextField(
-                                  controller: _apartmentController,
-                                  isDark: isDark,
-                                  hint: '12',
-                                  keyboardType: TextInputType.number,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Comment
-                      TypographyText(
-                        t.commentLabel,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: isDark ? Colors.white70 : BaseColors.textGray,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      _StyledTextField(
-                        controller: _commentController,
-                        isDark: isDark,
-                        hint: t.commentHint,
-                        maxLines: 2,
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Confirm button
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: loc.addressName.isNotEmpty
-                              ? () {
-                                  _commitAddressDetails();
-                                  Navigator.pop(context, true);
-                                }
-                              : null,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: BaseColors.primary,
-                            foregroundColor: Colors.white,
-                            disabledBackgroundColor: isDark
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: isDark
                                 ? const Color(0xFF2A2522)
-                                : const Color(0xFFE0DBD5),
-                            padding: const EdgeInsets.symmetric(vertical: 18),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            elevation: 0,
+                                : const Color(0xFFF3F0EB),
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          child: TypographyText(
-                            t.confirmAddress,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
+                          child: const Icon(Icons.close_rounded, size: 20),
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 16),
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Current address display
+                        _AnimatedAddressCard(
+                          isDark: isDark,
+                          addressName: addressName,
+                          district: district,
+                          isLoading: isLocating,
+                          onTap: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ChangeNotifierProvider.value(
+                                  value: context.read<LocationController>(),
+                                  child: const MapPickerScreen(),
+                                ),
+                              ),
+                            );
+                          },
+                          onLocate: () => context
+                              .read<LocationController>()
+                              .requestPermissionAndLocate(),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Search section
+                        AnimatedSize(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeOutCubic,
+                          child: _showSearch
+                              ? Column(
+                                  children: [
+                                    _SearchField(
+                                      controller: _searchController,
+                                      isDark: isDark,
+                                      hint: t.searchAddress,
+                                      onChanged: _onSearchChanged,
+                                    ),
+                                    if (_suggestions.isNotEmpty) ...[
+                                      const SizedBox(height: 8),
+                                      _SuggestionsList(
+                                        suggestions: _suggestions,
+                                        isDark: isDark,
+                                        onSelect: _selectSuggestion,
+                                      ),
+                                    ],
+                                    const SizedBox(height: 12),
+                                  ],
+                                )
+                              : const SizedBox.shrink(),
+                        ),
+
+                        // House number (required)
+                        TypographyText(
+                          t.houseNumber,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: isDark
+                                ? Colors.white70
+                                : BaseColors.textGray,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        _StyledTextField(
+                          controller: _houseController,
+                          isDark: isDark,
+                          hint: t.houseNumberHint,
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Extra fields row
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  TypographyText(
+                                    t.entranceLabel,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: isDark
+                                          ? Colors.white70
+                                          : BaseColors.textGray,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  _StyledTextField(
+                                    controller: _entranceController,
+                                    isDark: isDark,
+                                    hint: '1',
+                                    keyboardType: TextInputType.number,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  TypographyText(
+                                    t.floorLabel,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: isDark
+                                          ? Colors.white70
+                                          : BaseColors.textGray,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  _StyledTextField(
+                                    controller: _floorController,
+                                    isDark: isDark,
+                                    hint: '2',
+                                    keyboardType: TextInputType.number,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  TypographyText(
+                                    t.apartmentLabel,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: isDark
+                                          ? Colors.white70
+                                          : BaseColors.textGray,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  _StyledTextField(
+                                    controller: _apartmentController,
+                                    isDark: isDark,
+                                    hint: '12',
+                                    keyboardType: TextInputType.number,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Comment
+                        TypographyText(
+                          t.commentLabel,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: isDark
+                                ? Colors.white70
+                                : BaseColors.textGray,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        _StyledTextField(
+                          controller: _commentController,
+                          isDark: isDark,
+                          hint: t.commentHint,
+                          maxLines: 2,
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Confirm button
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: addressName.isNotEmpty
+                                ? () {
+                                    _commitAddressDetails();
+                                    Navigator.pop(context, true);
+                                  }
+                                : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: BaseColors.primary,
+                              foregroundColor: Colors.white,
+                              disabledBackgroundColor: isDark
+                                  ? const Color(0xFF2A2522)
+                                  : const Color(0xFFE0DBD5),
+                              padding: const EdgeInsets.symmetric(vertical: 18),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: TypographyText(
+                              t.confirmAddress,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -775,6 +794,23 @@ class _StyledTextField extends StatelessWidget {
           vertical: 14,
         ),
       ),
+    );
+  }
+}
+
+/// Lifts its child above the on-screen keyboard. Only this widget depends on
+/// the keyboard inset, so the sheet above it is not rebuilt per frame while
+/// the keyboard animates.
+class _KeyboardInset extends StatelessWidget {
+  const _KeyboardInset({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: child,
     );
   }
 }

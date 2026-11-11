@@ -1,4 +1,4 @@
-import 'package:enjoy_lavash_mobile/features/data/menu_catalog.dart';
+import 'support/menu_catalog.dart';
 import 'package:enjoy_lavash_mobile/features/models/cart_line.dart';
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/screens/cart_screen.dart';

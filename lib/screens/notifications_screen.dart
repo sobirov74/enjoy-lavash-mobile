@@ -38,8 +38,20 @@ class NotificationsScreen extends StatefulWidget {
 
 enum _NotificationFilter { all, orders, promotions }
 
+/// What the inbox renders from the backend controller.
+typedef _InboxState = ({
+  List<ClientNotificationItemModel> notifications,
+  int unreadCount,
+  bool loading,
+  Failure? failure,
+});
+
 class _NotificationsScreenState extends State<NotificationsScreen> {
   _NotificationFilter _filter = _NotificationFilter.all;
+  List<ClientNotificationItemModel>? _filteredSource;
+  _NotificationFilter? _filteredBy;
+  List<ClientNotificationItemModel> _filteredNotifications =
+      const <ClientNotificationItemModel>[];
 
   @override
   void initState() {
@@ -158,22 +170,22 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final backend = context.watch<MobileBackendController>();
+    // Only the inbox: other backend updates do not rebuild this screen.
+    final inboxState = context.select<MobileBackendController, _InboxState>(
+      (backend) => (
+        notifications: backend.notifications,
+        unreadCount: backend.notificationUnreadCount,
+        loading: backend.notificationsLoading,
+        failure: backend.notificationsFailure,
+      ),
+    );
     final t = L.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final filteredNotifications = backend.notifications
-        .where((notification) {
-          return switch (_filter) {
-            _NotificationFilter.all => true,
-            _NotificationFilter.orders => _isOrderNotification(notification),
-            _NotificationFilter.promotions => notification.opensPromotions,
-          };
-        })
-        .toList(growable: false);
+    final filteredNotifications = _filtered(inboxState.notifications);
     final inbox = Column(
       children: <Widget>[
-        if (backend.notifications.isNotEmpty)
+        if (inboxState.notifications.isNotEmpty)
           _NotificationFilters(
             selected: _filter,
             onSelected: (value) => setState(() => _filter = value),
@@ -182,7 +194,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           child: RefreshIndicator(
             color: BaseColors.primary,
             onRefresh: _refresh,
-            child: _buildBody(backend, filteredNotifications, isDark, t),
+            child: _buildBody(inboxState, filteredNotifications, isDark, t),
           ),
         ),
       ],
@@ -218,9 +230,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     ],
                   ),
                 ),
-                if (backend.notificationUnreadCount > 0)
+                if (inboxState.unreadCount > 0)
                   TextButton(
-                    onPressed: backend.notificationsLoading
+                    onPressed: inboxState.loading
                         ? null
                         : () => unawaited(_markAllRead()),
                     child: Text(t.markAllReadShort),
@@ -240,9 +252,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
         ),
         actions: <Widget>[
-          if (backend.notificationUnreadCount > 0)
+          if (inboxState.unreadCount > 0)
             IconButton(
-              onPressed: backend.notificationsLoading
+              onPressed: inboxState.loading
                   ? null
                   : () => unawaited(_markAllRead()),
               tooltip: t.markAllRead,
@@ -256,18 +268,39 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
+  /// The inbox under the current filter, recomputed only when the list or
+  /// the filter changes.
+  List<ClientNotificationItemModel> _filtered(
+    List<ClientNotificationItemModel> notifications,
+  ) {
+    if (identical(_filteredSource, notifications) && _filteredBy == _filter) {
+      return _filteredNotifications;
+    }
+    _filteredSource = notifications;
+    _filteredBy = _filter;
+    return _filteredNotifications = notifications
+        .where((notification) {
+          return switch (_filter) {
+            _NotificationFilter.all => true,
+            _NotificationFilter.orders => _isOrderNotification(notification),
+            _NotificationFilter.promotions => notification.opensPromotions,
+          };
+        })
+        .toList(growable: false);
+  }
+
   Widget _buildBody(
-    MobileBackendController backend,
+    _InboxState inbox,
     List<ClientNotificationItemModel> notifications,
     bool isDark,
     L t,
   ) {
-    if (backend.notificationsLoading && backend.notifications.isEmpty) {
+    if (inbox.loading && inbox.notifications.isEmpty) {
       return const _NotificationLoadingList();
     }
 
-    final failure = backend.notificationsFailure;
-    if (failure != null && backend.notifications.isEmpty) {
+    final failure = inbox.failure;
+    if (failure != null && inbox.notifications.isEmpty) {
       return ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(24),
@@ -281,7 +314,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       );
     }
 
-    if (backend.notifications.isEmpty) {
+    if (inbox.notifications.isEmpty) {
       return ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(32, 120, 32, 32),

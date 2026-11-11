@@ -2,7 +2,7 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/promotio
 import 'package:enjoy_lavash_mobile/widgets/home_banner_slider.dart';
 import 'package:enjoy_lavash_mobile/widgets/banner_image_card.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/banner_model.dart';
-import 'package:enjoy_lavash_mobile/features/data/menu_catalog.dart';
+import 'support/menu_catalog.dart';
 import 'package:enjoy_lavash_mobile/features/models/menu_category.dart';
 import 'package:enjoy_lavash_mobile/features/models/menu_product.dart';
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';

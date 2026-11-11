@@ -27,15 +27,6 @@ class LEn extends L {
   String get pickup => 'Pickup';
 
   @override
-  String get specialOffer => 'Special Offer';
-
-  @override
-  String get specialOfferDesc => '20% off on lavash until end of week';
-
-  @override
-  String get specialOfferCta => '🔥 Order now';
-
-  @override
   String get cartEmpty => 'Cart is empty';
 
   @override
@@ -89,12 +80,6 @@ class LEn extends L {
 
   @override
   String get menuLoading => 'Preparing the menu...';
-
-  @override
-  String get searchAgain => 'Clear search';
-
-  @override
-  String get orderCreated => 'Order created';
 
   @override
   String get orderSuccessTitle => 'We\'ve got your order!';
@@ -157,52 +142,10 @@ class LEn extends L {
   String get darkTheme => 'Dark';
 
   @override
-  String get loyaltyCard => 'Loyalty Card';
-
-  @override
-  String get accumulatedPoints => 'Accumulated points';
-
-  @override
-  String get showCodeForPoints => 'Show the code at checkout to earn points';
-
-  @override
-  String get personalInfo => 'Personal Info';
-
-  @override
-  String get email => 'Email';
-
-  @override
   String get address => 'Address';
 
   @override
-  String get customerId => 'Customer ID';
-
-  @override
   String get orderHistory => 'Order History';
-
-  @override
-  String get completed => 'Completed';
-
-  @override
-  String get cashbackSystem => 'Cashback System';
-
-  @override
-  String get perOrder => 'Per order';
-
-  @override
-  String get perOrderValue => 'Rewards follow active offers';
-
-  @override
-  String get onePointEquals => '1 point equals';
-
-  @override
-  String get onePointValue => '1 so\'m';
-
-  @override
-  String get canSpend => 'Can spend';
-
-  @override
-  String get canSpendValue => 'Up to 50% of order';
 
   @override
   String get shareApp => 'Share App';
@@ -225,25 +168,10 @@ class LEn extends L {
   String get logoutFailed => 'Could not log out. Try again.';
 
   @override
-  String get notFoundTitle => 'This page is under development';
-
-  @override
-  String get goHome => 'Go Home';
-
-  @override
   String get emptyList => 'List is empty';
 
   @override
-  String get confirm => 'Confirm';
-
-  @override
-  String get yes => 'Yes';
-
-  @override
   String get no => 'No';
-
-  @override
-  String get save => 'Save';
 
   @override
   String get skip => 'Skip';
@@ -261,31 +189,7 @@ class LEn extends L {
   String get statusFailed => 'Failed';
 
   @override
-  String get statusInProgress => 'In Progress';
-
-  @override
   String get statusNew => 'New';
-
-  @override
-  String get statusArchive => 'Archive';
-
-  @override
-  String get statusNeedAccept => 'Time to accept the goods!';
-
-  @override
-  String get tableNumber => 'No.';
-
-  @override
-  String get tableName => 'Name';
-
-  @override
-  String get tableSent => 'Sent';
-
-  @override
-  String get tableReceived => 'Recv.';
-
-  @override
-  String get tableDifference => 'Diff.';
 
   @override
   String get status => 'Status:';
@@ -324,31 +228,13 @@ class LEn extends L {
   String get tapToSelectAddress => 'Tap to select address';
 
   @override
-  String get locationPermissionDenied => 'Location permission denied';
-
-  @override
-  String get enableLocation => 'Enable location';
-
-  @override
-  String get currentLocation => 'Current location';
-
-  @override
   String get selectBranch => 'Select Branch';
-
-  @override
-  String get branchWorkingHours => 'Working hours';
 
   @override
   String get menu => 'Menu';
 
   @override
   String get settings => 'Settings';
-
-  @override
-  String get aboutUs => 'About Us';
-
-  @override
-  String get contactUs => 'Contact Us';
 
   @override
   String get authorization => 'Authorization';
@@ -365,9 +251,6 @@ class LEn extends L {
   @override
   String get otpSentMessage =>
       'We sent a confirmation code to your phone number.';
-
-  @override
-  String get signInToCheckout => 'Sign in to continue checkout from your cart.';
 
   @override
   String get authWelcomeSubtitle =>
@@ -449,14 +332,7 @@ class LEn extends L {
   }
 
   @override
-  String get copyCode => 'Copy code';
-
-  @override
   String get close => 'Close';
-
-  @override
-  String get orderCreatedPaymentOnline =>
-      'Order created. Complete payment online.';
 
   @override
   String get orderCreatedPaymentPageOpenFailed =>
@@ -511,9 +387,6 @@ class LEn extends L {
 
   @override
   String get orderPreview => 'Order preview';
-
-  @override
-  String get orderDetails => 'Order details';
 
   @override
   String get viewOrderDetails => 'View order details';
@@ -596,26 +469,6 @@ class LEn extends L {
   String get errorGenericBody => 'Please try again in a moment.';
 
   @override
-  String get retry => 'Retry';
-
-  @override
-  String get searchProducts => 'Search products';
-
-  @override
-  String get clearSearch => 'Clear search';
-
-  @override
-  String searchProductsResultCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count results',
-      one: '1 result',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get noProductsFound => 'No products found';
 
   @override
@@ -687,11 +540,6 @@ class LEn extends L {
   String get allPromotions => 'All';
 
   @override
-  String activePromoCount(int count) {
-    return '$count active';
-  }
-
-  @override
   String get noAssignedPromotions => 'No active promo codes';
 
   @override
@@ -757,10 +605,6 @@ class LEn extends L {
       'Receive relevant promo codes and discount updates';
 
   @override
-  String get marketingUpdateFailed =>
-      'Could not update promotional notifications';
-
-  @override
   String get appearance => 'Appearance';
 
   @override
@@ -768,12 +612,6 @@ class LEn extends L {
 
   @override
   String get language => 'Language';
-
-  @override
-  String get languageSubtitle => 'Use the app in your preferred language';
-
-  @override
-  String get seeAllOrders => 'See all orders';
 
   @override
   String get actions => 'Actions';
@@ -834,21 +672,6 @@ class LEn extends L {
 
   @override
   String get appVersion => 'App version';
-
-  @override
-  String get notificationCheckingPermission =>
-      'Checking notification permission';
-
-  @override
-  String get notificationsUnavailable =>
-      'Notifications are not available on this device';
-
-  @override
-  String get notificationsEnabled => 'Order updates and offers are enabled';
-
-  @override
-  String get notificationsSubtitleDefault =>
-      'Receive order updates and special offers';
 
   @override
   String get profilePointsLabel => 'MY POINTS';
@@ -982,6 +805,9 @@ class LEn extends L {
   String get retryPaymentFailed => 'Could not retry payment.';
 
   @override
+  String get orderDetails => 'Order details';
+
+  @override
   String get currentStatus => 'Current status';
 
   @override
@@ -1106,9 +932,6 @@ class LEn extends L {
   String get useMaximum => 'Use maximum';
 
   @override
-  String get clearPoints => 'Clear';
-
-  @override
   String get continueWithoutPoints => 'Continue without points';
 
   @override
@@ -1173,6 +996,9 @@ class LEn extends L {
   String get transactionBalanceUpdate => 'Balance update';
 
   @override
+  String get retry => 'Retry';
+
+  @override
   String get tabHome => 'Home';
 
   @override
@@ -1192,13 +1018,7 @@ class LEn extends L {
   }
 
   @override
-  String get orderContextDelivery => 'Delivery';
-
-  @override
-  String get orderContextPickup => 'Pickup';
-
-  @override
-  String get orderContextChoose => 'Choose an address or branch';
+  String get save => 'Save';
 
   @override
   String get markAllReadShort => 'Read all';

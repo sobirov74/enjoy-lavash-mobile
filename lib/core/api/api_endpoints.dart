@@ -22,22 +22,12 @@ class ApiEndpoints {
   static const clientPromotions = "/clients/me/promotions";
   static const clientLoyaltyWallet = "/clients/me/loyalty/wallet";
   static const clientLoyaltyTransactions = "/clients/me/loyalty/transactions";
-  static const filesUpload = "/files/upload";
-  static const filesDelete = "/files/delete";
-
-  static String catalogProduct(String idOrSlug) =>
-      "/catalog/products/${Uri.encodeComponent(idOrSlug)}";
-
-  static String banner(String id) => "/banners/${Uri.encodeComponent(id)}";
 
   static String branchOrderingStatus(String branchId) =>
       "$branches/${Uri.encodeComponent(branchId)}/ordering-status";
 
   static String clientAddress(String id) =>
       "$clientAddresses/${Uri.encodeComponent(id)}";
-
-  static String clientOrderCancel(String id) =>
-      "$clientOrders/${Uri.encodeComponent(id)}/cancel";
 
   static String clientOrderRetryPayment(String id) =>
       "$clientOrders/${Uri.encodeComponent(id)}/retry-payment";

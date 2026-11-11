@@ -1,3 +1,4 @@
+import 'package:enjoy_lavash_mobile/features/cart/presentation/cart_controller.dart';
 import 'package:enjoy_lavash_mobile/app/location_controller.dart';
 import 'package:enjoy_lavash_mobile/core/services/yandex_geocoder_service.dart';
 import 'package:enjoy_lavash_mobile/features/models/cart_line.dart';
@@ -406,13 +407,20 @@ class _PackagingMenu extends StatefulWidget {
 class _PackagingMenuState extends State<_PackagingMenu> {
   final location = LocationController(YandexGeocoderService())
     ..setFromMap(latitude: 41.31, longitude: 69.28, address: 'Test address');
+  final cart = CartController(persist: (_) async {});
   int quantity = 0;
   int arrivals = 0;
   final selections = <CartSelection>[];
 
+  void _addToCart(CartSelection selection) {
+    final current = cart.lineFor(selection.key)?.quantity ?? 0;
+    cart.put(selection.copyWith(quantity: current + selection.quantity));
+  }
+
   @override
   void dispose() {
     location.dispose();
+    cart.dispose();
     super.dispose();
   }
 
@@ -431,13 +439,16 @@ class _PackagingMenuState extends State<_PackagingMenu> {
               selectedCategoryIndex: 0,
               categories: const ['Lavash'],
               products: [widget.product],
-              promotions: const [],
               orderType: MobileOrderType.delivery,
               selectedBranch: null,
               onCategorySelected: (_) {},
-              onAddToCart: (_) => setState(() => quantity++),
+              onAddToCart: (product) {
+                _addToCart(CartSelection(productId: product.id, quantity: 1));
+                setState(() => quantity++);
+              },
               onAddConfiguredToCart: (selection) {
                 selections.add(selection);
+                _addToCart(selection);
                 setState(() => quantity += selection.quantity);
               },
               onDecreaseFromCart: (_) {},
@@ -447,9 +458,7 @@ class _PackagingMenuState extends State<_PackagingMenu> {
               onBranchSelected: (_) async {},
               onRetryMenu: () {},
               onRefresh: () async {},
-              cartCount: quantity,
-              cartTotal: widget.product.price * quantity,
-              cartQuantities: {widget.product.id: quantity},
+              cart: cart,
             ),
           ),
         ),

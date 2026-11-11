@@ -27,15 +27,6 @@ class LRu extends L {
   String get pickup => 'Самовывоз';
 
   @override
-  String get specialOffer => 'Специальное предложение';
-
-  @override
-  String get specialOfferDesc => '20% скидка на лаваши до конца недели';
-
-  @override
-  String get specialOfferCta => '🔥 Успейте заказать';
-
-  @override
   String get cartEmpty => 'Корзина пуста';
 
   @override
@@ -83,12 +74,6 @@ class LRu extends L {
 
   @override
   String get menuLoading => 'Готовим меню...';
-
-  @override
-  String get searchAgain => 'Очистить поиск';
-
-  @override
-  String get orderCreated => 'Заказ создан';
 
   @override
   String get orderSuccessTitle => 'Заказ принят!';
@@ -154,53 +139,10 @@ class LRu extends L {
   String get darkTheme => 'Тёмная';
 
   @override
-  String get loyaltyCard => 'Карта лояльности';
-
-  @override
-  String get accumulatedPoints => 'Накопленные баллы';
-
-  @override
-  String get showCodeForPoints =>
-      'Покажите код при оплате для начисления баллов';
-
-  @override
-  String get personalInfo => 'Личные данные';
-
-  @override
-  String get email => 'Email';
-
-  @override
   String get address => 'Адрес';
 
   @override
-  String get customerId => 'ID клиента';
-
-  @override
   String get orderHistory => 'История заказов';
-
-  @override
-  String get completed => 'Выполнен';
-
-  @override
-  String get cashbackSystem => 'Система кэшбэка';
-
-  @override
-  String get perOrder => 'За каждый заказ';
-
-  @override
-  String get perOrderValue => 'Начисление зависит от активных акций';
-
-  @override
-  String get onePointEquals => '1 балл равен';
-
-  @override
-  String get onePointValue => '1 so\'m';
-
-  @override
-  String get canSpend => 'Можно потратить';
-
-  @override
-  String get canSpendValue => 'До 50% заказа';
 
   @override
   String get shareApp => 'Поделиться приложением';
@@ -223,25 +165,10 @@ class LRu extends L {
   String get logoutFailed => 'Не удалось выйти. Попробуйте еще раз.';
 
   @override
-  String get notFoundTitle => 'Эта страница в стадии разработки';
-
-  @override
-  String get goHome => 'На главную';
-
-  @override
   String get emptyList => 'Список пуст';
 
   @override
-  String get confirm => 'Подтвердить';
-
-  @override
-  String get yes => 'Да';
-
-  @override
   String get no => 'Нет';
-
-  @override
-  String get save => 'Сохранить';
 
   @override
   String get skip => 'Пропустить';
@@ -259,31 +186,7 @@ class LRu extends L {
   String get statusFailed => 'Отменен';
 
   @override
-  String get statusInProgress => 'В процессе';
-
-  @override
   String get statusNew => 'Новый';
-
-  @override
-  String get statusArchive => 'Архив';
-
-  @override
-  String get statusNeedAccept => 'Пора принять товар!';
-
-  @override
-  String get tableNumber => '№';
-
-  @override
-  String get tableName => 'Наим.';
-
-  @override
-  String get tableSent => 'Отпр.';
-
-  @override
-  String get tableReceived => 'Получ.';
-
-  @override
-  String get tableDifference => 'Разн.';
 
   @override
   String get status => 'Статус:';
@@ -322,31 +225,13 @@ class LRu extends L {
   String get tapToSelectAddress => 'Нажмите для выбора адреса';
 
   @override
-  String get locationPermissionDenied => 'Доступ к геолокации запрещён';
-
-  @override
-  String get enableLocation => 'Включить геолокацию';
-
-  @override
-  String get currentLocation => 'Текущее местоположение';
-
-  @override
   String get selectBranch => 'Выберите филиал';
-
-  @override
-  String get branchWorkingHours => 'Время работы';
 
   @override
   String get menu => 'Меню';
 
   @override
   String get settings => 'Настройки';
-
-  @override
-  String get aboutUs => 'О нас';
-
-  @override
-  String get contactUs => 'Связаться с нами';
 
   @override
   String get authorization => 'Авторизация';
@@ -362,9 +247,6 @@ class LRu extends L {
 
   @override
   String get otpSentMessage => 'Мы отправили код подтверждения на ваш номер.';
-
-  @override
-  String get signInToCheckout => 'Войдите, чтобы оформить заказ из корзины.';
 
   @override
   String get authWelcomeSubtitle =>
@@ -446,14 +328,7 @@ class LRu extends L {
   }
 
   @override
-  String get copyCode => 'Скопировать код';
-
-  @override
   String get close => 'Закрыть';
-
-  @override
-  String get orderCreatedPaymentOnline =>
-      'Заказ создан. Завершите онлайн-оплату.';
 
   @override
   String get orderCreatedPaymentPageOpenFailed =>
@@ -508,9 +383,6 @@ class LRu extends L {
 
   @override
   String get orderPreview => 'Расчет заказа';
-
-  @override
-  String get orderDetails => 'Детали заказа';
 
   @override
   String get viewOrderDetails => 'Посмотреть детали заказа';
@@ -593,20 +465,6 @@ class LRu extends L {
   String get errorGenericBody => 'Попробуйте еще раз через несколько секунд.';
 
   @override
-  String get retry => 'Повторить';
-
-  @override
-  String get searchProducts => 'Поиск товаров';
-
-  @override
-  String get clearSearch => 'Очистить поиск';
-
-  @override
-  String searchProductsResultCount(int count) {
-    return 'Найдено: $count';
-  }
-
-  @override
   String get noProductsFound => 'Товары не найдены';
 
   @override
@@ -678,11 +536,6 @@ class LRu extends L {
   String get allPromotions => 'Все';
 
   @override
-  String activePromoCount(int count) {
-    return 'Активных: $count';
-  }
-
-  @override
   String get noAssignedPromotions => 'Нет активных промокодов';
 
   @override
@@ -748,10 +601,6 @@ class LRu extends L {
       'Получайте подходящие промокоды и новости о скидках';
 
   @override
-  String get marketingUpdateFailed =>
-      'Не удалось обновить настройку рекламных уведомлений';
-
-  @override
   String get appearance => 'Оформление';
 
   @override
@@ -759,12 +608,6 @@ class LRu extends L {
 
   @override
   String get language => 'Язык';
-
-  @override
-  String get languageSubtitle => 'Используйте приложение на удобном языке';
-
-  @override
-  String get seeAllOrders => 'Все заказы';
 
   @override
   String get actions => 'Действия';
@@ -825,21 +668,6 @@ class LRu extends L {
 
   @override
   String get appVersion => 'Версия приложения';
-
-  @override
-  String get notificationCheckingPermission =>
-      'Проверяем доступ к уведомлениям';
-
-  @override
-  String get notificationsUnavailable =>
-      'Уведомления недоступны на этом устройстве';
-
-  @override
-  String get notificationsEnabled => 'Статусы заказов и акции включены';
-
-  @override
-  String get notificationsSubtitleDefault =>
-      'Получайте статусы заказов и специальные предложения';
 
   @override
   String get profilePointsLabel => 'МОИ БАЛЛЫ';
@@ -977,6 +805,9 @@ class LRu extends L {
   String get retryPaymentFailed => 'Не удалось повторить оплату.';
 
   @override
+  String get orderDetails => 'Детали заказа';
+
+  @override
   String get currentStatus => 'Текущий статус';
 
   @override
@@ -1102,9 +933,6 @@ class LRu extends L {
   String get useMaximum => 'Использовать максимум';
 
   @override
-  String get clearPoints => 'Очистить';
-
-  @override
   String get continueWithoutPoints => 'Продолжить без баллов';
 
   @override
@@ -1168,6 +996,9 @@ class LRu extends L {
   String get transactionBalanceUpdate => 'Изменение баланса';
 
   @override
+  String get retry => 'Повторить';
+
+  @override
   String get tabHome => 'Главная';
 
   @override
@@ -1187,13 +1018,7 @@ class LRu extends L {
   }
 
   @override
-  String get orderContextDelivery => 'Доставка';
-
-  @override
-  String get orderContextPickup => 'Самовывоз';
-
-  @override
-  String get orderContextChoose => 'Выберите адрес или филиал';
+  String get save => 'Сохранить';
 
   @override
   String get markAllReadShort => 'Прочитать все';

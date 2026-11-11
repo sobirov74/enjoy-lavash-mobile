@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:enjoy_lavash_mobile/core/error/failures.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/loyalty_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/presentation/mobile_backend_controller.dart';
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
@@ -11,6 +12,17 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:enjoy_lavash_mobile/utils/format_cache.dart';
+
+/// What the wallet screen renders from the backend controller.
+typedef _WalletState = ({
+  LoyaltyWalletModel? wallet,
+  bool walletLoading,
+  Failure? walletFailure,
+  List<LoyaltyTransactionModel> transactions,
+  bool transactionsLoading,
+  bool transactionsLoadingMore,
+  Failure? transactionsFailure,
+});
 
 class LoyaltyWalletScreen extends StatefulWidget {
   const LoyaltyWalletScreen({super.key});
@@ -74,11 +86,23 @@ class _LoyaltyWalletScreenState extends State<LoyaltyWalletScreen> {
   Widget build(BuildContext context) {
     final t = L.of(context);
     final theme = Theme.of(context);
-    final backend = context.watch<MobileBackendController>();
-    final wallet = backend.loyaltyWallet;
-    final transactions = backend.loyaltyTransactions;
+    // Only the wallet and its history: other backend updates (orders,
+    // notifications, catalog) do not rebuild this screen.
+    final state = context.select<MobileBackendController, _WalletState>(
+      (backend) => (
+        wallet: backend.loyaltyWallet,
+        walletLoading: backend.loyaltyWalletLoading,
+        walletFailure: backend.loyaltyWalletFailure,
+        transactions: backend.loyaltyTransactions,
+        transactionsLoading: backend.loyaltyTransactionsLoading,
+        transactionsLoadingMore: backend.loyaltyTransactionsLoadingMore,
+        transactionsFailure: backend.loyaltyTransactionsFailure,
+      ),
+    );
+    final wallet = state.wallet;
+    final transactions = state.transactions;
     final isInitialLoading =
-        wallet == null && backend.loyaltyWalletLoading && transactions.isEmpty;
+        wallet == null && state.walletLoading && transactions.isEmpty;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -106,7 +130,7 @@ class _LoyaltyWalletScreenState extends State<LoyaltyWalletScreen> {
                     sliver: SliverToBoxAdapter(
                       child: wallet == null
                           ? AnimatedErrorMessage(
-                              failure: backend.loyaltyWalletFailure,
+                              failure: state.walletFailure,
                               onRetry: () => unawaited(_refresh()),
                             )
                           : _WalletOverview(wallet: wallet),
@@ -130,18 +154,20 @@ class _LoyaltyWalletScreenState extends State<LoyaltyWalletScreen> {
                       ),
                     ),
                   ),
-                  if (backend.loyaltyTransactionsLoading &&
-                      transactions.isEmpty)
+                  if (state.transactionsLoading && transactions.isEmpty)
                     const SliverToBoxAdapter(child: _HistorySkeleton())
-                  else if (backend.loyaltyTransactionsFailure != null &&
+                  else if (state.transactionsFailure != null &&
                       transactions.isEmpty)
                     SliverPadding(
                       padding: const EdgeInsets.all(16),
                       sliver: SliverToBoxAdapter(
                         child: AnimatedErrorMessage(
-                          failure: backend.loyaltyTransactionsFailure,
-                          onRetry: () =>
-                              unawaited(backend.refreshLoyaltyTransactions()),
+                          failure: state.transactionsFailure,
+                          onRetry: () => unawaited(
+                            context
+                                .read<MobileBackendController>()
+                                .refreshLoyaltyTransactions(),
+                          ),
                         ),
                       ),
                     )
@@ -162,7 +188,7 @@ class _LoyaltyWalletScreenState extends State<LoyaltyWalletScreen> {
                         separatorBuilder: (_, _) => const SizedBox(height: 8),
                       ),
                     ),
-                  if (backend.loyaltyTransactionsLoadingMore)
+                  if (state.transactionsLoadingMore)
                     const SliverToBoxAdapter(
                       child: Padding(
                         padding: EdgeInsets.all(20),
@@ -174,15 +200,18 @@ class _LoyaltyWalletScreenState extends State<LoyaltyWalletScreen> {
                         ),
                       ),
                     ),
-                  if (backend.loyaltyTransactionsFailure != null &&
+                  if (state.transactionsFailure != null &&
                       transactions.isNotEmpty &&
-                      !backend.loyaltyTransactionsLoadingMore)
+                      !state.transactionsLoadingMore)
                     SliverPadding(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                       sliver: SliverToBoxAdapter(
                         child: OutlinedButton.icon(
-                          onPressed: () =>
-                              unawaited(backend.loadMoreLoyaltyTransactions()),
+                          onPressed: () => unawaited(
+                            context
+                                .read<MobileBackendController>()
+                                .loadMoreLoyaltyTransactions(),
+                          ),
                           icon: const Icon(Icons.refresh_rounded),
                           label: TypographyText(t.retry),
                         ),

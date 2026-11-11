@@ -4,12 +4,10 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/address_
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/assigned_promotion_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/app_version_policy_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/auth_models.dart';
-import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/branch_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/cart_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/catalog_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/client_notification_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/client_profile_model.dart';
-import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/file_upload_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/loyalty_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/order_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/ordering_status_model.dart';
@@ -36,8 +34,6 @@ abstract class MobileBackendRepository {
     String? language,
   });
 
-  Future<Result<List<BranchModel>>> getBranches({String language = 'ru'});
-
   Future<Result<OrderingStatusModel>> getBranchOrderingStatus({
     required String branchId,
   });
@@ -47,17 +43,7 @@ abstract class MobileBackendRepository {
     String? branchId,
   });
 
-  Future<Result<CatalogProductModel>> getCatalogProduct({
-    required String idOrSlug,
-    String language = 'ru',
-  });
-
   Future<Result<List<BannerModel>>> getActiveBanners({String language = 'uz'});
-
-  Future<Result<BannerModel>> getBanner({
-    required String id,
-    String language = 'uz',
-  });
 
   Future<Result<List<PromotionModel>>> getActivePromotions({
     String language = 'ru',
@@ -103,11 +89,6 @@ abstract class MobileBackendRepository {
 
   Future<Result<CustomerOrderModel>> retryOrderPayment({required String id});
 
-  Future<Result<CustomerOrderModel?>> cancelOrder({
-    required String id,
-    required String reason,
-  });
-
   Future<Result<ClientNotificationInboxModel>> getNotifications({
     int limit = 50,
     int offset = 0,
@@ -130,8 +111,4 @@ abstract class MobileBackendRepository {
     bool includeAll = false,
     String language = 'uz',
   });
-
-  Future<Result<FileUploadResultModel>> uploadFile(FileUploadRequest request);
-
-  Future<Result<void>> deleteFile({required String filename});
 }

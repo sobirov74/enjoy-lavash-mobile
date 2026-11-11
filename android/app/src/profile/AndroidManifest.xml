@@ -4,6 +4,7 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
-
-    <application android:usesCleartextTraffic="true" />
+    <!-- Cleartext traffic comes from the `usesCleartextTraffic` placeholder in
+         app/build.gradle.kts (debug only). Declaring it here as well made the
+         manifest merge fail for every profile build. -->
 </manifest>

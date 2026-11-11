@@ -82,19 +82,4 @@ class CartStorage {
     await preferences.setString(_linesStorageKey, jsonEncode(sanitized));
     await preferences.remove(_storageKey);
   }
-
-  static Future<void> save(Map<String, int> cart) async {
-    final preferences = await SharedPreferences.getInstance();
-    final sanitized = <String, int>{
-      for (final entry in cart.entries)
-        if (entry.key.isNotEmpty && entry.value > 0) entry.key: entry.value,
-    };
-
-    await preferences.remove(_linesStorageKey);
-    if (sanitized.isEmpty) {
-      await preferences.remove(_storageKey);
-      return;
-    }
-    await preferences.setString(_storageKey, jsonEncode(sanitized));
-  }
 }

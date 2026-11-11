@@ -2,7 +2,7 @@ import 'package:enjoy_lavash_mobile/core/navigation/app_deep_link.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/banner_model.dart';
 import 'package:enjoy_lavash_mobile/theme/app_design_tokens.dart';
 import 'package:enjoy_lavash_mobile/widgets/banner_image_card.dart';
-import 'package:enjoy_lavash_mobile/widgets/promo_slider.dart';
+import 'package:enjoy_lavash_mobile/widgets/promotion_details_sheet.dart';
 import 'package:flutter/material.dart';
 
 class HomeBannerSlider extends StatefulWidget {

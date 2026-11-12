@@ -95,6 +95,8 @@ extension _MobileBackendBootstrapController on MobileBackendController {
   Future<void> _bootstrap({required String language, String? branchId}) async {
     if (_status == MobileBackendStatus.loading) return;
 
+    _lastBootstrapLanguage = language;
+    _lastBootstrapBranchId = branchId;
     final settled = Completer<void>();
     _bootstrapInFlight = settled;
     try {
@@ -124,7 +126,6 @@ extension _MobileBackendBootstrapController on MobileBackendController {
     switch (result) {
       case Success(:final data):
         _branches = data.branches;
-        _promotions = data.promotions;
         _banners = data.banners;
         if (paymentMethodsVersion == _paymentMethodsRequestVersion) {
           _paymentMethods = data.paymentMethods;
@@ -134,10 +135,15 @@ extension _MobileBackendBootstrapController on MobileBackendController {
           _paymentMethodsFailure = null;
           _paymentMethodsLoading = false;
         }
-        if (catalogVersion == _catalogRequestVersion) {
+        // A newer catalog request (the customer picked a branch meanwhile)
+        // replaces this one when it answers. Until then, and if it fails,
+        // the fresh default menu must not lose to the saved one.
+        if (catalogVersion == _catalogRequestVersion || _showingCachedContent) {
           _applyCatalog(data.catalog);
-          _markNetworkContent();
         }
+        // Branches and banners are from the network now, whichever catalog
+        // is on screen: saved content must not come back over them.
+        _markNetworkContent();
         // A login, logout or expiry while this request was in flight owns the
         // customer state now; only the public data above is applied.
         if (_isCurrentSession(generation)) {
@@ -220,7 +226,6 @@ extension _MobileBackendBootstrapController on MobileBackendController {
     // applies its own catalog.
     if (content == null || _networkContentApplied || _disposed) return;
     _branches = content.branches;
-    _promotions = content.promotions;
     _banners = content.banners;
     _applyCatalog(content.catalog);
     _showingCachedContent = true;

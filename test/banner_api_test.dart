@@ -95,7 +95,6 @@ void main() {
       addTearDown(controller.dispose);
       await controller.bootstrap(language: 'en');
       expect(controller.status, MobileBackendStatus.loaded);
-      expect(controller.promotions, isEmpty);
       expect(controller.banners.single.title, '20% off');
       await controller.bootstrap(language: 'en');
       expect(bannerRequests, 2);

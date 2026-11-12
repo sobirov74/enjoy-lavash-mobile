@@ -509,6 +509,9 @@ class LRu extends L {
   String get pushReminderLater => 'Не сейчас';
 
   @override
+  String get pushReminderNever => 'Больше не напоминать';
+
+  @override
   String get notifications => 'Уведомления';
 
   @override

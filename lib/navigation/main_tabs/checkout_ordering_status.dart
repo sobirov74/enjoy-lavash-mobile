@@ -183,17 +183,33 @@ class _OrderingAvailabilityContent extends StatelessWidget {
     BuildContext context,
     OrderingAvailabilityModel availability,
   ) {
-    final t = L.of(context);
-    final nextOpening = availability.nextOpeningAt;
-    if (nextOpening == null) return t.orderingClosedAction;
-    final locale = Localizations.localeOf(context).languageCode;
-    final formatted = dateFormat(
-      locale,
-      'd MMM, HH:mm',
-      (locale) => DateFormat('d MMM, HH:mm', locale),
-    ).format(nextOpening.toLocal());
-    return '${t.orderingNextOpening(formatted)} · ${availability.timezone}';
+    return _nextOpeningText(
+      context,
+      nextOpeningAt: availability.nextOpeningAt,
+      timezone: availability.timezone,
+    );
   }
+}
+
+/// "Opens (day, time)", with the branch's time zone when it is known; the
+/// general "ordering is closed" text when no opening time is known.
+String _nextOpeningText(
+  BuildContext context, {
+  required DateTime? nextOpeningAt,
+  required String timezone,
+}) {
+  final t = L.of(context);
+  if (nextOpeningAt == null) return t.orderingClosedAction;
+  final locale = Localizations.localeOf(context).languageCode;
+  final formatted = dateFormat(
+    locale,
+    'd MMM, HH:mm',
+    (locale) => DateFormat('d MMM, HH:mm', locale),
+  ).format(nextOpeningAt.toLocal());
+  final zone = timezone.trim();
+  return zone.isEmpty
+      ? t.orderingNextOpening(formatted)
+      : '${t.orderingNextOpening(formatted)} · $zone';
 }
 
 class _OrderingAvailabilityRow extends StatelessWidget {

@@ -40,8 +40,15 @@ class LocationController extends ChangeNotifier {
   String _comment = '';
   String get comment => _comment;
 
-  /// The point picked on this device with its details, for checkout; null
-  /// until a location is known.
+  /// Counts the points the customer chose themselves (map, address search)
+  /// and sign-outs. A position lookup that started before one of these must
+  /// not replace it when it finishes.
+  int _pointRevision = 0;
+
+  /// The point known on this device with its details, for checkout: one the
+  /// customer picked, or the phone's position. Its coordinates and address
+  /// always describe the same place; the phone's position has no address
+  /// when the lookup failed. Null until a location is known.
   DeliveryPoint? get deliveryPoint {
     final latitude = _latitude;
     final longitude = _longitude;
@@ -65,7 +72,14 @@ class LocationController extends ChangeNotifier {
     return parts.join(', ');
   }
 
-  Future<void> requestPermissionAndLocate() async {
+  /// Asks for location permission when it is undecided, then finds the
+  /// current position and its address. [onPermissionAnswered] runs once the
+  /// permission is known to be granted, before the lookup (which can take
+  /// ten seconds), for callers that must not show another permission dialog
+  /// on top of this one but need not wait for the position.
+  Future<void> requestPermissionAndLocate({
+    VoidCallback? onPermissionAnswered,
+  }) async {
     if (_status == LocationStatus.loading) return;
 
     _setStatus(LocationStatus.loading);
@@ -91,6 +105,7 @@ class LocationController extends ChangeNotifier {
         return;
       }
 
+      onPermissionAnswered?.call();
       final didLocate = await _fetchCurrentLocation();
       if (didLocate) {
         _setStatus(LocationStatus.granted);
@@ -102,28 +117,49 @@ class LocationController extends ChangeNotifier {
     }
   }
 
-  Future<bool> _fetchCurrentLocation() async {
+  Future<bool> _fetchCurrentLocation() => locateAndApply();
+
+  /// Where the phone is now. Tests replace it.
+  @protected
+  Future<({double latitude, double longitude})> locatePhone() async {
+    final position = await Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        timeLimit: Duration(seconds: 10),
+      ),
+    );
+    return (latitude: position.latitude, longitude: position.longitude);
+  }
+
+  /// Finds the phone's position and its address and makes them the current
+  /// point, keeping coordinates and address about the same place:
+  /// - a point the customer picked while this ran stays (their choice wins
+  ///   over a lookup that started earlier);
+  /// - when the address lookup fails and an address is already on screen,
+  ///   that address stays with its own coordinates: a position must never
+  ///   be sent under another place's name;
+  /// - when it fails and there is no address, only the coordinates are kept
+  ///   (checkout then prefers a saved address, see `resolveDeliveryTarget`).
+  @visibleForTesting
+  Future<bool> locateAndApply() async {
+    final revision = _pointRevision;
     try {
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 10),
-        ),
-      );
-
-      _latitude = position.latitude;
-      _longitude = position.longitude;
-
-      final result = await resolveAddressName(
+      final position = await locatePhone();
+      final address = await resolveAddressName(
         latitude: position.latitude,
         longitude: position.longitude,
       );
+      if (revision != _pointRevision) return true;
 
-      if (result != null) {
-        _addressName = result.name;
-        _district = result.district;
+      if (address != null) {
+        _latitude = position.latitude;
+        _longitude = position.longitude;
+        _addressName = address.name;
+        _district = address.district;
+      } else if (_addressName.trim().isEmpty) {
+        _latitude = position.latitude;
+        _longitude = position.longitude;
       }
-
       return true;
     } catch (_) {
       _setStatus(LocationStatus.error);
@@ -132,6 +168,7 @@ class LocationController extends ChangeNotifier {
   }
 
   Future<void> setAddressFromSuggestion(SuggestionResult suggestion) async {
+    _pointRevision++;
     _addressName = suggestion.title;
     notifyListeners();
 
@@ -159,6 +196,7 @@ class LocationController extends ChangeNotifier {
     required String address,
     String district = '',
   }) {
+    _pointRevision++;
     _latitude = latitude;
     _longitude = longitude;
     _addressName = address;
@@ -234,6 +272,7 @@ class LocationController extends ChangeNotifier {
   }
 
   void clearPersonalData() {
+    _pointRevision++;
     _status = LocationStatus.initial;
     _addressName = '';
     _district = '';

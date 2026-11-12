@@ -19,26 +19,34 @@ NetworkImageProviderFactory networkImageProvider = DiskCachedNetworkImage.new;
 /// the smallest size that covers [box] (logical pixels) at
 /// [devicePixelRatio] without changing its aspect ratio (see
 /// [CoverSizedImage]). A box with an unbounded height decodes at its width.
+///
+/// Product photos keep the default [capDevicePixelRatio] (dozens are in
+/// memory at once). Banners and Home tiles pass false: they are few, and on
+/// a screen denser than [maxDecodeDevicePixelRatio] the cap would decode
+/// them below the screen's resolution.
 ImageProvider<Object> coverNetworkImage(
   String url, {
   required Size box,
   required double devicePixelRatio,
+  bool capDevicePixelRatio = true,
 }) {
   final provider = networkImageProvider(url);
   final hasWidth = box.width.isFinite && box.width > 0;
   final hasHeight = box.height.isFinite && box.height > 0;
+  int extent(double logical) => coverDecodeExtent(
+    logical,
+    devicePixelRatio,
+    capDevicePixelRatio: capDevicePixelRatio,
+  );
   if (hasWidth && hasHeight) {
     return CoverSizedImage(
       provider,
-      width: coverDecodeExtent(box.width, devicePixelRatio),
-      height: coverDecodeExtent(box.height, devicePixelRatio),
+      width: extent(box.width),
+      height: extent(box.height),
     );
   }
   if (hasWidth) {
-    return ResizeImage(
-      provider,
-      width: coverDecodeExtent(box.width, devicePixelRatio),
-    );
+    return ResizeImage(provider, width: extent(box.width));
   }
   return provider;
 }

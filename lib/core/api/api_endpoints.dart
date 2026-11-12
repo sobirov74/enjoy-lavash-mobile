@@ -6,7 +6,6 @@ class ApiEndpoints {
   static const branches = "/branches";
   static const appVersion = "/app-version";
   static const catalog = "/catalog";
-  static const activePromotions = "/promotions/active";
   static const activeBanners = "/banners/active";
   static const paymentMethods = "/payment-methods";
   static const cartPreview = "/clients/me/cart/preview";

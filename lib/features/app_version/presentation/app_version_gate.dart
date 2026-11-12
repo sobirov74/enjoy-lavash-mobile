@@ -33,6 +33,13 @@ class AppVersionGate extends StatefulWidget {
   final String languageCode;
   final Widget child;
 
+  /// Whether the update prompt covers the app right now. Sheets the app
+  /// opens by itself (reminders) wait instead of opening on top of it.
+  /// Reads the state without subscribing [context] to it.
+  static bool isPromptVisible(BuildContext context) =>
+      context.findAncestorStateOfType<_AppVersionGateState>()?._promptVisible ??
+      false;
+
   @override
   State<AppVersionGate> createState() => _AppVersionGateState();
 }
@@ -42,17 +49,36 @@ class _AppVersionGateState extends State<AppVersionGate> {
   bool _dismissed = false;
   bool _openingStore = false;
 
+  /// The loaded policy asks for an update (the prompt is on screen unless
+  /// it was dismissed).
+  bool _updateRequested = false;
+
+  bool get _promptVisible => _updateRequested && !_dismissed;
+
   @override
   void initState() {
     super.initState();
-    _policyFuture = _loadPolicy();
+    _startPolicyLoad();
+  }
+
+  void _startPolicyLoad() {
+    final load = _loadPolicy();
+    _policyFuture = load;
+    _updateRequested = false;
+    unawaited(
+      load.then((policy) {
+        if (mounted && identical(load, _policyFuture)) {
+          _updateRequested = policy != null;
+        }
+      }),
+    );
   }
 
   @override
   void didUpdateWidget(covariant AppVersionGate oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.languageCode != widget.languageCode && !_dismissed) {
-      _policyFuture = _loadPolicy();
+      _startPolicyLoad();
     }
   }
 

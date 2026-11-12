@@ -220,6 +220,7 @@
   "pushReminderAllow": "Ruxsat beriş",
   "pushReminderOpenSettings": "Sozlamalarni oçiş",
   "pushReminderLater": "Hozir emas",
+  "pushReminderNever": "Boşqa eslatmang",
   "notifications": "Bildirişnomalar",
   "notificationInbox": "Xabarlar",
   "notificationInboxSubtitle": "Yangiliklar va takliflar bir joyda",

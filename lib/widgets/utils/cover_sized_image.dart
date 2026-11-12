@@ -8,7 +8,9 @@ import 'package:flutter/painting.dart';
 /// different measurements of the same box share one decoded bitmap.
 const int coverSizeStep = 16;
 
-/// Device pixel ratios above this decode no sharper; it bounds memory.
+/// Device pixel ratios above this decode no sharper. It bounds the memory of
+/// the many product photos; the few banners and Home tiles decode at the
+/// screen's full ratio.
 const double maxDecodeDevicePixelRatio = 3;
 
 /// The decode size for an image of [intrinsicWidth] × [intrinsicHeight] that
@@ -35,10 +37,16 @@ ui.TargetImageSize coverTargetSize(
       : ui.TargetImageSize(height: boxHeight);
 }
 
-/// [logical] × [devicePixelRatio] (capped) in physical pixels, rounded up to
-/// [coverSizeStep].
-int coverDecodeExtent(double logical, double devicePixelRatio) {
-  final ratio = devicePixelRatio > maxDecodeDevicePixelRatio
+/// [logical] × [devicePixelRatio] in physical pixels, rounded up to
+/// [coverSizeStep]. The ratio is capped at [maxDecodeDevicePixelRatio]
+/// unless [capDevicePixelRatio] is false.
+int coverDecodeExtent(
+  double logical,
+  double devicePixelRatio, {
+  bool capDevicePixelRatio = true,
+}) {
+  final ratio =
+      capDevicePixelRatio && devicePixelRatio > maxDecodeDevicePixelRatio
       ? maxDecodeDevicePixelRatio
       : devicePixelRatio;
   final physical = (logical * ratio).ceil();

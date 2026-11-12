@@ -23,7 +23,6 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/json_hel
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/loyalty_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/order_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/ordering_status_model.dart';
-import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/promotion_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/entities/mobile_bootstrap.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/entities/mobile_public_content.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/repositories/mobile_backend_repository.dart';
@@ -127,7 +126,6 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
       final publicFuture = Future.wait<Object?>([
         _branchesPayload(),
         _catalogPayload(language: language, branchId: branchId),
-        _optionalPayload(_promotionsPayload),
         optionalPaymentMethods(),
         // A banner outage must not prevent browsing or ordering.
         _optionalPayload(_bannersPayload),
@@ -141,24 +139,19 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
       final branches = _parseBranches(publicData[0], language: language);
       final catalog = CatalogModel.fromJson(publicData[1], language: language);
       // Optional content: a failed or unreadable response shows as empty.
-      final promotions = _parseOptional(
-        publicData[2],
-        (payload) => _parsePromotions(payload, language: language),
-        const <PromotionModel>[],
-      );
       final banners = _parseOptional(
-        publicData[4],
+        publicData[3],
         (payload) => _parseBanners(payload, language: language),
         const <BannerModel>[],
       );
       _savePublicContent(
         language: language,
         branchId: branchId,
+        catalog: catalog,
         payloads: (
           catalog: publicData[1],
           branches: publicData[0],
-          promotions: publicData[2],
-          banners: publicData[4],
+          banners: publicData[3],
         ),
       );
       final authData = await authFuture;
@@ -166,9 +159,8 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
       return MobileBootstrap(
         branches: branches,
         catalog: catalog,
-        promotions: promotions,
         banners: banners,
-        paymentMethods: publicData[3] as List<PaymentMethodModel>,
+        paymentMethods: publicData[2] as List<PaymentMethodModel>,
         client: authData[0] as ClientProfile?,
         addresses: authData[1] as List<ClientAddress>,
         orders: authData[2] as List<CustomerOrderModel>,
@@ -219,13 +211,6 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
     String? branchId,
   }) {
     return _guard(() => _fetchCatalog(language: language, branchId: branchId));
-  }
-
-  @override
-  Future<Result<List<PromotionModel>>> getActivePromotions({
-    String language = 'ru',
-  }) {
-    return _guard(() => _fetchActivePromotions(language: language));
   }
 
   @override
@@ -526,38 +511,6 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
     return _parseBanners(await _bannersPayload(), language: language);
   }
 
-  Future<Object?> _promotionsPayload() async {
-    final response = await _dio.get(
-      ApiEndpoints.activePromotions,
-      queryParameters: {
-        if (organisationId.trim().isNotEmpty)
-          'organisationId': organisationId.trim(),
-      },
-    );
-    return response.data;
-  }
-
-  List<PromotionModel> _parsePromotions(
-    Object? payload, {
-    required String language,
-  }) {
-    return asJsonMapList(_listPayload(payload, key: 'promotions'))
-        .map(
-          (json) => PromotionModel.fromJson(
-            json,
-            language: language,
-            backendBaseUrl: _dio.options.baseUrl,
-          ),
-        )
-        .toList(growable: false);
-  }
-
-  Future<List<PromotionModel>> _fetchActivePromotions({
-    required String language,
-  }) async {
-    return _parsePromotions(await _promotionsPayload(), language: language);
-  }
-
   static Future<Object?> _optionalPayload(
     Future<Object?> Function() request,
   ) async {
@@ -585,16 +538,20 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
   String get _publicContentScope =>
       '${_dio.options.baseUrl}|${organisationId.trim()}';
 
-  /// Keeps the public payloads of a successful default bootstrap for the
-  /// next cold start. Branch-specific catalogs are not saved: a cold start
-  /// always loads the default one.
+  /// Keeps the public payloads of a default bootstrap for the next cold
+  /// start, as soon as its public part has loaded (whatever the customer's
+  /// own requests then do). Branch-specific catalogs are not saved: a cold
+  /// start always loads the default one. A menu with nothing to order (an
+  /// empty or unreadable answer) never replaces a good saved one.
   void _savePublicContent({
     required String language,
     required String? branchId,
+    required CatalogModel catalog,
     required PublicContentPayloads payloads,
   }) {
     final cache = publicContentCache;
     if (cache == null || branchId?.trim().isNotEmpty == true) return;
+    if (!catalog.products.any((product) => product.isAvailable)) return;
     unawaited(
       cache.write(
         scope: _publicContentScope,
@@ -629,20 +586,22 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
           (payload) => _parseBranches(payload, language: language),
           const <BranchModel>[],
         ),
-        promotions: _parseOptional(
-          payloads.promotions,
-          (payload) => _parsePromotions(payload, language: language),
-          const <PromotionModel>[],
-        ),
+        // A saved banner may advertise a promotion that has ended since;
+        // the server would no longer send it.
         banners: _parseOptional(
           payloads.banners,
           (payload) => _parseBanners(payload, language: language),
           const <BannerModel>[],
-        ),
+        ).where(_isStillRunning).toList(growable: false),
       );
     } catch (_) {
       return null;
     }
+  }
+
+  static bool _isStillRunning(BannerModel banner) {
+    final endsAt = banner.promotion?.endsAt;
+    return endsAt == null || endsAt.isAfter(DateTime.now());
   }
 
   Future<List<PaymentMethodModel>> _fetchPaymentMethods({

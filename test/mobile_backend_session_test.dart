@@ -106,7 +106,6 @@ void main() {
         MobileBootstrap(
           branches: const [],
           catalog: _catalog,
-          promotions: const [],
           paymentMethods: const [],
           client: _client,
           orders: [_order('COOKING')],
@@ -191,14 +190,12 @@ CustomerOrderModel _order(String status) => CustomerOrderModel.fromJson({
 final MobileBootstrap _guestBootstrap = MobileBootstrap(
   branches: const [],
   catalog: _catalog,
-  promotions: const [],
   paymentMethods: const [],
 );
 
 final MobileBootstrap _signedInBootstrap = MobileBootstrap(
   branches: const [],
   catalog: _catalog,
-  promotions: const [],
   paymentMethods: const [],
   client: _client,
 );

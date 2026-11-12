@@ -1,23 +1,21 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
 /// Raw response bodies of the public endpoints, exactly as the server sent
-/// them. Only these four fit: customer data (profile, addresses, orders,
+/// them. Only these three fit: customer data (profile, addresses, orders,
 /// tokens) cannot be stored here by construction.
 typedef PublicContentPayloads = ({
   Object? catalog,
   Object? branches,
-  Object? promotions,
   Object? banners,
 });
 
-/// The last successfully loaded public content (menu, branches, promotions,
-/// banners), kept on the device so a cold start can show it before the
-/// network answers.
+/// The last successfully loaded public content (menu, branches, banners),
+/// kept on the device so a cold start can show it before the network
+/// answers.
 ///
 /// One file in the app's cache directory. Anything unexpected — another
 /// schema, server, organisation or language, an old or oversized file,
@@ -31,13 +29,20 @@ class PublicContentCache {
        _clock = clock ?? DateTime.now;
 
   /// Bump when the stored document changes shape.
-  static const int schema = 1;
+  static const int schema = 2;
   static const String fileName = 'public_content.json';
+
+  /// Written here first and then renamed. One fixed name, so a file left by
+  /// a kill mid-write is overwritten by the next save instead of piling up.
+  static const String temporaryFileName = '$fileName.tmp';
   static const int maxBytes = 2 * 1024 * 1024;
   static const Duration maxAge = Duration(days: 14);
 
   final Future<Directory> Function() _directory;
   final DateTime Function() _clock;
+
+  /// Saves run one after another: they share the temporary file.
+  Future<void> _lastWrite = Future<void>.value();
 
   Future<File> _file() async => File('${(await _directory()).path}/$fileName');
 
@@ -66,15 +71,16 @@ class PublicContentCache {
         return null;
       }
       final savedAt = DateTime.tryParse('${document['savedAt']}');
-      if (savedAt == null || _clock().difference(savedAt) > maxAge) {
-        return null;
-      }
+      if (savedAt == null) return null;
+      final age = _clock().difference(savedAt);
+      // Saved "in the future" (a wrong clock then or now): not trusted, or
+      // it would never expire.
+      if (age.isNegative || age > maxAge) return null;
       final catalog = document['catalog'];
       if (catalog == null) return null;
       return (
         catalog: catalog,
         branches: document['branches'],
-        promotions: document['promotions'],
         banners: document['banners'],
       );
     } catch (error) {
@@ -89,29 +95,42 @@ class PublicContentCache {
     required String scope,
     required String language,
     required PublicContentPayloads payloads,
+  }) {
+    final write = _lastWrite.then(
+      (_) => _write(scope: scope, language: language, payloads: payloads),
+    );
+    _lastWrite = write;
+    return write;
+  }
+
+  Future<void> _write({
+    required String scope,
+    required String language,
+    required PublicContentPayloads payloads,
   }) async {
+    File? temporary;
     try {
-      final encoded = jsonEncode(<String, Object?>{
-        'schema': schema,
-        'scope': scope,
-        'language': language,
-        'savedAt': _clock().toUtc().toIso8601String(),
-        'catalog': payloads.catalog,
-        'branches': payloads.branches,
-        'promotions': payloads.promotions,
-        'banners': payloads.banners,
-      });
-      if (utf8.encode(encoded).length > maxBytes) return;
+      final bytes = utf8.encode(
+        jsonEncode(<String, Object?>{
+          'schema': schema,
+          'scope': scope,
+          'language': language,
+          'savedAt': _clock().toUtc().toIso8601String(),
+          'catalog': payloads.catalog,
+          'branches': payloads.branches,
+          'banners': payloads.banners,
+        }),
+      );
+      if (bytes.length > maxBytes) return;
       final file = await _file();
       // Written aside and renamed, so a kill mid-write cannot leave a torn
       // file behind.
-      final temporary = File(
-        '${file.path}.${Random().nextInt(1 << 32).toRadixString(16)}.tmp',
-      );
-      await temporary.writeAsString(encoded, flush: true);
+      temporary = File('${file.parent.path}/$temporaryFileName');
+      await temporary.writeAsBytes(bytes, flush: true);
       await temporary.rename(file.path);
     } catch (error) {
       debugPrint('Saving public content failed: ${error.runtimeType}');
+      if (temporary != null) await _deleteQuietly(temporary);
     }
   }
 

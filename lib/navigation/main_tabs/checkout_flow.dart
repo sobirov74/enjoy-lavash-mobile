@@ -3,14 +3,32 @@ part of 'package:enjoy_lavash_mobile/navigation/main_tabs.dart';
 /// Checkout: preview and order requests, the confirmation sheet, order
 /// creation with its error dialog, and the success screen.
 extension _ShellCheckout on _MainTabsState {
-  /// The point picked on this device, converted by [toInput]; null when no
-  /// point was picked.
-  T? _mapPoint<T>(
-    LocationController location,
-    T Function(DeliveryPoint) toInput,
-  ) {
-    final point = location.deliveryPoint;
-    return point == null ? null : toInput(point);
+  /// Where a delivery goes now (see [resolveDeliveryTarget]). With nothing
+  /// to go by, the address sheet is shown once so the customer can choose.
+  Future<DeliveryTarget?> _deliveryTargetOrAsk() async {
+    DeliveryTarget? current() => resolveDeliveryTarget(
+      point: context.read<LocationController>().deliveryPoint,
+      savedAddresses: context.read<MobileBackendController>().addresses,
+    );
+
+    final target = current();
+    if (target != null) return target;
+    await showAddressBottomSheet(context);
+    if (!mounted) return null;
+    return current();
+  }
+
+  /// [previewed] with the latest door details when the phone still stands
+  /// for the same place. The details (apartment, entrance, comment) may be
+  /// edited after the preview, which is priced by coordinates only; the
+  /// place itself must stay the one that was priced.
+  DeliveryPoint _withLatestDetails(DeliveryPoint previewed) {
+    final current = context.read<LocationController>().deliveryPoint;
+    return current != null &&
+            current.latitude == previewed.latitude &&
+            current.longitude == previewed.longitude
+        ? current
+        : previewed;
   }
 
   _CheckoutAddressDetails? _checkoutAddressDetails(CartPreviewRequest request) {
@@ -58,14 +76,8 @@ extension _ShellCheckout on _MainTabsState {
       }
     }
 
-    final fallbackAddress = defaultClientAddress(addresses);
-    if (fallbackAddress != null) {
-      return _CheckoutAddressDetails(
-        label: trimmedOrNull(fallbackAddress.label),
-        text: clientAddressText(fallbackAddress),
-      );
-    }
-
+    // A point without an address is only sent when nothing is saved (see
+    // resolveDeliveryTarget); its coordinates are all there is to show.
     return _CheckoutAddressDetails(
       text:
           '${input.latitude.toStringAsFixed(5)}, '
@@ -87,6 +99,7 @@ extension _ShellCheckout on _MainTabsState {
   _CheckoutPreviewDetails _checkoutPreviewDetails({
     required CartPreviewRequest request,
     required CartPreviewModel preview,
+    required DeliveryTarget? deliveryTarget,
   }) {
     final branchId = request.type == MobileOrderType.pickup
         ? request.branchId
@@ -101,6 +114,7 @@ extension _ShellCheckout on _MainTabsState {
       address: request.type == MobileOrderType.delivery
           ? _checkoutAddressDetails(request)
           : null,
+      deliveryTarget: deliveryTarget,
     );
   }
 
@@ -187,23 +201,17 @@ extension _ShellCheckout on _MainTabsState {
   }
 
   String _orderingClosedMessage(ServerFailure failure) {
-    final t = L.of(context);
     final metadata = OrderingClosedMetadataModel.fromJson(failure.metadata);
-    final nextOpening = metadata.nextOpeningAt;
-    if (nextOpening == null) return t.orderingClosedAction;
-    final locale = Localizations.localeOf(context).languageCode;
-    final formatted = dateFormat(
-      locale,
-      'd MMM, HH:mm',
-      (locale) => DateFormat('d MMM, HH:mm', locale),
-    ).format(nextOpening.toLocal());
-    final timezone = metadata.timezone.trim();
-    return timezone.isEmpty
-        ? t.orderingNextOpening(formatted)
-        : '${t.orderingNextOpening(formatted)} · $timezone';
+    return _nextOpeningText(
+      context,
+      nextOpeningAt: metadata.nextOpeningAt,
+      timezone: metadata.timezone,
+    );
   }
 
-  Future<CartPreviewRequest?> _buildCartPreviewRequest(
+  /// The preview request and, for delivery, the target it is priced for.
+  Future<({CartPreviewRequest request, DeliveryTarget? deliveryTarget})?>
+  _buildCartPreviewRequest(
     List<CartLine> cartLines, {
     required MobileOrderType orderType,
     required MobilePaymentMethod paymentMethod,
@@ -229,50 +237,38 @@ extension _ShellCheckout on _MainTabsState {
         return null;
       }
 
-      return CartPreviewRequest(
-        type: MobileOrderType.pickup,
-        branchId: branch.id,
-        items: items,
-        paymentMethod: paymentMethod,
-        promoCode: normalizedPromoCode,
-        loyaltyRedemptionAmount: loyaltyRedemptionAmount,
+      return (
+        request: CartPreviewRequest(
+          type: MobileOrderType.pickup,
+          branchId: branch.id,
+          items: items,
+          paymentMethod: paymentMethod,
+          promoCode: normalizedPromoCode,
+          loyaltyRedemptionAmount: loyaltyRedemptionAmount,
+        ),
+        deliveryTarget: null,
       );
     }
 
-    final backend = context.read<MobileBackendController>();
-    final location = context.read<LocationController>();
-    var address = _mapPoint(location, previewDeliveryAddress);
-    String? addressId;
-    final savedAddress = defaultClientAddress(backend.addresses);
-    if (address == null && savedAddress != null) {
-      addressId = savedAddress.id;
-    }
-
-    if (address == null && addressId == null) {
-      await showAddressBottomSheet(context);
-      if (!mounted) return null;
-      address = _mapPoint(location, previewDeliveryAddress);
-      final fallbackSavedAddress = defaultClientAddress(
-        context.read<MobileBackendController>().addresses,
-      );
-      if (address == null && fallbackSavedAddress != null) {
-        addressId = fallbackSavedAddress.id;
-      }
-    }
-
-    if (address == null && addressId == null) {
+    final target = await _deliveryTargetOrAsk();
+    if (!mounted) return null;
+    if (target == null) {
       _showSnack(t.selectDeliveryAddressFirst);
       return null;
     }
 
-    return CartPreviewRequest(
-      type: MobileOrderType.delivery,
-      addressId: addressId,
-      address: address,
-      items: items,
-      paymentMethod: paymentMethod,
-      promoCode: normalizedPromoCode,
-      loyaltyRedemptionAmount: loyaltyRedemptionAmount,
+    final point = target.point;
+    return (
+      request: CartPreviewRequest(
+        type: MobileOrderType.delivery,
+        addressId: target.addressId,
+        address: point == null ? null : previewDeliveryAddress(point),
+        items: items,
+        paymentMethod: paymentMethod,
+        promoCode: normalizedPromoCode,
+        loyaltyRedemptionAmount: loyaltyRedemptionAmount,
+      ),
+      deliveryTarget: target,
     );
   }
 
@@ -283,14 +279,15 @@ extension _ShellCheckout on _MainTabsState {
     required int loyaltyRedemptionAmount,
     String? promoCode,
   }) async {
-    final request = await _buildCartPreviewRequest(
+    final built = await _buildCartPreviewRequest(
       cartLines,
       orderType: orderType,
       paymentMethod: paymentMethod,
       promoCode: promoCode,
       loyaltyRedemptionAmount: loyaltyRedemptionAmount,
     );
-    if (!mounted || request == null) return null;
+    if (!mounted || built == null) return null;
+    final request = built.request;
 
     _logOrderPreview('request', request.toJson());
     final backend = context.read<MobileBackendController>();
@@ -306,7 +303,13 @@ extension _ShellCheckout on _MainTabsState {
           unawaited(_refreshPaymentMethodsForBranch(_deliveryBranchId));
         }
       }
-      return Success(_checkoutPreviewDetails(request: request, preview: data));
+      return Success(
+        _checkoutPreviewDetails(
+          request: request,
+          preview: data,
+          deliveryTarget: built.deliveryTarget,
+        ),
+      );
     }
     if (result case Error(:final failure)) {
       _logOrderPreview('error', {
@@ -384,6 +387,7 @@ extension _ShellCheckout on _MainTabsState {
     int loyaltyRedemptionAmount = 0,
     String? promoCode,
     String? comment,
+    DeliveryTarget? previewedTarget,
   }) async {
     final t = L.of(context);
     final items = checkoutItems(cartLines);
@@ -416,37 +420,24 @@ extension _ShellCheckout on _MainTabsState {
       );
     }
 
-    final backend = context.read<MobileBackendController>();
-    final location = context.read<LocationController>();
-    var address = _mapPoint(location, inlineOrderAddress);
-    String? addressId;
-    final savedAddress = defaultClientAddress(backend.addresses);
-    if (address == null && savedAddress != null) {
-      addressId = savedAddress.id;
-    }
-
-    if (address == null && addressId == null) {
-      await showAddressBottomSheet(context);
-      if (!mounted) return null;
-      address = _mapPoint(location, inlineOrderAddress);
-      final fallbackSavedAddress = defaultClientAddress(
-        context.read<MobileBackendController>().addresses,
-      );
-      if (address == null && fallbackSavedAddress != null) {
-        addressId = fallbackSavedAddress.id;
-      }
-    }
-
-    if (address == null && addressId == null) {
+    // The order goes where the confirmed preview was priced for. The
+    // phone's position may have changed since (the start-up GPS fix can
+    // land while the sheet is open), and the fee and branch would not match.
+    final target = previewedTarget ?? await _deliveryTargetOrAsk();
+    if (!mounted) return null;
+    if (target == null) {
       _showSnack(t.selectDeliveryAddressFirst);
       return null;
     }
 
+    final point = target.point;
     return CreateOrderRequest(
       type: MobileOrderType.delivery,
-      address: address,
-      addressId: addressId,
-      branchId: address == null ? null : _deliveryBranchId,
+      address: point == null
+          ? null
+          : inlineOrderAddress(_withLatestDetails(point)),
+      addressId: target.addressId,
+      branchId: point == null ? null : _deliveryBranchId,
       items: items,
       paymentMethod: paymentMethod,
       promoCode: normalizedPromoCode,
@@ -491,13 +482,31 @@ extension _ShellCheckout on _MainTabsState {
     );
   }
 
-  Future<void> _handleCheckout(List<CartLine> cartLines) async {
-    if (cartLines.isEmpty || _isCheckingOut.value) return;
+  Future<void> _handleCheckout(List<CartLine> requestedLines) async {
+    if (requestedLines.isEmpty || _isCheckingOut.value) return;
 
+    var cartLines = requestedLines;
     var backend = context.read<MobileBackendController>();
     if (!backend.isAuthenticated) {
-      await backend.whenSessionSettled();
+      // The app may not know yet whether the customer is signed in (the
+      // start-up request is running over the saved menu). The button shows
+      // progress and takes no second tap meanwhile.
+      _isCheckingOut.value = true;
+      var sessionKnown = false;
+      try {
+        sessionKnown = await _sessionKnown();
+      } finally {
+        if (mounted) _isCheckingOut.value = false;
+      }
+      if (!sessionKnown || !mounted) return;
+      // The customer may have left the cart while waiting.
+      if (!_tabsAreOnTop || _currentIndex != _cartPageIndex) return;
+      // The network catalog has just replaced the saved one and the cart is
+      // checked against it after this frame; order what is in it then.
+      await WidgetsBinding.instance.endOfFrame;
       if (!mounted) return;
+      cartLines = _cart.snapshot(backend.menuProducts).lines;
+      if (cartLines.isEmpty) return;
     }
     if (!backend.isAuthenticated) {
       final didAuthenticate = await Navigator.of(context).push<bool>(
@@ -523,6 +532,7 @@ extension _ShellCheckout on _MainTabsState {
       promoCode: orderDetails.promoCode,
       comment: orderDetails.comment,
       loyaltyRedemptionAmount: orderDetails.loyaltyRedemptionAmount,
+      previewedTarget: orderDetails.deliveryTarget,
     );
     if (!mounted || request == null) return;
 

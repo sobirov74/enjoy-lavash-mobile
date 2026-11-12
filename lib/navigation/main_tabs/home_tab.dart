@@ -64,10 +64,10 @@ class _HomeTab extends StatelessWidget {
         failure: backend.status == MobileBackendStatus.error && products.isEmpty
             ? backend.failure
             : null,
-        // The saved menu is shown but the customer is not known yet.
-        sessionPending:
-            backend.isShowingCachedContent &&
-            backend.status == MobileBackendStatus.loading,
+        // The saved menu is shown but the customer is not known: the
+        // start-up request is running, or it failed (an offline launch must
+        // not greet a signed-in customer as a guest with a zero balance).
+        sessionPending: backend.isSessionUnknown,
       );
     });
     final locale = context.select<LocaleController, String>(

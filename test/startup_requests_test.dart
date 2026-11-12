@@ -17,7 +17,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 const Set<String> _expectedStartupRequests = <String>{
   ApiEndpoints.branches,
   ApiEndpoints.catalog,
-  ApiEndpoints.activePromotions,
   ApiEndpoints.activeBanners,
   ApiEndpoints.paymentMethods,
   ApiEndpoints.clientMe,

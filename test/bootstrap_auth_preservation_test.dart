@@ -38,9 +38,6 @@ void main() {
       return switch (options.uri.path) {
         ApiEndpoints.branches => _jsonResponse({'branches': const []}),
         ApiEndpoints.catalog => _jsonResponse({'categories': const []}),
-        ApiEndpoints.activePromotions => _jsonResponse({
-          'promotions': const [],
-        }),
         ApiEndpoints.paymentMethods => _jsonResponse({
           'paymentMethods': const [],
         }),
@@ -69,9 +66,6 @@ void main() {
         return switch (options.uri.path) {
           ApiEndpoints.branches => _jsonResponse({'branches': const []}),
           ApiEndpoints.catalog => _jsonResponse({'categories': const []}),
-          ApiEndpoints.activePromotions => _jsonResponse({
-            'promotions': const [],
-          }),
           ApiEndpoints.paymentMethods => _jsonResponse({
             'paymentMethods': const [],
           }),
@@ -113,9 +107,6 @@ void main() {
         return switch (options.uri.path) {
           ApiEndpoints.branches => _jsonResponse({'branches': const []}),
           ApiEndpoints.catalog => _jsonResponse({'categories': const []}),
-          ApiEndpoints.activePromotions => _jsonResponse({
-            'promotions': const [],
-          }),
           ApiEndpoints.paymentMethods => _jsonResponse({
             'paymentMethods': const [],
           }),
@@ -152,9 +143,6 @@ void main() {
               ],
             },
           ],
-        }),
-        ApiEndpoints.activePromotions => _jsonResponse({
-          'promotions': const [],
         }),
         ApiEndpoints.paymentMethods => _jsonResponse({
           'paymentMethods': const [],
@@ -258,7 +246,6 @@ class _SequencedBootstrapRepository implements MobileBackendRepository {
       MobileBootstrap(
         branches: const [],
         catalog: CatalogModel.fromJson(const <String, dynamic>{}),
-        promotions: const [],
         paymentMethods: const <PaymentMethodModel>[],
         client: _client,
         addresses: <ClientAddress>[_address],

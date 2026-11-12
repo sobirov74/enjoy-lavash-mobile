@@ -17,18 +17,25 @@ const List<Duration> pushReminderIntervals = <Duration>[
   Duration(days: 3),
 ];
 
+/// At sign-in the customer is asked whatever the schedule says, unless they
+/// were asked this recently: someone who refused the OS prompt a minute ago
+/// at app entry is not asked again the moment they sign in.
+const Duration pushReminderSignInGap = Duration(minutes: 30);
+
 /// Whether a reminder may be shown at [now], given when the customer was
 /// last asked and how many times they were asked since notifications were
-/// last on.
+/// last on. [atSignIn] replaces the schedule with [pushReminderSignInGap].
 bool isPushReminderDue({
   required DateTime now,
   required DateTime? lastAskedAt,
   required int timesAsked,
+  bool atSignIn = false,
 }) {
   if (lastAskedAt == null) return true;
   final age = now.difference(lastAskedAt);
   // A clock set backwards must not silence reminders for good.
   if (age.isNegative) return true;
+  if (atSignIn) return age >= pushReminderSignInGap;
   final index = (timesAsked - 1).clamp(0, pushReminderIntervals.length - 1);
   return age >= pushReminderIntervals[index];
 }

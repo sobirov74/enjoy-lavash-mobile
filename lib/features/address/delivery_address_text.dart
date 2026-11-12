@@ -31,8 +31,9 @@ String? clientAddressText(ClientAddress address) {
 }
 
 /// The delivery address shown by the shell (Home's order-context pill) and
-/// checkout: the point picked on this device (its full text, else its name),
-/// else the default saved address.
+/// checkout: the point known on this device when it has an address (its
+/// full text, else its name), else the default saved address. Checkout
+/// sends the same one (`resolveDeliveryTarget`).
 ///
 /// The menu tab formats its pill slightly differently (see `MenuScreen`);
 /// that difference is recorded in docs/PERFORMANCE_PASS_2.md.
@@ -41,8 +42,10 @@ String? deliveryAddressText({
   required String fullAddress,
   required List<ClientAddress> savedAddresses,
 }) {
-  final picked = trimmedOrNull(fullAddress) ?? trimmedOrNull(addressName);
-  if (picked != null) return picked;
+  final name = trimmedOrNull(addressName);
+  // Without a name the point is the phone's position whose address could
+  // not be looked up; a house number typed for it is not an address.
+  if (name != null) return trimmedOrNull(fullAddress) ?? name;
   final saved = defaultClientAddress(savedAddresses);
   return saved == null ? null : clientAddressText(saved);
 }

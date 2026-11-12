@@ -21,12 +21,14 @@ void main() {
   final binding = TestWidgetsFlutterBinding.ensureInitialized();
 
   late PermissionStatus permissionStatus;
+  late PermissionStatus requestResult;
   late int permissionRequestCount;
   late int apnsTokenRequestCount;
 
   setUp(() {
     debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
     permissionStatus = PermissionStatus.denied;
+    requestResult = PermissionStatus.granted;
     permissionRequestCount = 0;
     apnsTokenRequestCount = 0;
 
@@ -51,7 +53,7 @@ void main() {
             return permissionStatus.index;
           case 'requestPermissions':
             permissionRequestCount++;
-            permissionStatus = PermissionStatus.granted;
+            permissionStatus = requestResult;
             return <int, int>{
               Permission.notification.value: permissionStatus.index,
             };
@@ -149,10 +151,11 @@ void main() {
       final adapter = _RecordingAdapter();
       final service = _service(adapter);
 
-      final settings = await service.requestPermission();
+      final request = await service.requestPermission();
 
       expect(permissionRequestCount, 1);
-      expect(settings.permissionGranted, isTrue);
+      expect(request.settings.permissionGranted, isTrue);
+      expect(request.promptShown, isTrue);
       // Asking for permission never registers a token on its own.
       expect(apnsTokenRequestCount, 0);
       expect(adapter.requests, isEmpty);
@@ -163,17 +166,18 @@ void main() {
     permissionStatus = PermissionStatus.granted;
     final service = _service(_RecordingAdapter());
 
-    final settings = await service.requestPermission();
+    final request = await service.requestPermission();
 
     expect(permissionRequestCount, 0);
-    expect(settings.enabled, isTrue);
+    expect(request.settings.enabled, isTrue);
+    expect(request.promptShown, isFalse);
   });
 
   test('requestPermission does not prompt when the OS locked it', () async {
     permissionStatus = PermissionStatus.permanentlyDenied;
     final service = _service(_RecordingAdapter());
 
-    final settings = await service.requestPermission();
+    final settings = (await service.requestPermission()).settings;
 
     expect(permissionRequestCount, 0);
     expect(settings.permissionPermanentlyDenied, isTrue);
@@ -186,7 +190,7 @@ void main() {
     });
     final service = _service(_RecordingAdapter());
 
-    final settings = await service.requestPermission();
+    final settings = (await service.requestPermission()).settings;
 
     expect(permissionRequestCount, 0);
     expect(settings.userEnabled, isFalse);
@@ -213,12 +217,102 @@ void main() {
       expect(payload['locale'], 'ru');
     },
   );
+
+  group('whether the OS still shows its prompt (Android)', () {
+    setUp(() => debugDefaultTargetPlatformOverride = TargetPlatform.android);
+
+    test('a refusal the customer tapped keeps the prompt available', () async {
+      requestResult = PermissionStatus.denied;
+      // Any answer counts as the customer's: a prompt was shown.
+      final service = _service(
+        _RecordingAdapter(),
+        promptAnswerThreshold: Duration.zero,
+      );
+
+      final request = await service.requestPermission();
+
+      expect(request.promptShown, isTrue);
+      expect(request.settings.canRequestPermission, isTrue);
+      expect((await service.getSettings()).canRequestPermission, isTrue);
+    });
+
+    test('a second refusal is the last prompt', () async {
+      requestResult = PermissionStatus.permanentlyDenied;
+      final service = _service(
+        _RecordingAdapter(),
+        promptAnswerThreshold: Duration.zero,
+      );
+
+      final request = await service.requestPermission();
+      // Android reports plain "denied" from a status check afterwards.
+      permissionStatus = PermissionStatus.denied;
+
+      expect(request.promptShown, isTrue);
+      expect(request.settings.permissionPermanentlyDenied, isTrue);
+      expect((await service.getSettings()).canRequestPermission, isFalse);
+      // Known to be useless: not requested again.
+      await service.requestPermission();
+      expect(permissionRequestCount, 1);
+    });
+
+    test(
+      'an answer faster than a person means the OS showed nothing',
+      () async {
+        // Android 12 and lower, or an install the OS already stopped asking.
+        requestResult = PermissionStatus.denied;
+        final service = _service(_RecordingAdapter());
+
+        final request = await service.requestPermission();
+
+        expect(request.promptShown, isFalse);
+        expect(request.settings.permissionPermanentlyDenied, isTrue);
+        expect((await service.getSettings()).canRequestPermission, isFalse);
+      },
+    );
+
+    test('allowing in the phone settings forgets what was learned', () async {
+      requestResult = PermissionStatus.denied;
+      final service = _service(_RecordingAdapter());
+      await service.requestPermission();
+      expect((await service.getSettings()).canRequestPermission, isFalse);
+
+      permissionStatus = PermissionStatus.granted;
+      expect((await service.getSettings()).enabled, isTrue);
+      // Switched off again later: the prompt gets another try.
+      permissionStatus = PermissionStatus.denied;
+      expect((await service.getSettings()).canRequestPermission, isTrue);
+    });
+  });
+
+  test('"don\'t remind me" holds until notifications are switched on in the '
+      'app', () async {
+    final service = _service(_RecordingAdapter());
+    expect(await service.permissionRemindersStopped(), isFalse);
+
+    await service.stopPermissionReminders();
+    expect(await service.permissionRemindersStopped(), isTrue);
+    // It is not the in-app opt-out: allowing in the phone settings works.
+    expect((await service.getSettings()).userEnabled, isTrue);
+
+    await service.setNotificationsEnabled(true, locale: 'uz');
+    expect(await service.permissionRemindersStopped(), isFalse);
+  });
 }
 
-MobilePushNotificationService _service(HttpClientAdapter adapter) {
-  return MobilePushNotificationService(
-    ApiClient(baseUrl: 'https://example.test', httpClientAdapter: adapter),
+MobilePushNotificationService _service(
+  HttpClientAdapter adapter, {
+  Duration? promptAnswerThreshold,
+}) {
+  final apiClient = ApiClient(
+    baseUrl: 'https://example.test',
+    httpClientAdapter: adapter,
   );
+  return promptAnswerThreshold == null
+      ? MobilePushNotificationService(apiClient)
+      : MobilePushNotificationService(
+          apiClient,
+          promptAnswerThreshold: promptAnswerThreshold,
+        );
 }
 
 class _RecordingAdapter implements HttpClientAdapter {

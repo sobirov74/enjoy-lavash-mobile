@@ -155,6 +155,57 @@ void main() {
       expect(rebuilds[type], isNull, reason: '$type rebuilt on a no-op');
     }
   });
+
+  testWidgets('the keyboard sliding in over a sheet rebuilds no tab', (
+    tester,
+  ) async {
+    final backend = _ShellController(ApiClient(), signedIn: true);
+    await _pumpShell(tester, backend);
+    addTearDown(tester.view.resetViewInsets);
+    // Animated tab switches ask the motion policy from the shell and the
+    // menu; that must not tie them to every MediaQuery change.
+    for (final tab in const <int>[1, 3, 0, 1]) {
+      await _visit(tester, tab);
+    }
+
+    final rebuilds = await _rebuildsDuring(tester, () async {
+      for (final inset in const <double>[80, 160, 240, 320]) {
+        tester.view.viewInsets = FakeViewPadding(bottom: inset);
+        await tester.pump();
+      }
+    });
+
+    for (final type in const <String>[
+      'MainTabs',
+      'HomeScreen',
+      'MenuScreen',
+      'ProductListItem',
+      'CartScreen',
+    ]) {
+      expect(
+        rebuilds[type],
+        isNull,
+        reason: '$type rebuilt per keyboard frame',
+      );
+    }
+  });
+
+  testWidgets('a screen-size change still rebuilds the menu, which lays its '
+      'category pill out again', (tester) async {
+    final backend = _ShellController(ApiClient());
+    await _pumpShell(tester, backend);
+    addTearDown(tester.view.reset);
+    await _visit(tester, 1);
+
+    final rebuilds = await _rebuildsDuring(tester, () async {
+      final size = tester.view.physicalSize;
+      // Landscape.
+      tester.view.physicalSize = Size(size.height, size.width);
+      await tester.pumpAndSettle();
+    });
+
+    expect(rebuilds['MenuScreen'], isNotNull);
+  });
 }
 
 Future<void> _pumpShell(WidgetTester tester, _ShellController backend) async {

@@ -498,7 +498,6 @@ class _ProfileRepository implements MobileBackendRepository {
       MobileBootstrap(
         branches: const [],
         catalog: CatalogModel.fromJson(const <String, dynamic>{}),
-        promotions: const [],
         paymentMethods: const [],
         client: authenticated ? client : null,
         addresses: authenticated ? addresses : const [],

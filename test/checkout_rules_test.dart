@@ -99,6 +99,114 @@ void main() {
     test('a saved address without a street shows its label', () {
       expect(clientAddressText(_address('a', label: ' Office ')), 'Office');
     });
+
+    test('a point without an address is not shown, even with a house number '
+        'typed for it', () {
+      final saved = [_address('home', street: 'Bunyodkor', isDefault: true)];
+      expect(
+        deliveryAddressText(
+          addressName: '',
+          fullAddress: ', 12',
+          savedAddresses: saved,
+        ),
+        'Bunyodkor',
+      );
+      expect(
+        deliveryAddressText(
+          addressName: ' ',
+          fullAddress: ', 12',
+          savedAddresses: const [],
+        ),
+        isNull,
+      );
+    });
+  });
+
+  group('delivery target', () {
+    const named = (
+      latitude: 41.31,
+      longitude: 69.28,
+      addressName: 'Amir Temur',
+      fullAddress: 'Amir Temur, 12',
+      houseNumber: '12',
+      apartment: '',
+      entrance: '',
+      floor: '',
+      comment: '',
+    );
+    const unnamed = (
+      latitude: 41.4,
+      longitude: 69.4,
+      addressName: '',
+      fullAddress: '',
+      houseNumber: '',
+      apartment: '',
+      entrance: '',
+      floor: '',
+      comment: '',
+    );
+    final saved = [
+      _address('work', street: 'Navoi'),
+      _address('home', street: 'Bunyodkor', isDefault: true),
+    ];
+
+    test('a point with an address wins over saved addresses', () {
+      final target = resolveDeliveryTarget(point: named, savedAddresses: saved);
+      expect(target!.point, named);
+      expect(target.addressId, isNull);
+    });
+
+    test('a point without an address yields to the default saved address', () {
+      final target = resolveDeliveryTarget(
+        point: unnamed,
+        savedAddresses: saved,
+      );
+      expect(target!.addressId, 'home');
+      expect(target.point, isNull);
+    });
+
+    test('a point without an address is used when nothing is saved', () {
+      final target = resolveDeliveryTarget(
+        point: unnamed,
+        savedAddresses: const [],
+      );
+      expect(target!.point, unnamed);
+    });
+
+    test('no point: the default saved address, or nothing to go by', () {
+      expect(
+        resolveDeliveryTarget(point: null, savedAddresses: saved)!.addressId,
+        'home',
+      );
+      expect(
+        resolveDeliveryTarget(point: null, savedAddresses: const []),
+        isNull,
+      );
+    });
+
+    test('what is shown is what is sent', () {
+      for (final point in [named, unnamed, null]) {
+        for (final addresses in [saved, const <ClientAddress>[]]) {
+          final target = resolveDeliveryTarget(
+            point: point,
+            savedAddresses: addresses,
+          );
+          final shown = deliveryAddressText(
+            addressName: point?.addressName ?? '',
+            fullAddress: point?.fullAddress ?? '',
+            savedAddresses: addresses,
+          );
+          if (target?.addressId != null) {
+            expect(shown, 'Bunyodkor');
+          } else if (target?.point == named) {
+            expect(shown, 'Amir Temur, 12');
+          } else {
+            // Nothing to show: no target, or bare coordinates.
+            expect(shown, isNull);
+          }
+        }
+      }
+    });
   });
 
   group('cart rules', () {

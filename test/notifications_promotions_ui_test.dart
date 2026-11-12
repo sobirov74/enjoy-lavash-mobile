@@ -479,7 +479,6 @@ class _NotificationsRepository implements MobileBackendRepository {
       MobileBootstrap(
         branches: const [],
         catalog: CatalogModel.fromJson(const <String, dynamic>{}),
-        promotions: const [],
         paymentMethods: const <PaymentMethodModel>[],
         client: _client,
       ),
@@ -517,7 +516,6 @@ class _GuestNotificationsRepository implements MobileBackendRepository {
       MobileBootstrap(
         branches: const [],
         catalog: CatalogModel.fromJson(const <String, dynamic>{}),
-        promotions: const [],
         paymentMethods: const <PaymentMethodModel>[],
       ),
     );

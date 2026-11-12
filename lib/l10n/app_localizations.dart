@@ -1017,6 +1017,12 @@ abstract class L {
   /// **'Hozir emas'**
   String get pushReminderLater;
 
+  /// No description provided for @pushReminderNever.
+  ///
+  /// In uz, this message translates to:
+  /// **'Boşqa eslatmang'**
+  String get pushReminderNever;
+
   /// No description provided for @notifications.
   ///
   /// In uz, this message translates to:

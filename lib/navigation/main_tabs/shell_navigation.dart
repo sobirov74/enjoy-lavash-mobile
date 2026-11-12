@@ -1,7 +1,8 @@
 part of 'package:enjoy_lavash_mobile/navigation/main_tabs.dart';
 
-/// How long the app-entry notification reminder waits after start-up.
-const Duration _pushReminderStartupDelay = Duration(seconds: 2);
+/// How long a due notification reminder waits before it opens, so the
+/// customer sees the app (or what closed just before) first.
+const Duration _pushReminderDelay = Duration(seconds: 2);
 
 /// Tab switching, pushed screens, deep links and push taps, sign-in gating
 /// and the startup prompts.
@@ -20,18 +21,48 @@ extension _ShellNavigation on _MainTabsState {
     await AppShareService.share(t);
   }
 
-  Future<bool> _ensureAuthenticated() async {
-    final backend = context.read<MobileBackendController>();
-    if (backend.isAuthenticated) return true;
-    // While the start-up request runs (with the saved menu already on
-    // screen), "not signed in" may only mean "not known yet".
+  /// Whether nothing (screen, sheet or dialog) is open on top of the tabs.
+  /// Reads the navigator without subscribing the shell to route changes.
+  bool get _tabsAreOnTop => !Navigator.of(context).canPop();
+
+  /// Waits until the app knows whether the customer is signed in.
+  ///
+  /// While the start-up request runs with the saved menu already on screen,
+  /// "not signed in" may only mean "not known yet". When that request has
+  /// failed (an offline launch), it is tried once more: the customer may be
+  /// signed in and must not be sent to the sign-in screen. False means the
+  /// session is still unknown; the Retry notice says why.
+  Future<bool> _sessionKnown() async {
+    final backend = _backend;
     await backend.whenSessionSettled();
     if (!mounted) return false;
+    if (!backend.isSessionUnknown) return true;
+    await _refreshMenuData();
+    return mounted && !backend.isSessionUnknown;
+  }
+
+  Future<bool> _ensureAuthenticated() async {
+    final backend = _backend;
     if (backend.isAuthenticated) return true;
-    await Navigator.of(context).push<bool>(
-      MaterialPageRoute<bool>(builder: (_) => const AuthorizationScreen()),
-    );
-    return mounted && context.read<MobileBackendController>().isAuthenticated;
+    // Nothing covers the button while the session is awaited, so a second
+    // tap would queue a second screen.
+    if (_sessionGateBusy) return false;
+    _sessionGateBusy = true;
+    try {
+      final wasOnTabs = _tabsAreOnTop;
+      final tab = _currentIndex;
+      if (!await _sessionKnown() || !mounted) return false;
+      // The customer moved on while the app was finding out: opening a
+      // screen over what they are doing now would come out of nowhere.
+      if (wasOnTabs && (!_tabsAreOnTop || _currentIndex != tab)) return false;
+      if (backend.isAuthenticated) return true;
+      await Navigator.of(context).push<bool>(
+        MaterialPageRoute<bool>(builder: (_) => const AuthorizationScreen()),
+      );
+      return mounted && backend.isAuthenticated;
+    } finally {
+      _sessionGateBusy = false;
+    }
   }
 
   Future<void> _openBannerLink(Uri uri) async {
@@ -120,25 +151,50 @@ extension _ShellNavigation on _MainTabsState {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      unawaited(showBirthDatePromptSheet(context));
+      // A notification reminder that was due while this prompt was open
+      // follows it instead of being lost for the whole launch.
+      unawaited(
+        showBirthDatePromptSheet(context).whenComplete(_retryPushReminder),
+      );
     });
   }
 
-  /// The app-entry notification reminder
-  /// ([MobileBackendController.pushPermissionReminderDue]). It waits a
-  /// moment so the customer sees the app first, and is left for a later
-  /// launch when a screen, sheet or checkout is open on top of the tabs.
-  Future<void> _showDuePushReminder() async {
-    await Future<void>.delayed(_pushReminderStartupDelay);
-    if (!mounted ||
+  /// A notification reminder is due
+  /// ([MobileBackendController.pushPermissionReminderDue]: at app entry and
+  /// whenever the app comes back to the foreground).
+  void _queuePushReminder() {
+    _pushReminderPending = true;
+    _retryPushReminder();
+  }
+
+  void _retryPushReminder() {
+    if (!_pushReminderPending) return;
+    unawaited(
+      Future<void>.delayed(_pushReminderDelay, _showPendingPushReminder),
+    );
+  }
+
+  /// Opens the pending reminder when the customer is on the tabs with
+  /// nothing on top. Otherwise it stays pending: it is tried again when the
+  /// start-up birth-date prompt closes and each time the app comes back,
+  /// and the controller keeps it due until it has been shown.
+  Future<void> _showPendingPushReminder() async {
+    if (!mounted || !_pushReminderPending || _pushReminderOpen) return;
+    if (!_tabsAreOnTop ||
         _isCheckingOut.value ||
-        ModalRoute.isCurrentOf(context) == false) {
+        AppVersionGate.isPromptVisible(context)) {
       return;
     }
-    await showPushPermissionReminder(
-      context,
-      locale: context.read<LocaleController>().locale.languageCode,
-    );
+    _pushReminderPending = false;
+    _pushReminderOpen = true;
+    try {
+      await showPushPermissionReminder(
+        context,
+        locale: context.read<LocaleController>().locale.languageCode,
+      );
+    } finally {
+      _pushReminderOpen = false;
+    }
   }
 
   void _applyAssignedPromoCode(String code) {

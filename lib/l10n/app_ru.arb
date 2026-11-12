@@ -220,6 +220,7 @@
   "pushReminderAllow": "Разрешить",
   "pushReminderOpenSettings": "Открыть настройки",
   "pushReminderLater": "Не сейчас",
+  "pushReminderNever": "Больше не напоминать",
   "notifications": "Уведомления",
   "notificationInbox": "Входящие",
   "notificationInboxSubtitle": "Новости и предложения в одном месте",

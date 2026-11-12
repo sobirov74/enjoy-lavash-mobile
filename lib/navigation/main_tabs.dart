@@ -12,6 +12,7 @@ import 'package:enjoy_lavash_mobile/core/services/mobile_push_notification_servi
 import 'package:enjoy_lavash_mobile/core/storage/cart_storage.dart';
 import 'package:enjoy_lavash_mobile/features/address/delivery_address_text.dart';
 import 'package:enjoy_lavash_mobile/features/cart/domain/cart_rules.dart';
+import 'package:enjoy_lavash_mobile/features/app_version/presentation/app_version_gate.dart';
 import 'package:enjoy_lavash_mobile/features/checkout/checkout_requests.dart';
 import 'package:enjoy_lavash_mobile/features/checkout/payment_method_label.dart';
 import 'package:enjoy_lavash_mobile/features/push_permission/presentation/push_permission_sheet.dart';
@@ -116,6 +117,11 @@ const int _cartPageIndex = 3;
 const int _profileTabIndex = 4;
 const int _tabCount = 5;
 
+/// How long the "could not refresh" notice over the saved menu stays unless
+/// the customer dismisses it: in effect until then, because nothing else on
+/// screen says the menu may be out of date.
+const Duration _refreshFailureNoticeDuration = Duration(hours: 12);
+
 class MainTabs extends StatefulWidget {
   const MainTabs({super.key});
 
@@ -171,7 +177,21 @@ class _MainTabsState extends State<MainTabs> {
   /// The saved catalog shown before the network answered: never used to
   /// remove cart lines, only to name the ones the network catalog removes.
   List<MenuProduct>? _cachedCatalogProducts;
-  MobileBackendStatus? _lastBackendStatus;
+
+  /// Whether the "could not refresh, Retry" notice was shown for the current
+  /// failure over the saved menu, and the notice while it is on screen.
+  bool _refreshFailureAnnounced = false;
+  ScaffoldFeatureController<SnackBar, SnackBarClosedReason>?
+  _refreshFailureNotice;
+
+  /// A sign-in-gated action (bell, loyalty, promotions, orders) is waiting
+  /// for the session; further taps are dropped until it is done.
+  bool _sessionGateBusy = false;
+
+  /// A notification reminder is due but could not be shown yet (something
+  /// was open on top of the tabs); and whether its sheet is open now.
+  bool _pushReminderPending = false;
+  bool _pushReminderOpen = false;
   final PageController _tabPageController = PageController();
 
   /// Built once so cart/category updates don't rebuild the profile subtree;
@@ -201,16 +221,18 @@ class _MainTabsState extends State<MainTabs> {
       _handleSessionEnded,
     );
     _pushReminderSubscription = _backend.pushPermissionReminderDue.listen(
-      (_) => unawaited(_showDuePushReminder()),
+      (_) => _queuePushReminder(),
     );
     // Push taps are consumed from a listener, not from build: the shell no
     // longer rebuilds on every backend notification.
     _backend.addListener(_takePendingPushMessage);
-    _lastBackendStatus = _backend.status;
     _backend.addListener(_announceRefreshFailureOverSavedContent);
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => _takePendingPushMessage(),
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _takePendingPushMessage();
+      // The start-up request may have failed before this screen existed
+      // (an offline launch fails within milliseconds).
+      _announceRefreshFailureOverSavedContent();
+    });
   }
 
   @override
@@ -257,34 +279,50 @@ class _MainTabsState extends State<MainTabs> {
     WidgetsBinding.instance.scheduleFrame();
   }
 
-  /// When the start-up request fails while the saved menu is on screen, the
-  /// menu stays and one message with Retry says so. Without saved content
-  /// the full-screen error state shows instead, as before.
+  /// While the start-up request has failed with the saved menu on screen,
+  /// the menu stays and a notice with Retry says so. It follows the state,
+  /// not a moment: it shows for a failure that happened before this screen
+  /// existed, stays until the customer dismisses it or a retry starts, and
+  /// shows again when that retry fails. Without saved content the
+  /// full-screen error state shows instead, as before.
   void _announceRefreshFailureOverSavedContent() {
-    final status = _backend.status;
-    final previous = _lastBackendStatus;
-    _lastBackendStatus = status;
-    if (!mounted ||
-        status == previous ||
-        status != MobileBackendStatus.error ||
-        !_backend.isShowingCachedContent) {
-      return;
-    }
+    if (!mounted) return;
+    final failed =
+        _backend.status == MobileBackendStatus.error &&
+        _backend.isShowingCachedContent;
+    if (failed == _refreshFailureAnnounced) return;
+    _refreshFailureAnnounced = failed;
     final failure = _backend.failure;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      final messenger = ScaffoldMessenger.of(context);
+      if (!failed) {
+        // A retry is running or it worked: the notice is out of date.
+        if (_refreshFailureNotice != null) messenger.clearSnackBars();
+        return;
+      }
       final t = L.of(context);
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          appSnackBar(
-            failure == null
-                ? t.errorGenericBody
-                : failureMessage(t, failure, fallback: t.errorGenericBody),
-            actionLabel: t.retry,
-            onAction: () => unawaited(_refreshMenuData()),
-          ),
-        );
+      messenger.hideCurrentSnackBar();
+      final notice = messenger.showSnackBar(
+        appSnackBar(
+          failure == null
+              ? t.errorGenericBody
+              : failureMessage(t, failure, fallback: t.errorGenericBody),
+          duration: _refreshFailureNoticeDuration,
+          actionLabel: t.retry,
+          onAction: () {
+            if (mounted) unawaited(_refreshMenuData());
+          },
+        ),
+      );
+      _refreshFailureNotice = notice;
+      unawaited(
+        notice.closed.then((_) {
+          if (identical(_refreshFailureNotice, notice)) {
+            _refreshFailureNotice = null;
+          }
+        }),
+      );
     });
     WidgetsBinding.instance.scheduleFrame();
   }

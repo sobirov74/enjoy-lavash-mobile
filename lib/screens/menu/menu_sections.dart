@@ -376,14 +376,16 @@ extension _MenuSections on _MenuScreenState {
     // The layout builder runs on every layout of the sliver, and scrolling
     // changes its constraints each frame. Returning a new list each time
     // rebuilt every visible card per frame, so the list made for this menu
-    // build is reused while the column count stays the same.
-    ({int columns, Widget sliver})? built;
+    // build is reused while the grid's width stays the same (scrolling does
+    // not change it). The width, not only the column count: the cards decode
+    // their photos for the column width captured below.
+    ({double width, Widget sliver})? built;
     return SliverLayoutBuilder(
       builder: (context, constraints) {
         final columns =
             constraints.crossAxisExtent >= _productGridWideBreakpoint ? 3 : 2;
         final reusable = built;
-        if (reusable != null && reusable.columns == columns) {
+        if (reusable != null && reusable.width == constraints.crossAxisExtent) {
           return reusable.sliver;
         }
         final columnWidth =
@@ -418,7 +420,7 @@ extension _MenuSections on _MenuScreenState {
             );
           },
         );
-        built = (columns: columns, sliver: sliver);
+        built = (width: constraints.crossAxisExtent, sliver: sliver);
         return sliver;
       },
     );

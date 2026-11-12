@@ -45,6 +45,7 @@ class _AssignedPromotionsScreenState extends State<AssignedPromotionsScreen> {
   late bool _showAll = widget.initialShowAll;
   List<AssignedPromotionModel>? _orderedSource;
   bool? _orderedShowAll;
+  String? _orderedHighlight;
   List<AssignedPromotionModel> _ordered = const <AssignedPromotionModel>[];
 
   @override
@@ -192,11 +193,14 @@ class _AssignedPromotionsScreenState extends State<AssignedPromotionsScreen> {
   List<AssignedPromotionModel> _orderedPromotions(
     List<AssignedPromotionModel> promotions,
   ) {
-    if (identical(_orderedSource, promotions) && _orderedShowAll == _showAll) {
+    if (identical(_orderedSource, promotions) &&
+        _orderedShowAll == _showAll &&
+        _orderedHighlight == widget.highlightedCode) {
       return _ordered;
     }
     _orderedSource = promotions;
     _orderedShowAll = _showAll;
+    _orderedHighlight = widget.highlightedCode;
     return _ordered = _orderPromotions(promotions);
   }
 

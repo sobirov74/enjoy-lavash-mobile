@@ -26,23 +26,34 @@ const _permissionChannel = MethodChannel(
   'flutter.baseflow.com/permissions/methods',
 );
 
+/// Whether the OS shows its notification dialog (and the customer answers
+/// it), or answers by itself at once because it has no dialog to show.
+bool _osShowsNotificationPrompt = true;
+
+MobilePushNotificationService _pushService(ApiClient apiClient) {
+  return _osShowsNotificationPrompt
+      ? MobilePushNotificationService(
+          apiClient,
+          promptAnswerThreshold: Duration.zero,
+        )
+      : MobilePushNotificationService(apiClient);
+}
+
 void main() {
   final binding = TestWidgetsFlutterBinding.ensureInitialized();
 
   // Sign-in asks for notification permission; the OS answers "denied" here.
   var notificationPromptCount = 0;
-  var notificationRationale = false;
 
   setUp(() {
     FlutterSecureStorage.setMockInitialValues({});
     SharedPreferences.setMockInitialValues({});
     notificationPromptCount = 0;
-    notificationRationale = false;
+    _osShowsNotificationPrompt = true;
     binding.defaultBinaryMessenger.setMockMethodCallHandler(
       _permissionChannel,
       (call) async => switch (call.method) {
         'checkPermissionStatus' => PermissionStatus.denied.index,
-        'shouldShowRequestPermissionRationale' => notificationRationale,
         'requestPermissions' => () {
           notificationPromptCount++;
           return <int, int>{
@@ -320,11 +331,10 @@ void main() {
   testWidgets(
     'a customer who already saw the OS prompt gets the reminder at sign-in',
     (tester) async {
+      // Refused once before: Android would show its prompt once more.
       SharedPreferences.setMockInitialValues({
         'push_permission_prompt_shown': true,
       });
-      // Android after one refusal: the OS would show its prompt once more.
-      notificationRationale = true;
       await _pumpAuthorizationLauncher(
         tester,
         _authAdapter(clientCreated: false, birthDate: '1995-04-07'),
@@ -347,6 +357,35 @@ void main() {
         find.byKey(const ValueKey<String>('authorization-launcher')),
       );
       expect(notificationPromptCount, 0);
+    },
+  );
+
+  testWidgets(
+    'when the OS has no prompt to show, sign-in offers the phone settings '
+    'and "don\'t remind me" lets the customer through',
+    (tester) async {
+      _osShowsNotificationPrompt = false;
+      await _pumpAuthorizationLauncher(
+        tester,
+        _authAdapter(clientCreated: false, birthDate: '1995-04-07'),
+      );
+
+      await _completeOtp(tester);
+      await _pumpUntilFound(
+        tester,
+        find.byKey(const ValueKey<String>('push-permission-sheet')),
+      );
+      expect(find.text('Open settings'), findsOneWidget);
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('push-permission-never')),
+      );
+      await _pumpUntilFound(
+        tester,
+        find.byKey(const ValueKey<String>('authorization-launcher')),
+      );
+      final preferences = await SharedPreferences.getInstance();
+      expect(preferences.getBool('push_permission_reminders_off'), isTrue);
     },
   );
 
@@ -470,7 +509,7 @@ Future<void> _pumpAuthorizationLauncher(
   apiClient.setLanguage('en');
   final controller = MobileBackendController(
     MobileBackendRepositoryImpl(apiClient),
-    MobilePushNotificationService(apiClient),
+    _pushService(apiClient),
   );
   final localeController = LocaleController();
   await localeController.setLocale(const Locale('en'));
@@ -533,7 +572,7 @@ Future<void> _pumpAuthorization(
   apiClient.setLanguage('en');
   final controller = MobileBackendController(
     MobileBackendRepositoryImpl(apiClient),
-    MobilePushNotificationService(apiClient),
+    _pushService(apiClient),
   );
   final localeController = LocaleController();
   await localeController.setLocale(const Locale('en'));

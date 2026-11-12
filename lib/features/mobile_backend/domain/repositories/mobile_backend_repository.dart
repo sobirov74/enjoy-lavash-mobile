@@ -11,7 +11,6 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/client_p
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/loyalty_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/order_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/ordering_status_model.dart';
-import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/promotion_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/entities/mobile_bootstrap.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/entities/mobile_public_content.dart';
 
@@ -24,8 +23,8 @@ abstract class MobileBackendRepository {
 
   Future<Result<void>> deleteAccount();
 
-  /// The public content (menu, branches, promotions, banners) saved by the
-  /// last successful bootstrap for [language], or null. Never fails.
+  /// The public content (menu, branches, banners) saved by the last default
+  /// bootstrap whose menu loaded, for [language], or null. Never fails.
   Future<MobilePublicContent?> readCachedPublicContent({
     required String language,
   });
@@ -51,10 +50,6 @@ abstract class MobileBackendRepository {
   });
 
   Future<Result<List<BannerModel>>> getActiveBanners({String language = 'uz'});
-
-  Future<Result<List<PromotionModel>>> getActivePromotions({
-    String language = 'ru',
-  });
 
   Future<Result<List<PaymentMethodModel>>> getPaymentMethods({
     String language = 'ru',

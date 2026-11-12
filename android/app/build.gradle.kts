@@ -56,7 +56,10 @@ android {
         versionName = flutter.versionName
         manifestPlaceholders["usesCleartextTraffic"] = "false"
         if (isPerfBuild) {
-            applicationIdSuffix = ".perf"
+            // `-P perfSuffix=.perfb` gives a second variant (e.g. a baseline)
+            // its own id, so both stay installed (docs/PERFORMANCE_PASS_2.md).
+            applicationIdSuffix =
+                (project.findProperty("perfSuffix") as String?) ?: ".perf"
         }
     }
 

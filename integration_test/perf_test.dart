@@ -330,7 +330,6 @@ class _FixtureAdapter implements HttpClientAdapter {
             'imageUrl': '/uploads/banners/banner-$i.jpg',
           },
       ],
-      '/promotions/active' => <String, Object?>{'promotions': <Object?>[]},
       '/payment-methods' => <String, Object?>{'paymentMethods': <Object?>[]},
       _ => null,
     };

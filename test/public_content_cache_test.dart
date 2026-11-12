@@ -27,7 +27,6 @@ void main() {
     branches: <Object?>[
       <String, Object?>{'id': 'branch-1'},
     ],
-    promotions: null,
     banners: <Object?>[],
   );
 
@@ -38,7 +37,6 @@ void main() {
     expect(read, isNotNull);
     expect(read!.catalog, payloads.catalog);
     expect(read.branches, payloads.branches);
-    expect(read.promotions, isNull);
     expect(read.banners, isEmpty);
     // Written aside and renamed: no temporary file is left behind.
     expect(directory.listSync().map((entry) => entry.path), [file().path]);
@@ -82,6 +80,39 @@ void main() {
 
     expect(await cache().read(scope: 'api|org', language: 'ru'), isNull);
     expect(file().existsSync(), isFalse);
+  });
+
+  test('content saved "in the future" is a miss', () async {
+    // The clock was wrong when it was saved (or is wrong now): without this
+    // such content would never expire.
+    await cache().write(scope: 'api|org', language: 'ru', payloads: payloads);
+    now = now.subtract(const Duration(days: 2));
+
+    expect(await cache().read(scope: 'api|org', language: 'ru'), isNull);
+  });
+
+  test('a file left by a killed save is replaced, not piled up', () async {
+    final leftover = File(
+      '${directory.path}/${PublicContentCache.temporaryFileName}',
+    )..writeAsStringSync('{"half": ');
+
+    await cache().write(scope: 'api|org', language: 'ru', payloads: payloads);
+
+    expect(leftover.existsSync(), isFalse);
+    expect(directory.listSync().map((entry) => entry.path), [file().path]);
+    expect(await cache().read(scope: 'api|org', language: 'ru'), isNotNull);
+  });
+
+  test('saves that overlap leave one good file', () async {
+    final shared = cache();
+    await Future.wait([
+      for (final language in ['ru', 'uz', 'en'])
+        shared.write(scope: 'api|org', language: language, payloads: payloads),
+    ]);
+
+    expect(directory.listSync().map((entry) => entry.path), [file().path]);
+    // The last one asked for wins.
+    expect(await shared.read(scope: 'api|org', language: 'en'), isNotNull);
   });
 
   test('an unavailable directory never throws', () async {

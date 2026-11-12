@@ -5,6 +5,7 @@ import 'package:enjoy_lavash_mobile/app/location_controller.dart';
 import 'package:enjoy_lavash_mobile/core/error/failures.dart';
 import 'package:enjoy_lavash_mobile/features/models/cart_line.dart';
 import 'package:enjoy_lavash_mobile/features/models/menu_product.dart';
+import 'package:enjoy_lavash_mobile/features/address/delivery_address_text.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/address_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/branch_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/cart_model.dart';
@@ -195,8 +196,15 @@ class _MenuScreenState extends State<MenuScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Dependencies change on every theme, locale or text-scale update; the
-    // packaging artwork only needs warming once (and again if it changes).
+    // The category pill is measured again below whenever its place can
+    // change: the theme and locale (already dependencies), and the screen
+    // size and text scale asked for here. Asking for exactly these keeps the
+    // menu from rebuilding on every other MediaQuery change, such as each
+    // frame of the keyboard sliding in over a sheet.
+    MediaQuery.sizeOf(context);
+    MediaQuery.textScalerOf(context);
+    // The packaging artwork only needs warming once (and again if it
+    // changes).
     if (!_packagingPreloaded) {
       _packagingPreloaded = true;
       unawaited(_cartAnimation.preload(context, widget.packagingAssets.values));
@@ -221,12 +229,12 @@ class _MenuScreenState extends State<MenuScreen> {
         !identical(oldWidget.products, widget.products)) {
       oldWidget.cart.removeListener(_handleCartChanged);
       widget.cart.addListener(_handleCartChanged);
-      final snapshot = _cartSnapshot;
       // The cards are descendants about to rebuild anyway; the detail page's
-      // badge is another route, so it is updated after this frame.
-      _quantities.update(snapshot.quantitiesByProduct);
+      // badge is another route, so it is updated after this frame, from the
+      // cart as it is then (the shell may reconcile it in the same frame).
+      _quantities.update(_cartSnapshot.quantitiesByProduct);
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _cartCount.value = snapshot.totalItems;
+        if (mounted) _cartCount.value = _cartSnapshot.totalItems;
       });
     }
 
@@ -263,12 +271,6 @@ class _MenuScreenState extends State<MenuScreen> {
   List<GlobalKey> _buildKeys(int count) {
     return List<GlobalKey>.generate(count, (_) => GlobalKey());
   }
-
-  double get _activeStickyHeaderHeight => _stickyCategoryHeaderHeight;
-
-  // -------------------------------------------------------------------------
-  // Keep the active category chip centered in the horizontal list
-  // -------------------------------------------------------------------------
 
   // -------------------------------------------------------------------------
   // Build
@@ -342,7 +344,7 @@ class _MenuScreenState extends State<MenuScreen> {
                 SliverPersistentHeader(
                   pinned: true,
                   delegate: _CategoryHeaderDelegate(
-                    height: _activeStickyHeaderHeight,
+                    height: _stickyCategoryHeaderHeight,
                     child: _buildProductsHeader(theme, t),
                   ),
                 ),
@@ -417,12 +419,4 @@ class _MenuScreenState extends State<MenuScreen> {
     }
     return _visibleProducts;
   }
-
-  // -------------------------------------------------------------------------
-  // Extracted widgets
-  // -------------------------------------------------------------------------
 }
-
-// ---------------------------------------------------------------------------
-// Sticky header delegate for the category tab bar
-// ---------------------------------------------------------------------------

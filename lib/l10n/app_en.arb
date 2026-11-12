@@ -220,6 +220,7 @@
   "pushReminderAllow": "Allow",
   "pushReminderOpenSettings": "Open settings",
   "pushReminderLater": "Not now",
+  "pushReminderNever": "Don't remind me",
   "notifications": "Notifications",
   "notificationInbox": "Inbox",
   "notificationInboxSubtitle": "Updates and offers in one place",

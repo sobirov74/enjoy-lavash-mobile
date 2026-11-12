@@ -29,11 +29,16 @@ void main() {
   MobileBackendRepositoryImpl repository({
     Map<String, Object?> catalog = _catalog,
     Set<String> failing = const <String>{},
+    List<Object?>? banners,
   }) {
     return MobileBackendRepositoryImpl(
       ApiClient(
         baseUrl: 'https://api.example.test',
-        httpClientAdapter: _Adapter(catalog: catalog, failing: failing),
+        httpClientAdapter: _Adapter(
+          catalog: catalog,
+          failing: failing,
+          banners: banners,
+        ),
       ),
       organisationId: 'org-1',
       publicContentCache: PublicContentCache(directory: () async => directory),
@@ -55,7 +60,6 @@ void main() {
       );
       expect(saved.branches.map((branch) => branch.id), ['branch-1']);
       expect(saved.banners.single.imageUrl, bootstrap.banners.single.imageUrl);
-      expect(saved.promotions, isEmpty);
       // Another language is not served from this content.
       expect(
         await repository().readCachedPublicContent(language: 'uz'),
@@ -97,11 +101,68 @@ void main() {
     expect(savedFile().existsSync(), isFalse);
   });
 
-  test('a saved menu without available products is not shown', () async {
-    await repository(catalog: _emptyCatalog).bootstrap(language: 'ru');
+  test(
+    'an answer with nothing to order never replaces a good saved menu',
+    () async {
+      await repository().bootstrap(language: 'ru');
+      await _waitFor(savedFile);
+      final good = savedFile().readAsStringSync();
+
+      // An empty menu, and a body that is not a menu at all (a captive
+      // portal page answers 200 too).
+      await repository(catalog: _emptyCatalog).bootstrap(language: 'ru');
+      await repository(
+        catalog: const {'html': '<html>'},
+      ).bootstrap(language: 'ru');
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      expect(savedFile().readAsStringSync(), good);
+      final saved = await repository().readCachedPublicContent(language: 'ru');
+      expect(saved!.catalog.products, isNotEmpty);
+    },
+  );
+
+  test('the public promotions list is no longer requested or saved', () async {
+    final adapter = _Adapter(catalog: _catalog, failing: const <String>{});
+    final repo = MobileBackendRepositoryImpl(
+      ApiClient(
+        baseUrl: 'https://api.example.test',
+        httpClientAdapter: adapter,
+      ),
+      organisationId: 'org-1',
+      publicContentCache: PublicContentCache(directory: () async => directory),
+    );
+
+    await repo.bootstrap(language: 'ru');
     await _waitFor(savedFile);
 
-    expect(await repository().readCachedPublicContent(language: 'ru'), isNull);
+    expect(adapter.paths, isNot(contains('/promotions/active')));
+    expect(savedFile().readAsStringSync(), isNot(contains('promotions')));
+  });
+
+  test('a saved banner whose promotion has ended is not shown', () async {
+    final ended = DateTime.now().subtract(const Duration(days: 1));
+    final running = DateTime.now().add(const Duration(days: 1));
+    await repository(
+      banners: [
+        {
+          'id': 'ended',
+          'imageUrl': '/uploads/banners/ended.jpg',
+          'promotion': {'id': 'p-ended', 'endsAt': ended.toIso8601String()},
+        },
+        {
+          'id': 'running',
+          'imageUrl': '/uploads/banners/running.jpg',
+          'promotion': {'id': 'p-running', 'endsAt': running.toIso8601String()},
+        },
+        {'id': 'plain', 'imageUrl': '/uploads/banners/plain.jpg'},
+      ],
+    ).bootstrap(language: 'ru');
+    await _waitFor(savedFile);
+
+    final saved = await repository().readCachedPublicContent(language: 'ru');
+
+    expect(saved!.banners.map((banner) => banner.id), ['running', 'plain']);
   });
 }
 
@@ -151,10 +212,12 @@ const Map<String, Object?> _emptyCatalog = <String, Object?>{
 };
 
 class _Adapter implements HttpClientAdapter {
-  _Adapter({required this.catalog, required this.failing});
+  _Adapter({required this.catalog, required this.failing, this.banners});
 
   final Map<String, Object?> catalog;
   final Set<String> failing;
+  final List<Object?>? banners;
+  final List<String> paths = <String>[];
 
   @override
   Future<ResponseBody> fetch(
@@ -163,6 +226,7 @@ class _Adapter implements HttpClientAdapter {
     Future<void>? cancelFuture,
   ) async {
     final path = options.uri.path;
+    paths.add(path);
     if (failing.contains(path)) return _json({'message': 'down'}, status: 503);
     return switch (path) {
       '/catalog' => _json(catalog),
@@ -171,7 +235,7 @@ class _Adapter implements HttpClientAdapter {
           {'id': 'branch-1', 'name': 'Chilonzor', 'isActive': true},
         ],
       }),
-      '/promotions/active' => _json({'promotions': <Object?>[]}),
+      '/banners/active' when banners != null => _json(banners),
       '/banners/active' => _json([
         {
           'id': 'banner-1',

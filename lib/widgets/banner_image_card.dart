@@ -33,6 +33,7 @@ class BannerImageCard extends StatelessWidget {
                   imageUrl,
                   box: constraints.biggest,
                   devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
+                  capDevicePixelRatio: false,
                 ),
                 fit: BoxFit.cover,
                 excludeFromSemantics: true,

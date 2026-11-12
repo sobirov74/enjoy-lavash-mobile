@@ -84,7 +84,6 @@ class _WalletRepository implements MobileBackendRepository {
       MobileBootstrap(
         branches: const [],
         catalog: CatalogModel.fromJson(const <String, dynamic>{}),
-        promotions: const [],
         paymentMethods: const [],
         client: _client,
       ),

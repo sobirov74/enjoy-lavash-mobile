@@ -18,7 +18,6 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/client_p
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/loyalty_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/order_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/ordering_status_model.dart';
-import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/promotion_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/entities/mobile_bootstrap.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/entities/mobile_public_content.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/repositories/mobile_backend_repository.dart';
@@ -89,6 +88,11 @@ class MobileBackendController extends ChangeNotifier {
   /// Completes when the running bootstrap ends; null when none runs.
   Completer<void>? _bootstrapInFlight;
 
+  /// What the last bootstrap asked for, so a failed one can be repeated when
+  /// the app comes back to the foreground.
+  String? _lastBootstrapLanguage;
+  String? _lastBootstrapBranchId;
+
   MobileBackendStatus _status = MobileBackendStatus.initial;
   Failure? _failure;
   List<String> _menuCategories = const <String>[];
@@ -96,7 +100,6 @@ class MobileBackendController extends ChangeNotifier {
   List<MenuProduct> _menuProducts = const <MenuProduct>[];
   List<BranchModel> _branches = const <BranchModel>[];
   List<BannerModel> _banners = const <BannerModel>[];
-  List<PromotionModel> _promotions = const <PromotionModel>[];
   List<PaymentMethodModel> _paymentMethods = const <PaymentMethodModel>[];
   String? _paymentMethodsBranchId;
   Failure? _paymentMethodsFailure;
@@ -148,7 +151,6 @@ class MobileBackendController extends ChangeNotifier {
   List<MenuProduct> get menuProducts => _menuProducts;
   List<BranchModel> get branches => _branches;
   List<BannerModel> get banners => _banners;
-  List<PromotionModel> get promotions => _promotions;
   List<PaymentMethodModel> get paymentMethods => _paymentMethods;
   String? get paymentMethodsBranchId => _paymentMethodsBranchId;
   Failure? get paymentMethodsFailure => _paymentMethodsFailure;
@@ -200,6 +202,12 @@ class MobileBackendController extends ChangeNotifier {
   /// is not reconciled against them, and screens may hold back customer
   /// details until the session is known.
   bool get isShowingCachedContent => _showingCachedContent;
+
+  /// Whether the saved menu is on screen and the start-up request has not
+  /// said who the customer is: it is still running, or it failed. Until it
+  /// succeeds, "not signed in" only means "not known".
+  bool get isSessionUnknown =>
+      _showingCachedContent && _status != MobileBackendStatus.loaded;
 
   /// Completes once the running bootstrap (and so the signed-in state) is
   /// settled; at once when none runs. Actions that need to know whether the
@@ -290,33 +298,43 @@ class MobileBackendController extends ChangeNotifier {
   }
 
   /// Sign-in: shows the OS notification prompt if this install never saw it.
-  /// Returns whether it was shown; when not, the sign-in flow shows the
-  /// in-app reminder instead.
+  /// Returns whether the OS showed it; when not, the sign-in flow shows the
+  /// in-app reminder instead. Waits for the customer's answer only: the
+  /// token is registered in the background.
   Future<bool> requestFirstPushNotificationPrompt({String? locale}) {
     return _askFirstPushPermission(locale: locale);
   }
 
-  /// Fires after app entry when a notification reminder is due.
+  /// Fires at app entry and when the app comes back to the foreground, if a
+  /// notification reminder is due.
   Stream<void> get pushPermissionReminderDue =>
       _pushReminderDueController.stream;
 
   /// The reminder to show now, or null. Only for signed-in customers with
-  /// notifications off and not switched off in the app; on the
-  /// [pushReminderIntervals] schedule unless [ignoreSchedule]. A returned
-  /// reminder counts as shown.
+  /// notifications off who neither switched them off in the app nor chose
+  /// "don't remind me"; on the [pushReminderIntervals] schedule, or with
+  /// [atSignIn] whenever the last ask is older than
+  /// [pushReminderSignInGap]. A returned reminder counts as shown.
   Future<PushReminderAction?> takePushPermissionReminder({
-    bool ignoreSchedule = false,
+    bool atSignIn = false,
   }) {
-    return _takePushPermissionReminder(ignoreSchedule: ignoreSchedule);
+    return _takePushPermissionReminder(atSignIn: atSignIn);
   }
 
   /// The customer accepted a reminder: shows the OS prompt, or opens the
-  /// phone settings and re-checks when the app comes back.
+  /// phone settings (also when the OS turned out to show no prompt) and
+  /// re-checks when the app comes back.
   Future<void> acceptPushPermissionReminder(
     PushReminderAction action, {
     String? locale,
   }) {
     return _acceptPushPermissionReminder(action, locale: locale);
+  }
+
+  /// The customer chose "don't remind me": no more reminders until they
+  /// switch notifications on in Profile.
+  Future<void> stopPushPermissionReminders() {
+    return _stopPushPermissionReminders();
   }
 
   /// Opens this app's page in the phone settings to allow notifications.

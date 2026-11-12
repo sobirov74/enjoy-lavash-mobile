@@ -26,6 +26,9 @@ class PushNotificationSettings {
   final bool enabled;
   final bool userEnabled;
   final bool permissionGranted;
+
+  /// The OS will not show its permission prompt (again): only the app's
+  /// page in the phone settings can allow notifications.
   final bool permissionPermanentlyDenied;
 
   bool get canRequestPermission =>
@@ -112,8 +115,27 @@ class PushNotificationMessage {
   }
 }
 
+/// The outcome of asking the OS for notification permission.
+typedef PushPermissionRequest = ({
+  PushNotificationSettings settings,
+
+  /// Whether the OS showed its prompt. False when notifications were
+  /// already allowed, or when the OS answered by itself (Android 12 and
+  /// lower have no prompt; later versions stop showing it after two
+  /// refusals; iOS after one).
+  bool promptShown,
+});
+
 class MobilePushNotificationService {
-  MobilePushNotificationService(this._apiClient);
+  MobilePushNotificationService(
+    this._apiClient, {
+    this.promptAnswerThreshold = const Duration(milliseconds: 400),
+  });
+
+  /// A permission request answered faster than this was answered by the OS
+  /// without showing a prompt: no person reads and taps a dialog that fast.
+  /// The plugin cannot say whether a prompt appeared, so the time does.
+  final Duration promptAnswerThreshold;
 
   static const String _notificationsEnabledKey = 'push_notifications_enabled';
   static const String _registeredPushTokenKey = 'registered_push_token';
@@ -126,6 +148,9 @@ class MobilePushNotificationService {
       'push_permission_prompt_shown';
   static const String _permissionAskedAtKey = 'push_permission_asked_at';
   static const String _permissionAskCountKey = 'push_permission_ask_count';
+  static const String _permissionPromptUnavailableKey =
+      'push_permission_prompt_unavailable';
+  static const String _remindersStoppedKey = 'push_permission_reminders_off';
 
   /// An unchanged registration is re-sent at most this often. Sync runs on
   /// every login and app resume; re-posting the same token each time only
@@ -237,9 +262,21 @@ class MobilePushNotificationService {
     final preferences = await SharedPreferences.getInstance();
     final userEnabled = preferences.getBool(_notificationsEnabledKey) ?? true;
     final status = await _notificationPermissionStatus();
+    if (_isPermissionGranted(status)) {
+      // Allowed (perhaps in the phone settings): what was learned about the
+      // prompt while it was refused no longer holds.
+      await preferences.remove(_permissionPromptUnavailableKey);
+    }
 
-    return _settingsFromStatus(status, userEnabled: userEnabled);
+    return _settingsFromStatus(
+      status,
+      userEnabled: userEnabled,
+      promptUnavailable: _promptUnavailable(preferences),
+    );
   }
+
+  bool _promptUnavailable(SharedPreferences preferences) =>
+      preferences.getBool(_permissionPromptUnavailableKey) ?? false;
 
   Future<PushNotificationSettings> setNotificationsEnabled(
     bool enabled, {
@@ -255,8 +292,15 @@ class MobilePushNotificationService {
     if (!enabled) {
       await deleteRegisteredToken();
       final status = await _notificationPermissionStatus();
-      return _settingsFromStatus(status, userEnabled: false);
+      return _settingsFromStatus(
+        status,
+        userEnabled: false,
+        promptUnavailable: _promptUnavailable(preferences),
+      );
     }
+    // Switching notifications on in the app also takes back an earlier
+    // "don't remind me".
+    await preferences.remove(_remindersStoppedKey);
 
     final settings = await _ensureNotificationPermission();
     if (settings.enabled) {
@@ -276,11 +320,11 @@ class MobilePushNotificationService {
   }
 
   /// Shows the OS notification permission prompt when it can still be shown:
-  /// the permission is not granted yet, the OS has not locked it as
-  /// permanently denied, and the customer has not switched notifications off
-  /// in the app. Does not register a token; callers sync afterwards.
-  Future<PushNotificationSettings> requestPermission() {
-    return _ensureNotificationPermission();
+  /// the permission is not granted yet, the OS is not known to have stopped
+  /// showing it, and the customer has not switched notifications off in the
+  /// app. Does not register a token; callers sync afterwards.
+  Future<PushPermissionRequest> requestPermission() {
+    return _requestNotificationPermission();
   }
 
   /// Whether the OS prompt was never shown to this install and can be shown
@@ -295,26 +339,18 @@ class MobilePushNotificationService {
     return (await _notificationPermissionStatus()).isDenied;
   }
 
-  /// Whether the OS would show its notification prompt now. iOS reports a
-  /// refusal as permanently denied. On Android 13+ a status check cannot
-  /// tell "never asked" from "refused twice"; once the prompt was shown, the
-  /// rationale flag says whether the OS will show it again.
-  Future<bool> systemPromptAvailable() async {
-    final status = await _notificationPermissionStatus();
-    if (!status.isDenied) return false;
-    if (defaultTargetPlatform != TargetPlatform.android) return true;
+  /// Whether the customer chose "don't remind me" on the reminder.
+  Future<bool> permissionRemindersStopped() async {
     final preferences = await SharedPreferences.getInstance();
-    if (!(preferences.getBool(_permissionPromptShownKey) ?? false)) {
-      return true;
-    }
-    try {
-      return await Permission.notification.shouldShowRequestRationale;
-    } on PlatformException catch (error) {
-      debugPrint('Notification rationale check failed: ${error.message}');
-      return false;
-    } on MissingPluginException {
-      return false;
-    }
+    return preferences.getBool(_remindersStoppedKey) ?? false;
+  }
+
+  /// No more reminders until the customer switches notifications on in the
+  /// app (Profile). Notifications allowed later in the phone settings still
+  /// work: this is not the in-app opt-out.
+  Future<void> stopPermissionReminders() async {
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setBool(_remindersStoppedKey, true);
   }
 
   /// When the customer was last asked to allow notifications and how many
@@ -664,24 +700,42 @@ class MobilePushNotificationService {
   }
 
   Future<PushNotificationSettings> _ensureNotificationPermission() async {
-    if (!_supportsPushNotifications) return getSettings();
+    return (await _requestNotificationPermission()).settings;
+  }
+
+  Future<PushPermissionRequest> _requestNotificationPermission() async {
+    final current = await getSettings();
+    if (!current.supported ||
+        !current.userEnabled ||
+        current.permissionGranted ||
+        current.permissionPermanentlyDenied) {
+      return (settings: current, promptShown: false);
+    }
 
     final preferences = await SharedPreferences.getInstance();
-    final userEnabled = preferences.getBool(_notificationsEnabledKey) ?? true;
-    if (!userEnabled) {
-      final status = await _notificationPermissionStatus();
-      return _settingsFromStatus(status, userEnabled: false);
-    }
-
-    final currentStatus = await _notificationPermissionStatus();
-    if (_isPermissionGranted(currentStatus) ||
-        currentStatus.isPermanentlyDenied) {
-      return _settingsFromStatus(currentStatus, userEnabled: true);
-    }
-
     await preferences.setBool(_permissionPromptShownKey, true);
-    final requestedStatus = await Permission.notification.request();
-    return _settingsFromStatus(requestedStatus, userEnabled: true);
+    final elapsed = Stopwatch()..start();
+    final status = await Permission.notification.request();
+    final granted = _isPermissionGranted(status);
+    // Android reports a refusal that needed no prompt (no prompt exists
+    // before Android 13; after two refusals it is not shown again) the same
+    // way as one the customer just tapped. Only the time tells them apart.
+    final promptShown = granted || elapsed.elapsed >= promptAnswerThreshold;
+    final promptUnavailable =
+        !granted && (status.isPermanentlyDenied || !promptShown);
+    if (promptUnavailable) {
+      await preferences.setBool(_permissionPromptUnavailableKey, true);
+    } else {
+      await preferences.remove(_permissionPromptUnavailableKey);
+    }
+    return (
+      settings: _settingsFromStatus(
+        status,
+        userEnabled: true,
+        promptUnavailable: promptUnavailable,
+      ),
+      promptShown: promptShown,
+    );
   }
 
   Future<PermissionStatus> _notificationPermissionStatus() async {
@@ -698,6 +752,7 @@ class MobilePushNotificationService {
   PushNotificationSettings _settingsFromStatus(
     PermissionStatus status, {
     required bool userEnabled,
+    required bool promptUnavailable,
   }) {
     final permissionGranted = _isPermissionGranted(status);
     return PushNotificationSettings(
@@ -705,7 +760,11 @@ class MobilePushNotificationService {
       enabled: userEnabled && permissionGranted,
       userEnabled: userEnabled,
       permissionGranted: permissionGranted,
-      permissionPermanentlyDenied: status.isPermanentlyDenied,
+      // iOS reports a refusal as permanently denied by itself. On Android a
+      // status check never does; there it is what the last request showed.
+      permissionPermanentlyDenied:
+          !permissionGranted &&
+          (status.isPermanentlyDenied || promptUnavailable),
     );
   }
 

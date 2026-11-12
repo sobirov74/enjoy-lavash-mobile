@@ -104,6 +104,77 @@ void main() {
     });
   });
 
+  testWidgets('the phone\'s position without an address does not replace the '
+      'saved address the screens show', (tester) async {
+    final app = await _pumpCheckoutApp(
+      tester,
+      location: _LocatedController(phoneLatitude: 41.4, phoneLongitude: 69.4),
+    );
+    // GPS fix found, address lookup failed: coordinates without a name.
+    await app.location.locateAndApply();
+    expect(app.location.deliveryPoint, isNotNull);
+    expect(app.location.addressName, isEmpty);
+
+    await app.openCheckout();
+    await app.confirmOrder();
+
+    expect(app.backend.previews.single.toJson()['addressId'], 'address-home');
+    expect(
+      app.backend.previews.single.toJson().containsKey('address'),
+      isFalse,
+    );
+    final order = app.backend.createdOrders.single.request.toJson();
+    expect(order['addressId'], 'address-home');
+    expect(order.containsKey('address'), isFalse);
+  });
+
+  testWidgets('the order goes where its preview was priced for, even when '
+      'the phone\'s position arrives while the sheet is open', (tester) async {
+    final app = await _pumpCheckoutApp(tester);
+
+    await app.openCheckout();
+    // The start-up GPS fix lands now; the sheet has priced the saved
+    // address and shows it.
+    app.location.setFromMap(
+      latitude: 41.5,
+      longitude: 69.5,
+      address: 'Somewhere else',
+    );
+    await app.confirmOrder();
+
+    expect(app.backend.previews.single.toJson()['addressId'], 'address-home');
+    final order = app.backend.createdOrders.single.request.toJson();
+    expect(order['addressId'], 'address-home');
+    expect(order.containsKey('address'), isFalse);
+  });
+
+  testWidgets('door details typed after the preview still reach the order '
+      'for the same point', (tester) async {
+    final app = await _pumpCheckoutApp(tester);
+    app.location.setFromMap(
+      latitude: 41.311,
+      longitude: 69.279,
+      address: 'Amir Temur 1',
+    );
+
+    await app.openCheckout();
+    app.location.setAddressDetails(
+      houseNumber: '',
+      entrance: '2',
+      floor: '',
+      apartment: '15',
+      comment: '',
+    );
+    await app.confirmOrder();
+
+    final address =
+        app.backend.createdOrders.single.request.toJson()['address']
+            as Map<String, Object?>;
+    expect(address['latitude'], 41.311);
+    expect(address['apartmentNumber'], '15');
+    expect(address['entrance'], '2');
+  });
+
   testWidgets('pickup from a branch chosen in the sheet', (tester) async {
     final app = await _pumpCheckoutApp(tester);
 
@@ -315,7 +386,10 @@ class _CheckoutApp {
   }
 }
 
-Future<_CheckoutApp> _pumpCheckoutApp(WidgetTester tester) async {
+Future<_CheckoutApp> _pumpCheckoutApp(
+  WidgetTester tester, {
+  LocationController? location,
+}) async {
   SharedPreferences.setMockInitialValues({
     'app_locale': 'en',
     'mobile_cart_lines_v2': jsonEncode([
@@ -328,7 +402,7 @@ Future<_CheckoutApp> _pumpCheckoutApp(WidgetTester tester) async {
   final localeController = LocaleController();
   await localeController.loadLocale();
   addTearDown(localeController.dispose);
-  final location = LocationController(YandexGeocoderService());
+  location ??= LocationController(YandexGeocoderService());
   final backend = _CheckoutBackend(ApiClient());
 
   await tester.pumpWidget(
@@ -363,6 +437,28 @@ const Map<String, Object?> _previewJson = <String, Object?>{
   'serviceFeeAmount': 0,
   'totalAmount': 100000,
 };
+
+/// A phone that knows where it is but cannot look the address up.
+class _LocatedController extends LocationController {
+  _LocatedController({
+    required this.phoneLatitude,
+    required this.phoneLongitude,
+  }) : super(YandexGeocoderService());
+
+  final double phoneLatitude;
+  final double phoneLongitude;
+
+  @override
+  Future<({double latitude, double longitude})> locatePhone() async =>
+      (latitude: phoneLatitude, longitude: phoneLongitude);
+
+  @override
+  Future<GeocoderResult?> resolveAddressName({
+    required double latitude,
+    required double longitude,
+    String? uri,
+  }) async => null;
+}
 
 /// A signed-in customer with a saved address. Every call the checkout makes
 /// is answered here and recorded; nothing reaches the network.

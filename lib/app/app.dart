@@ -36,10 +36,26 @@ class _InitialLocationLoaderState extends State<InitialLocationLoader>
 
   /// Location first, then notifications: the OS shows one permission dialog
   /// at a time, and overlapping requests can cancel each other on Android.
-  /// The notification prompt repeats on every launch until it is granted or
-  /// the OS stops allowing it.
+  /// Only the location question is awaited; the position and address lookup
+  /// that follows (up to ten seconds) runs on meanwhile.
+  ///
+  /// The OS notification prompt shows once per install. After a refusal the
+  /// in-app reminder takes over (the shell shows it; see
+  /// [MobileBackendController.requestPushNotificationPermission]).
   Future<void> _requestStartupPermissions() async {
-    await context.read<LocationController>().requestPermissionAndLocate();
+    final locationAnswered = Completer<void>();
+    void answered() {
+      if (!locationAnswered.isCompleted) locationAnswered.complete();
+    }
+
+    unawaited(
+      context
+          .read<LocationController>()
+          .requestPermissionAndLocate(onPermissionAnswered: answered)
+          // Every other way out (refused, switched off, failed) ends here.
+          .whenComplete(answered),
+    );
+    await locationAnswered.future;
     if (!mounted) return;
     await context
         .read<MobileBackendController>()

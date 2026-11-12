@@ -9,6 +9,7 @@ class _OrderCreationResult {
     required this.loyaltyRedemptionAmount,
     this.promoCode,
     this.comment,
+    this.deliveryTarget,
   });
 
   final MobileOrderType orderType;
@@ -16,6 +17,10 @@ class _OrderCreationResult {
   final int loyaltyRedemptionAmount;
   final String? promoCode;
   final String? comment;
+
+  /// Where the preview the customer confirmed was priced for; the order
+  /// goes there, not to wherever the phone is by then. Null for pickup.
+  final DeliveryTarget? deliveryTarget;
 }
 
 class _CheckoutAddressDetails {
@@ -32,6 +37,7 @@ class _CheckoutPreviewDetails {
     this.branchName,
     this.branchAddress,
     this.address,
+    this.deliveryTarget,
   });
 
   final CartPreviewModel preview;
@@ -39,6 +45,9 @@ class _CheckoutPreviewDetails {
   final String? branchName;
   final String? branchAddress;
   final _CheckoutAddressDetails? address;
+
+  /// The delivery target this preview was requested for; null for pickup.
+  final DeliveryTarget? deliveryTarget;
 }
 
 typedef _CartPreviewRequester =

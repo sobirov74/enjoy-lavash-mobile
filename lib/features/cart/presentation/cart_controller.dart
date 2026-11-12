@@ -36,8 +36,8 @@ class CartSnapshot {
 /// persisted with [CartStorage] after every change.
 ///
 /// The app shell owns it and passes it to the widgets that show cart data,
-/// which listen to it directly. A quantity tap therefore rebuilds the menu,
-/// the cart tab and the bottom bar, not every tab of the app.
+/// which listen to it directly. A quantity tap therefore rebuilds the tapped
+/// menu card, the cart tab and the bottom bar, not every tab of the app.
 class CartController extends ChangeNotifier {
   CartController({Future<void> Function(Iterable<CartSelection>)? persist})
     : _persist = persist ?? CartStorage.saveSelections;

@@ -49,6 +49,15 @@ void main() {
     test('caps the device pixel ratio', () {
       expect(coverDecodeExtent(100, 4), coverDecodeExtent(100, 3));
     });
+
+    test(
+      'banners and Home tiles decode at the full ratio of a dense screen',
+      () {
+        // A full-width banner on a 4x phone: 1440 px, not the capped 1088.
+        expect(coverDecodeExtent(360, 4), 1088);
+        expect(coverDecodeExtent(360, 4, capDevicePixelRatio: false), 1440);
+      },
+    );
   });
 
   test('the cache key is the wrapped key and the box', () async {

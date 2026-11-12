@@ -594,6 +594,7 @@ class _CategoryImage extends StatelessWidget {
                 imageUrl!,
                 box: constraints.biggest,
                 devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
+                capDevicePixelRatio: false,
               ),
               fit: BoxFit.cover,
               errorBuilder: (_, _, _) => _fallback(),

@@ -513,6 +513,9 @@ class LEn extends L {
   String get pushReminderLater => 'Not now';
 
   @override
+  String get pushReminderNever => 'Don\'t remind me';
+
+  @override
   String get notifications => 'Notifications';
 
   @override

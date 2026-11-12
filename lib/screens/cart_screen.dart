@@ -193,6 +193,7 @@ class CartScreen extends StatelessWidget {
         ),
         Expanded(
           child: _ShownLines(
+            currentKeys: indexByKey.keys,
             builder: (context, shownLines) => ListView.builder(
               padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
               physics: const BouncingScrollPhysics(
@@ -379,8 +380,10 @@ class CartScreen extends StatelessWidget {
 /// Remembers which cart lines have been shown, for as long as the list is on
 /// screen, so a row's entrance does not replay after scrolling.
 class _ShownLines extends StatefulWidget {
-  const _ShownLines({required this.builder});
+  const _ShownLines({required this.currentKeys, required this.builder});
 
+  /// The keys of the lines in the cart now.
+  final Iterable<String> currentKeys;
   final Widget Function(BuildContext context, Set<String> shownLines) builder;
 
   @override
@@ -391,5 +394,10 @@ class _ShownLinesState extends State<_ShownLines> {
   final Set<String> _shownLines = <String>{};
 
   @override
-  Widget build(BuildContext context) => widget.builder(context, _shownLines);
+  Widget build(BuildContext context) {
+    // A line that left the cart plays its entrance again when it comes back
+    // (Undo, or the product added again).
+    _shownLines.retainAll(widget.currentKeys.toSet());
+    return widget.builder(context, _shownLines);
+  }
 }

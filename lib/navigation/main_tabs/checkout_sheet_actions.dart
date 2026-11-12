@@ -28,6 +28,9 @@ extension _CheckoutSheetActions on _OrderConfirmationSheetState {
         loyaltyRedemptionAmount: _requestedPoints,
         promoCode: _promoCodeForOrder,
         comment: _normalizedComment,
+        deliveryTarget: _orderType == MobileOrderType.delivery
+            ? _previewDetails?.deliveryTarget
+            : null,
       ),
     );
   }

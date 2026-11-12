@@ -28,10 +28,13 @@ abstract final class AppMotion {
   /// Both platform animation suppression and accessible navigation request a
   /// stable UI. A missing [MediaQuery] is treated as the normal-motion case so
   /// this helper remains safe in isolated widgets and tests.
+  ///
+  /// Only these two settings are read, so [context] rebuilds when one of
+  /// them changes and not for every other `MediaQuery` change (the keyboard
+  /// sliding in changes the insets on every frame).
   static bool reduced(BuildContext context) {
-    final mediaQuery = MediaQuery.maybeOf(context);
-    return mediaQuery?.disableAnimations == true ||
-        mediaQuery?.accessibleNavigation == true;
+    return MediaQuery.maybeDisableAnimationsOf(context) == true ||
+        MediaQuery.maybeAccessibleNavigationOf(context) == true;
   }
 
   /// Returns [normal] unless the user has requested reduced motion.

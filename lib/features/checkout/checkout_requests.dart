@@ -1,11 +1,13 @@
 import 'package:enjoy_lavash_mobile/features/address/delivery_address_text.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/address_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/cart_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/order_model.dart';
 import 'package:enjoy_lavash_mobile/features/models/cart_line.dart';
 import 'package:enjoy_lavash_mobile/features/models/menu_product.dart';
 
-/// The delivery point picked on this device (map or address search), as
-/// checkout sends it.
+/// The delivery point known on this device, as checkout sends it: a point
+/// the customer picked on the map, or the phone's own position. The phone's
+/// position has no [addressName] when its address could not be looked up.
 typedef DeliveryPoint = ({
   double latitude,
   double longitude,
@@ -18,8 +20,32 @@ typedef DeliveryPoint = ({
   String comment,
 });
 
-/// Server error codes after which the loyalty wallet is reloaded and, when
-/// points were involved, checkout starts again with fresh amounts.
+/// Where a delivery goes: a saved address (by id) or a point on the map.
+/// Exactly one of the two is set.
+typedef DeliveryTarget = ({String? addressId, DeliveryPoint? point});
+
+/// Where a delivery goes, given the [point] known on this device and the
+/// customer's [savedAddresses]; null when the customer has to choose.
+///
+/// What the customer sees is what is sent (see `deliveryAddressText`, which
+/// follows the same order): a point with an address wins; without one the
+/// default saved address is used, because that is what the screens show;
+/// a point without an address is sent only when nothing is saved.
+DeliveryTarget? resolveDeliveryTarget({
+  required DeliveryPoint? point,
+  required List<ClientAddress> savedAddresses,
+}) {
+  final saved = defaultClientAddress(savedAddresses);
+  if (point != null &&
+      (trimmedOrNull(point.addressName) != null || saved == null)) {
+    return (addressId: null, point: point);
+  }
+  if (saved != null) return (addressId: saved.id, point: null);
+  return null;
+}
+
+/// Server error codes after which the loyalty wallet is reloaded and
+/// checkout starts again with fresh amounts.
 const Set<String> loyaltyResetErrorCodes = <String>{
   'LOYALTY_AMOUNT_CHANGED',
   'LOYALTY_DEBT_OUTSTANDING',

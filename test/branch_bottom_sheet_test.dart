@@ -135,7 +135,6 @@ class _BranchRepository implements MobileBackendRepository {
       MobileBootstrap(
         branches: branches,
         catalog: CatalogModel.fromJson(const <String, dynamic>{}),
-        promotions: const [],
         paymentMethods: const [],
       ),
     );

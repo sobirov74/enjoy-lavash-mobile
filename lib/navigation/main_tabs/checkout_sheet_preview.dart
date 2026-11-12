@@ -130,7 +130,7 @@ extension _CheckoutSheetPreview on _OrderConfirmationSheetState {
 
   bool _showPreviewFailure(Failure failure) {
     final metadata =
-        failure is ServerFailure && failure.errorCode == 'ORDERING_CLOSED'
+        failure is ServerFailure && failure.errorCode == orderingClosedErrorCode
         ? OrderingClosedMetadataModel.fromJson(failure.metadata)
         : null;
     final branchId = trimmedOrNull(metadata?.branchId);
@@ -149,20 +149,14 @@ extension _CheckoutSheetPreview on _OrderConfirmationSheetState {
 
   String _previewFailureMessage(Failure failure) {
     final t = L.of(context);
-    if (failure is ServerFailure && failure.errorCode == 'ORDERING_CLOSED') {
+    if (failure is ServerFailure &&
+        failure.errorCode == orderingClosedErrorCode) {
       final metadata = OrderingClosedMetadataModel.fromJson(failure.metadata);
-      final nextOpening = metadata.nextOpeningAt;
-      if (nextOpening == null) return t.orderingClosedAction;
-      final locale = Localizations.localeOf(context).languageCode;
-      final formatted = dateFormat(
-        locale,
-        'd MMM, HH:mm',
-        (locale) => DateFormat('d MMM, HH:mm', locale),
-      ).format(nextOpening.toLocal());
-      final timezone = metadata.timezone.trim();
-      return timezone.isEmpty
-          ? t.orderingNextOpening(formatted)
-          : '${t.orderingNextOpening(formatted)} · $timezone';
+      return _nextOpeningText(
+        context,
+        nextOpeningAt: metadata.nextOpeningAt,
+        timezone: metadata.timezone,
+      );
     }
     return failureMessage(t, failure, fallback: t.couldNotCalculateTotal);
   }

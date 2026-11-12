@@ -95,7 +95,9 @@ class _TrackingLocationController extends LocationController {
   void finishLocation() => _location.complete();
 
   @override
-  Future<void> requestPermissionAndLocate() {
+  Future<void> requestPermissionAndLocate({
+    VoidCallback? onPermissionAnswered,
+  }) {
     requestCount += 1;
     calls.add('location');
     _location = Completer<void>();

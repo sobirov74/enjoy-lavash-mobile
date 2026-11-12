@@ -506,6 +506,9 @@ class LUz extends L {
   String get pushReminderLater => 'Hozir emas';
 
   @override
+  String get pushReminderNever => 'Boşqa eslatmang';
+
+  @override
   String get notifications => 'Bildirişnomalar';
 
   @override

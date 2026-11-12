@@ -9,7 +9,6 @@ import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/theme/app_design_tokens.dart';
 import 'package:enjoy_lavash_mobile/utils/price_formatter.dart';
 import 'package:enjoy_lavash_mobile/widgets/product_image.dart';
-import 'package:enjoy_lavash_mobile/widgets/utils/image_decode_size.dart';
 import 'package:enjoy_lavash_mobile/widgets/home_banner_slider.dart';
 import 'package:enjoy_lavash_mobile/widgets/redesign/app_surface_card.dart';
 import 'package:enjoy_lavash_mobile/widgets/redesign/order_context_pill.dart';
@@ -43,6 +42,7 @@ class HomeScreen extends StatelessWidget {
     this.onRepeatOrder,
     this.isLoading = false,
     this.failure,
+    this.sessionPending = false,
   });
 
   final String customerName;
@@ -65,6 +65,11 @@ class HomeScreen extends StatelessWidget {
   final VoidCallback? onRepeatOrder;
   final bool isLoading;
   final Failure? failure;
+
+  /// The menu is shown (saved by the last launch) but whether a customer is
+  /// signed in is not known yet: the greeting and the balance stay
+  /// placeholders instead of showing "Guest" and zero.
+  final bool sessionPending;
 
   @override
   Widget build(BuildContext context) {
@@ -121,20 +126,30 @@ class HomeScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 18),
-                  Text(
-                    t.homeGreeting(customerName),
-                    style: AppTextStyles.display(
-                      size: 34,
-                      height: 1.08,
-                      color: AppDesignTokens.primaryText(context),
+                  if (sessionPending)
+                    const _HomeSkeleton(
+                      key: ValueKey<String>('home-greeting-pending'),
+                      height: 37,
+                      width: 220,
+                    )
+                  else
+                    Text(
+                      t.homeGreeting(customerName),
+                      style: AppTextStyles.display(
+                        size: 34,
+                        height: 1.08,
+                        color: AppDesignTokens.primaryText(context),
+                      ),
                     ),
-                  ),
                   const SizedBox(height: 14),
-                  _LoyaltyCard(
-                    balance: loyaltyBalance,
-                    hint: t.loyaltyMoneyHint,
-                    onTap: onLoyaltyTap,
-                  ),
+                  if (sessionPending)
+                    const _HomeSkeleton(height: 76, radius: 22)
+                  else
+                    _LoyaltyCard(
+                      balance: loyaltyBalance,
+                      hint: t.loyaltyMoneyHint,
+                      onTap: onLoyaltyTap,
+                    ),
                   if (lastOrder != null && onRepeatOrder != null) ...<Widget>[
                     const SizedBox(height: 14),
                     _RepeatOrderCard(
@@ -283,7 +298,12 @@ class _HomeFailureState extends StatelessWidget {
 }
 
 class _HomeSkeleton extends StatelessWidget {
-  const _HomeSkeleton({required this.height, this.width, this.radius = 16});
+  const _HomeSkeleton({
+    required this.height,
+    this.width,
+    this.radius = 16,
+    super.key,
+  });
 
   final double height;
   final double? width;
@@ -407,7 +427,11 @@ class _RepeatOrderCard extends StatelessWidget {
         .join(', ');
     final date = order.createdAt == null
         ? null
-        : DateFormat('d MMM', locale).format(order.createdAt!.toLocal());
+        : dateFormat(
+            locale,
+            'd MMM',
+            (locale) => DateFormat('d MMM', locale),
+          ).format(order.createdAt!.toLocal());
     final itemCount = order.items.fold<int>(
       0,
       (sum, item) => sum + item.quantity,
@@ -566,9 +590,10 @@ class _CategoryImage extends StatelessWidget {
     final image = imageUrl?.isNotEmpty == true
         ? LayoutBuilder(
             builder: (context, constraints) => Image(
-              image: resizedNetworkImage(
+              image: coverNetworkImage(
                 imageUrl!,
-                cacheWidth: decodeWidthFor(context, constraints),
+                box: constraints.biggest,
+                devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
               ),
               fit: BoxFit.cover,
               errorBuilder: (_, _, _) => _fallback(),

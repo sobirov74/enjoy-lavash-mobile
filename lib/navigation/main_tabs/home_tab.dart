@@ -12,6 +12,7 @@ typedef _HomeData = ({
   CustomerOrderModel? lastOrder,
   bool isLoading,
   Failure? failure,
+  bool sessionPending,
 });
 
 /// The Home tab. It selects only what [HomeScreen] shows, so cart taps, tab
@@ -63,6 +64,10 @@ class _HomeTab extends StatelessWidget {
         failure: backend.status == MobileBackendStatus.error && products.isEmpty
             ? backend.failure
             : null,
+        // The saved menu is shown but the customer is not known yet.
+        sessionPending:
+            backend.isShowingCachedContent &&
+            backend.status == MobileBackendStatus.loading,
       );
     });
     final locale = context.select<LocaleController, String>(
@@ -86,6 +91,7 @@ class _HomeTab extends StatelessWidget {
       lastOrder: lastOrder,
       isLoading: home.isLoading,
       failure: home.failure,
+      sessionPending: home.sessionPending,
       onOrderContextTap: onOrderContextTap,
       onNotificationsTap: onNotificationsTap,
       onLoyaltyTap: onLoyaltyTap,
@@ -108,13 +114,13 @@ class _HomeTab extends StatelessWidget {
         .select<LocationController, (String, String)>(
           (location) => (location.addressName, location.fullAddress),
         );
-    final picked = _trimmedText(fullAddress) ?? _trimmedText(addressName);
+    final picked = trimmedOrNull(fullAddress) ?? trimmedOrNull(addressName);
     if (picked != null) return picked;
     final savedAddresses = context
         .select<MobileBackendController, List<ClientAddress>>(
           (backend) => backend.addresses,
         );
-    return _deliveryAddressText(
+    return deliveryAddressText(
           addressName: addressName,
           fullAddress: fullAddress,
           savedAddresses: savedAddresses,

@@ -68,8 +68,8 @@ class PromotionModel {
           stringOrNull(json['discount_type']) ??
           stringOrNull(reward['type']),
       discountValue:
-          _optionalInt(json, const ['discountValue', 'discount_value']) ??
-          _optionalInt(reward, const ['value', 'discountValue']),
+          readOptionalInt(json, const ['discountValue', 'discount_value']) ??
+          readOptionalInt(reward, const ['value', 'discountValue']),
       startsAt: readDateTime(json, const [
         'startsAt',
         'starts_at',
@@ -85,15 +85,4 @@ class PromotionModel {
       raw: Map<String, dynamic>.unmodifiable(json),
     );
   }
-}
-
-int? _optionalInt(Map<String, dynamic> json, List<String> keys) {
-  for (final key in keys) {
-    final value = json[key];
-    if (value == null) continue;
-    if (value is int) return value;
-    if (value is num) return value.toInt();
-    if (value is String) return int.tryParse(value);
-  }
-  return null;
 }

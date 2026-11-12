@@ -91,8 +91,10 @@ class _ProfileEditScreenState extends State<_ProfileEditScreen> {
     );
     final dateText = _birthDate == null
         ? t.selectBirthDate
-        : DateFormat.yMMMd(
+        : dateFormat(
             Localizations.localeOf(context).languageCode,
+            'yMMMd',
+            DateFormat.yMMMd,
           ).format(_birthDate!);
 
     return Scaffold(

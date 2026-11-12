@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io' show HttpDate, HttpException;
 
 import 'package:dio/dio.dart';
@@ -7,6 +8,7 @@ import 'package:enjoy_lavash_mobile/core/api/api_endpoints.dart';
 import 'package:enjoy_lavash_mobile/core/error/dio_error_mapper.dart';
 import 'package:enjoy_lavash_mobile/core/error/failures.dart';
 import 'package:enjoy_lavash_mobile/core/error/result.dart';
+import 'package:enjoy_lavash_mobile/core/storage/public_content_cache.dart';
 import 'package:enjoy_lavash_mobile/core/storage/token_storage.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/address_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/assigned_promotion_model.dart';
@@ -23,16 +25,22 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/order_mo
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/ordering_status_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/promotion_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/entities/mobile_bootstrap.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/entities/mobile_public_content.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/repositories/mobile_backend_repository.dart';
 
 class MobileBackendRepositoryImpl implements MobileBackendRepository {
   const MobileBackendRepositoryImpl(
     this._apiClient, {
     this.organisationId = const String.fromEnvironment('ORGANISATION_ID'),
+    this.publicContentCache,
   });
 
   final ApiClient _apiClient;
   final String organisationId;
+
+  /// Where the last public content is kept for the next cold start; none in
+  /// tests that build the repository directly.
+  final PublicContentCache? publicContentCache;
 
   Dio get _dio => _apiClient.dio;
 
@@ -105,23 +113,6 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
       final refreshToken = await TokenStorage.getRefreshToken();
       final hasToken = accessToken != null || refreshToken != null;
 
-      Future<List<PromotionModel>> optionalPromotions() async {
-        try {
-          return await _fetchActivePromotions(language: language);
-        } catch (_) {
-          return const <PromotionModel>[];
-        }
-      }
-
-      Future<List<BannerModel>> optionalBanners() async {
-        try {
-          return await _fetchActiveBanners(language: language);
-        } catch (_) {
-          // A banner outage must not prevent browsing or ordering.
-          return const <BannerModel>[];
-        }
-      }
-
       Future<List<PaymentMethodModel>> optionalPaymentMethods() async {
         try {
           return await _fetchPaymentMethods(
@@ -134,11 +125,12 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
       }
 
       final publicFuture = Future.wait<Object?>([
-        _fetchBranches(language: language),
-        _fetchCatalog(language: language, branchId: branchId),
-        optionalPromotions(),
+        _branchesPayload(),
+        _catalogPayload(language: language, branchId: branchId),
+        _optionalPayload(_promotionsPayload),
         optionalPaymentMethods(),
-        optionalBanners(),
+        // A banner outage must not prevent browsing or ordering.
+        _optionalPayload(_bannersPayload),
       ]);
 
       final authFuture = hasToken
@@ -146,13 +138,36 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
           : Future<List<Object?>>.value(_guestAuthData);
 
       final publicData = await publicFuture;
+      final branches = _parseBranches(publicData[0], language: language);
+      final catalog = CatalogModel.fromJson(publicData[1], language: language);
+      // Optional content: a failed or unreadable response shows as empty.
+      final promotions = _parseOptional(
+        publicData[2],
+        (payload) => _parsePromotions(payload, language: language),
+        const <PromotionModel>[],
+      );
+      final banners = _parseOptional(
+        publicData[4],
+        (payload) => _parseBanners(payload, language: language),
+        const <BannerModel>[],
+      );
+      _savePublicContent(
+        language: language,
+        branchId: branchId,
+        payloads: (
+          catalog: publicData[1],
+          branches: publicData[0],
+          promotions: publicData[2],
+          banners: publicData[4],
+        ),
+      );
       final authData = await authFuture;
 
       return MobileBootstrap(
-        branches: publicData[0] as List<BranchModel>,
-        catalog: publicData[1] as CatalogModel,
-        promotions: publicData[2] as List<PromotionModel>,
-        banners: publicData[4] as List<BannerModel>,
+        branches: branches,
+        catalog: catalog,
+        promotions: promotions,
+        banners: banners,
         paymentMethods: publicData[3] as List<PaymentMethodModel>,
         client: authData[0] as ClientProfile?,
         addresses: authData[1] as List<ClientAddress>,
@@ -449,14 +464,20 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
     });
   }
 
-  Future<List<BranchModel>> _fetchBranches({required String language}) async {
-    final response = await _dio.get(ApiEndpoints.branches);
-    return asJsonMapList(_listPayload(response.data, key: 'branches'))
+  Future<Object?> _branchesPayload() async {
+    return (await _dio.get(ApiEndpoints.branches)).data;
+  }
+
+  List<BranchModel> _parseBranches(
+    Object? payload, {
+    required String language,
+  }) {
+    return asJsonMapList(_listPayload(payload, key: 'branches'))
         .map((json) => BranchModel.fromJson(json, language: language))
         .toList(growable: false);
   }
 
-  Future<CatalogModel> _fetchCatalog({
+  Future<Object?> _catalogPayload({
     required String language,
     String? branchId,
   }) async {
@@ -464,7 +485,17 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
       ApiEndpoints.catalog,
       queryParameters: withoutNulls({'lang': language, 'branchId': branchId}),
     );
-    return CatalogModel.fromJson(response.data, language: language);
+    return response.data;
+  }
+
+  Future<CatalogModel> _fetchCatalog({
+    required String language,
+    String? branchId,
+  }) async {
+    return CatalogModel.fromJson(
+      await _catalogPayload(language: language, branchId: branchId),
+      language: language,
+    );
   }
 
   @override
@@ -472,14 +503,47 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
     return _guard(() => _fetchActiveBanners(language: language));
   }
 
+  Future<Object?> _bannersPayload() async {
+    // Global public content: no organisation or client token is required.
+    return (await _dio.get(ApiEndpoints.activeBanners)).data;
+  }
+
+  List<BannerModel> _parseBanners(Object? payload, {required String language}) {
+    return asJsonMapList(payload)
+        .map(
+          (json) => BannerModel.fromJson(
+            json,
+            language: language,
+            backendBaseUrl: _dio.options.baseUrl,
+          ),
+        )
+        .toList(growable: false);
+  }
+
   Future<List<BannerModel>> _fetchActiveBanners({
     required String language,
   }) async {
-    // Global public content: no organisation or client token is required.
-    final response = await _dio.get(ApiEndpoints.activeBanners);
-    return asJsonMapList(response.data)
+    return _parseBanners(await _bannersPayload(), language: language);
+  }
+
+  Future<Object?> _promotionsPayload() async {
+    final response = await _dio.get(
+      ApiEndpoints.activePromotions,
+      queryParameters: {
+        if (organisationId.trim().isNotEmpty)
+          'organisationId': organisationId.trim(),
+      },
+    );
+    return response.data;
+  }
+
+  List<PromotionModel> _parsePromotions(
+    Object? payload, {
+    required String language,
+  }) {
+    return asJsonMapList(_listPayload(payload, key: 'promotions'))
         .map(
-          (json) => BannerModel.fromJson(
+          (json) => PromotionModel.fromJson(
             json,
             language: language,
             backendBaseUrl: _dio.options.baseUrl,
@@ -491,22 +555,94 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
   Future<List<PromotionModel>> _fetchActivePromotions({
     required String language,
   }) async {
-    final response = await _dio.get(
-      ApiEndpoints.activePromotions,
-      queryParameters: {
-        if (organisationId.trim().isNotEmpty)
-          'organisationId': organisationId.trim(),
-      },
+    return _parsePromotions(await _promotionsPayload(), language: language);
+  }
+
+  static Future<Object?> _optionalPayload(
+    Future<Object?> Function() request,
+  ) async {
+    try {
+      return await request();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static T _parseOptional<T>(
+    Object? payload,
+    T Function(Object? payload) parse,
+    T fallback,
+  ) {
+    if (payload == null) return fallback;
+    try {
+      return parse(payload);
+    } catch (_) {
+      return fallback;
+    }
+  }
+
+  /// Server and organisation the saved public content belongs to.
+  String get _publicContentScope =>
+      '${_dio.options.baseUrl}|${organisationId.trim()}';
+
+  /// Keeps the public payloads of a successful default bootstrap for the
+  /// next cold start. Branch-specific catalogs are not saved: a cold start
+  /// always loads the default one.
+  void _savePublicContent({
+    required String language,
+    required String? branchId,
+    required PublicContentPayloads payloads,
+  }) {
+    final cache = publicContentCache;
+    if (cache == null || branchId?.trim().isNotEmpty == true) return;
+    unawaited(
+      cache.write(
+        scope: _publicContentScope,
+        language: language,
+        payloads: payloads,
+      ),
     );
-    return asJsonMapList(_listPayload(response.data, key: 'promotions'))
-        .map(
-          (json) => PromotionModel.fromJson(
-            json,
-            language: language,
-            backendBaseUrl: _dio.options.baseUrl,
-          ),
-        )
-        .toList(growable: false);
+  }
+
+  @override
+  Future<MobilePublicContent?> readCachedPublicContent({
+    required String language,
+  }) async {
+    final cache = publicContentCache;
+    if (cache == null) return null;
+    final payloads = await cache.read(
+      scope: _publicContentScope,
+      language: language,
+    );
+    if (payloads == null) return null;
+    try {
+      final catalog = CatalogModel.fromJson(
+        payloads.catalog,
+        language: language,
+      );
+      // An empty saved menu would only replace one empty state with another.
+      if (!catalog.products.any((product) => product.isAvailable)) return null;
+      return MobilePublicContent(
+        catalog: catalog,
+        branches: _parseOptional(
+          payloads.branches,
+          (payload) => _parseBranches(payload, language: language),
+          const <BranchModel>[],
+        ),
+        promotions: _parseOptional(
+          payloads.promotions,
+          (payload) => _parsePromotions(payload, language: language),
+          const <PromotionModel>[],
+        ),
+        banners: _parseOptional(
+          payloads.banners,
+          (payload) => _parseBanners(payload, language: language),
+          const <BannerModel>[],
+        ),
+      );
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<List<PaymentMethodModel>> _fetchPaymentMethods({

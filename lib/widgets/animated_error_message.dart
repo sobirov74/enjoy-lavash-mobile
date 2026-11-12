@@ -4,6 +4,7 @@ import 'package:enjoy_lavash_mobile/core/error/failures.dart';
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
+import 'package:enjoy_lavash_mobile/theme/app_design_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:enjoy_lavash_mobile/widgets/utils/failure_message.dart';
 
@@ -82,7 +83,7 @@ class _AnimatedErrorMessageState extends State<AnimatedErrorMessage>
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final t = L.of(context);
-    final cardColor = isDark ? const Color(0xFF1D1A18) : Colors.white;
+    final cardColor = AppDesignTokens.surface(context);
     final pulseColor = switch (widget.failure) {
       TimeoutFailure() => const Color(0xFFF59E0B),
       NetworkFailure() => const Color(0xFF3B82F6),

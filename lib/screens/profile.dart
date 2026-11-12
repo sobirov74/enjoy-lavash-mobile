@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/widgets/animated_error_message.dart';
@@ -20,6 +21,7 @@ import 'package:enjoy_lavash_mobile/core/error/failures.dart';
 import 'package:enjoy_lavash_mobile/core/error/result.dart';
 import 'package:enjoy_lavash_mobile/core/services/app_share_service.dart';
 import 'package:enjoy_lavash_mobile/core/services/external_url_launcher.dart';
+import 'package:enjoy_lavash_mobile/features/checkout/payment_method_label.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/address_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/branch_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/cart_model.dart';
@@ -48,6 +50,8 @@ part 'profile/order_detail_widgets.dart';
 part 'profile/profile_redesign.dart';
 part 'profile/profile_edit_screen.dart';
 part 'profile/saved_addresses_screen.dart';
+part 'profile/profile_rows.dart';
+part 'profile/profile_language_sheet.dart';
 
 Future<void> showProfileOrderDetailsSheet({
   required BuildContext context,
@@ -242,19 +246,27 @@ class _ProfileState extends State<Profile> {
 
   Future<void> _setPushNotifications(BuildContext context, bool enabled) async {
     final t = L.of(context);
-    final result = await context
-        .read<MobileBackendController>()
-        .setPushNotificationsEnabled(enabled);
+    final backend = context.read<MobileBackendController>();
+    final result = await backend.setPushNotificationsEnabled(enabled);
 
     if (!context.mounted) return;
 
     switch (result) {
       case Success(:final data):
         if (enabled && !data.enabled) {
-          final message = data.permissionPermanentlyDenied
-              ? t.allowNotificationsInSettings
-              : t.notificationPermissionDenied;
-          ScaffoldMessenger.of(context).showSnackBar(appSnackBar(message));
+          // The OS no longer shows its prompt: offer the phone settings.
+          final inSettings = data.permissionPermanentlyDenied;
+          ScaffoldMessenger.of(context).showSnackBar(
+            appSnackBar(
+              inSettings
+                  ? t.allowNotificationsInSettings
+                  : t.notificationPermissionDenied,
+              actionLabel: inSettings ? t.settings : null,
+              onAction: inSettings
+                  ? () => unawaited(backend.openNotificationSettings())
+                  : null,
+            ),
+          );
         }
       case Error(:final failure):
         ScaffoldMessenger.of(context).showSnackBar(

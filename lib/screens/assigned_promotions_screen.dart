@@ -8,6 +8,7 @@ import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
 import 'package:enjoy_lavash_mobile/widgets/animated_error_message.dart';
 import 'package:enjoy_lavash_mobile/widgets/app_snack_bar.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
+import 'package:enjoy_lavash_mobile/theme/app_design_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -126,7 +127,7 @@ class _AssignedPromotionsScreenState extends State<AssignedPromotionsScreen> {
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
               sliver: SliverList.list(
                 children: <Widget>[
-                  _PromotionsHero(isDark: isDark),
+                  const _PromotionsHero(),
                   const SizedBox(height: 14),
                   _PromotionFilter(showAll: _showAll, onChanged: _setShowAll),
                 ],
@@ -150,7 +151,7 @@ class _AssignedPromotionsScreenState extends State<AssignedPromotionsScreen> {
     if (state.loading && promotions.isEmpty) {
       return SliverList.separated(
         itemCount: 3,
-        itemBuilder: (_, _) => _PromotionSkeleton(isDark: isDark),
+        itemBuilder: (_, _) => const _PromotionSkeleton(),
         separatorBuilder: (_, _) => const SizedBox(height: 12),
       );
     }
@@ -225,9 +226,7 @@ class _AssignedPromotionsScreenState extends State<AssignedPromotionsScreen> {
 }
 
 class _PromotionsHero extends StatelessWidget {
-  const _PromotionsHero({required this.isDark});
-
-  final bool isDark;
+  const _PromotionsHero();
 
   @override
   Widget build(BuildContext context) {
@@ -357,7 +356,7 @@ class _AssignedPromotionCard extends StatelessWidget {
       duration: const Duration(milliseconds: 240),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1D1A18) : Colors.white,
+        color: AppDesignTokens.surface(context),
         borderRadius: BorderRadius.circular(26),
         border: Border.all(
           color: highlighted
@@ -628,16 +627,14 @@ class _EmptyPromotions extends StatelessWidget {
 }
 
 class _PromotionSkeleton extends StatelessWidget {
-  const _PromotionSkeleton({required this.isDark});
-
-  final bool isDark;
+  const _PromotionSkeleton();
 
   @override
   Widget build(BuildContext context) {
     return Container(
       height: 196,
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1D1A18) : Colors.white,
+        color: AppDesignTokens.surface(context),
         borderRadius: BorderRadius.circular(26),
       ),
     );

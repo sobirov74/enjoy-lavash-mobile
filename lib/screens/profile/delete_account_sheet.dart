@@ -51,7 +51,7 @@ class _DeleteAccountSheetState extends State<_DeleteAccountSheet> {
           maxHeight: MediaQuery.sizeOf(context).height * 0.88,
         ),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1D1A18) : Colors.white,
+          color: AppDesignTokens.surface(context),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         ),
         child: SingleChildScrollView(
@@ -124,9 +124,7 @@ class _DeleteAccountSheetState extends State<_DeleteAccountSheet> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF2A2522)
-                      : const Color(0xFFF8F4EF),
+                  color: AppDesignTokens.inset(context),
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: Column(

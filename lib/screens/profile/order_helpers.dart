@@ -95,16 +95,6 @@ IconData _orderTypeIcon(MobileOrderType type) {
   };
 }
 
-String _paymentMethodLabel(MobilePaymentMethod method, L t) {
-  return switch (method) {
-    MobilePaymentMethod.cash => t.paymentCash,
-    MobilePaymentMethod.cardTerminal => t.paymentCardTerminal,
-    MobilePaymentMethod.payme => 'Payme',
-    MobilePaymentMethod.click => 'Click',
-    MobilePaymentMethod.unknown => t.unknown,
-  };
-}
-
 String _paymentStatusLabel(MobilePaymentStatus status, L t) {
   return switch (status) {
     MobilePaymentStatus.pending => t.paymentStatusPending,

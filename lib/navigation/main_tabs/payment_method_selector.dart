@@ -20,13 +20,12 @@ class _PaymentMethodSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = L.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF2A2522) : const Color(0xFFF8F4EF),
+        color: AppDesignTokens.inset(context),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
@@ -134,7 +133,7 @@ class _PaymentMethodChip extends StatelessWidget {
     final t = L.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final label = method.name.trim().isEmpty
-        ? _confirmationPaymentLabel(method.code, t)
+        ? paymentMethodLabel(method.code, t)
         : method.name.trim();
     final selectedColor = isDark
         ? BaseColors.primary.withValues(alpha: 0.2)
@@ -272,16 +271,6 @@ class _PaymentMethodBadge extends StatelessWidget {
       ),
     );
   }
-}
-
-String _confirmationPaymentLabel(MobilePaymentMethod method, L t) {
-  return switch (method) {
-    MobilePaymentMethod.cash => t.paymentCash,
-    MobilePaymentMethod.cardTerminal => t.paymentCardTerminal,
-    MobilePaymentMethod.payme => 'Payme',
-    MobilePaymentMethod.click => 'Click',
-    MobilePaymentMethod.unknown => t.unknown,
-  };
 }
 
 IconData _paymentMethodIcon(MobilePaymentMethod method) {

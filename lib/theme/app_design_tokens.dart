@@ -43,6 +43,13 @@ abstract final class AppDesignTokens {
       ? darkSurface
       : Colors.white;
 
+  /// Fill for fields and boxes set into a surface (promo code, comment,
+  /// payment methods, preview details).
+  static Color inset(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+      ? const Color(0xFF2A2522)
+      : const Color(0xFFF8F4EF);
+
   static Color ground(BuildContext context) =>
       Theme.of(context).brightness == Brightness.dark
       ? darkGround

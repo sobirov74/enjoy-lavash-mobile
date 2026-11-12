@@ -281,7 +281,7 @@ class CartPreviewModel {
       ]),
       totalAmount: totalAmount,
       totalBeforePointsAmount:
-          _optionalInt(json, const [
+          readOptionalInt(json, const [
             'totalBeforePointsAmount',
             'total_before_points_amount',
           ]) ??
@@ -319,7 +319,7 @@ class CartPreviewModel {
             ),
       branchId:
           stringOrNull(json['branchId']) ?? stringOrNull(json['branch_id']),
-      deliveryDistanceMeters: _optionalInt(json, const [
+      deliveryDistanceMeters: readOptionalInt(json, const [
         'deliveryDistanceMeters',
         'delivery_distance_meters',
       ]),
@@ -420,7 +420,7 @@ class PricedCartItemModel {
       ).map(PricedCartModifierModel.fromJson).toList(growable: false),
       isBonus: readBool(json, const ['isBonus', 'is_bonus']),
       comment: stringOrNull(json['comment']),
-      originalUnitPrice: _optionalInt(json, const [
+      originalUnitPrice: readOptionalInt(json, const [
         'originalUnitPrice',
         'original_unit_price',
       ]),
@@ -474,23 +474,12 @@ class AppliedPromotionModel {
       code: stringOrNull(json['code']) ?? stringOrNull(json['promoCode']),
       title: defaultTitle.isEmpty ? null : defaultTitle,
       titleSnapshot: titleSnapshot,
-      discountAmount: _optionalInt(json, const [
+      discountAmount: readOptionalInt(json, const [
         'discountAmount',
         'discount_amount',
       ]),
     );
   }
-}
-
-int? _optionalInt(Map<String, dynamic> json, List<String> keys) {
-  for (final key in keys) {
-    final value = json[key];
-    if (value == null) continue;
-    if (value is int) return value;
-    if (value is num) return value.toInt();
-    if (value is String) return int.tryParse(value);
-  }
-  return null;
 }
 
 String? _previewMessage(Map<String, dynamic> json, List<String> keys) {

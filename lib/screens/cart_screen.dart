@@ -192,33 +192,37 @@ class CartScreen extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
-            physics: const BouncingScrollPhysics(
-              parent: AlwaysScrollableScrollPhysics(),
-            ),
-            itemCount: items.length,
-            findChildIndexCallback: (key) =>
-                indexByKey[(key as ValueKey<String>).value],
-            itemBuilder: (context, index) {
-              final line = items[index];
-              return KeyedSubtree(
-                key: ValueKey<String>(line.key),
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: FadeSlideIn(
-                    child: RepaintBoundary(
-                      child: CartItemCard(
-                        item: line,
-                        isDark: isDark,
-                        onDecrease: () => onDecrease(line),
-                        onIncrease: () => onIncrease(line),
+          child: _ShownLines(
+            builder: (context, shownLines) => ListView.builder(
+              padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
+              physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
+              itemCount: items.length,
+              findChildIndexCallback: (key) =>
+                  indexByKey[(key as ValueKey<String>).value],
+              itemBuilder: (context, index) {
+                final line = items[index];
+                return KeyedSubtree(
+                  key: ValueKey<String>(line.key),
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    // The entrance plays the first time a line appears, not
+                    // again when it scrolls back into view.
+                    child: FadeSlideIn(
+                      animate: shownLines.add(line.key),
+                      child: RepaintBoundary(
+                        child: CartItemCard(
+                          item: line,
+                          onDecrease: () => onDecrease(line),
+                          onIncrease: () => onIncrease(line),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
         _buildCheckoutBar(context, theme, t),
@@ -370,4 +374,22 @@ class CartScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Remembers which cart lines have been shown, for as long as the list is on
+/// screen, so a row's entrance does not replay after scrolling.
+class _ShownLines extends StatefulWidget {
+  const _ShownLines({required this.builder});
+
+  final Widget Function(BuildContext context, Set<String> shownLines) builder;
+
+  @override
+  State<_ShownLines> createState() => _ShownLinesState();
+}
+
+class _ShownLinesState extends State<_ShownLines> {
+  final Set<String> _shownLines = <String>{};
+
+  @override
+  Widget build(BuildContext context) => widget.builder(context, _shownLines);
 }

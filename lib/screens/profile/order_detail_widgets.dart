@@ -13,13 +13,11 @@ class _OrderInfoPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF2A2522) : const Color(0xFFF8F4EF),
+        color: AppDesignTokens.inset(context),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -65,13 +63,11 @@ class _OrderDetailSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF2A2522) : const Color(0xFFF8F4EF),
+        color: AppDesignTokens.inset(context),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(

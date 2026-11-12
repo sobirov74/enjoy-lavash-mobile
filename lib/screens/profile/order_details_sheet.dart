@@ -96,13 +96,19 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet>
 
     switch (result) {
       case Success(:final data):
-        setState(() => _order = data);
+        // Every 8 s while the order is active; most polls change nothing.
+        if (!_isSameOrder(data)) setState(() => _order = data);
       case Error(failure: AuthFailure()):
         _orderPollTimer?.cancel();
         return;
       case Error():
     }
     _scheduleOrderPolling();
+  }
+
+  bool _isSameOrder(CustomerOrderModel order) {
+    return identical(order, _order) ||
+        jsonEncode(order.raw) == jsonEncode(_order.raw);
   }
 
   Future<void> _retryPayment() async {
@@ -150,7 +156,6 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet>
   @override
   Widget build(BuildContext context) {
     final t = L.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final order = _order;
     final colors = _statusColors(order.status);
     final destination = _orderDestination(
@@ -172,7 +177,7 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet>
         maxHeight: MediaQuery.sizeOf(context).height * 0.88,
       ),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1D1A18) : Colors.white,
+        color: AppDesignTokens.surface(context),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: SingleChildScrollView(
@@ -305,7 +310,7 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet>
             _OrderInfoPill(
               icon: Icons.payments_outlined,
               label: t.payment,
-              value: _paymentMethodLabel(order.paymentMethod, t),
+              value: paymentMethodLabel(order.paymentMethod, t),
             ),
             if (order.paymentStatus != null &&
                 order.paymentStatus != MobilePaymentStatus.unknown) ...[
@@ -467,7 +472,7 @@ class _OrderLoyaltyDetailSection extends StatelessWidget {
             LoyaltyAccrualStatus.pending => t.loyaltyPending,
             LoyaltyAccrualStatus.earned =>
               '${t.loyaltyEarned}: '
-                  '+${NumberFormat.decimalPattern(Localizations.localeOf(context).toLanguageTag()).format(accrual.creditedAmount)}',
+                  '+${decimalFormat(Localizations.localeOf(context).toLanguageTag()).format(accrual.creditedAmount)}',
             LoyaltyAccrualStatus.noReward => t.loyaltyNoReward,
             LoyaltyAccrualStatus.reversed => t.loyaltyReversed,
             LoyaltyAccrualStatus.notEligible ||
@@ -490,7 +495,7 @@ class _OrderLoyaltyDetailSection extends StatelessWidget {
             label: restored ? t.loyaltyRestored : t.pointsUsed,
             value:
                 '${restored ? '+' : '-'}'
-                '${NumberFormat.decimalPattern(Localizations.localeOf(context).toLanguageTag()).format(order.loyaltyRedeemedAmount)}',
+                '${decimalFormat(Localizations.localeOf(context).toLanguageTag()).format(order.loyaltyRedeemedAmount)}',
             valueColor: restored ? BaseColors.success : BaseColors.primary,
           ),
         ],

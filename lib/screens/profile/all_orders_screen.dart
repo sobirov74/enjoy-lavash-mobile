@@ -373,7 +373,7 @@ class _OrdersSearchField extends StatelessWidget {
           height: 56,
           padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1D1A18) : Colors.white,
+            color: AppDesignTokens.surface(context),
             borderRadius: BorderRadius.circular(20),
             boxShadow: <BoxShadow>[
               BoxShadow(

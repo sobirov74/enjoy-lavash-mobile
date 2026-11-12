@@ -465,7 +465,7 @@ class _NotificationCard extends StatelessWidget {
           ).format(sentAt);
     final surface = unread
         ? BaseColors.primary.withValues(alpha: isDark ? 0.15 : 0.09)
-        : (isDark ? const Color(0xFF1D1A18) : Colors.white);
+        : (AppDesignTokens.surface(context));
 
     return Semantics(
       button: true,
@@ -710,7 +710,7 @@ class _NotificationDetailsSheet extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1D1A18) : Colors.white,
+        color: AppDesignTokens.surface(context),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
       ),
       padding: const EdgeInsets.fromLTRB(22, 12, 22, 26),
@@ -748,9 +748,11 @@ class _NotificationDetailsSheet extends StatelessWidget {
           if (sentAt != null) ...[
             const SizedBox(height: 16),
             TypographyText(
-              DateFormat.yMMMd(
+              dateFormat(
                 Localizations.localeOf(context).languageCode,
-              ).add_Hm().format(sentAt),
+                'yMMMd Hm',
+                (locale) => DateFormat.yMMMd(locale).add_Hm(),
+              ).format(sentAt),
               style: TextStyle(
                 color: isDark ? BaseColors.lightTextGray : BaseColors.textGray,
                 fontSize: 13,

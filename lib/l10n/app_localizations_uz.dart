@@ -486,6 +486,26 @@ class LUz extends L {
       'Bildirişnoma sozlamalarini yangilab bölmadi';
 
   @override
+  String get pushReminderTitle => 'Bildirişnomalarni yoqing';
+
+  @override
+  String get pushReminderBody =>
+      'Buyurtmangiz qabul qilinganda, tayyor bölganda va yölga çiqqanda xabar beramiz, şaxsiy promokodlar va ballar haqida eslatib turamiz.';
+
+  @override
+  String get pushReminderSettingsHint =>
+      'Bildirişnomalar telefon sozlamalarida öçirilgan. Sozlamalarni oçing, «Bildirişnomalar» bölimiga öting va ruxsat bering.';
+
+  @override
+  String get pushReminderAllow => 'Ruxsat beriş';
+
+  @override
+  String get pushReminderOpenSettings => 'Sozlamalarni oçiş';
+
+  @override
+  String get pushReminderLater => 'Hozir emas';
+
+  @override
   String get notifications => 'Bildirişnomalar';
 
   @override

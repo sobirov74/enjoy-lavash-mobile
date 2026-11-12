@@ -15,6 +15,9 @@ import 'package:enjoy_lavash_mobile/core/services/mobile_push_notification_servi
 import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/repositories/mobile_backend_repository.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/presentation/mobile_backend_controller.dart';
 
+/// Longest the first frame waits for the saved menu at a cold start.
+const Duration _savedContentWait = Duration(milliseconds: 200);
+
 Future<void> main() async {
   await runZonedGuarded<Future<void>>(_startApp, _reportUnhandledError);
 }
@@ -79,6 +82,17 @@ Future<void> _startApp() async {
       ),
     ),
   );
+  // The menu saved by the last launch is shown while the network loads. The
+  // first frame waits for it only briefly; a later read still applies.
+  await Future.any<void>(<Future<void>>[
+    _runStartupTask(
+      'saved public content',
+      () => mobileBackendController.restoreCachedContent(
+        language: localeController.locale.languageCode,
+      ),
+    ),
+    Future<void>.delayed(_savedContentWait),
+  ]);
 
   runApp(
     MultiProvider(

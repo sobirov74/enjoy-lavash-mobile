@@ -489,6 +489,26 @@ class LRu extends L {
       'Не удалось обновить настройки уведомлений';
 
   @override
+  String get pushReminderTitle => 'Включите уведомления';
+
+  @override
+  String get pushReminderBody =>
+      'Сообщим, когда заказ принят, готов и в пути, и напомним о персональных промокодах и баллах.';
+
+  @override
+  String get pushReminderSettingsHint =>
+      'Уведомления выключены в настройках телефона. Откройте настройки, перейдите в «Уведомления» и разрешите их.';
+
+  @override
+  String get pushReminderAllow => 'Разрешить';
+
+  @override
+  String get pushReminderOpenSettings => 'Открыть настройки';
+
+  @override
+  String get pushReminderLater => 'Не сейчас';
+
+  @override
   String get notifications => 'Уведомления';
 
   @override

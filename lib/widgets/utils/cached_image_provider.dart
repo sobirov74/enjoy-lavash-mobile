@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
+import 'package:enjoy_lavash_mobile/widgets/utils/cover_sized_image.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 typedef NetworkImageProviderFactory =
@@ -14,18 +15,32 @@ typedef NetworkImageProviderFactory =
 /// (see `test/flutter_test_config.dart`).
 NetworkImageProviderFactory networkImageProvider = DiskCachedNetworkImage.new;
 
-/// A network image decoded at [cacheWidth] × [cacheHeight] physical pixels
-/// when either is given, through the app-wide [networkImageProvider].
-ImageProvider<Object> resizedNetworkImage(
+/// A network photo, through the app-wide [networkImageProvider], decoded at
+/// the smallest size that covers [box] (logical pixels) at
+/// [devicePixelRatio] without changing its aspect ratio (see
+/// [CoverSizedImage]). A box with an unbounded height decodes at its width.
+ImageProvider<Object> coverNetworkImage(
   String url, {
-  int? cacheWidth,
-  int? cacheHeight,
+  required Size box,
+  required double devicePixelRatio,
 }) {
-  return ResizeImage.resizeIfNeeded(
-    cacheWidth,
-    cacheHeight,
-    networkImageProvider(url),
-  );
+  final provider = networkImageProvider(url);
+  final hasWidth = box.width.isFinite && box.width > 0;
+  final hasHeight = box.height.isFinite && box.height > 0;
+  if (hasWidth && hasHeight) {
+    return CoverSizedImage(
+      provider,
+      width: coverDecodeExtent(box.width, devicePixelRatio),
+      height: coverDecodeExtent(box.height, devicePixelRatio),
+    );
+  }
+  if (hasWidth) {
+    return ResizeImage(
+      provider,
+      width: coverDecodeExtent(box.width, devicePixelRatio),
+    );
+  }
+  return provider;
 }
 
 /// Disk cache for photos: enough objects for the whole catalog plus banners,

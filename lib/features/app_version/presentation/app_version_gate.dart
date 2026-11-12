@@ -5,6 +5,7 @@ import 'package:enjoy_lavash_mobile/core/services/external_url_launcher.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/app_version_policy_model.dart';
 import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
 import 'package:flutter/foundation.dart';
+import 'package:enjoy_lavash_mobile/widgets/utils/cover_sized_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -566,11 +567,16 @@ class _VersionSplash extends StatelessWidget {
               ),
               child: Padding(
                 padding: const EdgeInsets.all(18),
+                // Decoded for its 78 px slot, not at 512 px.
                 child: Image.asset(
                   'assets/images/enjoy-logo.png',
                   width: 78,
                   height: 78,
                   fit: BoxFit.contain,
+                  cacheWidth: coverDecodeExtent(
+                    78,
+                    MediaQuery.devicePixelRatioOf(context),
+                  ),
                 ),
               ),
             ),

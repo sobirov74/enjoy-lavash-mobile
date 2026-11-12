@@ -228,13 +228,24 @@ extension _MobileBackendNotificationsController on MobileBackendController {
   }
 
   Future<void> _handleAppResumed({String? locale}) async {
+    final pushRecheck = _pushSettingsRecheckPending;
+    _pushSettingsRecheckPending = false;
     final client = _client;
-    if (client == null) return;
+    if (client == null) {
+      if (pushRecheck) unawaited(_refreshPushNotificationSettings());
+      return;
+    }
     // Returning from the payment page, a permission dialog or a quick app
-    // switch should not re-fetch everything each time.
+    // switch should not re-fetch everything each time. Coming back from the
+    // phone settings re-checks notifications anyway.
     final now = _clock();
     final last = _lastResumeRefreshAt;
-    if (last != null && now.difference(last) < resumeRefreshInterval) return;
+    if (last != null && now.difference(last) < resumeRefreshInterval) {
+      if (pushRecheck) {
+        _startPushNotificationSync(locale: locale ?? client.language);
+      }
+      return;
+    }
     _lastResumeRefreshAt = now;
 
     _startPushNotificationSync(locale: locale ?? client.language);
@@ -261,9 +272,10 @@ extension _MobileBackendNotificationsController on MobileBackendController {
   }
 
   /// Registers the device token when notifications are allowed. With
-  /// [requestPermission] the OS prompt is shown first (app entry and login);
-  /// background refreshes never prompt. A guest only gets the prompt, the
-  /// token is registered once the customer signs in.
+  /// [requestPermission] the OS prompt is shown first (the first ask, or a
+  /// reminder the customer accepted); background refreshes never prompt. A
+  /// guest's settings are only read; the token is registered once the
+  /// customer signs in.
   Future<void> _syncPushNotificationToken({
     String? locale,
     bool requestPermission = false,
@@ -274,13 +286,112 @@ extension _MobileBackendNotificationsController on MobileBackendController {
         _pushNotificationSettings = settings;
         _notifyListeners();
         if (!settings.enabled || _client == null) return;
+      } else if (_client == null) {
+        await _refreshPushNotificationSettings();
+        return;
       }
       await _pushNotifications.syncTokenIfPermissionGranted(locale: locale);
-      _pushNotificationSettings = await _pushNotifications.getSettings();
+      final settings = await _pushNotifications.getSettings();
+      _pushNotificationSettings = settings;
+      if (settings.enabled) await _pushNotifications.clearPermissionAsks();
       _notifyListeners();
     } catch (error) {
       debugPrint('Push notification sync failed: $error');
     }
+  }
+
+  /// Shows the OS prompt if this install never saw it, and returns whether
+  /// it did. Otherwise only syncs (registers when already allowed).
+  Future<bool> _askFirstPushPermission({String? locale}) async {
+    try {
+      if (!await _pushNotifications.canShowFirstPermissionPrompt()) {
+        await _syncPushNotificationToken(locale: locale);
+        return false;
+      }
+      await _pushNotifications.recordPermissionAsk(_clock());
+    } catch (error) {
+      debugPrint('Push permission check failed: $error');
+      return false;
+    }
+    await _syncPushNotificationToken(locale: locale, requestPermission: true);
+    return true;
+  }
+
+  Future<void> _requestPushNotificationPermissionOnEntry({
+    String? locale,
+  }) async {
+    if (await _askFirstPushPermission(locale: locale)) return;
+    // The reminder is for signed-in customers; wait until the start-up
+    // request says who that is.
+    await whenSessionSettled();
+    if (_disposed || _client == null) return;
+    try {
+      if (await _pushReminderAction(ignoreSchedule: false) == null) return;
+    } catch (error) {
+      debugPrint('Push reminder check failed: $error');
+      return;
+    }
+    if (!_pushReminderDueController.isClosed) {
+      _pushReminderDueController.add(null);
+    }
+  }
+
+  Future<PushReminderAction?> _takePushPermissionReminder({
+    required bool ignoreSchedule,
+  }) async {
+    try {
+      final action = await _pushReminderAction(ignoreSchedule: ignoreSchedule);
+      if (action != null) {
+        await _pushNotifications.recordPermissionAsk(_clock());
+      }
+      return action;
+    } catch (error) {
+      debugPrint('Push reminder check failed: $error');
+      return null;
+    }
+  }
+
+  /// The reminder that applies now, without recording it as shown.
+  Future<PushReminderAction?> _pushReminderAction({
+    required bool ignoreSchedule,
+  }) async {
+    if (_client == null) return null;
+    final settings = await _pushNotifications.getSettings();
+    if (!settings.supported || settings.enabled || !settings.userEnabled) {
+      return null;
+    }
+    if (!ignoreSchedule) {
+      final asks = await _pushNotifications.permissionAsks();
+      final due = isPushReminderDue(
+        now: _clock(),
+        lastAskedAt: asks.lastAskedAt,
+        timesAsked: asks.count,
+      );
+      if (!due) return null;
+    }
+    return await _pushNotifications.systemPromptAvailable()
+        ? PushReminderAction.systemPrompt
+        : PushReminderAction.openSettings;
+  }
+
+  Future<void> _acceptPushPermissionReminder(
+    PushReminderAction action, {
+    String? locale,
+  }) async {
+    switch (action) {
+      case PushReminderAction.systemPrompt:
+        await _syncPushNotificationToken(
+          locale: locale ?? _client?.language,
+          requestPermission: true,
+        );
+      case PushReminderAction.openSettings:
+        await _openNotificationSettings();
+    }
+  }
+
+  Future<bool> _openNotificationSettings() {
+    _pushSettingsRecheckPending = true;
+    return _pushNotifications.openNotificationSettings();
   }
 
   void _applyNotifications(ClientNotificationInboxModel inbox) {

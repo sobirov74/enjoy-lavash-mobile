@@ -17,12 +17,12 @@ Baseline: `main` at 354c012 (v1.2.4+22, Flutter 3.47.4), `flutter analyze` clean
 | 0 | Measure; pin checkout and cart behaviour with tests | ✅ done |
 | 1 | Dead code, unused packages, repository weight | ✅ done |
 | 2 | Rebuild scope (R1–R9) | ✅ done |
-| 3 | Images (I1–I3) | not started |
-| 4 | Instant cold start (S1) | not started |
-| 5 | Smaller hot paths (F1–F8) | not started |
-| 6 | Shell decomposition (`main_tabs.dart`) | not started |
-| 7 | Remaining large files | not started |
-| 8 | Re-measure and close | not started |
+| 3 | Images (I1–I3) | ✅ done |
+| 4 | Instant cold start (S1) | ✅ done (device check below) |
+| 5 | Smaller hot paths (F1–F8) | ✅ done (F8 left as a decision) |
+| 6 | Shell decomposition (`main_tabs.dart`) | ✅ done: 1,801 → 452 lines |
+| 7 | Remaining large files | ✅ done: no hand-written file over 900 lines (largest was 2,042) |
+| 8 | Re-measure and close | in progress: release size recorded; frame and rebuild runs on the phone pending |
 
 ## How to measure
 
@@ -115,6 +115,18 @@ Not measured: cold-start time. `--trace-startup` only times the first frame, and
 the real start-up waits on the network; Phase 4 measures it with the saved-menu
 change.
 
+### After Phase 7 (2026-11-11)
+
+Release APK (arm64): 12,785,744 → 12,789,828 bytes (+4 KB against Phase 2;
+−100 KB against the baseline). App code (`package:enjoy_lavash_mobile` in the
+Dart AOT snapshot) 1,004 → 1,027 KB: the saved-content cache, cover-sized
+decoding and the new pure modules. Bundled assets are unchanged (358 KB).
+
+Pending: the frame-timing and rebuild-count runs on the Galaxy S23 for the
+baseline (354c012 worktree with the current harness) and the final tree, with
+the commands in "How to measure". The phone was disconnected when Phase 7
+finished.
+
 ## Findings
 
 ### Rebuild scope
@@ -171,13 +183,63 @@ change.
 | D7 | `assets/icons/` (3.6 MB, not bundled, not referenced) tracked in git; `lib/features/data/menu_catalog.dart` used only by tests | 1 |
 | D8 | `flutter_svg` parses SVG at runtime only to draw the five bottom-bar icons from strings; its parser stack (`vector_graphics_compiler`, `petitparser`, `xml`, `source_span`) is about 300 KB of the 9 MB of Dart AOT code. Precompiled vector graphics or `CustomPainter` paths would remove it | decision (icons must look identical) |
 
+### Structure (Phases 6 and 7)
+
+Large files were split into `part` files next to their owner. Code moved
+unchanged: State behaviour went into extensions on the same State class, and
+widgets went into their own part files. No public name or test key changed.
+
+| File | Before | After | Parts |
+| --- | --- | --- | --- |
+| `navigation/main_tabs.dart` | 1,801 | 459 | `shell_cart`, `shell_navigation`, `order_context`, `checkout_flow`, `home_tab`, `menu_tab`, `keep_alive_tab_page` |
+| `screens/menu_screen.dart` | 2,042 | 428 | `menu/`: `product_detail_page`, `menu_sections`, `menu_categories`, `menu_add_to_cart`, `menu_order_context`, `menu_widgets` |
+| `main_tabs/order_confirmation_sheet.dart` | 1,611 | 502 | `checkout_sheet_preview`, `checkout_sheet_actions`, `checkout_sheet_parts`, `checkout_ordering_status`, `checkout_loyalty_control` |
+| `screens/authorization_screen.dart` | 1,579 | 782 | `auth/`: `otp_countdown_card`, `name_prompt_sheet`, `birth_date_prompt_sheet` |
+| `profile/profile_redesign.dart` | 1,033 | 524 | `profile_rows`, `profile_language_sheet` |
+| `main_tabs/checkout_preview_summary.dart` | 915 | 453 | `checkout_preview_details_sheet` |
+
+Duplicates merged (Phases 6 and 7). Each was identical, or is now pinned by a
+test:
+- Delivery address text: three copies became `features/address/delivery_address_text.dart`.
+- The payment-method label: two copies became `features/checkout/payment_method_label.dart`.
+- `_optionalInt`: two model copies became `readOptionalInt` in `json_helpers.dart`.
+  The copy in `assigned_promotion_model.dart` behaves differently (it skips an
+  unparseable string and tries the next key), so it stays.
+- Inline colours became tokens: 25 inline copies of the surface colour now call
+  `AppDesignTokens.surface(context)`, and 13 copies of the inset fill call the new
+  `AppDesignTokens.inset(context)`. Every one was decided by the theme's
+  brightness and the app has no nested `Theme`, so the colours are identical.
+  The menu skeleton keeps its own pair, because it has a highlight shade.
+- Six widgets lost an `isDark` parameter they no longer read (several had
+  never read it).
+
 ### Build
 
 | ID | Finding | Status |
 | --- | --- | --- |
 | B1 | Every Android profile build failed: `src/profile/AndroidManifest.xml` hard-coded `usesCleartextTraffic="true"` while the main manifest takes it from the build-type placeholder (`false` outside debug) | ✅ fixed in Phase 0: the profile manifest no longer declares it |
 
+## Manual checks on a device
+
+- **Saved menu at cold start (Phase 4):** open the app once with network so the
+  menu is saved. Kill it, switch on airplane mode and open it again: the menu
+  should appear at once, Home should show placeholders for the greeting and
+  balance, and after the request fails a message with Retry should appear. Switch
+  airplane mode off and tap Retry: the content refreshes and the greeting
+  appears.
+
 ## Decisions recorded, not changed
+
+- No `OrderContextController` (Phase 6 plan): order type and pickup branch
+  change only on an explicit choice, and the shell rebuild they cause is the
+  one intended. A controller would re-plumb every tab for no measurable gain.
+
+- Add-to-cart flight raster cost (F8): the blurred ground shadows and the
+  packaging's lit layers change shape every frame, so every frame repaints
+  them. Making them cheaper (pre-rendered shadows, fewer blur passes) changes
+  how the animation looks and needs a design sign-off.
+- Bottom-bar icons (D8): drawing them without runtime SVG parsing would drop
+  about 300 KB of code, but the icons must be redrawn pixel-for-pixel first.
 
 - GPS coordinates can win over a saved address in the order while the label shows
   the saved one (`main_tabs.dart:1091`). Needs a product decision.

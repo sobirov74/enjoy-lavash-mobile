@@ -22,7 +22,11 @@ class ProductListItem extends StatefulWidget {
     this.onAddOrigin,
     this.onAddRequested,
     this.imageHeroTag,
+    this.imageWidth,
   });
+
+  /// Height of the product photo at the top of the card.
+  static const double imageHeight = 106;
 
   final MenuProduct product;
   final bool isDark;
@@ -34,6 +38,10 @@ class ProductListItem extends StatefulWidget {
   final ValueChanged<Rect>? onAddOrigin;
   final Object? imageHeroTag;
   final void Function(CartAnimationSource? source)? onAddRequested;
+
+  /// The card's width when the parent knows it (the menu grid's column), so
+  /// the photo is decoded for its real box without measuring itself.
+  final double? imageWidth;
 
   @override
   State<ProductListItem> createState() => _ProductListItemState();
@@ -67,7 +75,8 @@ class _ProductListItemState extends State<ProductListItem> {
       child: ProductImage(
         product: product,
         width: double.infinity,
-        height: 106,
+        height: ProductListItem.imageHeight,
+        layoutWidth: widget.imageWidth,
         borderRadius: AppDesignTokens.radiusThumb,
         fallbackFontSize: 44,
       ),

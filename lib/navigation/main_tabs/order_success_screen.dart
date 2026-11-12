@@ -380,7 +380,6 @@ class _OrderSuccessLoyaltyCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = L.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final accrual = order.loyalty.accrual;
     final accrualText = switch (accrual.status) {
       LoyaltyAccrualStatus.pending => t.loyaltyPending,
@@ -396,7 +395,7 @@ class _OrderSuccessLoyaltyCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1D1A18) : Colors.white,
+        color: AppDesignTokens.surface(context),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0x1A8C8278)),
       ),

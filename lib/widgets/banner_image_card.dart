@@ -1,5 +1,4 @@
 import 'package:enjoy_lavash_mobile/theme/app_design_tokens.dart';
-import 'package:enjoy_lavash_mobile/widgets/utils/image_decode_size.dart';
 import 'package:flutter/material.dart';
 import 'package:enjoy_lavash_mobile/widgets/utils/cached_image_provider.dart';
 
@@ -26,12 +25,14 @@ class BannerImageCard extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // Decode at the slot's width, not the source resolution.
+            // Decoded to cover the slot at screen resolution, not at the
+            // source resolution.
             LayoutBuilder(
               builder: (context, constraints) => Image(
-                image: resizedNetworkImage(
+                image: coverNetworkImage(
                   imageUrl,
-                  cacheWidth: decodeWidthFor(context, constraints),
+                  box: constraints.biggest,
+                  devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
                 ),
                 fit: BoxFit.cover,
                 excludeFromSemantics: true,

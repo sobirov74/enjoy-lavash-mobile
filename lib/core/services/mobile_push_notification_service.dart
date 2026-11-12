@@ -122,6 +122,10 @@ class MobilePushNotificationService {
   static const String _registrationFingerprintKey =
       'push_registration_fingerprint';
   static const String _registeredAtKey = 'push_registration_registered_at';
+  static const String _permissionPromptShownKey =
+      'push_permission_prompt_shown';
+  static const String _permissionAskedAtKey = 'push_permission_asked_at';
+  static const String _permissionAskCountKey = 'push_permission_ask_count';
 
   /// An unchanged registration is re-sent at most this often. Sync runs on
   /// every login and app resume; re-posting the same token each time only
@@ -277,6 +281,85 @@ class MobilePushNotificationService {
   /// in the app. Does not register a token; callers sync afterwards.
   Future<PushNotificationSettings> requestPermission() {
     return _ensureNotificationPermission();
+  }
+
+  /// Whether the OS prompt was never shown to this install and can be shown
+  /// now. App entry and sign-in show it directly only then; every later ask
+  /// starts with the in-app reminder, which explains why before the OS
+  /// prompt (Android shows it twice at most, iOS once).
+  Future<bool> canShowFirstPermissionPrompt() async {
+    if (!_supportsPushNotifications) return false;
+    final preferences = await SharedPreferences.getInstance();
+    if (!(preferences.getBool(_notificationsEnabledKey) ?? true)) return false;
+    if (preferences.getBool(_permissionPromptShownKey) ?? false) return false;
+    return (await _notificationPermissionStatus()).isDenied;
+  }
+
+  /// Whether the OS would show its notification prompt now. iOS reports a
+  /// refusal as permanently denied. On Android 13+ a status check cannot
+  /// tell "never asked" from "refused twice"; once the prompt was shown, the
+  /// rationale flag says whether the OS will show it again.
+  Future<bool> systemPromptAvailable() async {
+    final status = await _notificationPermissionStatus();
+    if (!status.isDenied) return false;
+    if (defaultTargetPlatform != TargetPlatform.android) return true;
+    final preferences = await SharedPreferences.getInstance();
+    if (!(preferences.getBool(_permissionPromptShownKey) ?? false)) {
+      return true;
+    }
+    try {
+      return await Permission.notification.shouldShowRequestRationale;
+    } on PlatformException catch (error) {
+      debugPrint('Notification rationale check failed: ${error.message}');
+      return false;
+    } on MissingPluginException {
+      return false;
+    }
+  }
+
+  /// When the customer was last asked to allow notifications and how many
+  /// times since they were last on; drives the reminder schedule.
+  Future<({DateTime? lastAskedAt, int count})> permissionAsks() async {
+    final preferences = await SharedPreferences.getInstance();
+    final askedAt = preferences.getInt(_permissionAskedAtKey);
+    return (
+      lastAskedAt: askedAt == null
+          ? null
+          : DateTime.fromMillisecondsSinceEpoch(askedAt, isUtc: true),
+      count: preferences.getInt(_permissionAskCountKey) ?? 0,
+    );
+  }
+
+  Future<void> recordPermissionAsk(DateTime at) async {
+    final preferences = await SharedPreferences.getInstance();
+    final count = preferences.getInt(_permissionAskCountKey) ?? 0;
+    await preferences.setInt(_permissionAskedAtKey, at.millisecondsSinceEpoch);
+    await preferences.setInt(_permissionAskCountKey, count + 1);
+  }
+
+  /// Starts the reminder schedule over; called once notifications are on,
+  /// so a later refusal is reminded about from the first step again.
+  Future<void> clearPermissionAsks() async {
+    final preferences = await SharedPreferences.getInstance();
+    if (!preferences.containsKey(_permissionAskCountKey) &&
+        !preferences.containsKey(_permissionAskedAtKey)) {
+      return;
+    }
+    await preferences.remove(_permissionAskedAtKey);
+    await preferences.remove(_permissionAskCountKey);
+  }
+
+  /// Opens this app's page in the phone settings, where notifications can be
+  /// allowed after the OS stopped showing its prompt.
+  Future<bool> openNotificationSettings() async {
+    try {
+      return await openAppSettings();
+    } on PlatformException catch (error) {
+      debugPrint('Opening app settings failed: ${error.message}');
+      return false;
+    } on MissingPluginException {
+      return false;
+    }
   }
 
   Future<void> _syncToken({
@@ -596,6 +679,7 @@ class MobilePushNotificationService {
       return _settingsFromStatus(currentStatus, userEnabled: true);
     }
 
+    await preferences.setBool(_permissionPromptShownKey, true);
     final requestedStatus = await Permission.notification.request();
     return _settingsFromStatus(requestedStatus, userEnabled: true);
   }

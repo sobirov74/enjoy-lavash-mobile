@@ -427,13 +427,12 @@ class _WalletMetric extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final color = accent ? BaseColors.primaryDark : BaseColors.primary;
     return Container(
       constraints: const BoxConstraints(minHeight: 112),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1D1A18) : Colors.white,
+        color: AppDesignTokens.surface(context),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: accent
@@ -481,11 +480,10 @@ class _HowPointsWork extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = L.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1D1A18) : Colors.white,
+        color: AppDesignTokens.surface(context),
         borderRadius: BorderRadius.circular(22),
       ),
       child: Column(
@@ -579,7 +577,7 @@ class _TransactionTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1D1A18) : Colors.white,
+        color: AppDesignTokens.surface(context),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Row(

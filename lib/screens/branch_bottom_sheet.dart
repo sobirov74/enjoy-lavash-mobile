@@ -5,6 +5,7 @@ import 'package:enjoy_lavash_mobile/theme/app_colors.dart';
 import 'package:enjoy_lavash_mobile/widgets/app_bottom_sheet_drag_handle.dart';
 import 'package:enjoy_lavash_mobile/widgets/app_modal_bottom_sheet.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
+import 'package:enjoy_lavash_mobile/theme/app_design_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -48,7 +49,7 @@ class _BranchSheet extends StatelessWidget {
         maxHeight: MediaQuery.sizeOf(context).height * 0.7,
       ),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1D1A18) : Colors.white,
+        color: AppDesignTokens.surface(context),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: Column(
@@ -163,7 +164,7 @@ class _BranchCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: isSelected
                 ? BaseColors.primary.withValues(alpha: isDark ? 0.16 : 0.10)
-                : (isDark ? const Color(0xFF2A2522) : const Color(0xFFF8F4EF)),
+                : (AppDesignTokens.inset(context)),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: isSelected ? BaseColors.primary : Colors.transparent,

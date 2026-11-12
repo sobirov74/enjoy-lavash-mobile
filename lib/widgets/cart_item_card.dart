@@ -10,13 +10,11 @@ class CartItemCard extends StatelessWidget {
   const CartItemCard({
     super.key,
     required this.item,
-    required this.isDark,
     required this.onDecrease,
     required this.onIncrease,
   });
 
   final CartLine item;
-  final bool isDark;
   final VoidCallback onDecrease;
   final VoidCallback onIncrease;
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:enjoy_lavash_mobile/core/services/yandex_geocoder_service.dart';
+import 'package:enjoy_lavash_mobile/features/checkout/checkout_requests.dart';
 
 enum LocationStatus { initial, loading, granted, denied, error }
 
@@ -38,6 +39,25 @@ class LocationController extends ChangeNotifier {
 
   String _comment = '';
   String get comment => _comment;
+
+  /// The point picked on this device with its details, for checkout; null
+  /// until a location is known.
+  DeliveryPoint? get deliveryPoint {
+    final latitude = _latitude;
+    final longitude = _longitude;
+    if (latitude == null || longitude == null) return null;
+    return (
+      latitude: latitude,
+      longitude: longitude,
+      addressName: _addressName,
+      fullAddress: fullAddress,
+      houseNumber: _houseNumber,
+      apartment: _apartment,
+      entrance: _entrance,
+      floor: _floor,
+      comment: _comment,
+    );
+  }
 
   String get fullAddress {
     final parts = <String>[_addressName];

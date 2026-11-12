@@ -8,6 +8,7 @@ import 'package:enjoy_lavash_mobile/widgets/app_bottom_sheet_drag_handle.dart';
 import 'package:enjoy_lavash_mobile/widgets/app_modal_bottom_sheet.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
 import 'package:enjoy_lavash_mobile/screens/map_picker_screen.dart';
+import 'package:enjoy_lavash_mobile/theme/app_design_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -190,7 +191,7 @@ class _AddressSheetState extends State<_AddressSheet>
               maxHeight: MediaQuery.sizeOf(context).height * 0.9,
             ),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1D1A18) : Colors.white,
+              color: AppDesignTokens.surface(context),
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(28),
               ),
@@ -244,7 +245,6 @@ class _AddressSheetState extends State<_AddressSheet>
                       children: [
                         // Current address display
                         _AnimatedAddressCard(
-                          isDark: isDark,
                           addressName: addressName,
                           district: district,
                           isLoading: isLocating,
@@ -459,7 +459,6 @@ class _AddressSheetState extends State<_AddressSheet>
 // -- Animated address card with pulse effect while loading
 class _AnimatedAddressCard extends StatefulWidget {
   const _AnimatedAddressCard({
-    required this.isDark,
     required this.addressName,
     required this.district,
     required this.isLoading,
@@ -467,7 +466,6 @@ class _AnimatedAddressCard extends StatefulWidget {
     required this.onLocate,
   });
 
-  final bool isDark;
   final String addressName;
   final String district;
   final bool isLoading;
@@ -684,7 +682,7 @@ class _SuggestionsList extends StatelessWidget {
     return Container(
       constraints: const BoxConstraints(maxHeight: 200),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF2A2522) : const Color(0xFFF8F4EF),
+        color: AppDesignTokens.inset(context),
         borderRadius: BorderRadius.circular(18),
       ),
       child: ListView.separated(

@@ -177,7 +177,7 @@ class _OrderRow extends StatelessWidget {
                           if (order.loyaltyRedeemedAmount > 0)
                             TypographyText(
                               '${pointsRestored ? '+' : '-'}'
-                              '${NumberFormat.decimalPattern(locale).format(order.loyaltyRedeemedAmount)} '
+                              '${decimalFormat(locale).format(order.loyaltyRedeemedAmount)} '
                               '${pointsRestored ? t.loyaltyRestored : t.pointsUsed}',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,

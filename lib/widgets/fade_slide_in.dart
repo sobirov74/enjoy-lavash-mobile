@@ -15,12 +15,17 @@ class FadeSlideIn extends StatefulWidget {
     this.delay = Duration.zero,
     this.duration = const Duration(milliseconds: 280),
     this.beginOffset = const Offset(0, 0.06),
+    this.animate = true,
   });
 
   final Widget child;
   final Duration delay;
   final Duration duration;
   final Offset beginOffset;
+
+  /// False shows the child at once, for example a list row scrolled back
+  /// into view whose entrance already played.
+  final bool animate;
 
   @override
   State<FadeSlideIn> createState() => _FadeSlideInState();
@@ -45,7 +50,7 @@ class _FadeSlideInState extends State<FadeSlideIn>
     final reduceMotion = AppMotion.reduced(context);
     _controller.duration = AppMotion.duration(context, widget.duration);
 
-    if (reduceMotion) {
+    if (reduceMotion || (!widget.animate && !_entranceScheduled)) {
       _delayTimer?.cancel();
       _entranceScheduled = true;
       _controller.value = 1;

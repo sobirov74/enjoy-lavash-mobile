@@ -13,6 +13,7 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/order_mo
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/ordering_status_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/promotion_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/entities/mobile_bootstrap.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/entities/mobile_public_content.dart';
 
 abstract class MobileBackendRepository {
   Future<Result<OtpRequestResponse>> requestOtp({required String phoneNumber});
@@ -22,6 +23,12 @@ abstract class MobileBackendRepository {
   Future<Result<void>> logout();
 
   Future<Result<void>> deleteAccount();
+
+  /// The public content (menu, branches, promotions, banners) saved by the
+  /// last successful bootstrap for [language], or null. Never fails.
+  Future<MobilePublicContent?> readCachedPublicContent({
+    required String language,
+  });
 
   Future<Result<MobileBootstrap>> bootstrap({
     required String language,

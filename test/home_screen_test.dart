@@ -9,6 +9,7 @@ import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/screens/home_screen.dart';
 import 'package:enjoy_lavash_mobile/theme/app_design_tokens.dart';
 import 'package:enjoy_lavash_mobile/widgets/product_image.dart';
+import 'package:enjoy_lavash_mobile/widgets/utils/cover_sized_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -62,11 +63,12 @@ void main() {
     final image = tester.widget<Image>(
       find.descendant(of: slider, matching: find.byType(Image)).first,
     );
-    // Banners decode at the slot width, not the source resolution.
-    final resized = image.image as ResizeImage;
-    expect(resized.width, isNotNull);
+    // Banners decode to cover their slot, not at the source resolution.
+    final cover = image.image as CoverSizedImage;
+    expect(cover.width, greaterThan(0));
+    expect(cover.height, greaterThan(0));
     expect(
-      (resized.imageProvider as NetworkImage).url,
+      (cover.imageProvider as NetworkImage).url,
       'https://example.test/first.jpg',
     );
     await tester.drag(slider, const Offset(-350, 0));

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show HttpDate;
-import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:enjoy_lavash_mobile/app/locale_controller.dart';
@@ -16,17 +15,50 @@ import 'package:enjoy_lavash_mobile/theme/light_theme.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:pinput/pinput.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+const _permissionChannel = MethodChannel(
+  'flutter.baseflow.com/permissions/methods',
+);
+
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
+  final binding = TestWidgetsFlutterBinding.ensureInitialized();
+
+  // Sign-in asks for notification permission; the OS answers "denied" here.
+  var notificationPromptCount = 0;
+  var notificationRationale = false;
 
   setUp(() {
     FlutterSecureStorage.setMockInitialValues({});
     SharedPreferences.setMockInitialValues({});
+    notificationPromptCount = 0;
+    notificationRationale = false;
+    binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      _permissionChannel,
+      (call) async => switch (call.method) {
+        'checkPermissionStatus' => PermissionStatus.denied.index,
+        'shouldShowRequestPermissionRationale' => notificationRationale,
+        'requestPermissions' => () {
+          notificationPromptCount++;
+          return <int, int>{
+            Permission.notification.value: PermissionStatus.denied.index,
+          };
+        }(),
+        _ => null,
+      },
+    );
+  });
+
+  tearDown(() {
+    binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      _permissionChannel,
+      null,
+    );
   });
 
   testWidgets(
@@ -281,7 +313,42 @@ void main() {
     );
 
     expect(find.text('Your birthday 🎂'), findsNothing);
+    // Signing in asked for notifications with the OS prompt, once.
+    expect(notificationPromptCount, 1);
   });
+
+  testWidgets(
+    'a customer who already saw the OS prompt gets the reminder at sign-in',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({
+        'push_permission_prompt_shown': true,
+      });
+      // Android after one refusal: the OS would show its prompt once more.
+      notificationRationale = true;
+      await _pumpAuthorizationLauncher(
+        tester,
+        _authAdapter(clientCreated: false, birthDate: '1995-04-07'),
+      );
+
+      await _completeOtp(tester);
+      await _pumpUntilFound(
+        tester,
+        find.byKey(const ValueKey<String>('push-permission-sheet')),
+      );
+      expect(find.text('Turn on notifications'), findsOneWidget);
+      expect(find.text('Allow'), findsOneWidget);
+      expect(notificationPromptCount, 0);
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('push-permission-later')),
+      );
+      await _pumpUntilFound(
+        tester,
+        find.byKey(const ValueKey<String>('authorization-launcher')),
+      );
+      expect(notificationPromptCount, 0);
+    },
+  );
 
   testWidgets('birth date save sends a date-only profile update', (
     tester,

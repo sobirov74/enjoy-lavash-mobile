@@ -6,6 +6,8 @@ import 'package:enjoy_lavash_mobile/widgets/app_bottom_sheet_drag_handle.dart';
 import 'package:enjoy_lavash_mobile/widgets/app_modal_bottom_sheet.dart';
 import 'package:enjoy_lavash_mobile/widgets/app_snack_bar.dart';
 import 'package:enjoy_lavash_mobile/widgets/typography.dart';
+import 'package:enjoy_lavash_mobile/utils/format_cache.dart';
+import 'package:enjoy_lavash_mobile/theme/app_design_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -63,7 +65,7 @@ class _PromotionDetailsSheet extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1D1A18) : Colors.white,
+        color: AppDesignTokens.surface(context),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: SafeArea(
@@ -106,7 +108,6 @@ class _PromotionDetailsSheet extends StatelessWidget {
                   value: promotion.isPercentageDiscount
                       ? '${promotion.discountValue}%'
                       : formatSum(context, promotion.discountValue!),
-                  isDark: isDark,
                 ),
               ],
               if (promotion.endsAt != null) ...[
@@ -114,16 +115,18 @@ class _PromotionDetailsSheet extends StatelessWidget {
                 _DetailRow(
                   icon: Icons.schedule_rounded,
                   label: t.validUntil(
-                    DateFormat.yMMMMd(locale).format(promotion.endsAt!),
+                    dateFormat(
+                      locale,
+                      'yMMMMd',
+                      DateFormat.yMMMMd,
+                    ).format(promotion.endsAt!),
                   ),
-                  isDark: isDark,
                 ),
               ],
               if (hasCode) ...[
                 const SizedBox(height: 20),
                 _PromoCodeCard(
                   code: promoCode!,
-                  isDark: isDark,
                   label: t.promoCode,
                   onCopy: onCopyCode,
                 ),
@@ -156,17 +159,11 @@ class _PromotionDetailsSheet extends StatelessWidget {
 }
 
 class _DetailRow extends StatelessWidget {
-  const _DetailRow({
-    required this.icon,
-    required this.label,
-    required this.isDark,
-    this.value,
-  });
+  const _DetailRow({required this.icon, required this.label, this.value});
 
   final IconData icon;
   final String label;
   final String? value;
-  final bool isDark;
 
   @override
   Widget build(BuildContext context) {
@@ -201,15 +198,9 @@ class _DetailRow extends StatelessWidget {
 }
 
 class _PromoCodeCard extends StatelessWidget {
-  const _PromoCodeCard({
-    required this.code,
-    required this.isDark,
-    required this.label,
-    this.onCopy,
-  });
+  const _PromoCodeCard({required this.code, required this.label, this.onCopy});
 
   final String code;
-  final bool isDark;
   final String label;
   final VoidCallback? onCopy;
 
@@ -218,7 +209,7 @@ class _PromoCodeCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF2A2522) : const Color(0xFFF8F4EF),
+        color: AppDesignTokens.inset(context),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(

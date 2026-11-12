@@ -261,15 +261,25 @@ class _MainTabIcon extends StatelessWidget {
         '<path d="M9 14h6a5 5 0 0 1 5 5v2H4v-2a5 5 0 0 1 5-5Z"/>',
   };
 
+  /// The full SVG documents, built once per icon and state instead of on
+  /// every bottom-bar rebuild (every cart change).
+  static final Map<(int, bool), String> _documents = <(int, bool), String>{};
+
+  static String _document(int index, bool selected) {
+    return _documents.putIfAbsent((index, selected), () {
+      final filled = selected ? _filled[index] : null;
+      return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" '
+          'fill="${filled == null ? 'none' : 'black'}" '
+          'stroke="${filled == null ? 'black' : 'none'}" '
+          'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+          '${filled ?? _outlines[index]}</svg>';
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    final filled = selected ? _filled[index] : null;
     return SvgPicture.string(
-      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" '
-      'fill="${filled == null ? 'none' : 'black'}" '
-      'stroke="${filled == null ? 'black' : 'none'}" '
-      'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-      '${filled ?? _outlines[index]}</svg>',
+      _document(index, selected),
       width: 20,
       height: 20,
       colorFilter: ColorFilter.mode(color, BlendMode.srcIn),

@@ -20,9 +20,11 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/order_mo
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/ordering_status_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/promotion_model.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/entities/mobile_bootstrap.dart';
+import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/entities/mobile_public_content.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/repositories/mobile_backend_repository.dart';
 import 'package:enjoy_lavash_mobile/features/models/menu_product.dart';
 import 'package:enjoy_lavash_mobile/features/models/menu_category.dart';
+import 'package:enjoy_lavash_mobile/features/push_permission/push_reminder_schedule.dart';
 import 'package:flutter/material.dart';
 
 part 'mobile_backend_controller/mobile_backend_auth_controller.dart';
@@ -64,6 +66,8 @@ class MobileBackendController extends ChangeNotifier {
   _pushMessageSubscription;
   final StreamController<SessionEndReason> _sessionEndedController =
       StreamController<SessionEndReason>.broadcast();
+  final StreamController<void> _pushReminderDueController =
+      StreamController<void>.broadcast();
 
   /// Bumped whenever the signed-in customer changes (login, logout, expiry).
   /// Async work captures it first and drops its result if it changed, so a
@@ -74,6 +78,16 @@ class MobileBackendController extends ChangeNotifier {
   int _sessionGeneration = 0;
   bool _disposed = false;
   int _catalogRequestVersion = 0;
+
+  /// The catalog on screen came from the device, not yet from the network.
+  bool _showingCachedContent = false;
+
+  /// A network catalog has been applied; saved content may no longer
+  /// replace what is shown.
+  bool _networkContentApplied = false;
+
+  /// Completes when the running bootstrap ends; null when none runs.
+  Completer<void>? _bootstrapInFlight;
 
   MobileBackendStatus _status = MobileBackendStatus.initial;
   Failure? _failure;
@@ -110,6 +124,10 @@ class MobileBackendController extends ChangeNotifier {
   PushNotificationMessage? _pendingPushMessage;
   PushNotificationSettings? _pushNotificationSettings;
   bool _pushNotificationsUpdating = false;
+
+  /// Set when the phone settings were opened to allow notifications; the
+  /// next resume re-checks the permission even inside the resume throttle.
+  bool _pushSettingsRecheckPending = false;
   bool _accountDeleting = false;
   LoyaltyWalletModel? _loyaltyWallet;
   bool _loyaltyWalletLoading = false;
@@ -176,6 +194,26 @@ class MobileBackendController extends ChangeNotifier {
   Failure? get loyaltyTransactionsFailure => _loyaltyTransactionsFailure;
   bool get hasMoreLoyaltyTransactions => _loyaltyTransactionsNextCursor != null;
   bool get isAuthenticated => _client != null;
+
+  /// Whether the menu, branches, promotions and banners shown were saved by
+  /// an earlier launch and the network has not confirmed them yet. The cart
+  /// is not reconciled against them, and screens may hold back customer
+  /// details until the session is known.
+  bool get isShowingCachedContent => _showingCachedContent;
+
+  /// Completes once the running bootstrap (and so the signed-in state) is
+  /// settled; at once when none runs. Actions that need to know whether the
+  /// customer is signed in wait for it instead of treating "still loading"
+  /// as "signed out".
+  Future<void> whenSessionSettled() =>
+      _bootstrapInFlight?.future ?? Future<void>.value();
+
+  /// Shows the public content saved by the last launch while the bootstrap
+  /// is still loading. Ignored once network content has arrived.
+  Future<void> restoreCachedContent({required String language}) {
+    return _restoreCachedContent(language: language);
+  }
+
   Stream<SessionEndReason> get sessionEnded => _sessionEndedController.stream;
   bool get isLoading => _status == MobileBackendStatus.loading;
 
@@ -212,6 +250,7 @@ class MobileBackendController extends ChangeNotifier {
     _disposed = true;
     unawaited(_pushMessageSubscription.cancel());
     unawaited(_sessionEndedController.close());
+    unawaited(_pushReminderDueController.close());
     super.dispose();
   }
 
@@ -242,10 +281,47 @@ class MobileBackendController extends ChangeNotifier {
     return _refreshPushNotificationSettings();
   }
 
-  /// Asks for notification permission on app entry; registers the token when
-  /// the customer is signed in and the permission was granted.
+  /// App entry: shows the OS notification prompt the first time only and
+  /// registers the token when allowed. When a signed-in customer has
+  /// notifications off and a reminder is due, [pushPermissionReminderDue]
+  /// fires afterwards so the shell can show the reminder.
   Future<void> requestPushNotificationPermission({String? locale}) {
-    return _syncPushNotificationToken(locale: locale, requestPermission: true);
+    return _requestPushNotificationPermissionOnEntry(locale: locale);
+  }
+
+  /// Sign-in: shows the OS notification prompt if this install never saw it.
+  /// Returns whether it was shown; when not, the sign-in flow shows the
+  /// in-app reminder instead.
+  Future<bool> requestFirstPushNotificationPrompt({String? locale}) {
+    return _askFirstPushPermission(locale: locale);
+  }
+
+  /// Fires after app entry when a notification reminder is due.
+  Stream<void> get pushPermissionReminderDue =>
+      _pushReminderDueController.stream;
+
+  /// The reminder to show now, or null. Only for signed-in customers with
+  /// notifications off and not switched off in the app; on the
+  /// [pushReminderIntervals] schedule unless [ignoreSchedule]. A returned
+  /// reminder counts as shown.
+  Future<PushReminderAction?> takePushPermissionReminder({
+    bool ignoreSchedule = false,
+  }) {
+    return _takePushPermissionReminder(ignoreSchedule: ignoreSchedule);
+  }
+
+  /// The customer accepted a reminder: shows the OS prompt, or opens the
+  /// phone settings and re-checks when the app comes back.
+  Future<void> acceptPushPermissionReminder(
+    PushReminderAction action, {
+    String? locale,
+  }) {
+    return _acceptPushPermissionReminder(action, locale: locale);
+  }
+
+  /// Opens this app's page in the phone settings to allow notifications.
+  Future<bool> openNotificationSettings() {
+    return _openNotificationSettings();
   }
 
   Future<Result<PushNotificationSettings>> setPushNotificationsEnabled(

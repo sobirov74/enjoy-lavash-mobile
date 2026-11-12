@@ -981,6 +981,42 @@ abstract class L {
   /// **'Bildirişnoma sozlamalarini yangilab bölmadi'**
   String get notificationUpdateFailed;
 
+  /// No description provided for @pushReminderTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bildirişnomalarni yoqing'**
+  String get pushReminderTitle;
+
+  /// No description provided for @pushReminderBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmangiz qabul qilinganda, tayyor bölganda va yölga çiqqanda xabar beramiz, şaxsiy promokodlar va ballar haqida eslatib turamiz.'**
+  String get pushReminderBody;
+
+  /// No description provided for @pushReminderSettingsHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bildirişnomalar telefon sozlamalarida öçirilgan. Sozlamalarni oçing, «Bildirişnomalar» bölimiga öting va ruxsat bering.'**
+  String get pushReminderSettingsHint;
+
+  /// No description provided for @pushReminderAllow.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ruxsat beriş'**
+  String get pushReminderAllow;
+
+  /// No description provided for @pushReminderOpenSettings.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sozlamalarni oçiş'**
+  String get pushReminderOpenSettings;
+
+  /// No description provided for @pushReminderLater.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozir emas'**
+  String get pushReminderLater;
+
   /// No description provided for @notifications.
   ///
   /// In uz, this message translates to:

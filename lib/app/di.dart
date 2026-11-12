@@ -1,6 +1,7 @@
 import 'package:get_it/get_it.dart';
 import 'package:enjoy_lavash_mobile/core/api/api_client.dart';
 import 'package:enjoy_lavash_mobile/core/services/mobile_push_notification_service.dart';
+import 'package:enjoy_lavash_mobile/core/storage/public_content_cache.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/data/repositories/mobile_backend_repository_impl.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/repositories/mobile_backend_repository.dart';
 
@@ -15,6 +16,9 @@ void setupDi() {
 
   // -- Repositories
   sl.registerLazySingleton<MobileBackendRepository>(
-    () => MobileBackendRepositoryImpl(sl<ApiClient>()),
+    () => MobileBackendRepositoryImpl(
+      sl<ApiClient>(),
+      publicContentCache: PublicContentCache(),
+    ),
   );
 }

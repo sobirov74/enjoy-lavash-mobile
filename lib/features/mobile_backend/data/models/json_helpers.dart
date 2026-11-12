@@ -36,6 +36,19 @@ int readInt(JsonMap json, List<String> keys, {int fallback = 0}) {
   return fallback;
 }
 
+/// The first of [keys] that holds a number (or a numeric string), as an int;
+/// null when none does or the first string is not a number.
+int? readOptionalInt(JsonMap json, List<String> keys) {
+  for (final key in keys) {
+    final value = json[key];
+    if (value == null) continue;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value);
+  }
+  return null;
+}
+
 double readDouble(JsonMap json, List<String> keys, {double fallback = 0}) {
   final value = _firstValue(json, keys);
   if (value is double) return value;

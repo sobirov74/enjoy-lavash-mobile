@@ -25,7 +25,7 @@ differ, the code is the truth and this file records it.
 | Fonts | Manrope and GolosText variable fonts in `assets/fonts/` |
 | Assets | Only `assets/images/` is declared in `pubspec.yaml`; the unbundled `assets/icons/` folder was deleted (performance pass 2, Phase 1) |
 | Lints | `flutter_lints` via `analysis_options.yaml` |
-| Tests | `flutter test` (all green, ~300 tests, 67 files), `flutter_test` only, no mocking package; on-device performance harness in `integration_test/` |
+| Tests | `flutter test` (all green, 362 tests, 74 files), `flutter_test` only, no mocking package; on-device performance harness in `integration_test/` |
 | Backend | REST API documented in `API_DOCS.md`; banners in `BANNERS_API.md` |
 | Config | `--dart-define`: `API_BASE_URL`, `ORGANISATION_ID`, `YANDEX_GEOCODER_KEY`, `YANDEX_SUGGEST_KEY`, `ENABLE_NETWORK_LOGS` (see `README.md`). No secrets in source |
 | Audit | `docs/STABILITY_AUDIT.md` (October 2026, done) and `docs/PERFORMANCE_PASS_2.md` (November 2026: findings, phase status, before/after measurements) |
@@ -95,11 +95,12 @@ lib/
 `PlatformDispatcher.onError`, starts `ErrorReporter` (Sentry wraps those handlers when a DSN is set), calls `setupDi()`, creates the four root
 controllers, wires `ApiClient.setOnLogout` to the backend controller, loads
 theme + locale, kicks off push handlers and the backend bootstrap as
-fire-and-forget startup tasks, then `runApp` with:
+fire-and-forget startup tasks, waits at most 200 ms for the menu saved by the
+last launch (`restoreCachedContent`), then `runApp` with:
 
 ```
 MultiProvider(ThemeController, LocaleController, LocationController, MobileBackendController)
-  └── InitialLocationLoader          (lib/app/app.dart: on first frame asks for location, then notification permission; resumes backend on app resume)
+  └── InitialLocationLoader          (lib/app/app.dart: on first frame asks for location, then shows the first notification prompt; resumes backend on app resume)
         └── MyApp                    (MaterialApp: lightTheme/darkTheme, L.delegate, home: AppVersionGate → MainTabs)
 ```
 
@@ -107,7 +108,7 @@ MultiProvider(ThemeController, LocaleController, LocationController, MobileBacke
 
 | File | Contents |
 | --- | --- |
-| `app.dart` | `MyApp` (MaterialApp) and `InitialLocationLoader` (startup permissions in order: location, then push notifications via `MobileBackendController.requestPushNotificationPermission`, so the two OS dialogs never overlap) |
+| `app.dart` | `MyApp` (MaterialApp) and `InitialLocationLoader` (startup permissions in order: location, then notifications via `MobileBackendController.requestPushNotificationPermission`, so the two OS dialogs never overlap; the OS notification prompt shows only if this install never saw it, later asks are the shell's reminder) |
 | `di.dart` | `sl` (GetIt 9) and `setupDi()`: `ApiClient`, `MobilePushNotificationService`, `MobileBackendRepository` → `MobileBackendRepositoryImpl` (all lazy singletons) |
 | `theme_controller.dart` | `ThemeController` (ThemeMode, persisted via `ThemeStorage`) |
 | `locale_controller.dart` | `LocaleController` (`supportedLocales`, persisted) |
@@ -119,30 +120,40 @@ MultiProvider(ThemeController, LocaleController, LocationController, MobileBacke
 | --- | --- |
 | `api/` | `ApiClient` (Dio, token refresh, language header, logout callback), `ApiEndpoints`, `BaseUrl`, `backend_image_url.dart` (resolve relative image paths) |
 | `error/` | `failures.dart` (`Failure` sealed: Network, Server, Conflict, PayloadTooLarge, RateLimit, ServiceUnavailable, `ApiFailurePayload`), `result.dart` (`Result<T>` = `Success` / `Error`, `ResultX` helpers), `dio_error_mapper.dart`, `mobile_error_messages.dart` (failure → localized copy) |
-| `storage/` | `TokenStorage` (secure; unreadable keystore → session cleared, never throws on read/clear), `ThemeStorage`, `CartStorage` (persists `CartSelection`s) |
-| `services/` | `ErrorReporter` (Sentry, only when `SENTRY_DSN` is defined; `report()` for zone and startup errors), `MobilePushNotificationService` (Firebase Messaging on Android; raw APNs channel on iOS, where `AppDelegate` forwards notification taps as `notificationOpened` and keeps a cold-start tap for `takeLaunchNotification`; `requestPermission()` shows the OS prompt while it is still undecided and respects the in-app opt-out, `syncTokenIfPermissionGranted()` never prompts), `YandexGeocoderService` (keys from `--dart-define`, lookups disabled when empty, 10 s timeouts), `AppShareService`, `ExternalUrlLauncher` (`https` only; `paymentLinkHosts` / `appStoreLinkHosts` allowlists for backend-supplied links; native channels re-check the scheme) |
+| `storage/` | `TokenStorage` (secure; unreadable keystore → session cleared, never throws on read/clear), `ThemeStorage`, `CartStorage` (persists `CartSelection`s), `PublicContentCache` (raw catalog/branches/promotions/banners of the last default bootstrap in the app cache directory; keyed by server, organisation, language and schema; 14-day, 2 MB limits; never throws; no customer data by type) |
+| `services/` | `ErrorReporter` (Sentry, only when `SENTRY_DSN` is defined; `report()` for zone and startup errors), `MobilePushNotificationService` (Firebase Messaging on Android; raw APNs channel on iOS, where `AppDelegate` forwards notification taps as `notificationOpened` and keeps a cold-start tap for `takeLaunchNotification`; `requestPermission()` shows the OS prompt while it is still undecided and respects the in-app opt-out, `syncTokenIfPermissionGranted()` never prompts; for the reminder: `canShowFirstPermissionPrompt()`, `systemPromptAvailable()` (iOS asks once; Android 13+ twice, told apart by the rationale flag), `permissionAsks()` / `recordPermissionAsk()` / `clearPermissionAsks()`, `openNotificationSettings()`), `YandexGeocoderService` (keys from `--dart-define`, lookups disabled when empty, 10 s timeouts), `AppShareService`, `ExternalUrlLauncher` (`https` only; `paymentLinkHosts` / `appStoreLinkHosts` allowlists for backend-supplied links; native channels re-check the scheme) |
 | `navigation/` | `AppDeepLink` enum (`enjoylavash://home`, `menu`, `cart`, `profile`, `promotions`, `orders`, `notifications`, `loyalty`) |
 
 ### `lib/features/`
 
 | Path | Contents |
 | --- | --- |
-| `mobile_backend/domain/repositories/mobile_backend_repository.dart` | `MobileBackendRepository` abstract contract (auth, bootstrap, catalog, cart preview, orders, addresses, loyalty, notifications, profile) |
+| `mobile_backend/domain/repositories/mobile_backend_repository.dart` | `MobileBackendRepository` abstract contract (auth, bootstrap, saved public content, catalog, cart preview, orders, addresses, loyalty, notifications, profile) |
 | `mobile_backend/domain/entities/mobile_bootstrap.dart` | `MobileBootstrap` |
+| `mobile_backend/domain/entities/mobile_public_content.dart` | `MobilePublicContent` (saved menu, branches, promotions, banners) |
 | `mobile_backend/data/repositories/mobile_backend_repository_impl.dart` | `MobileBackendRepositoryImpl` over `ApiClient` |
-| `mobile_backend/data/models/` | JSON models: `catalog_model`, `cart_model` (order type, payment method, cart preview request/response), `order_model`, `loyalty_model`, `assigned_promotion_model`, `promotion_model`, `banner_model`, `branch_model`, `address_model`, `auth_models`, `client_profile_model`, `client_notification_model`, `ordering_status_model` (working hours), `app_version_policy_model`, `json_helpers` |
-| `mobile_backend/presentation/mobile_backend_controller.dart` | `MobileBackendController` (ChangeNotifier, `MobileBackendStatus`, `SessionEndReason` + `sessionEnded` stream; a session generation drops late responses from a previous session; `requestPushNotificationPermission()` prompts on app entry, login prompts too, bootstrap/resume syncs only when already granted), the app's main state holder. Split with `part` files in `mobile_backend_controller/`: auth, address, bootstrap, catalog adapter (backend catalog → `MenuProduct`), notifications, order, loyalty, state |
+| `mobile_backend/data/models/` | JSON models: `catalog_model`, `cart_model` (order type, payment method, cart preview request/response), `order_model`, `loyalty_model`, `assigned_promotion_model`, `promotion_model`, `banner_model`, `branch_model`, `address_model`, `auth_models`, `client_profile_model`, `client_notification_model`, `ordering_status_model` (working hours), `app_version_policy_model`, `json_helpers` (`readString`, `readInt`, `readOptionalInt`, …) |
+| `mobile_backend/presentation/mobile_backend_controller.dart` | `MobileBackendController` (ChangeNotifier, `MobileBackendStatus`, `SessionEndReason` + `sessionEnded` stream; a session generation drops late responses from a previous session; notifications: `requestPushNotificationPermission()` (app entry) and `requestFirstPushNotificationPrompt()` (sign-in) show the OS prompt only the first time, `pushPermissionReminderDue` stream, `takePushPermissionReminder()` (signed-in, notifications off, not switched off in the app, on the schedule), `acceptPushPermissionReminder()`, `openNotificationSettings()` (the next resume re-checks even inside the throttle), bootstrap/resume syncs only when already granted; `restoreCachedContent()` shows the saved public content while the bootstrap loads, `isShowingCachedContent`, `whenSessionSettled()`), the app's main state holder. Split with `part` files in `mobile_backend_controller/`: auth, address, bootstrap, catalog adapter (backend catalog → `MenuProduct`), notifications, order, loyalty, state |
 | `models/` | UI-facing domain models: `MenuProduct` / `MenuModifierGroup` / `MenuModifierOption`, `MenuCategory`, `CartSelection` / `CartModifierSelection` / `CartLine`, `maxCartLineQuantity`, `CartLineLimitReached` (`cart_line.dart`) |
 | `app_version/presentation/app_version_gate.dart` | `AppVersionGate` (force/soft update prompt laid over the running app; wired as `MaterialApp.home` around `MainTabs` in `app.dart`, policy loaded via `MobileBackendController.getAppVersionPolicy`) |
 | `cart/presentation/cart_controller.dart` | `CartController` (ChangeNotifier: cart lines, persistence through `CartStorage`, cached `CartSnapshot` per catalog) |
+| `cart/domain/cart_rules.dart` | `capCartQuantity`, `reconcileCartSelections`, `unavailableCartSelections`, `planRepeatOrder` (pure cart rules used by the shell) |
+| `checkout/checkout_requests.dart` | `checkoutItems`, `checkoutProductId`, `DeliveryPoint`, `inlineOrderAddress`, `previewDeliveryAddress`; named error codes `loyaltyResetErrorCodes`, `pointsUnavailableErrorCodes`, `orderingClosedErrorCode` |
+| `checkout/payment_method_label.dart` | `paymentMethodLabel()` (one copy for the checkout selector and order details) |
+| `push_permission/push_reminder_schedule.dart` | `PushReminderAction` (OS prompt or phone settings), `pushReminderIntervals` (1 day, then every 3 days), `isPushReminderDue()` |
+| `push_permission/presentation/push_permission_sheet.dart` | `PushPermissionSheet`, `showPushPermissionReminder()`, `askForPushNotificationsAfterSignIn()` (sign-in screen: the first OS prompt, else the reminder) |
+| `address/delivery_address_text.dart` | `trimmedOrNull`, `defaultClientAddress`, `clientAddressText`, `deliveryAddressText` (one copy instead of three) |
 | `cart/presentation/product_quantities.dart` | `ProductQuantities` (one `ValueListenable<int>` per product, so a menu card rebuilds only when its own quantity changes) |
 | `checkout/order_submission_keys.dart` | `OrderSubmissionKeys` (one `Idempotency-Key` per order payload until the server answers definitively) and `newIdempotencyKey()` |
 
 ### `lib/navigation/`
 
-`main_tabs.dart` is the shell. It owns a `CartController` (lines, totals and
-persistence), the cart rules (quantity cap, reconciliation notices, repeat
-order), checkout and order creation. Rebuild scope (guarded by
+`main_tabs.dart` is the shell (state, lifecycle, listeners and `build`, about
+450 lines). It owns a `CartController` (lines, totals and persistence); its
+behaviour lives in part-file extensions on `_MainTabsState` (cart, navigation,
+order context, checkout), with the pure rules in `lib/features/`. Extensions
+call `_updateState` because `setState` is protected; listener methods stay in
+the class because extension tear-offs are not equal and could not be removed. Rebuild scope (guarded by
 `shell_rebuild_scope_test`):
 - the current tab, the menu category and the checkout flag are `ValueNotifier`s
   (`_currentTab`, `_selectedCategory`, `_isCheckingOut`): a tab switch or swipe
@@ -162,13 +173,23 @@ Part files in `navigation/main_tabs/` (all `part of main_tabs.dart`):
 
 | File | Contents |
 | --- | --- |
+| `shell_cart.dart` | `_ShellCart`: cart edits, saved-cart restore, reconciliation against the network catalog, removal notices, repeat order |
+| `shell_navigation.dart` | `_ShellNavigation`: tabs, pushed screens, banner links and push taps, sign-in gating (waits for the session), startup birth-date prompt, app-entry notification reminder (2 s after start-up, skipped while anything is open on top) |
+| `order_context.dart` | `_ShellOrderContext`: delivery/pickup, pickup branch, catalog and payment-method refreshes, current delivery address |
+| `checkout_flow.dart` | `_ShellCheckout`: preview and create-order requests, confirmation sheet, order creation with retry/error dialog, success screen, debug-only payload logging |
 | `home_tab.dart` | `_HomeTab`: selects Home's backend fields, locale and delivery label inputs; builds `HomeScreen` |
 | `menu_tab.dart` | `_MenuTab`: selects the catalog state, listens to the category filter; builds `MenuScreen` |
 | `keep_alive_tab_page.dart` | `_KeepAliveTabPage` (keep-alive + `TickerMode` that follows the tab), `_TabActive` |
 | `main_tabs_bottom_navigation.dart` | bottom bar, tab icons, cart badge + `CartArrivalFeedback`, `CartPill` |
 | `main_tabs_drawer.dart` | drawer |
-| `order_confirmation_sheet.dart` | `_OrderConfirmationSheet` checkout sheet (1,611 lines; split planned in docs/PERFORMANCE_PASS_2.md, Phase 7) |
-| `checkout_preview_summary.dart` | priced lines / totals from cart preview |
+| `order_confirmation_sheet.dart` | `_OrderConfirmationSheet`: the checkout sheet's state, lifecycle and `build` (about 500 lines); its behaviour is in the next two parts |
+| `checkout_sheet_preview.dart` | `_CheckoutSheetPreview`: cart preview requests, debounce, stale-response guard, loyalty wallet reload |
+| `checkout_sheet_actions.dart` | `_CheckoutSheetActions`: destination and branch changes, payment method, promo code, confirm |
+| `checkout_sheet_parts.dart` | `_CheckoutStepLabel`, `_CheckoutDestinationCard`, `_OrderCommentField` |
+| `checkout_ordering_status.dart` | `_OrderingStatusCard` and the working-hours rows |
+| `checkout_loyalty_control.dart` | `_LoyaltyRedemptionControl`, `_FullyPaidWithPointsCard` |
+| `checkout_preview_summary.dart` | priced lines / totals from cart preview (`_CheckoutPreviewSummary`, loading and error states, `_PreviewTotals`) |
+| `checkout_preview_details_sheet.dart` | `_showCheckoutPreviewDetails()`: the breakdown sheet behind the totals |
 | `order_confirmation_items.dart` | item rows in the sheet |
 | `payment_method_selector.dart`, `promo_code_field.dart`, `order_type_toggle.dart` (`OrderTypeSlidingToggle`) | checkout inputs |
 | `checkout_models.dart` | private checkout result/failure types |
@@ -178,11 +199,11 @@ Part files in `navigation/main_tabs/` (all `part of main_tabs.dart`):
 
 | Screen / entry | File | Notes |
 | --- | --- | --- |
-| `HomeScreen` | `home_screen.dart` | banners (`HomeBannerSlider`), promos, ordering status |
-| `MenuScreen` | `menu_screen.dart` | category pills (pill position in a `ValueNotifier`), lazily built product grid (`SliverList` of rows, reused across layouts while the column count is unchanged), listens to its `CartController` itself (per-card `ProductQuantities`), private `_ProductDetailPage`, add-to-cart animation wiring (`CartAnimationController`), `packagingAssets` override map |
+| `HomeScreen` | `home_screen.dart` | banners (`HomeBannerSlider`), promos, ordering status; `sessionPending` shows placeholders for the greeting and balance while the saved menu shows and the customer is not known yet |
+| `MenuScreen` | `menu_screen.dart` + `menu/` part files | the screen's state, lifecycle and `build` (about 430 lines): category pills (pill position in a `ValueNotifier`), lazily built product grid (`SliverList` of rows, reused across layouts while the column count is unchanged), listens to its `CartController` itself (per-card `ProductQuantities`), `packagingAssets` override map. Parts: `menu_sections.dart` (`_MenuSections`: header, pills, grid, states), `menu_categories.dart` (`_MenuCategories`: category selection and pill geometry), `menu_add_to_cart.dart` (`_MenuAddToCart`: add-to-cart flight via `CartAnimationController`), `menu_order_context.dart` (`_MenuOrderContext`: delivery/pickup pill), `product_detail_page.dart` (`_ProductDetailPage`), `menu_widgets.dart` (skeleton card, sticky category header) |
 | `CartScreen` | `cart_screen.dart` | reads props from `MainTabs` |
-| `Profile` | `profile.dart` + `profile/` part files | `profile_redesign.dart` (main body; header carries `NotificationButton` when `onNotificationsTap` is set), `profile_edit_screen.dart`, `saved_addresses_screen.dart`, `all_orders_screen.dart`, `order_row.dart`, `order_details_sheet.dart` (`OrderProgressJourney`), `order_detail_widgets.dart`, `order_helpers.dart`, `delete_account_sheet.dart` |
-| `AuthorizationScreen`, `OtpCountdownCard` | `authorization_screen.dart` | phone + OTP flow |
+| `Profile` | `profile.dart` + `profile/` part files | `profile_redesign.dart` (main body; header carries `NotificationButton` when `onNotificationsTap` is set), `profile_rows.dart` (section, row, badge, switch, theme pill, version rows), `profile_language_sheet.dart`, `profile_edit_screen.dart`, `saved_addresses_screen.dart`, `all_orders_screen.dart`, `order_row.dart`, `order_details_sheet.dart` (`OrderProgressJourney`), `order_detail_widgets.dart`, `order_helpers.dart`, `delete_account_sheet.dart` |
+| `AuthorizationScreen`, `OtpCountdownCard` | `authorization_screen.dart` + `auth/` part files | phone + OTP flow; parts: `otp_countdown_card.dart` (`OtpCountdownCard`), `name_prompt_sheet.dart` (`_NamePromptSheet`), `birth_date_prompt_sheet.dart` (`showBirthDatePromptSheet()`) |
 | `NotificationsScreen` | `notifications_screen.dart` | inbox with filters |
 | `LoyaltyWalletScreen` | `loyalty_wallet_screen.dart` | |
 | `AssignedPromotionsScreen` | `assigned_promotions_screen.dart` | |
@@ -199,8 +220,8 @@ Shared, redesign-era widgets (use these):
 | --- | --- |
 | `TypographyText`, `TextType`, `FontWeightType` | `typography.dart` |
 | `QuantityButton`, `AnimatedQuantityText` | `quantity_button.dart` |
-| `ProductImage` | `product_image.dart` (network photo with gradient/emoji fallback) |
-| `ProductListItem` | `product_list_item.dart` (menu grid tile: photo anchor, add / ± controls) |
+| `ProductImage` | `product_image.dart` (network photo with gradient/emoji fallback; decoded to cover its box; `layoutWidth` for a known box width, `placeholderBox` to show an already-decoded smaller copy first) |
+| `ProductListItem` | `product_list_item.dart` (menu grid tile: photo anchor, add / ± controls; `imageWidth` from the grid, `imageHeight` constant) |
 | `CartItemCard` | `cart_item_card.dart` |
 | `BannerImageCard` | `banner_image_card.dart` |
 | `HomeBannerSlider` | `home_banner_slider.dart` |
@@ -214,10 +235,10 @@ Shared, redesign-era widgets (use these):
 | `AppBottomSheetDragHandle` | `app_bottom_sheet_drag_handle.dart` |
 | `showConfirmDialog()` | `confirm_dialog.dart` |
 | `AnimatedErrorMessage` | `animated_error_message.dart` |
-| `FadeSlideIn` | `fade_slide_in.dart` |
+| `FadeSlideIn` (`animate: false` shows the child at once, e.g. a list row scrolled back into view) | `fade_slide_in.dart` |
 | `CurvedFadeTransition` (use in route `transitionsBuilder`s instead of an inline `CurvedAnimation`) | `curved_fade_transition.dart` |
-| `decodeWidthFor()` (decode network images at layout width) | `utils/image_decode_size.dart` |
-| `resizedNetworkImage()`, `DiskCachedNetworkImage`, `AppImageCacheManager`, `networkImageProvider` (disk-cached photos; tests override the factory in `test/flutter_test_config.dart`) | `utils/cached_image_provider.dart` |
+| `coverNetworkImage()`, `DiskCachedNetworkImage`, `AppImageCacheManager`, `networkImageProvider` (disk-cached photos decoded to cover their box; tests override the factory in `test/flutter_test_config.dart`) | `utils/cached_image_provider.dart` |
+| `CoverSizedImage`, `coverTargetSize()`, `coverDecodeExtent()` (decode at the smallest size that covers a box, keeping the aspect ratio; 16 px steps, DPR capped at 3) | `utils/cover_sized_image.dart` |
 | `textChangeListener()` (controller listener that ignores cursor/composing updates) | `utils/text_change_listener.dart` |
 | `failureMessage()`, `failureDetail()` (localized, never raw exception text; use these to show any `Failure`) | `utils/failure_message.dart` |
 
@@ -236,7 +257,7 @@ Add-to-cart animation (`widgets/cart_animation/`, design doc
 
 | File | Contents |
 | --- | --- |
-| `app_design_tokens.dart` | `AppDesignTokens` (colors, radii, heights, `surface()`, `ground()`, text colors, `cardShadow()`) and `AppTextStyles` (`display()`, `ui()`) |
+| `app_design_tokens.dart` | `AppDesignTokens` (colors, radii, heights, `surface()` for cards and sheets, `inset()` for fields and boxes set into a surface, `ground()`, text colors, `cardShadow()`) and `AppTextStyles` (`display()`, `ui()`) |
 | `app_motion.dart` | `AppMotion` durations (`micro`, `state`, `spatial`, `celebration`), curves, `reduced(context)`, `duration(context, normal)` |
 | `app_theme.dart` | `AppTheme` builder; `light_theme.dart` / `dark_theme.dart` export `lightTheme` / `darkTheme` |
 | `app_colors.dart` | `BaseColors` (brand primary etc.) |
@@ -258,10 +279,12 @@ Flat folder, one file per concern, named `<area>_test.dart`. Groups:
 
 - Cart animation: `cart_animation_controller_test`, `cart_packaging_preset_integration_test`, `cart_packaging_visual_test`, `preset_packaging_visual_test`, `cart_add_failure_test`, `cart_flight_preview_test`. The last two visual tests write contact sheets when given `--dart-define=PACKAGING_PREVIEW_PATH=…` / `CART_FLIGHT_PREVIEW_PATH=…`.
 - Screens/UX: `home_screen_test`, `menu_lazy_grid_test`, `menu_motion_test`, `cart_screen_ux_test`, `profile_redesign_test`, `notifications_promotions_ui_test`, `loyalty_wallet_screen_test`, `order_success_screen_test`, `authorization_*`, `branch_bottom_sheet_test`, `product_list_item_test`, `product_configuration_test`, `widget_test`.
-- Checkout: `checkout_flow_test` (exact preview and create-order payloads for delivery to a saved address or a map point, pickup, promo code and payment method; success, ordering closed, timeout retry and key reuse), `order_submission_keys_test` (key reuse after unknown outcomes), `cart_safety_nets_test` (removed-item notices at restore and on catalog refresh, Undo after removing a line, sign-out clears and expiry keeps the cart, repeat order, quantity cap).
-- Session: `mobile_backend_session_test` (late responses across login/logout, session end reasons, resume throttle, change-only order polling, promotions freshness), `push_permission_prompt_test` (OS notification prompt on app entry and login, never on background refresh; guests are asked but not registered).
+- Checkout: `checkout_rules_test` (delivery address text, cart reconciliation, repeat order, order lines and inline address), `checkout_flow_test` (exact preview and create-order payloads for delivery to a saved address or a map point, pickup, promo code and payment method; success, ordering closed, timeout retry and key reuse), `order_submission_keys_test` (key reuse after unknown outcomes), `cart_safety_nets_test` (removed-item notices at restore and on catalog refresh, Undo after removing a line, sign-out clears and expiry keeps the cart, repeat order, quantity cap).
+- Cold start with the saved menu: `public_content_cache_test` (round trip, scope/language/schema/age misses, bad and oversized files deleted), `public_content_repository_test` (only public payloads saved, same menu read back, no save for branch catalogs or failed requests), `cached_startup_test` (shown while loading, replaced by the network, kept on failure with Retry, cart never trimmed against it, sign-in actions wait for the session, Home placeholders).
+- Session: `mobile_backend_session_test` (late responses across login/logout, session end reasons, resume throttle, change-only order polling, promotions freshness), `push_permission_prompt_test` (the OS prompt once, at app entry or sign-in, never on background refresh; guests are asked but not registered; later launches signal the reminder instead; the 1-day/3-day schedule; no reminder for guests or after the in-app opt-out; Android rationale picks the OS prompt or settings; allowing in settings registers on return), `push_reminder_shell_test` (the shell shows a due reminder, "Not now", nothing while another screen is on top), `authorization_screen_migration_test` (sign-in shows the first OS prompt, or the reminder sheet when it was shown before).
 - Performance guards: `shell_rebuild_scope_test` (rebuild counts: a tab tap or swipe builds no tab content, a category tap rebuilds the menu once, a cart tap rebuilds one card, an unread-count change rebuilds Home only, a no-op notification rebuilds no tab), `menu_lazy_grid_test`, `startup_requests_test`, `cart_controller_test`, `product_quantities_test`, `token_storage_test`, `text_change_listener_test`.
-- Models/repositories: `*_model_test`, `ordering_status_repository_test`, `promotion_banner_repository_test`, `api_client_test`, `cart_storage_test`, `mobile_backend_migration_contract_test`, `redesign_audit_contract_test`.
+- Images: `cover_sized_image_test` (decode-size rule and real decodes: never squashed, never upscaled), `product_image_test` (cart thumbnail box, known layout width, self-measuring fallback, placeholder decode first).
+- Models/repositories: `*_model_test` (`payment_method_model_test` also pins `paymentMethodLabel` and `readOptionalInt`), `ordering_status_repository_test`, `promotion_banner_repository_test`, `api_client_test`, `cart_storage_test`, `mobile_backend_migration_contract_test`, `redesign_audit_contract_test`.
 - Startup/errors: `startup_preferences_test`, `failure_message_test`.
 - Services: `ios_notification_tap_test`, `app_version_gate_test`, `mobile_push_notification_service_test`, `app_share_service_test`, `initial_location_loader_test` (location first, then notification permission), `external_url_launcher_test` (scheme + host allowlist, channel never called for rejected links), `yandex_geocoder_service_test` (no network without keys, key injection), `log_redaction_test`.
 
@@ -290,7 +313,7 @@ runs before every file and routes network images through plain `NetworkImage`.
 | Phase | Status today |
 | --- | --- |
 | 1 Foundation | `core/error/failures.dart`, `result.dart`, `app/di.dart` exist; `widgets/theme/` duplicate and legacy B2B data layer deleted. Shared widgets still in `lib/widgets/`, not `lib/shared/` |
-| 2 Menu | Backend catalog flows through `MobileBackendController` + catalog adapter into `MenuProduct`. `MenuScreen` is still a 2,042-line stateful widget with category logic and the product detail page inside (split planned, Phase 7 of docs/PERFORMANCE_PASS_2.md) |
+| 2 Menu | Backend catalog flows through `MobileBackendController` + catalog adapter into `MenuProduct`. `MenuScreen` is a stateful widget split into `menu/` part files (detail page, categories, add to cart, sections); category logic still lives in the widget, not a provider |
 | 3 Cart | `CartController` in `lib/features/cart/presentation/`, owned by `MainTabs`; `MenuScreen` listens to it directly, `CartScreen` still receives lines as props |
 | 4 Checkout | Implemented inside `MainTabs` part files (`_OrderConfirmationSheet`, `OrderSuccessScreen`), not as a feature module |
 | 5 GoRouter | Not started; `MaterialPageRoute` everywhere |

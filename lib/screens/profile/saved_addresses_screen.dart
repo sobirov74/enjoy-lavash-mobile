@@ -458,7 +458,6 @@ class _AddressDetailsSheetState extends State<_AddressDetailsSheet> {
               labelText: t.addressLabel,
               hintText: t.addressLabelHint,
             ),
-            onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: 8),
           SwitchListTile.adaptive(
@@ -470,16 +469,20 @@ class _AddressDetailsSheetState extends State<_AddressDetailsSheet> {
             title: Text(t.setAsDefault),
           ),
           const SizedBox(height: 10),
-          FilledButton(
-            onPressed: _labelController.text.trim().isEmpty
-                ? null
-                : () => Navigator.of(context).pop(
-                    _AddressDetails(
-                      label: _labelController.text.trim(),
-                      makeDefault: _makeDefault,
+          // Only the button follows the typed label, not the whole sheet.
+          ValueListenableBuilder<TextEditingValue>(
+            valueListenable: _labelController,
+            builder: (context, label, _) => FilledButton(
+              onPressed: label.text.trim().isEmpty
+                  ? null
+                  : () => Navigator.of(context).pop(
+                      _AddressDetails(
+                        label: label.text.trim(),
+                        makeDefault: _makeDefault,
+                      ),
                     ),
-                  ),
-            child: Text(t.save),
+              child: Text(t.save),
+            ),
           ),
         ],
       ),

@@ -13,6 +13,7 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/client_p
 import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/entities/mobile_bootstrap.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/domain/repositories/mobile_backend_repository.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/presentation/mobile_backend_controller.dart';
+import 'package:enjoy_lavash_mobile/features/push_permission/push_reminder_schedule.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -26,13 +27,18 @@ const _permissionChannel = MethodChannel(
 );
 const _apnsChannel = MethodChannel('enjoy_lavash_mobile/apns');
 
-/// The OS notification prompt is shown on app entry and on login while the
-/// permission is still undecided; background refreshes never show it.
+/// The OS notification prompt is shown once, on app entry or at sign-in;
+/// background refreshes never show it. After that a signed-in customer with
+/// notifications off gets the in-app reminder on a schedule.
 void main() {
   final binding = TestWidgetsFlutterBinding.ensureInitialized();
 
   late PermissionStatus permissionStatus;
+  late PermissionStatus requestResult;
+  late bool rationale;
   late int permissionRequestCount;
+  late int openSettingsCount;
+  late DateTime now;
   late _RecordingAdapter adapter;
   late _Repository repository;
   late MobileBackendController controller;
@@ -40,7 +46,11 @@ void main() {
   setUp(() {
     debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
     permissionStatus = PermissionStatus.denied;
+    requestResult = PermissionStatus.granted;
+    rationale = false;
     permissionRequestCount = 0;
+    openSettingsCount = 0;
+    now = DateTime.utc(2026, 11, 11, 10);
     SharedPreferences.setMockInitialValues(<String, Object>{});
     FlutterSecureStorage.setMockInitialValues(<String, String>{
       'mobile_client_access_token': 'client-access-token',
@@ -60,10 +70,15 @@ void main() {
             return permissionStatus.index;
           case 'requestPermissions':
             permissionRequestCount++;
-            permissionStatus = PermissionStatus.granted;
+            permissionStatus = requestResult;
             return <int, int>{
               Permission.notification.value: permissionStatus.index,
             };
+          case 'shouldShowRequestPermissionRationale':
+            return rationale;
+          case 'openAppSettings':
+            openSettingsCount++;
+            return true;
           default:
             return null;
         }
@@ -81,8 +96,36 @@ void main() {
       MobilePushNotificationService(
         ApiClient(baseUrl: 'https://example.test', httpClientAdapter: adapter),
       ),
+      clock: () => now,
     );
   });
+
+  Future<void> signIn() async {
+    repository.bootstrapResult.complete(Success(_signedInBootstrap));
+    await controller.bootstrap(language: 'uz');
+    await _settle();
+  }
+
+  /// A later launch: the OS prompt was shown before and refused.
+  Future<void> refusedBefore({DateTime? at}) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'push_permission_prompt_shown': true,
+      if (at != null) 'push_permission_asked_at': at.millisecondsSinceEpoch,
+      if (at != null) 'push_permission_ask_count': 1,
+    });
+    permissionStatus = PermissionStatus.permanentlyDenied;
+  }
+
+  Future<int> reminderSignals(Future<void> Function() action) async {
+    var count = 0;
+    final subscription = controller.pushPermissionReminderDue.listen(
+      (_) => count++,
+    );
+    await action();
+    await _settle();
+    await subscription.cancel();
+    return count;
+  }
 
   tearDown(() {
     controller.dispose();
@@ -123,9 +166,17 @@ void main() {
     },
   );
 
-  test('logging in asks for permission and registers the token', () async {
+  test('signing in asks for permission and registers the token', () async {
     await controller.verifyOtp(
       const VerifyOtpRequest(phoneNumber: '+998901234567', code: '1111'),
+    );
+    await _settle();
+    // The sign-in screen asks once the code is accepted, not the request.
+    expect(permissionRequestCount, 0);
+
+    expect(
+      await controller.requestFirstPushNotificationPrompt(locale: 'en'),
+      isTrue,
     );
     await _settle();
 
@@ -135,6 +186,189 @@ void main() {
         adapter.pushRegistrations.single.data as Map<String, Object?>;
     expect(payload['token'], 'native-apns-token');
     expect(payload['locale'], 'en');
+    // Asked once: the OS prompt is never shown directly again.
+    expect(
+      await controller.requestFirstPushNotificationPrompt(locale: 'en'),
+      isFalse,
+    );
+    expect(permissionRequestCount, 1);
+  });
+
+  test('a refusal at the first prompt is not reminded about at once', () async {
+    requestResult = PermissionStatus.permanentlyDenied;
+    await signIn();
+
+    final signals = await reminderSignals(
+      () => controller.requestPushNotificationPermission(locale: 'uz'),
+    );
+
+    expect(permissionRequestCount, 1);
+    expect(signals, 0);
+    expect(await controller.takePushPermissionReminder(), isNull);
+  });
+
+  test('a later launch reminds instead of prompting again', () async {
+    await refusedBefore();
+    await signIn();
+
+    final signals = await reminderSignals(
+      () => controller.requestPushNotificationPermission(locale: 'uz'),
+    );
+
+    expect(permissionRequestCount, 0);
+    expect(signals, 1);
+    // iOS shows its prompt once: the reminder leads to the phone settings.
+    expect(
+      await controller.takePushPermissionReminder(),
+      PushReminderAction.openSettings,
+    );
+  });
+
+  test('reminders follow the schedule: one day, then every three', () async {
+    final firstAsk = now;
+    await refusedBefore(at: firstAsk);
+    await signIn();
+
+    now = firstAsk.add(const Duration(hours: 23));
+    expect(await controller.takePushPermissionReminder(), isNull);
+
+    now = firstAsk.add(const Duration(days: 1));
+    expect(await controller.takePushPermissionReminder(), isNotNull);
+    expect(await controller.takePushPermissionReminder(), isNull);
+
+    now = now.add(const Duration(days: 2));
+    expect(await controller.takePushPermissionReminder(), isNull);
+    now = now.add(const Duration(days: 1));
+    expect(await controller.takePushPermissionReminder(), isNotNull);
+
+    now = now.add(const Duration(days: 3));
+    expect(await controller.takePushPermissionReminder(), isNotNull);
+    // Sign-in reminds regardless of the schedule.
+    expect(
+      await controller.takePushPermissionReminder(ignoreSchedule: true),
+      isNotNull,
+    );
+  });
+
+  test('no reminder for guests or after switching notifications off', () async {
+    await refusedBefore();
+    final guestSignals = await reminderSignals(
+      () => controller.requestPushNotificationPermission(locale: 'uz'),
+    );
+    expect(guestSignals, 0);
+    expect(await controller.takePushPermissionReminder(), isNull);
+
+    await signIn();
+    await controller.setPushNotificationsEnabled(false);
+    expect(
+      await controller.takePushPermissionReminder(ignoreSchedule: true),
+      isNull,
+    );
+  });
+
+  test(
+    'on Android the reminder offers the OS prompt while it still shows',
+    () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      await refusedBefore();
+      // Android reports a refusal as plain "denied"; the rationale flag tells
+      // whether the OS will show its prompt again.
+      permissionStatus = PermissionStatus.denied;
+      rationale = true;
+      await signIn();
+
+      expect(
+        await controller.takePushPermissionReminder(ignoreSchedule: true),
+        PushReminderAction.systemPrompt,
+      );
+
+      rationale = false;
+      expect(
+        await controller.takePushPermissionReminder(ignoreSchedule: true),
+        PushReminderAction.openSettings,
+      );
+    },
+  );
+
+  test('accepting the OS prompt from a reminder registers the token', () async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'push_permission_prompt_shown': true,
+    });
+    await signIn();
+
+    await controller.acceptPushPermissionReminder(
+      PushReminderAction.systemPrompt,
+    );
+    await _settle();
+
+    expect(permissionRequestCount, 1);
+    expect(adapter.pushRegistrations, hasLength(1));
+    // Notifications are on: the schedule starts over.
+    final preferences = await SharedPreferences.getInstance();
+    expect(preferences.containsKey('push_permission_ask_count'), isFalse);
+  });
+
+  test('allowing in the phone settings registers on return', () async {
+    await refusedBefore();
+    await signIn();
+    unawaited(controller.handleAppResumed(locale: 'uz'));
+    await _settle();
+    expect(adapter.pushRegistrations, isEmpty);
+
+    await controller.acceptPushPermissionReminder(
+      PushReminderAction.openSettings,
+    );
+    expect(openSettingsCount, 1);
+
+    // Allowed in the settings; back in the app inside the resume throttle.
+    permissionStatus = PermissionStatus.granted;
+    unawaited(controller.handleAppResumed(locale: 'uz'));
+    await _settle();
+
+    expect(adapter.pushRegistrations, hasLength(1));
+    expect(controller.pushNotificationSettings?.enabled, isTrue);
+  });
+
+  test('isPushReminderDue', () {
+    final asked = DateTime.utc(2026, 1, 1);
+    expect(
+      isPushReminderDue(now: asked, lastAskedAt: null, timesAsked: 0),
+      isTrue,
+    );
+    expect(
+      isPushReminderDue(
+        now: asked.add(const Duration(hours: 23)),
+        lastAskedAt: asked,
+        timesAsked: 1,
+      ),
+      isFalse,
+    );
+    expect(
+      isPushReminderDue(
+        now: asked.add(const Duration(days: 2)),
+        lastAskedAt: asked,
+        timesAsked: 5,
+      ),
+      isFalse,
+    );
+    expect(
+      isPushReminderDue(
+        now: asked.add(const Duration(days: 3)),
+        lastAskedAt: asked,
+        timesAsked: 5,
+      ),
+      isTrue,
+    );
+    // A clock set backwards does not silence reminders.
+    expect(
+      isPushReminderDue(
+        now: asked.subtract(const Duration(days: 1)),
+        lastAskedAt: asked,
+        timesAsked: 1,
+      ),
+      isTrue,
+    );
   });
 
   test('a permanently denied permission is left alone', () async {

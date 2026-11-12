@@ -22,7 +22,7 @@ class _PromoCodeField extends StatelessWidget {
       height: 58,
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF2A2522) : const Color(0xFFF8F4EF),
+        color: AppDesignTokens.inset(context),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: isDark ? const Color(0xFF3A332D) : const Color(0xFFEDE2D7),

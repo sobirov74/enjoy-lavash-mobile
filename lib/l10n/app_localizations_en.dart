@@ -493,6 +493,26 @@ class LEn extends L {
       'Could not update notification settings';
 
   @override
+  String get pushReminderTitle => 'Turn on notifications';
+
+  @override
+  String get pushReminderBody =>
+      'We\'ll let you know when your order is accepted, ready and on its way, and remind you about personal promo codes and points.';
+
+  @override
+  String get pushReminderSettingsHint =>
+      'Notifications are turned off in your phone settings. Open settings, go to Notifications and allow them.';
+
+  @override
+  String get pushReminderAllow => 'Allow';
+
+  @override
+  String get pushReminderOpenSettings => 'Open settings';
+
+  @override
+  String get pushReminderLater => 'Not now';
+
+  @override
   String get notifications => 'Notifications';
 
   @override

@@ -143,6 +143,13 @@ void main() {
         await fling(gridPoint, const Offset(0, 600), 3000);
       }
     });
+    // Decoded photo memory after the whole menu has been on screen once.
+    final imageCache = PaintingBinding.instance.imageCache;
+    binding.reportData!['image_cache_after_menu_scroll'] = <String, int>{
+      'bytes': imageCache.currentSizeBytes,
+      'images': imageCache.currentSize,
+      'live_images': imageCache.liveImageCount,
+    };
 
     await _scenario(tester, binding, 'category_switch', () async {
       for (final index in const <int>[0, 1, 2, -1]) {

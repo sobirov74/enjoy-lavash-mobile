@@ -22,7 +22,7 @@ class _MainTabsDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      backgroundColor: isDark ? const Color(0xFF1D1A18) : Colors.white,
+      backgroundColor: AppDesignTokens.surface(context),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.horizontal(right: Radius.circular(24)),
       ),
@@ -39,22 +39,22 @@ class _MainTabsDrawer extends StatelessWidget {
             _MainTabsDrawerItem(
               icon: Icons.home_rounded,
               title: t.tabHome,
-              onTap: () => _selectTab(context, _MainTabsState._homeTabIndex),
+              onTap: () => _selectTab(context, _homeTabIndex),
             ),
             _MainTabsDrawerItem(
               icon: Icons.restaurant_menu_rounded,
               title: t.tabMenu,
-              onTap: () => _selectTab(context, _MainTabsState._menuTabIndex),
+              onTap: () => _selectTab(context, _menuTabIndex),
             ),
             _MainTabsDrawerItem(
               icon: Icons.shopping_cart_rounded,
               title: t.tabCart,
-              onTap: () => _selectTab(context, _MainTabsState._cartPageIndex),
+              onTap: () => _selectTab(context, _cartPageIndex),
             ),
             _MainTabsDrawerItem(
               icon: Icons.person_rounded,
               title: t.tabProfile,
-              onTap: () => _selectTab(context, _MainTabsState._profileTabIndex),
+              onTap: () => _selectTab(context, _profileTabIndex),
             ),
             _MainTabsDrawerItem(
               icon: Icons.notifications_rounded,

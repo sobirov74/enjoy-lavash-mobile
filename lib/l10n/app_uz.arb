@@ -208,6 +208,20 @@
   "errorGenericTitle": "Nimadir notöğri ketdi",
   "errorGenericBody": "Birozdan keyin qayta urinib köring.",
   "noProductsFound": "Mahsulot topilmadi",
+  "menuSearchHint": "Menyudan qidiriş",
+  "menuSearchOpen": "Qidiruv",
+  "menuSearchClear": "Tozalaş",
+  "menuSearchResults": "{count} ta mahsulot topildi",
+  "@menuSearchResults": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "menuSearchNoResults": "«{query}» böyiça heç narsa topilmadi",
+  "@menuSearchNoResults": {
+    "placeholders": {"query": {"type": "String"}}
+  },
+  "menuSearchNoResultsHint": "Boşqa nom bilan qidirib köring",
   "findingAddress": "Manzil aniqlanmoqda...",
   "checkingThisLocation": "Bu joy tekşirilmoqda",
   "gettingAddressDetails": "Manzil ma'lumotlari olinmoqda",

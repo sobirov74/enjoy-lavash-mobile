@@ -465,6 +465,28 @@ class LUz extends L {
   String get noProductsFound => 'Mahsulot topilmadi';
 
   @override
+  String get menuSearchHint => 'Menyudan qidiriş';
+
+  @override
+  String get menuSearchOpen => 'Qidiruv';
+
+  @override
+  String get menuSearchClear => 'Tozalaş';
+
+  @override
+  String menuSearchResults(int count) {
+    return '$count ta mahsulot topildi';
+  }
+
+  @override
+  String menuSearchNoResults(String query) {
+    return '«$query» böyiça heç narsa topilmadi';
+  }
+
+  @override
+  String get menuSearchNoResultsHint => 'Boşqa nom bilan qidirib köring';
+
+  @override
   String get findingAddress => 'Manzil aniqlanmoqda...';
 
   @override

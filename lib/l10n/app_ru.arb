@@ -208,6 +208,20 @@
   "errorGenericTitle": "Что-то пошло не так",
   "errorGenericBody": "Попробуйте еще раз через несколько секунд.",
   "noProductsFound": "Товары не найдены",
+  "menuSearchHint": "Поиск по меню",
+  "menuSearchOpen": "Поиск",
+  "menuSearchClear": "Очистить",
+  "menuSearchResults": "Найдено: {count}",
+  "@menuSearchResults": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "menuSearchNoResults": "По запросу «{query}» ничего не найдено",
+  "@menuSearchNoResults": {
+    "placeholders": {"query": {"type": "String"}}
+  },
+  "menuSearchNoResultsHint": "Попробуйте другое название",
   "findingAddress": "Определяем адрес...",
   "checkingThisLocation": "Проверяем эту точку",
   "gettingAddressDetails": "Получаем данные адреса",

@@ -472,6 +472,34 @@ class LEn extends L {
   String get noProductsFound => 'No products found';
 
   @override
+  String get menuSearchHint => 'Search the menu';
+
+  @override
+  String get menuSearchOpen => 'Search';
+
+  @override
+  String get menuSearchClear => 'Clear';
+
+  @override
+  String menuSearchResults(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items found',
+      one: '1 item found',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String menuSearchNoResults(String query) {
+    return 'Nothing found for “$query”';
+  }
+
+  @override
+  String get menuSearchNoResultsHint => 'Try another name';
+
+  @override
   String get findingAddress => 'Finding address...';
 
   @override

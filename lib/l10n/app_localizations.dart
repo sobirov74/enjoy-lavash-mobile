@@ -945,6 +945,42 @@ abstract class L {
   /// **'Mahsulot topilmadi'**
   String get noProductsFound;
 
+  /// No description provided for @menuSearchHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Menyudan qidiriş'**
+  String get menuSearchHint;
+
+  /// No description provided for @menuSearchOpen.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qidiruv'**
+  String get menuSearchOpen;
+
+  /// No description provided for @menuSearchClear.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tozalaş'**
+  String get menuSearchClear;
+
+  /// No description provided for @menuSearchResults.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count} ta mahsulot topildi'**
+  String menuSearchResults(int count);
+
+  /// No description provided for @menuSearchNoResults.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{query}» böyiça heç narsa topilmadi'**
+  String menuSearchNoResults(String query);
+
+  /// No description provided for @menuSearchNoResultsHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Boşqa nom bilan qidirib köring'**
+  String get menuSearchNoResultsHint;
+
   /// No description provided for @findingAddress.
   ///
   /// In uz, this message translates to:

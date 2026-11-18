@@ -12,12 +12,14 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/cart_mod
 import 'package:enjoy_lavash_mobile/features/cart/presentation/cart_controller.dart';
 import 'package:enjoy_lavash_mobile/features/cart/presentation/product_quantities.dart';
 import 'package:enjoy_lavash_mobile/features/mobile_backend/presentation/mobile_backend_controller.dart';
+import 'package:enjoy_lavash_mobile/features/menu/menu_search_index.dart';
 import 'package:enjoy_lavash_mobile/l10n/app_localizations.dart';
 import 'package:enjoy_lavash_mobile/screens/order_context_sheet.dart';
 import 'package:enjoy_lavash_mobile/theme/app_design_tokens.dart';
 import 'package:enjoy_lavash_mobile/theme/app_motion.dart';
 import 'package:enjoy_lavash_mobile/utils/price_formatter.dart';
 import 'package:enjoy_lavash_mobile/widgets/animated_error_message.dart';
+import 'package:enjoy_lavash_mobile/widgets/app_search_field.dart';
 import 'package:enjoy_lavash_mobile/widgets/fade_slide_in.dart';
 import 'package:enjoy_lavash_mobile/widgets/product_image.dart';
 import 'package:enjoy_lavash_mobile/widgets/product_list_item.dart';
@@ -38,6 +40,7 @@ import 'package:enjoy_lavash_mobile/widgets/curved_fade_transition.dart';
 part 'menu/menu_add_to_cart.dart';
 part 'menu/menu_categories.dart';
 part 'menu/menu_order_context.dart';
+part 'menu/menu_search.dart';
 part 'menu/menu_sections.dart';
 part 'menu/menu_widgets.dart';
 part 'menu/product_detail_page.dart';
@@ -50,6 +53,7 @@ const double _stickyCategoryHeaderHeight = 56;
 
 const double _productGridSpacing = 12;
 const double _productGridWideBreakpoint = 720;
+const double _menuIntroBottomPadding = 10;
 
 class MenuScreen extends StatefulWidget {
   const MenuScreen({
@@ -152,6 +156,25 @@ class _MenuScreenState extends State<MenuScreen> {
   );
   int _cartArrivalPulse = 0;
 
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocus = FocusNode(debugLabel: 'menu-search');
+
+  /// The block above the pinned header (order context, title, search field);
+  /// its height tells when the field has scrolled out of view.
+  final GlobalKey _menuIntroKey = GlobalKey(debugLabel: 'menu-intro');
+
+  /// Whether the search field is scrolled out of view. Only the pinned
+  /// header's search shortcut listens.
+  final ValueNotifier<bool> _searchFieldHidden = ValueNotifier<bool>(false);
+
+  /// The trimmed search text; empty when not searching.
+  String _searchQuery = '';
+  MenuSearchIndex? _searchIndex;
+  ({MenuSearchIndex index, String query, List<MenuProduct> results})?
+  _searchResults;
+
+  bool get _isSearching => _searchQuery.isNotEmpty;
+
   /// Box of a grid card's photo, measured by the grid; see [_ProductDetailPage.gridImageBox].
   Size? _gridImageBox;
 
@@ -173,6 +196,7 @@ class _MenuScreenState extends State<MenuScreen> {
     _quantities.update(_cartSnapshot.quantitiesByProduct);
     widget.cart.addListener(_handleCartChanged);
     widget.active?.addListener(_handleActiveChanged);
+    _scrollController.addListener(_handleMenuScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollSelectedChipIntoView();
       _updateCategoryPillGeometry();
@@ -188,7 +212,19 @@ class _MenuScreenState extends State<MenuScreen> {
   }
 
   void _handleActiveChanged() {
-    if (!_isActive) _cartAnimation.cancel();
+    if (_isActive) return;
+    _cartAnimation.cancel();
+    _searchFocus.unfocus();
+  }
+
+  /// Shows the pinned search shortcut once about half of the search field
+  /// has scrolled under the header.
+  void _handleMenuScroll() {
+    final intro = _menuIntroKey.currentContext?.findRenderObject();
+    if (intro is! RenderBox || !intro.hasSize) return;
+    final fieldMiddle =
+        intro.size.height - _menuIntroBottomPadding - AppSearchField.height / 2;
+    _searchFieldHidden.value = _scrollController.offset > fieldMiddle;
   }
 
   bool _packagingPreloaded = false;
@@ -242,6 +278,14 @@ class _MenuScreenState extends State<MenuScreen> {
       _syncCategoryKeys();
     }
 
+    // A category picked from outside (a banner link) is shown, not hidden
+    // behind the search results.
+    if (oldWidget.selectedCategoryIndex != widget.selectedCategoryIndex &&
+        _isSearching) {
+      _searchController.clear();
+      _searchQuery = '';
+    }
+
     if (oldWidget.selectedCategoryIndex != widget.selectedCategoryIndex ||
         oldWidget.categories.length != widget.categories.length) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -259,6 +303,9 @@ class _MenuScreenState extends State<MenuScreen> {
     _cartCount.dispose();
     _quantities.dispose();
     _categoryPill.dispose();
+    _searchFieldHidden.dispose();
+    _searchFocus.dispose();
+    _searchController.dispose();
     _scrollController.dispose();
     _categoryScrollController.dispose();
     super.dispose();
@@ -285,7 +332,9 @@ class _MenuScreenState extends State<MenuScreen> {
             widget.selectedCategoryIndex < widget.categories.length
         ? widget.categories[widget.selectedCategoryIndex]
         : null;
-    final visibleProducts = _productsIn(selectedCategory);
+    final visibleProducts = _isSearching
+        ? _searchResultsFor(_searchQuery)
+        : _productsIn(selectedCategory);
 
     return Stack(
       children: <Widget>[
@@ -295,6 +344,7 @@ class _MenuScreenState extends State<MenuScreen> {
           child: CustomScrollView(
             controller: _scrollController,
             scrollCacheExtent: const ScrollCacheExtent.pixels(1200),
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             physics: const BouncingScrollPhysics(
               parent: AlwaysScrollableScrollPhysics(),
             ),
@@ -303,7 +353,13 @@ class _MenuScreenState extends State<MenuScreen> {
               //    a second row on separate delivery and pickup controls.
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 10),
+                  key: _menuIntroKey,
+                  padding: const EdgeInsets.fromLTRB(
+                    20,
+                    8,
+                    20,
+                    _menuIntroBottomPadding,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
@@ -329,6 +385,10 @@ class _MenuScreenState extends State<MenuScreen> {
                           color: AppDesignTokens.primaryText(context),
                         ),
                       ),
+                      if (widget.products.isNotEmpty) ...<Widget>[
+                        const SizedBox(height: 14),
+                        FadeSlideIn(child: _buildSearchField(t)),
+                      ],
                     ],
                   ),
                 ),
@@ -340,19 +400,28 @@ class _MenuScreenState extends State<MenuScreen> {
                   child: _buildMenuState(theme, t),
                 )
               else ...[
-                // -- Sticky category pills from the reference prototype.
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: _CategoryHeaderDelegate(
-                    height: _stickyCategoryHeaderHeight,
-                    child: _buildProductsHeader(theme, t),
+                // -- Sticky category pills from the reference prototype, or
+                //    the result count while searching. No header over an
+                //    empty search: the empty state says it all.
+                if (!_isSearching || visibleProducts.isNotEmpty)
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _CategoryHeaderDelegate(
+                      height: _stickyCategoryHeaderHeight,
+                      child: _buildProductsHeader(
+                        theme,
+                        t,
+                        resultCount: visibleProducts.length,
+                      ),
+                    ),
                   ),
-                ),
 
                 if (visibleProducts.isEmpty)
                   SliverFillRemaining(
                     hasScrollBody: false,
-                    child: _buildFilteredEmptyState(t),
+                    child: _isSearching
+                        ? _buildSearchEmptyState(t)
+                        : _buildFilteredEmptyState(t),
                   )
                 else
                   SliverPadding(

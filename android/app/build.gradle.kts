@@ -4,8 +4,8 @@ import java.io.FileInputStream
 plugins {
     id("com.android.application")
     id("com.google.gms.google-services")
-    id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    // The Flutter Gradle Plugin must be applied after the Android Gradle plugin.
+    // It applies the Kotlin plugin itself (AGP 9, see android/gradle.properties).
     id("dev.flutter.flutter-gradle-plugin")
 }
 
@@ -33,16 +33,14 @@ val isPerfBuild = project.hasProperty("perfBuild")
 
 android {
     namespace = "com.aurumdev.enjoy_lavash_mobile"
-    compileSdk = flutter.compileSdkVersion
+    // permission_handler_android compiles against SDK 37, one above Flutter's
+    // default. Follows Flutter again once its default passes 37.
+    compileSdk = maxOf(flutter.compileSdkVersion, 37)
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
     defaultConfig {
@@ -120,6 +118,12 @@ tasks.configureEach {
                 )
             }
         }
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
     }
 }
 

@@ -468,6 +468,28 @@ class LRu extends L {
   String get noProductsFound => 'Товары не найдены';
 
   @override
+  String get menuSearchHint => 'Поиск по меню';
+
+  @override
+  String get menuSearchOpen => 'Поиск';
+
+  @override
+  String get menuSearchClear => 'Очистить';
+
+  @override
+  String menuSearchResults(int count) {
+    return 'Найдено: $count';
+  }
+
+  @override
+  String menuSearchNoResults(String query) {
+    return 'По запросу «$query» ничего не найдено';
+  }
+
+  @override
+  String get menuSearchNoResultsHint => 'Попробуйте другое название';
+
+  @override
   String get findingAddress => 'Определяем адрес...';
 
   @override

@@ -208,6 +208,20 @@
   "errorGenericTitle": "Something went wrong",
   "errorGenericBody": "Please try again in a moment.",
   "noProductsFound": "No products found",
+  "menuSearchHint": "Search the menu",
+  "menuSearchOpen": "Search",
+  "menuSearchClear": "Clear",
+  "menuSearchResults": "{count, plural, =1{1 item found} other{{count} items found}}",
+  "@menuSearchResults": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "menuSearchNoResults": "Nothing found for “{query}”",
+  "@menuSearchNoResults": {
+    "placeholders": {"query": {"type": "String"}}
+  },
+  "menuSearchNoResultsHint": "Try another name",
   "findingAddress": "Finding address...",
   "checkingThisLocation": "Checking this location",
   "gettingAddressDetails": "Getting address details",

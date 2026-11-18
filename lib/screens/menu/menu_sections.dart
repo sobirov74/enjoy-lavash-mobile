@@ -243,64 +243,78 @@ extension _MenuSections on _MenuScreenState {
     );
   }
 
-  Widget _buildProductsHeader(ThemeData theme, L t) {
+  /// The pinned header: the search shortcut (once the field has scrolled
+  /// away), then the category chips, or the result count while searching.
+  Widget _buildProductsHeader(
+    ThemeData theme,
+    L t, {
+    required int resultCount,
+  }) {
     return Container(
       color: theme.scaffoldBackgroundColor,
-      child: FadeSlideIn(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 14),
-          child: SizedBox(
-            height: AppDesignTokens.chipHeight,
-            child: SingleChildScrollView(
-              controller: _categoryScrollController,
-              physics: const BouncingScrollPhysics(),
-              scrollDirection: Axis.horizontal,
-              // Only the chips and the pill follow the measured pill position.
-              child: ValueListenableBuilder<({double left, double width})?>(
-                valueListenable: _categoryPill,
-                builder: (context, pill, _) => Stack(
-                  key: _categoryPillTrackKey,
-                  alignment: Alignment.centerLeft,
-                  children: <Widget>[
-                    if (pill != null)
-                      AnimatedPositioned(
-                        duration: AppMotion.duration(context, AppMotion.state),
-                        curve: AppMotion.standard,
-                        left: pill.left,
-                        top: 0,
-                        width: pill.width,
-                        height: AppDesignTokens.chipHeight,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: AppDesignTokens.inkSurface(context),
-                            borderRadius: BorderRadius.all(
-                              Radius.circular(AppDesignTokens.radiusPill),
-                            ),
-                          ),
-                        ),
-                      ),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        for (
-                          var displayIndex = 0;
-                          displayIndex <= widget.categories.length;
-                          displayIndex++
-                        ) ...<Widget>[
-                          _buildCategoryChip(
-                            displayIndex,
-                            hasSharedPill: pill != null,
-                          ),
-                          if (displayIndex < widget.categories.length)
-                            const SizedBox(width: 8),
-                        ],
-                      ],
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 4, 20, 14),
+        child: SizedBox(
+          height: AppDesignTokens.chipHeight,
+          child: Row(
+            children: <Widget>[
+              _buildSearchShortcut(t),
+              Expanded(
+                child: _isSearching
+                    ? _buildSearchSummary(t, resultCount)
+                    : FadeSlideIn(child: _buildCategoryChips()),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryChips() {
+    return SingleChildScrollView(
+      controller: _categoryScrollController,
+      physics: const BouncingScrollPhysics(),
+      scrollDirection: Axis.horizontal,
+      // Only the chips and the pill follow the measured pill position.
+      child: ValueListenableBuilder<({double left, double width})?>(
+        valueListenable: _categoryPill,
+        builder: (context, pill, _) => Stack(
+          key: _categoryPillTrackKey,
+          alignment: Alignment.centerLeft,
+          children: <Widget>[
+            if (pill != null)
+              AnimatedPositioned(
+                duration: AppMotion.duration(context, AppMotion.state),
+                curve: AppMotion.standard,
+                left: pill.left,
+                top: 0,
+                width: pill.width,
+                height: AppDesignTokens.chipHeight,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: AppDesignTokens.inkSurface(context),
+                    borderRadius: BorderRadius.all(
+                      Radius.circular(AppDesignTokens.radiusPill),
                     ),
-                  ],
+                  ),
                 ),
               ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                for (
+                  var displayIndex = 0;
+                  displayIndex <= widget.categories.length;
+                  displayIndex++
+                ) ...<Widget>[
+                  _buildCategoryChip(displayIndex, hasSharedPill: pill != null),
+                  if (displayIndex < widget.categories.length)
+                    const SizedBox(width: 8),
+                ],
+              ],
             ),
-          ),
+          ],
         ),
       ),
     );

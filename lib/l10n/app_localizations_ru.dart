@@ -1278,4 +1278,13 @@ class LRu extends L {
 
   @override
   String get reviewNotAllowed => 'Этот заказ нельзя оценить.';
+
+  @override
+  String get reviewThanks => 'Спасибо за отзыв!';
+
+  @override
+  String get reviewTapStar => 'Нажмите на звезду, чтобы оценить';
+
+  @override
+  String get reviewPreparingPhoto => 'Добавляем фото…';
 }

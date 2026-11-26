@@ -2396,6 +2396,24 @@ abstract class L {
   /// In uz, this message translates to:
   /// **'Bu buyurtmani baholab bölmaydi.'**
   String get reviewNotAllowed;
+
+  /// No description provided for @reviewThanks.
+  ///
+  /// In uz, this message translates to:
+  /// **'Şarhingiz uçun rahmat!'**
+  String get reviewThanks;
+
+  /// No description provided for @reviewTapStar.
+  ///
+  /// In uz, this message translates to:
+  /// **'Baholaş uçun yulduzni bosing'**
+  String get reviewTapStar;
+
+  /// No description provided for @reviewPreparingPhoto.
+  ///
+  /// In uz, this message translates to:
+  /// **'Rasm qöşilmoqda…'**
+  String get reviewPreparingPhoto;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

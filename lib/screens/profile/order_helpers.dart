@@ -38,6 +38,21 @@ String _statusLabel(MobileOrderStatus status, L t) {
   };
 }
 
+IconData _statusIcon(MobileOrderStatus status) {
+  return switch (status) {
+    MobileOrderStatus.newOrder => Icons.receipt_long_rounded,
+    MobileOrderStatus.confirmed => Icons.task_alt_rounded,
+    MobileOrderStatus.cooking => Icons.soup_kitchen_rounded,
+    MobileOrderStatus.ready => Icons.shopping_bag_rounded,
+    MobileOrderStatus.courierAssigned => Icons.sports_motorsports_rounded,
+    MobileOrderStatus.onTheWay => Icons.delivery_dining_rounded,
+    MobileOrderStatus.delivered => Icons.check_circle_rounded,
+    MobileOrderStatus.cancelled => Icons.cancel_rounded,
+    MobileOrderStatus.refunded => Icons.replay_circle_filled_rounded,
+    MobileOrderStatus.unknown => Icons.help_rounded,
+  };
+}
+
 ({Color bg, Color text}) _statusColors(MobileOrderStatus status) {
   return switch (status) {
     MobileOrderStatus.delivered || MobileOrderStatus.ready => (

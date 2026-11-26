@@ -526,5 +526,8 @@
     }
   },
   "reviewAlreadySaved": "Ваш отзыв уже сохранён.",
-  "reviewNotAllowed": "Этот заказ нельзя оценить."
+  "reviewNotAllowed": "Этот заказ нельзя оценить.",
+  "reviewThanks": "Спасибо за отзыв!",
+  "reviewTapStar": "Нажмите на звезду, чтобы оценить",
+  "reviewPreparingPhoto": "Добавляем фото…"
 }

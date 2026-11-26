@@ -12,6 +12,9 @@ import '../data/models/order_review_model.dart';
 import '../data/order_review_limits.dart';
 import 'order_review_photo_viewer.dart';
 import 'review_photo_strip.dart';
+import 'star_rating_input.dart';
+
+const double _summaryStarSize = 22;
 
 class OrderReviewSummary extends StatelessWidget {
   const OrderReviewSummary({super.key, required this.review});
@@ -22,37 +25,66 @@ class OrderReviewSummary extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = L.of(context);
     final date = review.createdAt;
+    final ratingLabel = reviewRatingLabel(t, review.rating);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Semantics(
-          label: t.reviewStarLabel(review.rating),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (var value = 1; value <= orderReviewStarCount; value++)
-                Icon(
-                  value <= review.rating
-                      ? Icons.star_rounded
-                      : Icons.star_outline_rounded,
-                  size: AppDesignTokens.gutter,
-                  color: BaseColors.primary,
+        // Stars, the word for the rating and the date share one line and
+        // wrap under each other when the text is large.
+        Wrap(
+          spacing: AppDesignTokens.gutter / 2,
+          runSpacing: AppDesignTokens.gutter / 4,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Semantics(
+              label: t.reviewStarLabel(review.rating),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (var value = 1; value <= orderReviewStarCount; value++)
+                    Icon(
+                      value <= review.rating
+                          ? Icons.star_rounded
+                          : Icons.star_outline_rounded,
+                      size: _summaryStarSize,
+                      color: BaseColors.primary,
+                    ),
+                ],
+              ),
+            ),
+            if (ratingLabel.isNotEmpty)
+              Text(
+                ratingLabel,
+                style: AppTextStyles.display(
+                  size: 15,
+                  weight: FontWeight.w800,
+                  color: AppDesignTokens.primaryText(context),
                 ),
-            ],
-          ),
+              ),
+            if (date != null)
+              Text(
+                dateFormat(
+                  t.localeName,
+                  'yMMMd',
+                  DateFormat.yMMMd,
+                ).format(date.toLocal()),
+                style: AppTextStyles.ui(
+                  size: 12,
+                  color: AppDesignTokens.secondaryText(context),
+                ),
+              ),
+          ],
         ),
-        if (date != null)
-          Text(
-            dateFormat(
-              t.localeName,
-              'yMMMd',
-              DateFormat.yMMMd,
-            ).format(date.toLocal()),
-            style: TextStyle(color: AppDesignTokens.secondaryText(context)),
-          ),
         if (review.comment?.isNotEmpty == true) ...[
           const SizedBox(height: AppDesignTokens.gutter / 2),
-          Text(review.comment!),
+          Text(
+            review.comment!,
+            style: AppTextStyles.ui(
+              size: 14,
+              height: 1.4,
+              color: AppDesignTokens.primaryText(context),
+            ),
+          ),
         ],
         if (review.photos.isNotEmpty) ...[
           const SizedBox(height: AppDesignTokens.gutter / 2),

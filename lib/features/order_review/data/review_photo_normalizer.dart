@@ -9,14 +9,29 @@ import 'package:path_provider/path_provider.dart';
 
 import 'order_review_limits.dart';
 
+const String _outputDirectoryPrefix = 'order_review_';
+
 abstract class ReviewPhotoNormalizer {
   const ReviewPhotoNormalizer();
   Future<Result<String>> normalize(String path);
   Future<void> remove(String path);
 }
 
+/// Re-encodes [path] as a JPEG whose shortest edge is [shortSide] pixels,
+/// without EXIF data. Null when the platform encoder gives nothing back.
+typedef ReviewPhotoEncoder =
+    Future<List<int>?> Function(String path, int shortSide);
+
 class JpegReviewPhotoNormalizer extends ReviewPhotoNormalizer {
-  const JpegReviewPhotoNormalizer();
+  const JpegReviewPhotoNormalizer({
+    this.encode = _encodeJpeg,
+    this.temporaryDirectory = getTemporaryDirectory,
+  });
+
+  /// Both are replaced in tests: the platform encoder and the app cache
+  /// directory do not exist there.
+  final ReviewPhotoEncoder encode;
+  final Future<Directory> Function() temporaryDirectory;
 
   @override
   Future<Result<String>> normalize(String path) async {
@@ -41,22 +56,16 @@ class JpegReviewPhotoNormalizer extends ReviewPhotoNormalizer {
         (math.min(descriptor.width, descriptor.height) * scale).floor(),
       );
       descriptor.dispose();
-      final bytes = await FlutterImageCompress.compressWithFile(
-        path,
-        minWidth: targetShortSide,
-        minHeight: targetShortSide,
-        quality: orderReviewPhotoQuality,
-        format: CompressFormat.jpeg,
-        keepExif: false,
-      );
-      if (bytes == null) return const Error(UnknownFailure());
+      final bytes = await encode(path, targetShortSide);
+      if (bytes == null || bytes.isEmpty) return const Error(UnknownFailure());
       if (bytes.length > maxOrderReviewPhotoBytes) {
         return const Error(PayloadTooLargeFailure());
       }
-      final temp = await getTemporaryDirectory();
-      outputDirectory = await Directory(
-        '${temp.path}/order_review_',
-      ).createTemp();
+      // One folder per photo, created inside the cache directory.
+      // `createTemp` takes the name prefix as its argument: a prefix written
+      // into the path names a parent folder that does not exist.
+      final temp = await temporaryDirectory();
+      outputDirectory = await temp.createTemp(_outputDirectoryPrefix);
       final output = File('${outputDirectory.path}/photo.jpg');
       await output.writeAsBytes(bytes, flush: true);
       return Success(output.path);
@@ -78,4 +87,15 @@ class JpegReviewPhotoNormalizer extends ReviewPhotoNormalizer {
       // A temp-file cleanup must not prevent closing or retrying a review.
     }
   }
+}
+
+Future<List<int>?> _encodeJpeg(String path, int shortSide) {
+  return FlutterImageCompress.compressWithFile(
+    path,
+    minWidth: shortSide,
+    minHeight: shortSide,
+    quality: orderReviewPhotoQuality,
+    format: CompressFormat.jpeg,
+    keepExif: false,
+  );
 }

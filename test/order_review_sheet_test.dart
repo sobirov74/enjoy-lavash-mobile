@@ -54,6 +54,7 @@ void main() {
     WidgetTester tester, {
     ValueChanged<CustomerOrderModel?>? onResult,
     bool fakePhotos = false,
+    ReviewPhotoNormalizer photoNormalizer = const _PhotoNormalizer(),
   }) async {
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
@@ -77,7 +78,7 @@ void main() {
                             child: OrderReviewSheet(
                               order: _order,
                               photoPicker: const _PhotoPicker(),
-                              photoNormalizer: const _PhotoNormalizer(),
+                              photoNormalizer: photoNormalizer,
                             ),
                           ),
                         )
@@ -214,6 +215,48 @@ void main() {
     await send(tester);
     expect(repository.paths, ['/tmp/fake-normalized-review.jpg']);
   });
+
+  testWidgets('a photo being prepared holds its place until the thumbnail '
+      'is ready', (tester) async {
+    final prepared = Completer<Result<String>>();
+    await pump(
+      tester,
+      fakePhotos: true,
+      photoNormalizer: _PendingPhotoNormalizer(prepared.future),
+    );
+    await tester.ensureVisible(
+      find.byKey(const ValueKey<String>('review-add-photo')),
+    );
+    await tester.tap(find.byKey(const ValueKey<String>('review-add-photo')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey<String>('review-gallery')));
+    // The spinner never settles: pump the sheet's own transitions instead.
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    const preparing = ValueKey<String>('review-photo-preparing');
+    const thumbnail = ValueKey<String>('review-photo-thumb-0');
+    expect(find.byKey(preparing), findsOneWidget);
+    expect(find.text('Adding photo…'), findsOneWidget);
+    expect(find.byKey(thumbnail), findsNothing);
+    // Nothing else can be added or sent meanwhile.
+    expect(
+      tester
+          .widget<OutlinedButton>(
+            find.byKey(const ValueKey<String>('review-add-photo')),
+          )
+          .onPressed,
+      isNull,
+    );
+
+    prepared.complete(const Success('/tmp/fake-normalized-review.jpg'));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(preparing), findsNothing);
+    expect(find.byKey(thumbnail), findsOneWidget);
+    expect(find.text('1/5 photos'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }
 
 class _ReviewRepository implements MobileBackendRepository {
@@ -261,6 +304,17 @@ class _PhotoNormalizer extends ReviewPhotoNormalizer {
   @override
   Future<Result<String>> normalize(String path) async =>
       const Success('/tmp/fake-normalized-review.jpg');
+  @override
+  Future<void> remove(String path) async {}
+}
+
+class _PendingPhotoNormalizer extends ReviewPhotoNormalizer {
+  const _PendingPhotoNormalizer(this.result);
+
+  final Future<Result<String>> result;
+
+  @override
+  Future<Result<String>> normalize(String path) => result;
   @override
   Future<void> remove(String path) async {}
 }

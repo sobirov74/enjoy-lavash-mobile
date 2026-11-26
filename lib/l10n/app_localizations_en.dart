@@ -1286,4 +1286,13 @@ class LEn extends L {
 
   @override
   String get reviewNotAllowed => 'This order cannot be reviewed.';
+
+  @override
+  String get reviewThanks => 'Thanks for your review!';
+
+  @override
+  String get reviewTapStar => 'Tap a star to rate';
+
+  @override
+  String get reviewPreparingPhoto => 'Adding photo…';
 }

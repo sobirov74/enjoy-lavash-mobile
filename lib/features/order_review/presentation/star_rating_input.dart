@@ -8,6 +8,18 @@ import 'package:flutter/services.dart';
 
 import '../data/order_review_limits.dart';
 
+/// The word that goes with a rating ("Good"), empty when none is chosen.
+String reviewRatingLabel(L t, int rating) {
+  return switch (rating) {
+    1 => t.reviewTerrible,
+    2 => t.reviewBad,
+    3 => t.reviewOkay,
+    4 => t.reviewGood,
+    5 => t.reviewExcellent,
+    _ => '',
+  };
+}
+
 class StarRatingInput extends StatelessWidget {
   const StarRatingInput({
     super.key,
@@ -21,14 +33,7 @@ class StarRatingInput extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = L.of(context);
-    final label = switch (rating) {
-      1 => t.reviewTerrible,
-      2 => t.reviewBad,
-      3 => t.reviewOkay,
-      4 => t.reviewGood,
-      5 => t.reviewExcellent,
-      _ => '',
-    };
+    final label = reviewRatingLabel(t, rating);
     return Column(
       children: [
         Row(

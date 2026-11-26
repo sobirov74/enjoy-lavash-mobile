@@ -23,10 +23,13 @@ import '../data/review_photo_picker.dart';
 import 'review_photo_strip.dart';
 import 'star_rating_input.dart';
 
+/// Opens the review form. [initialRating] is the star the customer already
+/// tapped on the way in (the order details card); the form opens with it.
 Future<CustomerOrderModel?> showOrderReviewSheet(
   BuildContext context,
-  CustomerOrderModel order,
-) {
+  CustomerOrderModel order, {
+  int initialRating = 0,
+}) {
   final backend = context.read<MobileBackendController>();
   return showAppModalBottomSheet<CustomerOrderModel>(
     context: context,
@@ -36,7 +39,7 @@ Future<CustomerOrderModel?> showOrderReviewSheet(
     enableDrag: false,
     builder: (_) => ChangeNotifierProvider.value(
       value: backend,
-      child: OrderReviewSheet(order: order),
+      child: OrderReviewSheet(order: order, initialRating: initialRating),
     ),
   );
 }
@@ -45,11 +48,13 @@ class OrderReviewSheet extends StatefulWidget {
   const OrderReviewSheet({
     super.key,
     required this.order,
+    this.initialRating = 0,
     this.photoPicker = const DeviceReviewPhotoPicker(),
     this.photoNormalizer = const JpegReviewPhotoNormalizer(),
   });
 
   final CustomerOrderModel order;
+  final int initialRating;
   final ReviewPhotoPicker photoPicker;
   final ReviewPhotoNormalizer photoNormalizer;
 
@@ -60,7 +65,7 @@ class OrderReviewSheet extends StatefulWidget {
 class _OrderReviewSheetState extends State<OrderReviewSheet> {
   final _comment = TextEditingController();
   final _photos = <String>[];
-  int _rating = 0;
+  late int _rating = widget.initialRating.clamp(0, orderReviewStarCount);
   bool _isSaving = false;
   bool _isPreparingPhoto = false;
   bool _confirming = false;
@@ -68,8 +73,12 @@ class _OrderReviewSheetState extends State<OrderReviewSheet> {
   String? _errorText;
 
   bool get _locked => _isSaving || _isPreparingPhoto;
+  // A star tapped on the way in is not a draft: closing without touching
+  // the form must not ask to discard anything.
   bool get _hasDraft =>
-      _rating > 0 || _comment.text.isNotEmpty || _photos.isNotEmpty;
+      _rating != widget.initialRating.clamp(0, orderReviewStarCount) ||
+      _comment.text.isNotEmpty ||
+      _photos.isNotEmpty;
 
   @override
   void dispose() {
@@ -311,6 +320,7 @@ class _OrderReviewSheetState extends State<OrderReviewSheet> {
                 const SizedBox(height: AppDesignTokens.gutter),
                 ReviewPhotoStrip(
                   paths: _photos,
+                  isPreparing: _isPreparingPhoto,
                   onAdd: _locked ? null : () => unawaited(_addPhoto()),
                   onRemove: _locked
                       ? null

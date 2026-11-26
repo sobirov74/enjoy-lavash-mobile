@@ -541,5 +541,8 @@
     }
   },
   "reviewAlreadySaved": "Şarhingiz allaqaçon saqlangan.",
-  "reviewNotAllowed": "Bu buyurtmani baholab bölmaydi."
+  "reviewNotAllowed": "Bu buyurtmani baholab bölmaydi.",
+  "reviewThanks": "Şarhingiz uçun rahmat!",
+  "reviewTapStar": "Baholaş uçun yulduzni bosing",
+  "reviewPreparingPhoto": "Rasm qöşilmoqda…"
 }

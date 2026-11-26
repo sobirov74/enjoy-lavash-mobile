@@ -1,5 +1,9 @@
 part of 'package:enjoy_lavash_mobile/screens/profile.dart';
 
+const double _sheetHeightFactor = 0.9;
+const double _sheetGutter = 18;
+const double _sectionGap = 12;
+
 class _OrderDetailsSheet extends StatefulWidget {
   const _OrderDetailsSheet({
     required this.order,
@@ -22,6 +26,9 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet>
   late CustomerOrderModel _order;
   bool _isRetryingPayment = false;
   bool _isRefreshingOrder = false;
+  // The review was sent from this sheet: the card thanks the customer.
+  bool _justReviewed = false;
+  final GlobalKey _reviewCardKey = GlobalKey();
   Timer? _orderPollTimer;
 
   @override
@@ -147,10 +154,33 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet>
     }
   }
 
-  Future<void> _rateOrder() async {
-    final updated = await showOrderReviewSheet(context, _order);
+  /// Opens the review form, with the star tapped on the card already chosen
+  /// ([rating] is 0 when the card itself was tapped).
+  Future<void> _rateOrder(int rating) async {
+    final updated = await showOrderReviewSheet(
+      context,
+      _order,
+      initialRating: rating,
+    );
     if (!mounted || updated == null) return;
-    setState(() => _order = updated);
+    setState(() {
+      _order = updated;
+      _justReviewed = true;
+    });
+    // The card now holds the saved review: bring it into view in case the
+    // customer had scrolled past it.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final card = _reviewCardKey.currentContext;
+      if (!mounted || card == null) return;
+      unawaited(
+        Scrollable.ensureVisible(
+          card,
+          alignment: 0.1,
+          duration: AppMotion.duration(context, AppMotion.state),
+          curve: AppMotion.enter,
+        ),
+      );
+    });
   }
 
   void _showOrderSnack(String message) {
@@ -163,745 +193,170 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet>
   Widget build(BuildContext context) {
     final t = L.of(context);
     final order = _order;
-    final actionStyle = FilledButton.styleFrom(
-      backgroundColor: BaseColors.primary,
-      foregroundColor: BaseColors.white,
-      padding: const EdgeInsets.symmetric(vertical: AppDesignTokens.gutter / 2),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppDesignTokens.radiusInput),
-      ),
-      minimumSize: const Size.fromHeight(AppDesignTokens.primaryButtonHeight),
-    );
-    final colors = _statusColors(order.status);
     final destination = _orderDestination(
       order,
       widget.branches,
       widget.addresses,
       t,
-    );
-    final statusEntries = _statusEntries(order);
+    )?.trim();
     final createdAt = _formatOrderDateTime(order.createdAt, widget.locale);
     final scheduledFor = _formatOrderDateTime(
       order.scheduledFor,
       widget.locale,
     );
-    final updatedAt = _formatOrderDateTime(order.updatedAt, widget.locale);
+    final paymentStatus = order.paymentStatus;
+    final promoCode = order.promoCode?.trim() ?? '';
+    final comment = order.comment?.trim() ?? '';
+    final kitchenOrder = order.iikoOrderId?.trim() ?? '';
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return Container(
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.sizeOf(context).height * 0.88,
+        maxHeight: MediaQuery.sizeOf(context).height * _sheetHeightFactor,
       ),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: AppDesignTokens.surface(context),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(
-          18,
-          10,
-          18,
-          22 + MediaQuery.paddingOf(context).bottom,
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(AppDesignTokens.radiusSheet),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            const AppBottomSheetDragHandle(),
-            const SizedBox(height: 6),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      TypographyText(
-                        t.orderDetails,
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      TypographyText(
-                        '#${_shortOrderId(order.id)}',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: BaseColors.textGray,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close_rounded),
-                ),
-              ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          const AppBottomSheetDragHandle(),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              _sheetGutter,
+              0,
+              _sheetGutter - 6,
+              _sectionGap,
             ),
-            const SizedBox(height: 14),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: colors.bg,
-                borderRadius: BorderRadius.circular(18),
+            child: _OrderSheetHeader(
+              title: t.orderDetails,
+              subtitle: <String>[
+                '#${_shortOrderId(order.id)}',
+                if (createdAt.isNotEmpty) createdAt,
+              ].join(' · '),
+              onClose: () => Navigator.of(context).pop(),
+            ),
+          ),
+          Flexible(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                _sheetGutter,
+                0,
+                _sheetGutter,
+                _sheetGutter + (_canRetryPayment ? 0 : bottomInset),
               ),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      Icon(Icons.track_changes_rounded, color: colors.text),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            TypographyText(
-                              t.currentStatus,
-                              style: TextStyle(
-                                color: colors.text.withValues(alpha: 0.78),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            TypographyText(
-                              _statusLabel(order.status, t),
-                              style: TextStyle(
-                                color: colors.text,
-                                fontSize: 17,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                          ],
+                  _OrderStatusHero(order: order, locale: widget.locale),
+                  _OrderReviewCard(
+                    key: _reviewCardKey,
+                    order: order,
+                    justSent: _justReviewed,
+                    onRate: (rating) => unawaited(_rateOrder(rating)),
+                  ),
+                  const SizedBox(height: _sectionGap),
+                  _OrderFactsCard(
+                    facts: <_OrderFact>[
+                      if (destination?.isNotEmpty == true)
+                        _OrderFact(
+                          icon: order.type == MobileOrderType.delivery
+                              ? Icons.location_on_rounded
+                              : Icons.storefront_rounded,
+                          label: order.type == MobileOrderType.delivery
+                              ? t.deliveryAddress
+                              : t.pickupBranch,
+                          value: destination!,
                         ),
+                      if (scheduledFor.isNotEmpty)
+                        _OrderFact(
+                          icon: Icons.schedule_rounded,
+                          label: t.scheduledFor,
+                          value: scheduledFor,
+                        ),
+                      _OrderFact(
+                        icon: Icons.payments_rounded,
+                        label: t.payment,
+                        value: paymentMethodLabel(order.paymentMethod, t),
+                        badge:
+                            paymentStatus == null ||
+                                paymentStatus == MobilePaymentStatus.unknown
+                            ? null
+                            : _PaymentStatusBadge(status: paymentStatus),
                       ),
                     ],
                   ),
-                  if (_supportsOrderJourney(order.type, order.status)) ...[
-                    const SizedBox(height: 14),
-                    OrderProgressJourney(
-                      orderType: order.type,
-                      status: order.status,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            _OrderInfoPill(
-              icon: _orderTypeIcon(order.type),
-              label: t.orderType,
-              value: _orderTypeLabel(order.type, t),
-            ),
-            if (createdAt.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              _OrderInfoPill(
-                icon: Icons.event_available_rounded,
-                label: t.created,
-                value: createdAt,
-              ),
-            ],
-            if (scheduledFor.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              _OrderInfoPill(
-                icon: Icons.schedule_rounded,
-                label: t.scheduledFor,
-                value: scheduledFor,
-              ),
-            ],
-            if (updatedAt.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              _OrderInfoPill(
-                icon: Icons.update_rounded,
-                label: t.lastUpdate,
-                value: updatedAt,
-              ),
-            ],
-            const SizedBox(height: 8),
-            _OrderInfoPill(
-              icon: Icons.payments_outlined,
-              label: t.payment,
-              value: paymentMethodLabel(order.paymentMethod, t),
-            ),
-            if (order.paymentStatus != null &&
-                order.paymentStatus != MobilePaymentStatus.unknown) ...[
-              const SizedBox(height: 8),
-              _OrderInfoPill(
-                icon: Icons.verified_outlined,
-                label: t.paymentStatus,
-                value: _paymentStatusLabel(order.paymentStatus!, t),
-              ),
-            ],
-            if (_canRetryPayment) ...[
-              const SizedBox(height: 10),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  style: actionStyle,
-                  onPressed: _isRetryingPayment
-                      ? null
-                      : () => unawaited(_retryPayment()),
-                  icon: _isRetryingPayment
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: BaseColors.white,
-                          ),
-                        )
-                      : const Icon(Icons.refresh_rounded, size: 19),
-                  label: TypographyText(
-                    t.retryPayment,
-                    style: const TextStyle(
-                      color: BaseColors.white,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-            if (_order.canReview) ...[
-              const SizedBox(height: AppDesignTokens.gutter / 2),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  key: const ValueKey<String>('details-rate-order'),
-                  style: actionStyle,
-                  onPressed: () => unawaited(_rateOrder()),
-                  icon: const Icon(Icons.star_outline_rounded),
-                  label: Text(t.reviewRateOrder),
-                ),
-              ),
-            ],
-            if (_order.review != null) ...[
-              const SizedBox(height: AppDesignTokens.gutter / 2),
-              _OrderDetailSection(
-                title: t.yourReview,
-                children: [OrderReviewSummary(review: _order.review!)],
-              ),
-            ],
-            if (destination?.trim().isNotEmpty == true) ...[
-              const SizedBox(height: 8),
-              _OrderInfoPill(
-                icon: order.type == MobileOrderType.delivery
-                    ? Icons.location_on_outlined
-                    : Icons.storefront_rounded,
-                label: order.type == MobileOrderType.delivery
-                    ? t.deliveryAddress
-                    : t.selectBranch,
-                value: destination!.trim(),
-              ),
-            ],
-            const SizedBox(height: 14),
-            _OrderDetailSection(
-              title: t.products,
-              children: order.items.isEmpty
-                  ? <Widget>[
-                      TypographyText(
-                        _orderProductSummary(order, t),
-                        style: const TextStyle(color: BaseColors.textGray),
-                      ),
-                    ]
-                  : <Widget>[
-                      for (int i = 0; i < order.items.length; i++) ...[
-                        _OrderProductDetailLine(item: order.items[i]),
-                        if (i < order.items.length - 1)
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 10),
-                            child: Divider(height: 1, color: Color(0x1A8C8278)),
-                          ),
-                      ],
-                    ],
-            ),
-            if (order.loyaltyRedeemedAmount > 0 || order.loyalty.eligible) ...[
-              const SizedBox(height: 12),
-              _OrderLoyaltyDetailSection(order: order),
-            ],
-            const SizedBox(height: 12),
-            _OrderDetailSection(
-              title: t.statusHistory,
-              children: <Widget>[
-                for (int i = 0; i < statusEntries.length; i++) ...[
-                  _OrderStatusLogLine(
-                    entry: statusEntries[i],
+                  const SizedBox(height: _sectionGap),
+                  _OrderReceiptCard(order: order),
+                  const SizedBox(height: _sectionGap),
+                  _OrderTimelineCard(
+                    title: t.statusHistory,
+                    entries: _statusEntries(order),
                     locale: widget.locale,
                   ),
-                  if (i < statusEntries.length - 1) const SizedBox(height: 10),
-                ],
-              ],
-            ),
-            if (order.promoCode?.trim().isNotEmpty == true ||
-                order.comment?.trim().isNotEmpty == true ||
-                order.iikoOrderId?.trim().isNotEmpty == true) ...[
-              const SizedBox(height: 12),
-              _OrderDetailSection(
-                title: t.additionalInfo,
-                children: <Widget>[
-                  if (order.promoCode?.trim().isNotEmpty == true)
-                    _OrderTextDetail(
-                      label: t.promoCode,
-                      value: order.promoCode!.trim(),
-                    ),
-                  if (order.comment?.trim().isNotEmpty == true) ...[
-                    if (order.promoCode?.trim().isNotEmpty == true)
-                      const SizedBox(height: 10),
-                    _OrderTextDetail(
-                      label: t.commentLabel,
-                      value: order.comment!.trim(),
-                    ),
-                  ],
-                  if (order.iikoOrderId?.trim().isNotEmpty == true) ...[
-                    if (order.promoCode?.trim().isNotEmpty == true ||
-                        order.comment?.trim().isNotEmpty == true)
-                      const SizedBox(height: 10),
-                    _OrderTextDetail(
-                      label: t.kitchenOrder,
-                      value: order.iikoOrderId!.trim(),
+                  if (promoCode.isNotEmpty ||
+                      comment.isNotEmpty ||
+                      kitchenOrder.isNotEmpty) ...[
+                    const SizedBox(height: _sectionGap),
+                    _OrderNotesCard(
+                      title: t.additionalInfo,
+                      notes: <({String label, String value})>[
+                        if (promoCode.isNotEmpty)
+                          (label: t.promoCode, value: promoCode),
+                        if (comment.isNotEmpty)
+                          (label: t.commentLabel, value: comment),
+                        if (kitchenOrder.isNotEmpty)
+                          (label: t.kitchenOrder, value: kitchenOrder),
+                      ],
                     ),
                   ],
                 ],
               ),
-            ],
-            const SizedBox(height: 14),
-            _OrderAmountDetailLine(
-              label: t.amountToPay,
-              value: _formatOrderAmount(context, order.totalAmount),
-              strong: true,
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _OrderLoyaltyDetailSection extends StatelessWidget {
-  const _OrderLoyaltyDetailSection({required this.order});
-
-  final CustomerOrderModel order;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = L.of(context);
-    final redemption = order.loyalty.redemption;
-    final accrual = order.loyalty.accrual;
-    final hasExpired =
-        accrual.status == LoyaltyAccrualStatus.earned &&
-        accrual.expiresAt != null &&
-        accrual.expiresAt!.isBefore(DateTime.now());
-    final accrualLabel = hasExpired
-        ? t.transactionExpiry
-        : switch (accrual.status) {
-            LoyaltyAccrualStatus.pending => t.loyaltyPending,
-            LoyaltyAccrualStatus.earned =>
-              '${t.loyaltyEarned}: '
-                  '+${decimalFormat(Localizations.localeOf(context).toLanguageTag()).format(accrual.creditedAmount)}',
-            LoyaltyAccrualStatus.noReward => t.loyaltyNoReward,
-            LoyaltyAccrualStatus.reversed => t.loyaltyReversed,
-            LoyaltyAccrualStatus.notEligible ||
-            LoyaltyAccrualStatus.unknown => null,
-          };
-    final restored =
-        redemption?.status == LoyaltyRedemptionStatus.released ||
-        redemption?.status == LoyaltyRedemptionStatus.refunded;
-
-    return _OrderDetailSection(
-      title: t.loyaltyWallet,
-      children: <Widget>[
-        _OrderAmountDetailLine(
-          label: t.orderBeforePoints,
-          value: _formatOrderAmount(context, order.totalBeforePointsAmount),
-        ),
-        if (order.loyaltyRedeemedAmount > 0) ...[
-          const SizedBox(height: 9),
-          _OrderAmountDetailLine(
-            label: restored ? t.loyaltyRestored : t.pointsUsed,
-            value:
-                '${restored ? '+' : '-'}'
-                '${decimalFormat(Localizations.localeOf(context).toLanguageTag()).format(order.loyaltyRedeemedAmount)}',
-            valueColor: restored ? BaseColors.success : BaseColors.primary,
           ),
-        ],
-        const SizedBox(height: 9),
-        _OrderAmountDetailLine(
-          label: t.amountToPay,
-          value: _formatOrderAmount(context, order.totalAmount),
-          strong: true,
-        ),
-        if (accrualLabel != null) ...[
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 11),
-            child: Divider(height: 1, color: Color(0x1A8C8278)),
-          ),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Icon(
-                accrual.status == LoyaltyAccrualStatus.reversed
-                    ? Icons.undo_rounded
-                    : Icons.auto_awesome_rounded,
-                color: accrual.status == LoyaltyAccrualStatus.reversed
-                    ? BaseColors.danger
-                    : BaseColors.success,
-                size: 19,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: TypographyText(
-                  accrualLabel,
-                  style: TextStyle(
-                    color: accrual.status == LoyaltyAccrualStatus.reversed
-                        ? BaseColors.danger
-                        : BaseColors.success,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
+          if (_canRetryPayment)
+            _OrderSheetActionBar(
+              bottomInset: bottomInset,
+              child: FilledButton.icon(
+                key: const ValueKey<String>('details-retry-payment'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: BaseColors.primary,
+                  foregroundColor: BaseColors.white,
+                  minimumSize: const Size.fromHeight(
+                    AppDesignTokens.primaryButtonHeight,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                      AppDesignTokens.radiusPill,
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-class _OrderAmountDetailLine extends StatelessWidget {
-  const _OrderAmountDetailLine({
-    required this.label,
-    required this.value,
-    this.valueColor,
-    this.strong = false,
-  });
-
-  final String label;
-  final String value;
-  final Color? valueColor;
-  final bool strong;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Expanded(
-          child: TypographyText(
-            label,
-            style: const TextStyle(color: BaseColors.textGray, fontSize: 13),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Flexible(
-          child: TypographyText(
-            value,
-            textAlign: TextAlign.end,
-            style: TextStyle(
-              color: valueColor ?? (strong ? BaseColors.primary : null),
-              fontSize: strong ? 18 : 14,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-const List<MobileOrderStatus> _deliveryJourneyStages = <MobileOrderStatus>[
-  MobileOrderStatus.newOrder,
-  MobileOrderStatus.confirmed,
-  MobileOrderStatus.cooking,
-  MobileOrderStatus.ready,
-  MobileOrderStatus.courierAssigned,
-  MobileOrderStatus.onTheWay,
-  MobileOrderStatus.delivered,
-];
-
-const List<MobileOrderStatus> _pickupJourneyStages = <MobileOrderStatus>[
-  MobileOrderStatus.newOrder,
-  MobileOrderStatus.confirmed,
-  MobileOrderStatus.cooking,
-  MobileOrderStatus.ready,
-  MobileOrderStatus.delivered,
-];
-
-List<MobileOrderStatus> _orderJourneyStages(MobileOrderType orderType) {
-  return switch (orderType) {
-    MobileOrderType.delivery => _deliveryJourneyStages,
-    MobileOrderType.pickup => _pickupJourneyStages,
-  };
-}
-
-bool _supportsOrderJourney(
-  MobileOrderType orderType,
-  MobileOrderStatus status,
-) {
-  return _orderJourneyStages(orderType).contains(status);
-}
-
-double _orderJourneyProgress(
-  MobileOrderType orderType,
-  MobileOrderStatus status,
-) {
-  final stages = _orderJourneyStages(orderType);
-  final index = stages.indexOf(status);
-  if (index <= 0) return 0;
-  return index / (stages.length - 1);
-}
-
-/// A quiet, state-driven journey through an order's real lifecycle.
-///
-/// It starts at the supplied status and only animates when that status changes.
-/// There are no timers or repeating effects, so the indicator never implies
-/// progress that the server has not reported.
-class OrderProgressJourney extends StatefulWidget {
-  const OrderProgressJourney({
-    super.key,
-    required this.orderType,
-    required this.status,
-  });
-
-  final MobileOrderType orderType;
-  final MobileOrderStatus status;
-
-  @override
-  State<OrderProgressJourney> createState() => _OrderProgressJourneyState();
-}
-
-class _OrderProgressJourneyState extends State<OrderProgressJourney>
-    with SingleTickerProviderStateMixin {
-  late double _targetProgress;
-  late final AnimationController _controller;
-  bool _reduceMotion = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _targetProgress = _orderJourneyProgress(widget.orderType, widget.status);
-    _controller = AnimationController(
-      vsync: this,
-      duration: AppMotion.spatial,
-      value: _targetProgress,
-    );
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _reduceMotion = AppMotion.reduced(context);
-    _controller.duration = AppMotion.duration(context, AppMotion.spatial);
-    if (_reduceMotion) {
-      _controller.value = _targetProgress;
-    }
-  }
-
-  @override
-  void didUpdateWidget(covariant OrderProgressJourney oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.orderType == widget.orderType &&
-        oldWidget.status == widget.status) {
-      return;
-    }
-
-    final nextProgress = _orderJourneyProgress(widget.orderType, widget.status);
-    _targetProgress = nextProgress;
-    _controller.stop();
-
-    if (_reduceMotion ||
-        !_supportsOrderJourney(widget.orderType, widget.status)) {
-      _controller.value = nextProgress;
-      return;
-    }
-
-    _controller.animateTo(nextProgress, curve: AppMotion.enter);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final stages = _orderJourneyStages(widget.orderType);
-    final currentIndex = stages.indexOf(widget.status);
-    if (currentIndex < 0) return const SizedBox.shrink();
-
-    final t = L.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accent = BaseColors.primary;
-    final trackColor = isDark
-        ? Colors.white.withValues(alpha: 0.16)
-        : Colors.black.withValues(alpha: 0.12);
-    final idleDotColor = isDark
-        ? const Color(0xFF665D56)
-        : const Color(0xFFD8CEC5);
-
-    return Semantics(
-      key: const ValueKey<String>('order-progress-journey'),
-      container: true,
-      label: '${t.currentStatus}: ${_statusLabel(widget.status, t)}',
-      child: ExcludeSemantics(
-        child: Column(
-          children: <Widget>[
-            AnimatedBuilder(
-              animation: _controller,
-              builder: (context, _) {
-                final journeyPosition = _controller.value * (stages.length - 1);
-                return Row(
-                  children: <Widget>[
-                    for (int index = 0; index < stages.length; index++) ...[
-                      _OrderJourneyDot(
-                        key: ValueKey<String>('order-progress-dot-$index'),
-                        progress: index == 0
-                            ? 1
-                            : (journeyPosition - (index - 1))
-                                  .clamp(0.0, 1.0)
-                                  .toDouble(),
-                        current: index == currentIndex,
-                        accent: accent,
-                        idleColor: idleDotColor,
-                      ),
-                      if (index < stages.length - 1)
-                        Expanded(
-                          child: _OrderJourneySegment(
-                            index: index,
-                            progress: (journeyPosition - index)
-                                .clamp(0.0, 1.0)
-                                .toDouble(),
-                            accent: accent,
-                            trackColor: trackColor,
-                          ),
+                onPressed: _isRetryingPayment
+                    ? null
+                    : () => unawaited(_retryPayment()),
+                icon: _isRetryingPayment
+                    ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: BaseColors.white,
                         ),
-                    ],
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: 7),
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: TypographyText(
-                    _statusLabel(stages.first, t),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: isDark
-                          ? const Color(0xFFB8AEA5)
-                          : BaseColors.textGray,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                    ),
+                      )
+                    : const Icon(Icons.refresh_rounded, size: 20),
+                label: Text(
+                  t.retryPayment,
+                  style: AppTextStyles.display(
+                    size: 16,
+                    weight: FontWeight.w800,
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TypographyText(
-                    _statusLabel(stages.last, t),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.end,
-                    style: TextStyle(
-                      color: isDark
-                          ? const Color(0xFFB8AEA5)
-                          : BaseColors.textGray,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _OrderJourneySegment extends StatelessWidget {
-  const _OrderJourneySegment({
-    required this.index,
-    required this.progress,
-    required this.accent,
-    required this.trackColor,
-  });
-
-  final int index;
-  final double progress;
-  final Color accent;
-  final Color trackColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 2),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(999),
-        child: SizedBox(
-          height: 3,
-          child: Stack(
-            fit: StackFit.expand,
-            children: <Widget>[
-              ColoredBox(color: trackColor),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: FractionallySizedBox(
-                  key: ValueKey<String>('order-progress-segment-$index-fill'),
-                  widthFactor: progress,
-                  heightFactor: 1,
-                  child: ColoredBox(color: accent),
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _OrderJourneyDot extends StatelessWidget {
-  const _OrderJourneyDot({
-    super.key,
-    required this.progress,
-    required this.current,
-    required this.accent,
-    required this.idleColor,
-  });
-
-  final double progress;
-  final bool current;
-  final Color accent;
-  final Color idleColor;
-
-  @override
-  Widget build(BuildContext context) {
-    final fill = Color.lerp(idleColor, accent, progress)!;
-
-    return SizedBox.square(
-      dimension: 18,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: current
-              ? Border.all(color: accent.withValues(alpha: 0.38), width: 3)
-              : null,
-        ),
-        child: Center(
-          child: Container(
-            width: current ? 9 : 7,
-            height: current ? 9 : 7,
-            decoration: BoxDecoration(color: fill, shape: BoxShape.circle),
-          ),
-        ),
+            ),
+        ],
       ),
     );
   }

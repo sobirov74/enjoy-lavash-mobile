@@ -1265,4 +1265,13 @@ class LUz extends L {
 
   @override
   String get reviewNotAllowed => 'Bu buyurtmani baholab bölmaydi.';
+
+  @override
+  String get reviewThanks => 'Şarhingiz uçun rahmat!';
+
+  @override
+  String get reviewTapStar => 'Baholaş uçun yulduzni bosing';
+
+  @override
+  String get reviewPreparingPhoto => 'Rasm qöşilmoqda…';
 }

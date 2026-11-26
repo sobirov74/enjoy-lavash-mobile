@@ -526,5 +526,8 @@
     }
   },
   "reviewAlreadySaved": "Your review has already been saved.",
-  "reviewNotAllowed": "This order cannot be reviewed."
+  "reviewNotAllowed": "This order cannot be reviewed.",
+  "reviewThanks": "Thanks for your review!",
+  "reviewTapStar": "Tap a star to rate",
+  "reviewPreparingPhoto": "Adding photo…"
 }

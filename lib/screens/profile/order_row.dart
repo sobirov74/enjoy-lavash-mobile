@@ -23,6 +23,19 @@ class _OrderRow extends StatelessWidget {
     );
   }
 
+  /// Rates the order from the list. The row then shows the rating; the
+  /// snack bar says the review was saved.
+  Future<void> _rate(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final thanks = L.of(context).reviewThanks;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final updated = await showOrderReviewSheet(context, order);
+    if (updated == null || !messenger.mounted) return;
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(appSnackBar(thanks, isDark: isDark));
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = L.of(context);
@@ -201,26 +214,12 @@ class _OrderRow extends StatelessWidget {
                           Icons.star_outline_rounded,
                           color: BaseColors.primary,
                         ),
-                        onPressed: () =>
-                            unawaited(showOrderReviewSheet(context, order)),
+                        onPressed: () => unawaited(_rate(context)),
                       ),
                     ],
                     if (order.reviewRating != null) ...[
                       const SizedBox(width: AppDesignTokens.gutter / 2),
-                      Semantics(
-                        label: t.reviewStarLabel(order.reviewRating!),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.star_rounded,
-                              color: BaseColors.primary,
-                              size: AppDesignTokens.gutter,
-                            ),
-                            Text('${order.reviewRating}'),
-                          ],
-                        ),
-                      ),
+                      _OrderRatedBadge(rating: order.reviewRating!),
                     ],
                     const SizedBox(width: 2),
                     const Icon(
@@ -301,6 +300,46 @@ class _OrderMiniBadge extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// The customer's own rating on a reviewed order's row.
+class _OrderRatedBadge extends StatelessWidget {
+  const _OrderRatedBadge({required this.rating});
+
+  final int rating;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = _detailAccent(context);
+    return Semantics(
+      label: L.of(context).reviewStarLabel(rating),
+      child: ExcludeSemantics(
+        child: Container(
+          key: const ValueKey<String>('order-rated-badge'),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(AppDesignTokens.radiusPill),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(Icons.star_rounded, color: accent, size: 16),
+              const SizedBox(width: 3),
+              Text(
+                '$rating',
+                style: AppTextStyles.ui(
+                  size: 13,
+                  weight: FontWeight.w800,
+                  color: accent,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

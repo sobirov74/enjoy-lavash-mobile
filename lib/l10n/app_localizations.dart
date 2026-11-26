@@ -2222,6 +2222,180 @@ abstract class L {
   /// In uz, this message translates to:
   /// **'Savatga qöşib bölmadi: {items}'**
   String repeatOrderSkipped(String items);
+
+  /// No description provided for @reviewTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmani baholang'**
+  String get reviewTitle;
+
+  /// No description provided for @reviewRate.
+  ///
+  /// In uz, this message translates to:
+  /// **'Baholaş'**
+  String get reviewRate;
+
+  /// No description provided for @reviewRateOrder.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmani baholaş'**
+  String get reviewRateOrder;
+
+  /// No description provided for @yourReview.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sizning şarhingiz'**
+  String get yourReview;
+
+  /// No description provided for @reviewTerrible.
+  ///
+  /// In uz, this message translates to:
+  /// **'Juda yomon'**
+  String get reviewTerrible;
+
+  /// No description provided for @reviewBad.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yomon'**
+  String get reviewBad;
+
+  /// No description provided for @reviewOkay.
+  ///
+  /// In uz, this message translates to:
+  /// **'Örtaça'**
+  String get reviewOkay;
+
+  /// No description provided for @reviewGood.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yaxşi'**
+  String get reviewGood;
+
+  /// No description provided for @reviewExcellent.
+  ///
+  /// In uz, this message translates to:
+  /// **'Aʼlo'**
+  String get reviewExcellent;
+
+  /// No description provided for @reviewHintLow.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sizga nima yoqmadi?'**
+  String get reviewHintLow;
+
+  /// No description provided for @reviewHintHigh.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sizga nima yoqdi?'**
+  String get reviewHintHigh;
+
+  /// No description provided for @reviewHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Batafsil yozing (ixtiyoriy)'**
+  String get reviewHint;
+
+  /// No description provided for @reviewAddPhoto.
+  ///
+  /// In uz, this message translates to:
+  /// **'Rasm qöşiş'**
+  String get reviewAddPhoto;
+
+  /// No description provided for @reviewTakePhoto.
+  ///
+  /// In uz, this message translates to:
+  /// **'Suratga oliş'**
+  String get reviewTakePhoto;
+
+  /// No description provided for @reviewChoosePhoto.
+  ///
+  /// In uz, this message translates to:
+  /// **'Galereyadan tanlaş'**
+  String get reviewChoosePhoto;
+
+  /// No description provided for @reviewSend.
+  ///
+  /// In uz, this message translates to:
+  /// **'Şarhni yuboriş'**
+  String get reviewSend;
+
+  /// No description provided for @reviewSending.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yuborilmoqda…'**
+  String get reviewSending;
+
+  /// No description provided for @reviewFinalCaption.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yuborilgan şarhni özgartirib bölmaydi.'**
+  String get reviewFinalCaption;
+
+  /// No description provided for @reviewDiscardTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Şarh bekor qilinsinmi?'**
+  String get reviewDiscardTitle;
+
+  /// No description provided for @reviewDiscard.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bekor qiliş'**
+  String get reviewDiscard;
+
+  /// No description provided for @reviewKeep.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yozişni davom ettiriş'**
+  String get reviewKeep;
+
+  /// No description provided for @reviewPhotoFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Rasmni tayyorlab bölmadi. Qayta urinib köring.'**
+  String get reviewPhotoFailed;
+
+  /// No description provided for @reviewPhotoTooLarge.
+  ///
+  /// In uz, this message translates to:
+  /// **'Rasm hajmi 2 MB dan oşmasligi kerak.'**
+  String get reviewPhotoTooLarge;
+
+  /// No description provided for @reviewStarLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'5 dan {rating} yulduz'**
+  String reviewStarLabel(int rating);
+
+  /// No description provided for @reviewPhotoCount.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count}/{max} ta rasm'**
+  String reviewPhotoCount(int count, int max);
+
+  /// No description provided for @reviewRemovePhoto.
+  ///
+  /// In uz, this message translates to:
+  /// **'{number}-rasmni olib taşlaş'**
+  String reviewRemovePhoto(int number);
+
+  /// No description provided for @reviewViewPhoto.
+  ///
+  /// In uz, this message translates to:
+  /// **'{number}-rasmni köriş'**
+  String reviewViewPhoto(int number);
+
+  /// No description provided for @reviewAlreadySaved.
+  ///
+  /// In uz, this message translates to:
+  /// **'Şarhingiz allaqaçon saqlangan.'**
+  String get reviewAlreadySaved;
+
+  /// No description provided for @reviewNotAllowed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu buyurtmani baholab bölmaydi.'**
+  String get reviewNotAllowed;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

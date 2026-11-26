@@ -31,6 +31,8 @@ class ApiEndpoints {
   static String clientOrderRetryPayment(String id) =>
       "$clientOrders/${Uri.encodeComponent(id)}/retry-payment";
 
+  static String clientOrderReview(String id) => "${clientOrder(id)}/review";
+
   static String clientOrder(String id) =>
       "$clientOrders/${Uri.encodeComponent(id)}";
 

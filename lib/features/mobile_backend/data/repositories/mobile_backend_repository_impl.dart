@@ -293,10 +293,54 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
   }
 
   @override
+  Future<Result<CustomerOrderModel>> submitOrderReview({
+    required String orderId,
+    required int rating,
+    String? comment,
+    required List<String> photoPaths,
+    void Function(int sent, int total)? onSendProgress,
+  }) {
+    return _guard(() async {
+      final data = FormData();
+      data.fields.add(MapEntry('rating', rating.toString()));
+      if (comment != null && comment.trim().isNotEmpty) {
+        data.fields.add(MapEntry('comment', comment.trim()));
+      }
+      for (final path in photoPaths) {
+        data.files.add(
+          MapEntry(
+            'photos',
+            await MultipartFile.fromFile(
+              path,
+              contentType: DioMediaType('image', 'jpeg'),
+            ),
+          ),
+        );
+      }
+      final response = await _dio.post(
+        ApiEndpoints.clientOrderReview(orderId),
+        data: data,
+        options: Options(
+          sendTimeout: const Duration(minutes: 2),
+          receiveTimeout: const Duration(minutes: 1),
+        ),
+        onSendProgress: onSendProgress,
+      );
+      return CustomerOrderModel.fromJson(
+        asJsonMap(response.data),
+        backendBaseUrl: _dio.options.baseUrl,
+      );
+    });
+  }
+
+  @override
   Future<Result<CustomerOrderModel>> getOrder({required String id}) {
     return _guard(() async {
       final response = await _dio.get(ApiEndpoints.clientOrder(id));
-      return CustomerOrderModel.fromJson(asJsonMap(response.data));
+      return CustomerOrderModel.fromJson(
+        asJsonMap(response.data),
+        backendBaseUrl: _dio.options.baseUrl,
+      );
     });
   }
 
@@ -314,7 +358,10 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
             ? Options(headers: {'Idempotency-Key': normalizedKey})
             : null,
       );
-      return CustomerOrderModel.fromJson(asJsonMap(response.data));
+      return CustomerOrderModel.fromJson(
+        asJsonMap(response.data),
+        backendBaseUrl: _dio.options.baseUrl,
+      );
     });
   }
 
@@ -349,7 +396,10 @@ class MobileBackendRepositoryImpl implements MobileBackendRepository {
       final response = await _dio.post(
         ApiEndpoints.clientOrderRetryPayment(id),
       );
-      return CustomerOrderModel.fromJson(asJsonMap(response.data));
+      return CustomerOrderModel.fromJson(
+        asJsonMap(response.data),
+        backendBaseUrl: _dio.options.baseUrl,
+      );
     });
   }
 

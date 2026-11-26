@@ -75,6 +75,14 @@ abstract class MobileBackendRepository {
 
   Future<Result<List<CustomerOrderModel>>> getOrders();
 
+  Future<Result<CustomerOrderModel>> submitOrderReview({
+    required String orderId,
+    required int rating,
+    String? comment,
+    required List<String> photoPaths,
+    void Function(int sent, int total)? onSendProgress,
+  });
+
   Future<Result<CustomerOrderModel>> getOrder({required String id});
 
   Future<Result<CustomerOrderModel>> createOrder(

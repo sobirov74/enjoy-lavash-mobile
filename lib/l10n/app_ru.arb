@@ -466,5 +466,65 @@
   "cartQuantityLimitReached": "Можно добавить не больше {count} шт. одного товара",
   "cartItemsUnavailable": "Больше недоступно, удалено из корзины: {items}",
   "cartSomeItemsUnavailable": "Некоторые товары больше недоступны и удалены из корзины",
-  "repeatOrderSkipped": "Не удалось добавить в корзину: {items}"
+  "repeatOrderSkipped": "Не удалось добавить в корзину: {items}",
+  "reviewTitle": "Оцените заказ",
+  "reviewRate": "Оценить",
+  "reviewRateOrder": "Оценить заказ",
+  "yourReview": "Ваш отзыв",
+  "reviewTerrible": "Ужасно",
+  "reviewBad": "Плохо",
+  "reviewOkay": "Нормально",
+  "reviewGood": "Хорошо",
+  "reviewExcellent": "Отлично",
+  "reviewHintLow": "Что пошло не так?",
+  "reviewHintHigh": "Что вам понравилось?",
+  "reviewHint": "Расскажите подробнее (необязательно)",
+  "reviewAddPhoto": "Добавить фото",
+  "reviewTakePhoto": "Сделать фото",
+  "reviewChoosePhoto": "Выбрать из галереи",
+  "reviewSend": "Отправить отзыв",
+  "reviewSending": "Отправляем…",
+  "reviewFinalCaption": "После отправки отзыв нельзя изменить.",
+  "reviewDiscardTitle": "Удалить черновик отзыва?",
+  "reviewDiscard": "Удалить",
+  "reviewKeep": "Продолжить писать",
+  "reviewPhotoFailed": "Не удалось подготовить фото. Попробуйте ещё раз.",
+  "reviewPhotoTooLarge": "Каждое фото должно быть не больше 2 МБ.",
+  "reviewStarLabel": "{rating} из 5 звёзд",
+  "@reviewStarLabel": {
+    "placeholders": {
+      "rating": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewPhotoCount": "{count}/{max} фото",
+  "@reviewPhotoCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewRemovePhoto": "Убрать фото {number}",
+  "@reviewRemovePhoto": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewViewPhoto": "Открыть фото {number}",
+  "@reviewViewPhoto": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewAlreadySaved": "Ваш отзыв уже сохранён.",
+  "reviewNotAllowed": "Этот заказ нельзя оценить."
 }

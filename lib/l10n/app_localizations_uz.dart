@@ -1169,4 +1169,100 @@ class LUz extends L {
   String repeatOrderSkipped(String items) {
     return 'Savatga qöşib bölmadi: $items';
   }
+
+  @override
+  String get reviewTitle => 'Buyurtmani baholang';
+
+  @override
+  String get reviewRate => 'Baholaş';
+
+  @override
+  String get reviewRateOrder => 'Buyurtmani baholaş';
+
+  @override
+  String get yourReview => 'Sizning şarhingiz';
+
+  @override
+  String get reviewTerrible => 'Juda yomon';
+
+  @override
+  String get reviewBad => 'Yomon';
+
+  @override
+  String get reviewOkay => 'Örtaça';
+
+  @override
+  String get reviewGood => 'Yaxşi';
+
+  @override
+  String get reviewExcellent => 'Aʼlo';
+
+  @override
+  String get reviewHintLow => 'Sizga nima yoqmadi?';
+
+  @override
+  String get reviewHintHigh => 'Sizga nima yoqdi?';
+
+  @override
+  String get reviewHint => 'Batafsil yozing (ixtiyoriy)';
+
+  @override
+  String get reviewAddPhoto => 'Rasm qöşiş';
+
+  @override
+  String get reviewTakePhoto => 'Suratga oliş';
+
+  @override
+  String get reviewChoosePhoto => 'Galereyadan tanlaş';
+
+  @override
+  String get reviewSend => 'Şarhni yuboriş';
+
+  @override
+  String get reviewSending => 'Yuborilmoqda…';
+
+  @override
+  String get reviewFinalCaption => 'Yuborilgan şarhni özgartirib bölmaydi.';
+
+  @override
+  String get reviewDiscardTitle => 'Şarh bekor qilinsinmi?';
+
+  @override
+  String get reviewDiscard => 'Bekor qiliş';
+
+  @override
+  String get reviewKeep => 'Yozişni davom ettiriş';
+
+  @override
+  String get reviewPhotoFailed =>
+      'Rasmni tayyorlab bölmadi. Qayta urinib köring.';
+
+  @override
+  String get reviewPhotoTooLarge => 'Rasm hajmi 2 MB dan oşmasligi kerak.';
+
+  @override
+  String reviewStarLabel(int rating) {
+    return '5 dan $rating yulduz';
+  }
+
+  @override
+  String reviewPhotoCount(int count, int max) {
+    return '$count/$max ta rasm';
+  }
+
+  @override
+  String reviewRemovePhoto(int number) {
+    return '$number-rasmni olib taşlaş';
+  }
+
+  @override
+  String reviewViewPhoto(int number) {
+    return '$number-rasmni köriş';
+  }
+
+  @override
+  String get reviewAlreadySaved => 'Şarhingiz allaqaçon saqlangan.';
+
+  @override
+  String get reviewNotAllowed => 'Bu buyurtmani baholab bölmaydi.';
 }

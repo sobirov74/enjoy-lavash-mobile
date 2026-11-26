@@ -18,6 +18,33 @@ const _permissionChannel = MethodChannel(
 const _apnsChannel = MethodChannel('enjoy_lavash_mobile/apns');
 
 void main() {
+  test('parses order status taps from flat and nested payloads', () {
+    for (final payload in <Map<Object?, Object?>>[
+      {'type': 'order_status', 'orderId': 'order-id', 'status': 'DELIVERED'},
+      {
+        'data': {
+          'type': 'order_status',
+          'orderId': 'order-id',
+          'status': 'DELIVERED',
+        },
+      },
+    ]) {
+      final message = PushNotificationMessage.fromPayload(
+        payload,
+        openedByUser: true,
+      );
+      expect(message.orderId, 'order-id');
+      expect(message.status, 'DELIVERED');
+      expect(message.type, 'order_status');
+      expect(message.openedByUser, isTrue);
+    }
+    final missing = PushNotificationMessage.fromPayload({
+      'orderId': '  ',
+    }, openedByUser: false);
+    expect(missing.orderId, isNull);
+    expect(missing.status, isNull);
+  });
+
   final binding = TestWidgetsFlutterBinding.ensureInitialized();
 
   late PermissionStatus permissionStatus;

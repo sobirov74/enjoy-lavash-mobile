@@ -147,6 +147,12 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet>
     }
   }
 
+  Future<void> _rateOrder() async {
+    final updated = await showOrderReviewSheet(context, _order);
+    if (!mounted || updated == null) return;
+    setState(() => _order = updated);
+  }
+
   void _showOrderSnack(String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -157,6 +163,15 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet>
   Widget build(BuildContext context) {
     final t = L.of(context);
     final order = _order;
+    final actionStyle = FilledButton.styleFrom(
+      backgroundColor: BaseColors.primary,
+      foregroundColor: BaseColors.white,
+      padding: const EdgeInsets.symmetric(vertical: AppDesignTokens.gutter / 2),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusInput),
+      ),
+      minimumSize: const Size.fromHeight(AppDesignTokens.primaryButtonHeight),
+    );
     final colors = _statusColors(order.status);
     final destination = _orderDestination(
       order,
@@ -326,14 +341,7 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet>
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: BaseColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
+                  style: actionStyle,
                   onPressed: _isRetryingPayment
                       ? null
                       : () => unawaited(_retryPayment()),
@@ -355,6 +363,26 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet>
                     ),
                   ),
                 ),
+              ),
+            ],
+            if (_order.canReview) ...[
+              const SizedBox(height: AppDesignTokens.gutter / 2),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  key: const ValueKey<String>('details-rate-order'),
+                  style: actionStyle,
+                  onPressed: () => unawaited(_rateOrder()),
+                  icon: const Icon(Icons.star_outline_rounded),
+                  label: Text(t.reviewRateOrder),
+                ),
+              ),
+            ],
+            if (_order.review != null) ...[
+              const SizedBox(height: AppDesignTokens.gutter / 2),
+              _OrderDetailSection(
+                title: t.yourReview,
+                children: [OrderReviewSummary(review: _order.review!)],
               ),
             ],
             if (destination?.trim().isNotEmpty == true) ...[

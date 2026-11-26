@@ -221,6 +221,17 @@ extension _ShellNavigation on _MainTabsState {
       if (!mounted) return;
     }
 
+    final orderId = message.orderId;
+    if (message.type == 'order_status' && orderId != null) {
+      final result = await context.read<MobileBackendController>().refreshOrder(
+        id: orderId,
+      );
+      if (!mounted) return;
+      if (result case Success(:final data)) {
+        _openCreatedOrder(data);
+        return;
+      }
+    }
     if (message.opensPromotions) {
       await _openAssignedPromotions(highlightedCode: message.promotionCode);
       return;

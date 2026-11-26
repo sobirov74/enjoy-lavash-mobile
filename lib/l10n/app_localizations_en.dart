@@ -1189,4 +1189,101 @@ class LEn extends L {
   String repeatOrderSkipped(String items) {
     return 'Couldn\'t add to your cart: $items';
   }
+
+  @override
+  String get reviewTitle => 'Rate your order';
+
+  @override
+  String get reviewRate => 'Rate';
+
+  @override
+  String get reviewRateOrder => 'Rate order';
+
+  @override
+  String get yourReview => 'Your review';
+
+  @override
+  String get reviewTerrible => 'Terrible';
+
+  @override
+  String get reviewBad => 'Bad';
+
+  @override
+  String get reviewOkay => 'Okay';
+
+  @override
+  String get reviewGood => 'Good';
+
+  @override
+  String get reviewExcellent => 'Excellent';
+
+  @override
+  String get reviewHintLow => 'What went wrong?';
+
+  @override
+  String get reviewHintHigh => 'What did you like?';
+
+  @override
+  String get reviewHint => 'Tell us more (optional)';
+
+  @override
+  String get reviewAddPhoto => 'Add photo';
+
+  @override
+  String get reviewTakePhoto => 'Take photo';
+
+  @override
+  String get reviewChoosePhoto => 'Choose from gallery';
+
+  @override
+  String get reviewSend => 'Send review';
+
+  @override
+  String get reviewSending => 'Sending…';
+
+  @override
+  String get reviewFinalCaption =>
+      'A review can\'t be changed after it is sent.';
+
+  @override
+  String get reviewDiscardTitle => 'Discard review?';
+
+  @override
+  String get reviewDiscard => 'Discard';
+
+  @override
+  String get reviewKeep => 'Keep writing';
+
+  @override
+  String get reviewPhotoFailed =>
+      'Could not prepare the photo. Please try again.';
+
+  @override
+  String get reviewPhotoTooLarge => 'Each photo must be 2 MB or smaller.';
+
+  @override
+  String reviewStarLabel(int rating) {
+    return '$rating out of 5 stars';
+  }
+
+  @override
+  String reviewPhotoCount(int count, int max) {
+    return '$count/$max photos';
+  }
+
+  @override
+  String reviewRemovePhoto(int number) {
+    return 'Remove photo $number';
+  }
+
+  @override
+  String reviewViewPhoto(int number) {
+    return 'View photo $number';
+  }
+
+  @override
+  String get reviewAlreadySaved => 'Your review has already been saved.';
+
+  @override
+  String get reviewNotAllowed => 'This order cannot be reviewed.';
 }

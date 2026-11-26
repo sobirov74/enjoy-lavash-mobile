@@ -72,5 +72,9 @@
 		<false/>
 		<key>ITSAppUsesNonExemptEncryption</key>
 		<false/>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>Choose photos to attach to your order review.</string>
+		<key>NSCameraUsageDescription</key>
+		<string>Take photos to attach to your order review.</string>
 	</dict>
 </plist>

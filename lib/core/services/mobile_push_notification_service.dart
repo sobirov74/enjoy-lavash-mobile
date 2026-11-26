@@ -43,6 +43,8 @@ class PushNotificationMessage {
     required this.promotionCode,
     required this.deepLink,
     required this.openedByUser,
+    this.orderId,
+    this.status,
   });
 
   final String type;
@@ -51,6 +53,8 @@ class PushNotificationMessage {
   final String? promotionCode;
   final String? deepLink;
   final bool openedByUser;
+  final String? orderId;
+  final String? status;
 
   bool get opensPromotions {
     final normalizedType = type.trim().toLowerCase();
@@ -110,6 +114,8 @@ class PushNotificationMessage {
         'promo_code',
       ]),
       deepLink: nonEmpty(const ['deepLink', 'deep_link']),
+      orderId: nonEmpty(const ['orderId', 'order_id']),
+      status: nonEmpty(const ['status']),
       openedByUser: openedByUser,
     );
   }

@@ -189,6 +189,8 @@ class ApiClient {
     try {
       // A 401 on the replay is handled (logout) by the `_retry` branch above
       // when it passes back through this interceptor.
+      final data = error.requestOptions.data;
+      if (data is FormData) error.requestOptions.data = data.clone();
       return await dio.fetch<Object?>(error.requestOptions);
     } on DioException catch (retryError) {
       return retryError;

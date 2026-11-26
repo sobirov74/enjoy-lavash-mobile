@@ -3,6 +3,79 @@ import 'package:enjoy_lavash_mobile/features/mobile_backend/data/models/order_mo
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('review fields default safely for older payloads', () {
+    final order = CustomerOrderModel.fromJson({
+      'id': 'old-order',
+      'status': 'DELIVERED',
+    });
+    expect(order.reviewRating, isNull);
+    expect(order.canReview, isFalse);
+    expect(order.review, isNull);
+  });
+
+  test('list carries rating and permission without a detail review', () {
+    final reviewed = CustomerOrderModel.fromJson({
+      'id': 'rated',
+      'reviewRating': 4,
+      'canReview': false,
+    });
+    expect(reviewed.reviewRating, 4);
+    expect(reviewed.canReview, isFalse);
+    expect(reviewed.review, isNull);
+    // Permission belongs to the server, even if the status looks unexpected.
+    expect(
+      CustomerOrderModel.fromJson({
+        'status': 'NEW',
+        'canReview': true,
+      }).canReview,
+      isTrue,
+    );
+    expect(
+      CustomerOrderModel.fromJson({
+        'status': 'DELIVERED',
+        'canReview': false,
+      }).canReview,
+      isFalse,
+    );
+  });
+
+  test(
+    'detail parses immutable review and resolves photo URLs at the origin',
+    () {
+      final order = CustomerOrderModel.fromJson({
+        'id': 'rated',
+        'reviewRating': 4,
+        'canReview': false,
+        'review': {
+          'id': 'review-id',
+          'rating': 4,
+          'comment': 'Delicious',
+          'photos': [
+            {'url': '/uploads/reviews/a.jpg', 'width': 1600, 'height': 1200},
+          ],
+          'createdAt': '2026-11-25T10:00:00Z',
+        },
+      }, backendBaseUrl: 'https://example.test/api/v1');
+      final review = order.review!;
+      expect(review.id, 'review-id');
+      expect(review.rating, 4);
+      expect(review.comment, 'Delicious');
+      expect(review.createdAt, DateTime.utc(2026, 11, 25, 10));
+      expect(
+        review.photos.single.url,
+        'https://example.test/uploads/reviews/a.jpg',
+      );
+      expect(review.photos.single.width, 1600);
+      expect(review.photos.single.height, 1200);
+      expect(() => review.photos.clear(), throwsUnsupportedError);
+      final empty = CustomerOrderModel.fromJson({
+        'review': {'id': 'r', 'rating': 5, 'comment': null, 'photos': []},
+      });
+      expect(empty.review!.comment, isNull);
+      expect(empty.review!.photos, isEmpty);
+    },
+  );
+
   test('serializes authenticated delivery preview with saved address id', () {
     const request = CartPreviewRequest(
       type: MobileOrderType.delivery,

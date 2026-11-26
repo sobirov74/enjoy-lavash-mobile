@@ -32,6 +32,7 @@ part 'mobile_backend_controller/mobile_backend_bootstrap_controller.dart';
 part 'mobile_backend_controller/mobile_backend_catalog_adapter.dart';
 part 'mobile_backend_controller/mobile_backend_notifications_controller.dart';
 part 'mobile_backend_controller/mobile_backend_order_controller.dart';
+part 'mobile_backend_controller/mobile_backend_review_controller.dart';
 part 'mobile_backend_controller/mobile_backend_loyalty_controller.dart';
 part 'mobile_backend_controller/mobile_backend_state_controller.dart';
 
@@ -494,6 +495,22 @@ class MobileBackendController extends ChangeNotifier {
 
   Future<Result<CustomerOrderModel>> refreshOrder({required String id}) {
     return _refreshOrder(id: id);
+  }
+
+  Future<Result<CustomerOrderModel>> submitOrderReview({
+    required String orderId,
+    required int rating,
+    String? comment,
+    required List<String> photoPaths,
+    void Function(int sent, int total)? onSendProgress,
+  }) {
+    return _submitOrderReview(
+      orderId: orderId,
+      rating: rating,
+      comment: comment,
+      photoPaths: photoPaths,
+      onSendProgress: onSendProgress,
+    );
   }
 
   Future<Result<CustomerOrderModel>> retryOrderPayment({required String id}) {

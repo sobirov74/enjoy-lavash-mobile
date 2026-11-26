@@ -481,5 +481,65 @@
     "placeholders": {
       "items": { "type": "String" }
     }
-  }
+  },
+  "reviewTitle": "Buyurtmani baholang",
+  "reviewRate": "Baholaş",
+  "reviewRateOrder": "Buyurtmani baholaş",
+  "yourReview": "Sizning şarhingiz",
+  "reviewTerrible": "Juda yomon",
+  "reviewBad": "Yomon",
+  "reviewOkay": "Örtaça",
+  "reviewGood": "Yaxşi",
+  "reviewExcellent": "Aʼlo",
+  "reviewHintLow": "Sizga nima yoqmadi?",
+  "reviewHintHigh": "Sizga nima yoqdi?",
+  "reviewHint": "Batafsil yozing (ixtiyoriy)",
+  "reviewAddPhoto": "Rasm qöşiş",
+  "reviewTakePhoto": "Suratga oliş",
+  "reviewChoosePhoto": "Galereyadan tanlaş",
+  "reviewSend": "Şarhni yuboriş",
+  "reviewSending": "Yuborilmoqda…",
+  "reviewFinalCaption": "Yuborilgan şarhni özgartirib bölmaydi.",
+  "reviewDiscardTitle": "Şarh bekor qilinsinmi?",
+  "reviewDiscard": "Bekor qiliş",
+  "reviewKeep": "Yozişni davom ettiriş",
+  "reviewPhotoFailed": "Rasmni tayyorlab bölmadi. Qayta urinib köring.",
+  "reviewPhotoTooLarge": "Rasm hajmi 2 MB dan oşmasligi kerak.",
+  "reviewStarLabel": "5 dan {rating} yulduz",
+  "@reviewStarLabel": {
+    "placeholders": {
+      "rating": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewPhotoCount": "{count}/{max} ta rasm",
+  "@reviewPhotoCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewRemovePhoto": "{number}-rasmni olib taşlaş",
+  "@reviewRemovePhoto": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewViewPhoto": "{number}-rasmni köriş",
+  "@reviewViewPhoto": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewAlreadySaved": "Şarhingiz allaqaçon saqlangan.",
+  "reviewNotAllowed": "Bu buyurtmani baholab bölmaydi."
 }

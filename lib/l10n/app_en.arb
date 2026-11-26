@@ -466,5 +466,65 @@
   "cartQuantityLimitReached": "You can add up to {count} of one item",
   "cartItemsUnavailable": "No longer available, removed from your cart: {items}",
   "cartSomeItemsUnavailable": "Some items are no longer available and were removed from your cart",
-  "repeatOrderSkipped": "Couldn't add to your cart: {items}"
+  "repeatOrderSkipped": "Couldn't add to your cart: {items}",
+  "reviewTitle": "Rate your order",
+  "reviewRate": "Rate",
+  "reviewRateOrder": "Rate order",
+  "yourReview": "Your review",
+  "reviewTerrible": "Terrible",
+  "reviewBad": "Bad",
+  "reviewOkay": "Okay",
+  "reviewGood": "Good",
+  "reviewExcellent": "Excellent",
+  "reviewHintLow": "What went wrong?",
+  "reviewHintHigh": "What did you like?",
+  "reviewHint": "Tell us more (optional)",
+  "reviewAddPhoto": "Add photo",
+  "reviewTakePhoto": "Take photo",
+  "reviewChoosePhoto": "Choose from gallery",
+  "reviewSend": "Send review",
+  "reviewSending": "Sending…",
+  "reviewFinalCaption": "A review can't be changed after it is sent.",
+  "reviewDiscardTitle": "Discard review?",
+  "reviewDiscard": "Discard",
+  "reviewKeep": "Keep writing",
+  "reviewPhotoFailed": "Could not prepare the photo. Please try again.",
+  "reviewPhotoTooLarge": "Each photo must be 2 MB or smaller.",
+  "reviewStarLabel": "{rating} out of 5 stars",
+  "@reviewStarLabel": {
+    "placeholders": {
+      "rating": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewPhotoCount": "{count}/{max} photos",
+  "@reviewPhotoCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewRemovePhoto": "Remove photo {number}",
+  "@reviewRemovePhoto": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewViewPhoto": "View photo {number}",
+  "@reviewViewPhoto": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewAlreadySaved": "Your review has already been saved.",
+  "reviewNotAllowed": "This order cannot be reviewed."
 }

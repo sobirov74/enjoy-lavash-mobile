@@ -1182,4 +1182,100 @@ class LRu extends L {
   String repeatOrderSkipped(String items) {
     return 'Не удалось добавить в корзину: $items';
   }
+
+  @override
+  String get reviewTitle => 'Оцените заказ';
+
+  @override
+  String get reviewRate => 'Оценить';
+
+  @override
+  String get reviewRateOrder => 'Оценить заказ';
+
+  @override
+  String get yourReview => 'Ваш отзыв';
+
+  @override
+  String get reviewTerrible => 'Ужасно';
+
+  @override
+  String get reviewBad => 'Плохо';
+
+  @override
+  String get reviewOkay => 'Нормально';
+
+  @override
+  String get reviewGood => 'Хорошо';
+
+  @override
+  String get reviewExcellent => 'Отлично';
+
+  @override
+  String get reviewHintLow => 'Что пошло не так?';
+
+  @override
+  String get reviewHintHigh => 'Что вам понравилось?';
+
+  @override
+  String get reviewHint => 'Расскажите подробнее (необязательно)';
+
+  @override
+  String get reviewAddPhoto => 'Добавить фото';
+
+  @override
+  String get reviewTakePhoto => 'Сделать фото';
+
+  @override
+  String get reviewChoosePhoto => 'Выбрать из галереи';
+
+  @override
+  String get reviewSend => 'Отправить отзыв';
+
+  @override
+  String get reviewSending => 'Отправляем…';
+
+  @override
+  String get reviewFinalCaption => 'После отправки отзыв нельзя изменить.';
+
+  @override
+  String get reviewDiscardTitle => 'Удалить черновик отзыва?';
+
+  @override
+  String get reviewDiscard => 'Удалить';
+
+  @override
+  String get reviewKeep => 'Продолжить писать';
+
+  @override
+  String get reviewPhotoFailed =>
+      'Не удалось подготовить фото. Попробуйте ещё раз.';
+
+  @override
+  String get reviewPhotoTooLarge => 'Каждое фото должно быть не больше 2 МБ.';
+
+  @override
+  String reviewStarLabel(int rating) {
+    return '$rating из 5 звёзд';
+  }
+
+  @override
+  String reviewPhotoCount(int count, int max) {
+    return '$count/$max фото';
+  }
+
+  @override
+  String reviewRemovePhoto(int number) {
+    return 'Убрать фото $number';
+  }
+
+  @override
+  String reviewViewPhoto(int number) {
+    return 'Открыть фото $number';
+  }
+
+  @override
+  String get reviewAlreadySaved => 'Ваш отзыв уже сохранён.';
+
+  @override
+  String get reviewNotAllowed => 'Этот заказ нельзя оценить.';
 }

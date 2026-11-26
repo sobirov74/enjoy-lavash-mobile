@@ -1,3 +1,4 @@
+import 'package:enjoy_lavash_mobile/features/order_review/data/models/order_review_model.dart';
 import 'cart_model.dart';
 import 'json_helpers.dart';
 import 'loyalty_model.dart';
@@ -159,6 +160,9 @@ class CustomerOrderModel {
     this.paymentStatus,
     this.paymentUrl,
     this.paymentExpiresAt,
+    this.reviewRating,
+    this.canReview = false,
+    this.review,
     this.paymentRetryAvailable = false,
     this.paymentAttemptCount = 0,
     this.createdAt,
@@ -186,6 +190,9 @@ class CustomerOrderModel {
   final MobilePaymentStatus? paymentStatus;
   final String? paymentUrl;
   final DateTime? paymentExpiresAt;
+  final int? reviewRating;
+  final bool canReview;
+  final OrderReviewModel? review;
   final bool paymentRetryAvailable;
   final int paymentAttemptCount;
   final DateTime? createdAt;
@@ -193,7 +200,10 @@ class CustomerOrderModel {
   final Map<String, dynamic> raw;
   final OrderLoyaltySummaryModel loyalty;
 
-  factory CustomerOrderModel.fromJson(Map<String, dynamic> json) {
+  factory CustomerOrderModel.fromJson(
+    Map<String, dynamic> json, {
+    String? backendBaseUrl,
+  }) {
     final totalAmount = readInt(json, const ['totalAmount', 'total_amount']);
     final loyaltyJson = asJsonMap(json['loyalty']);
     final redemptionJson = asJsonMap(loyaltyJson['redemption']);
@@ -246,6 +256,14 @@ class CustomerOrderModel {
         'paymentExpiresAt',
         'payment_expires_at',
       ]),
+      reviewRating: readOptionalInt(json, const ['reviewRating']),
+      canReview: readBool(json, const ['canReview']),
+      review: json['review'] is Map
+          ? OrderReviewModel.fromJson(
+              asJsonMap(json['review']),
+              backendBaseUrl: backendBaseUrl,
+            )
+          : null,
       paymentRetryAvailable: readBool(json, const [
         'paymentRetryAvailable',
         'payment_retry_available',

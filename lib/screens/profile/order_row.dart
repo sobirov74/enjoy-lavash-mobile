@@ -192,6 +192,36 @@ class _OrderRow extends StatelessWidget {
                         ],
                       ),
                     ),
+                    if (order.canReview) ...[
+                      const SizedBox(width: AppDesignTokens.gutter / 2),
+                      ActionChip(
+                        key: ValueKey<String>('rate-order-${order.id}'),
+                        label: Text(t.reviewRate),
+                        avatar: const Icon(
+                          Icons.star_outline_rounded,
+                          color: BaseColors.primary,
+                        ),
+                        onPressed: () =>
+                            unawaited(showOrderReviewSheet(context, order)),
+                      ),
+                    ],
+                    if (order.reviewRating != null) ...[
+                      const SizedBox(width: AppDesignTokens.gutter / 2),
+                      Semantics(
+                        label: t.reviewStarLabel(order.reviewRating!),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.star_rounded,
+                              color: BaseColors.primary,
+                              size: AppDesignTokens.gutter,
+                            ),
+                            Text('${order.reviewRating}'),
+                          ],
+                        ),
+                      ),
+                    ],
                     const SizedBox(width: 2),
                     const Icon(
                       Icons.chevron_right_rounded,
